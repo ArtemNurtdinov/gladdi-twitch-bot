@@ -68,9 +68,7 @@ class Bot(commands.Bot):
         self.viewer_time_service = ViewerTimeService(self.economy_service, self.stream_service)
         self.betting_service = BettingService(self.economy_service)
 
-        self._restore_stream_state()
-
-        self._last_stream_online = False
+        self._stream_online = self._restore_stream_state()
 
         self.battle_waiting_user: str | None = None
         self.current_stream_summaries = []
@@ -1009,6 +1007,10 @@ class Bot(commands.Bot):
                     await asyncio.sleep(60)
                     continue
 
+
+                if current_stream is None:
+                    current_stream = self.stream_service.get_active_stream(channel_name)
+
                 stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
 
                 if stream_status is None:
@@ -1024,14 +1026,13 @@ class Bot(commands.Bot):
                     game_name = stream_status.stream_data.game_name
                     title = stream_status.stream_data.title
 
-                if is_online and not self._last_stream_online:
+                if is_online and (not self._stream_online or current_stream is None):
                     logger.info(f"Стрим начался: {game_name} - {title}")
 
                     try:
                         current_stream = self.stream_service.start_stream(channel_name=channel_name, game_name=game_name, title=title)
                         logger.info(f"Создан стрим в БД: ID {current_stream.id}")
 
-                        # Устанавливаем время начала стрима для сервиса мини-игр
                         self.minigame_service.set_stream_start_time(channel_name, current_stream.started_at)
 
                         await self.stream_announcement(game_name, title, channel_name)
@@ -1040,7 +1041,7 @@ class Bot(commands.Bot):
                     except Exception as e:
                         logger.error(f"Ошибка при создании стрима: {e}")
 
-                elif not is_online and self._last_stream_online:
+                elif not is_online and self._stream_online:
                     logger.info("Стрим завершён")
 
                     try:
@@ -1056,7 +1057,6 @@ class Bot(commands.Bot):
                         self.minigame_service.reset_stream_state(channel_name)
 
                         current_stream = None
-
                     except Exception as e:
                         logger.error(f"Ошибка при завершении стрима: {e}")
 
@@ -1073,7 +1073,7 @@ class Bot(commands.Bot):
                     except Exception as e:
                         logger.error(f"Ошибка при обновлении метаданных стрима: {e}")
 
-                self._last_stream_online = is_online
+                self._stream_online = is_online
 
             except Exception as e:
                 logger.error(f"Ошибка в check_stream_start_periodically: {e}")
@@ -1434,18 +1434,17 @@ class Bot(commands.Bot):
         except Exception as e:
             logger.error(f"Ошибка при восстановлении каналов: {e}")
 
-    def _restore_stream_state(self):
+    def _restore_stream_state(self) -> bool:
         try:
             channel_name = self.initial_channels[0]
             active_stream = self.stream_service.get_active_stream(channel_name)
 
             if active_stream:
-                self._last_stream_online = True
                 logger.info(f"Восстановлено состояние: найден активный стрим ID {active_stream.id}")
+                return True
             else:
-                self._last_stream_online = False
                 logger.info("Восстановлено состояние: активных стримов не найдено")
-
+                return False
         except Exception as e:
             logger.error(f"Ошибка при восстановлении состояния стрима: {e}")
-            self._last_stream_online = False
+            return False
