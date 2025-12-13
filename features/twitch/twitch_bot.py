@@ -28,6 +28,7 @@ from features.economy.model.shop_items import ShopItems
 
 logger = logging.getLogger(__name__)
 
+
 class Bot(commands.Bot):
     _COMMAND_ROLL = "ставка"
     _COMMAND_FOLLOWAGE = "followage"
@@ -75,11 +76,27 @@ class Bot(commands.Bot):
         self.last_chat_summary_time = None
         self.roll_cooldowns = {}
         self._tasks_started = False
+        self._user_id_cache: dict[str, tuple[str, datetime]] = {}
+        self._user_id_cache_ttl = timedelta(minutes=30)
 
         request = HTTPXRequest(connection_pool_size=10, pool_timeout=10)
         self.telegram_bot = telegram.Bot(token=config.telegram.bot_token, request=request)
 
         logger.info("Twitch бот инициализирован успешно")
+
+    async def _get_user_id_cached(self, login: str) -> str | None:
+        now = datetime.utcnow()
+        cached = self._user_id_cache.get(login)
+        if cached:
+            cached_id, cached_at = cached
+            if now - cached_at < self._user_id_cache_ttl:
+                return cached_id
+
+        user_info = await self.twitch_api_service.get_user_by_login(login)
+        user_id = None if user_info is None else user_info.id
+        if user_id:
+            self._user_id_cache[login] = (user_id, now)
+        return user_id
 
     def _start_background_tasks(self):
         if self._tasks_started:
@@ -91,36 +108,11 @@ class Bot(commands.Bot):
         asyncio.create_task(self.summarize_chat_periodically())
         asyncio.create_task(self.check_minigames_periodically())
         asyncio.create_task(self.check_viewer_time_periodically())
-        asyncio.create_task(self.check_connection_health())
         self._tasks_started = True
-
-    async def validate_channels(self):
-        if not self.initial_channels:
-            return False
-
-        valid_channels = []
-        for channel in self.initial_channels:
-            user_info = await self.twitch_api_service.get_user_by_login(channel)
-            if user_info:
-                valid_channels.append(channel)
-                logger.info(f"Канал {channel} доступен (ID: {user_info.id})")
-            else:
-                logger.error(f"Канал {channel} недоступен или не существует!")
-
-        if not valid_channels:
-            logger.error("Ни один канал не доступен для подключения!")
-            return False
-
-        if len(valid_channels) != len(self.initial_channels):
-            logger.warning(f"Некоторые каналы недоступны. Доступно: {valid_channels}")
-            self.initial_channels = valid_channels
-
-        return True
 
     async def event_ready(self):
         logger.info(f'Бот {self.nick} готов')
-        channels_valid = await self.validate_channels()
-        if channels_valid and self.initial_channels:
+        if self.initial_channels:
             logger.info(f'Бот успешно подключен к каналу(ам): {", ".join(self.initial_channels)}')
         else:
             logger.error('Проблемы с подключением к каналам!')
@@ -884,11 +876,8 @@ class Bot(commands.Bot):
             user = await self.twitch_api_service.get_user_by_login(username)
             user_id = None if user is None else user.id
 
-            broadcaster = await self.twitch_api_service.get_user_by_login(channel_name)
-            broadcaster_id = None if broadcaster is None else broadcaster.id
-
-            moderator = await self.twitch_api_service.get_user_by_login(self.nick)
-            moderator_id = None if moderator is None else moderator.id
+            broadcaster_id = await self._get_user_id_cached(channel_name)
+            moderator_id = await self._get_user_id_cached(self.nick)
 
             if not user_id:
                 logger.error(f"Не удалось получить ID пользователя {username}")
@@ -951,8 +940,7 @@ class Bot(commands.Bot):
                     continue
 
                 channel_name = self.initial_channels[0]
-                broadcaster = await self.twitch_api_service.get_user_by_login(channel_name)
-                broadcaster_id = None if broadcaster is None else broadcaster.id
+                broadcaster_id = await self._get_user_id_cached(channel_name)
 
                 if not broadcaster_id:
                     logger.error(f"Не удалось получить ID канала {channel_name} для генерации анекдота")
@@ -999,14 +987,12 @@ class Bot(commands.Bot):
                     continue
 
                 channel_name = self.initial_channels[0]
-                broadcaster = await self.twitch_api_service.get_user_by_login(channel_name)
-                broadcaster_id = None if broadcaster is None else broadcaster.id
+                broadcaster_id = await self._get_user_id_cached(channel_name)
 
                 if not broadcaster_id:
                     logger.error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
                     await asyncio.sleep(60)
                     continue
-
 
                 if current_stream is None:
                     current_stream = self.stream_service.get_active_stream(channel_name)
@@ -1171,22 +1157,13 @@ class Bot(commands.Bot):
 
             channel_name = self.initial_channels[0]
             try:
-                broadcaster = await self.twitch_api_service.get_user_by_login(channel_name)
-                broadcaster_id = None if broadcaster is None else broadcaster.id
+                broadcaster_id = await self._get_user_id_cached(channel_name)
 
                 if not broadcaster_id:
                     logger.error(f"Не удалось получить ID канала {channel_name} для анализа чата")
                     continue
 
-                stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
-
-                if stream_status is None:
-                    logger.error(f"Не удалось получить статус стрима для анализа чата в канале {channel_name}")
-                    continue
-
-                is_online = stream_status.is_online
-
-                if not is_online:
+                if not self._stream_online:
                     logger.debug("Стрим не активен, пропускаем анализ чата")
                     continue
             except Exception as e:
@@ -1237,22 +1214,13 @@ class Bot(commands.Bot):
 
                 if self.minigame_service.should_start_new_game(channel_name):
                     try:
-                        broadcaster = await self.twitch_api_service.get_user_by_login(channel_name)
-                        broadcaster_id = None if broadcaster is None else broadcaster.id
+                        broadcaster_id = await self._get_user_id_cached(channel_name)
 
                         if not broadcaster_id:
                             logger.error(f"Не удалось получить ID канала {channel_name} для мини-игр")
                             continue
 
-                        stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
-
-                        if stream_status is None:
-                            logger.error(f"Не удалось получить статус стрима для мини-игр в канале {channel_name}")
-                            continue
-
-                        is_online = stream_status.is_online
-
-                        if is_online:
+                        if self._stream_online:
                             choice = random.choice(["number", "word", "rps"])
                             if choice == "word":
                                 try:
@@ -1328,17 +1296,17 @@ class Bot(commands.Bot):
                     logger.debug(f"Найдено {len(inactive_users)} неактивных зрителей")
 
                 try:
-                    broadcaster = await self.twitch_api_service.get_user_by_login(channel_name)
-                    broadcaster_id = None if broadcaster is None else broadcaster.id
-
-                    moderator = await self.twitch_api_service.get_user_by_login(self.nick)
-                    moderator_id = None if moderator is None else moderator.id
+                    broadcaster_id = await self._get_user_id_cached(channel_name)
+                    moderator_id = await self._get_user_id_cached(self.nick)
 
                     if broadcaster_id and moderator_id:
-                        chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
-                        if chatters:
-                            await self.viewer_time_service.update_viewers(channel_name, chatters)
-                            logger.debug(f"API: Обновлена активность для {len(chatters)} зрителей")
+                        if self._stream_online:
+                            chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
+                            if chatters:
+                                await self.viewer_time_service.update_viewers(channel_name, chatters)
+                                logger.debug(f"API: Обновлена активность для {len(chatters)} зрителей")
+                        else:
+                            logger.debug("Стрим офлайн, список зрителей не запрашиваем")
                     else:
                         logger.warning(f"Не удалось получить broadcaster_id или moderator_id для канала {channel_name}")
 
@@ -1360,56 +1328,6 @@ class Bot(commands.Bot):
                 logger.error(f"Ошибка в check_viewer_time_periodically: {e}")
 
             await asyncio.sleep(self.viewer_time_service.CHECK_INTERVAL_SECONDS)
-
-    async def check_connection_health(self):
-        logger.info("Запуск периодической проверки подключения к каналам")
-        connection_failures = 0
-        max_failures = 3
-
-        while True:
-            await asyncio.sleep(120)
-            try:
-                if not self.initial_channels:
-                    logger.warning("Список каналов пуст в check_connection_health")
-                    connection_failures += 1
-                    if connection_failures >= max_failures:
-                        logger.error("Превышено максимальное количество ошибок подключения. Пытаемся восстановить...")
-                        await self.restore_initial_channels()
-                        connection_failures = 0
-                    continue
-
-                main_channel = self.initial_channels[0]
-                user_info = await self.twitch_api_service.get_user_by_login(main_channel)
-
-                if user_info:
-                    logger.debug(f"Соединение с каналом {main_channel} стабильно")
-                    connection_failures = 0
-
-                    if hasattr(self, '_health_check_counter'):
-                        self._health_check_counter += 1
-                    else:
-                        self._health_check_counter = 1
-
-                    if self._health_check_counter % 5 == 0:
-                        logger.info(f"📊 Статистика подключения: Канал {main_channel} стабилен. "
-                                    f"Проверок: {self._health_check_counter}, Ошибок подряд: {connection_failures}")
-                else:
-                    logger.warning(f"Проблемы с подключением к каналу {main_channel}")
-                    connection_failures += 1
-
-                    if connection_failures >= max_failures:
-                        logger.error(f"Превышено максимальное количество ошибок подключения к {main_channel}")
-                        await self.restore_initial_channels()
-                        connection_failures = 0
-
-            except Exception as e:
-                logger.error(f"Ошибка при проверке подключения: {e}")
-                connection_failures += 1
-
-                if connection_failures >= max_failures:
-                    logger.error("Критические проблемы с подключением. Попытка восстановления...")
-                    await self.restore_initial_channels()
-                    connection_failures = 0
 
     async def restore_initial_channels(self):
         try:
