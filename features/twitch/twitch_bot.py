@@ -98,7 +98,18 @@ class Bot(commands.Bot):
             self._user_id_cache[login] = (user_id, now)
         return user_id
 
-    def _start_background_tasks(self):
+    async def _warmup_broadcaster_id(self):
+        try:
+            if not self.initial_channels:
+                logger.warning("Список каналов пуст, пропускаем прогрев кеша ID")
+                return
+
+            channel_name = self.initial_channels[0]
+            await self._get_user_id_cached(channel_name)
+        except Exception as e:
+            logger.error(f"Не удалось прогреть кеш ID канала: {e}")
+
+    async def _start_background_tasks(self):
         if self._tasks_started:
             return
 
@@ -116,7 +127,8 @@ class Bot(commands.Bot):
             logger.info(f'Бот успешно подключен к каналу(ам): {", ".join(self.initial_channels)}')
         else:
             logger.error('Проблемы с подключением к каналам!')
-        self._start_background_tasks()
+        await self._warmup_broadcaster_id()
+        await self._start_background_tasks()
 
     async def event_channel_joined(self, channel):
         logger.info(f"Успешно подключились к каналу: {channel.name}")
