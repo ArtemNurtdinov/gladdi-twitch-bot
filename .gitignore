@@ -1,0 +1,10 @@
+/.idea/
+/data/
+.env
+.env.local
+.env.prod
+*.pyc
+__pycache__/
+**/__pycache__/
+*.log
+/config

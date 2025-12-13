@@ -1,0 +1,17 @@
+from sqlalchemy import Column, String, DateTime, Integer, Enum
+from datetime import datetime
+
+from db.base import Base
+from features.betting.model.rarity_level import RarityLevel
+
+
+class BetHistory(Base):
+    __tablename__ = 'bet_history'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    channel_name = Column(String, nullable=False)
+    user_name = Column(String, nullable=False)
+    slot_result = Column(String, nullable=False)  # "emoji1 | emoji2 | emoji3"
+    result_type = Column(String, nullable=False)  # "jackpot", "partial", "miss"
+    rarity_level = Column(Enum(RarityLevel), default=RarityLevel.COMMON, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False) 
