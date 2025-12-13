@@ -178,11 +178,10 @@ class Bot(commands.Bot):
             prompt = self.ai_repository.get_hello_prompt(self._SOURCE_TWITCH, nickname, content)
 
         if prompt is not None:
-            logger.debug(f"Генерация ответа на сообщение от {nickname}")
             result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
             await self._post_message_in_twitch_chat(result, message.channel)
             self.twitch_repository.log_chat_message(channel_name, self.nick, result)
-            logger.info(f"Отправлен ответ в чат: {result}")
+            logger.info(f"Отправлен ответ на сообщение от {nickname}")
 
     @commands.command(name=_COMMAND_FOLLOWAGE)
     async def followage(self, ctx):
