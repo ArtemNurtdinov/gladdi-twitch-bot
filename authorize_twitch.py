@@ -38,7 +38,7 @@ def exchange_code_for_tokens(code: str) -> dict:
     response = requests.post(TOKEN_URL, data=data, timeout=10)
     if response.status_code != 200:
         logging.error("Не удалось получить токены: %s", response.text)
-        raise SystemExit(1)
+        raise ValueError(f"Не удалось получить токены: {response.text}")
     return response.json()
 
 

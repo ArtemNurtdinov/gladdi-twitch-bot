@@ -17,8 +17,6 @@ class TwitchConfig:
     client_secret: str = os.getenv("TWITCH_CLIENT_SECRET", "")
     redirect_url: str = os.getenv("TWITCH_REDIRECT_URL", "http://localhost:5000")
     channel_name: str = os.getenv("TWITCH_CHANNEL", "artemnefrit")
-    access_token: str = os.getenv("TWITCH_ACCESS_TOKEN", "")
-    refresh_token: str = os.getenv("TWITCH_REFRESH_TOKEN", "")
 
 
 @dataclass

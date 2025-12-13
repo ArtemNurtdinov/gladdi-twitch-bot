@@ -54,7 +54,6 @@ docker run --env-file .env -p 8000:8000 gladdi-twitch-bot
 
 - `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` — получите
   на [twitch developers](https://dev.twitch.tv/docs/authentication/register-app)
-- `TWITCH_ACCESS_TOKEN`, `TWITCH_REFRESH_TOKEN` — получите, вызвав [authorize_twitch.py](authorize_twitch.py)
 - `TWITCH_CHANNEL` — канал, где работает бот
 - `DASHBOARD_PORT` — порт API (по умолчанию 8000)
 - `TELEGRAM_BOT_TOKEN` — токен телеграм бота (анонсы стрима)
@@ -67,8 +66,6 @@ docker run --env-file .env -p 8000:8000 gladdi-twitch-bot
 ```env
 TWITCH_CLIENT_ID=...
 TWITCH_CLIENT_SECRET=...
-TWITCH_ACCESS_TOKEN=...
-TWITCH_REFRESH_TOKEN=...
 TWITCH_CHANNEL=your_channel
 DATABASE_URL=postgresql://user:pass@host:5432/dbname
 ```

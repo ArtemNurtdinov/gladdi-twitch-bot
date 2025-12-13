@@ -2,16 +2,13 @@ from fastapi import APIRouter, Query, HTTPException
 from typing import List, Optional
 from datetime import datetime
 from features.dashboard.dashboard_schemas import OverviewStats, HourlyActivity, DailyActivity, TopUser, BattleStats, AIInteractionStats, ActivityHeatmap, MessagesResponse, \
-    AIMessagesResponse, JokesStatus, JokesResponse, JokesIntervalInfo, JokesIntervalResponse, JokesIntervalRequest, JokeGeneratedResponse, BetStats, BetUser, MythicalEvent, \
-    RarityEvent, BetHourlyActivity, LuckyUser, EconomyOverview, UserBalanceStats, BalanceUser, EarningsUser, TransactionStats, UserTransactionsResponse, StreamStats, \
+    AIMessagesResponse, JokesStatus, JokesResponse, JokesIntervalInfo, JokesIntervalResponse, JokesIntervalRequest, JokeGeneratedResponse, MythicalEvent, \
+    BetHourlyActivity, LuckyUser, EconomyOverview, UserBalanceStats, BalanceUser, EarningsUser, TransactionStats, UserTransactionsResponse, StreamStats, \
     StreamHistoryResponse, StreamInfo, CurrentStreamInfo, ViewerSessionStats, ViewerTopByTime, ViewerSessionRewards, ViewerSessionActivity
 from features.economy.economy_service import EconomyService
 from features.stream.stream_service import StreamService
 from features.dashboard.dashboard_service import DashboardService
 from features.dashboard.bot_control_service import BotControlService
-from features.betting.model.rarity_level import RarityLevel
-from features.ai.ai_service import AIService
-from features.twitch.twitch_repository import TwitchService
 
 router = APIRouter()
 analytics_service = DashboardService()
@@ -291,39 +288,6 @@ async def mark_joke_generated() -> JokeGeneratedResponse:
 
 
 @router.get(
-    "/bet-stats",
-    response_model=BetStats,
-    summary="Статистика ставок",
-    description="Получить общую статистику ставок за указанный период",
-    tags=["Bet Analytics"]
-)
-async def get_bet_stats(days: int = Query(30, ge=1, le=365, description="Количество дней для анализа")) -> BetStats:
-    try:
-        data = analytics_service.get_bet_statistics(days)
-        return BetStats(**data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения статистики ставок: {str(e)}")
-
-
-@router.get(
-    "/bet-top-users",
-    response_model=List[BetUser],
-    summary="Топ пользователей по ставкам",
-    description="Получить список самых активных пользователей в ставках",
-    tags=["Bet Analytics"]
-)
-async def get_bet_top_users(
-    days: int = Query(30, ge=1, le=365, description="Количество дней для анализа"),
-    limit: int = Query(10, ge=1, le=50, description="Максимальное количество пользователей в результате")
-) -> List[BetUser]:
-    try:
-        data = analytics_service.get_top_bet_users(days, limit)
-        return [BetUser(**user) for user in data]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения топа пользователей: {str(e)}")
-
-
-@router.get(
     "/bet-mythical-events",
     response_model=List[MythicalEvent],
     summary="Мифические события",
@@ -336,40 +300,6 @@ async def get_bet_mythical_events(days: int = Query(30, ge=1, le=365, descriptio
         return [MythicalEvent(**event) for event in data]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка получения мифических событий: {str(e)}")
-
-
-@router.get(
-    "/bet-rarity-events",
-    response_model=List[RarityEvent],
-    summary="События по уровню редкости",
-    description="Получить список событий определенного уровня редкости",
-    tags=["Bet Analytics"]
-)
-async def get_bet_rarity_events(
-    days: int = Query(30, ge=1, le=365, description="Количество дней для анализа"),
-    rarity_level: Optional[str] = Query(None, description="Уровень редкости (MYTHICAL, LEGENDARY, EPIC, RARE, UNCOMMON, COMMON)")
-) -> List[RarityEvent]:
-    try:
-        rarity_enum = None
-        if rarity_level:
-            rarity_mapping = {
-                "mythical": RarityLevel.MYTHICAL,
-                "legendary": RarityLevel.LEGENDARY,
-                "epic": RarityLevel.EPIC,
-                "rare": RarityLevel.RARE,
-                "uncommon": RarityLevel.UNCOMMON,
-                "common": RarityLevel.COMMON
-            }
-            rarity_enum = rarity_mapping.get(rarity_level.lower())
-            if rarity_enum is None:
-                raise HTTPException(status_code=400, detail=f"Неверный уровень редкости: {rarity_level}")
-
-        data = analytics_service.get_rarity_events(days, rarity_enum)
-        return [RarityEvent(**event) for event in data]
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения событий по редкости: {str(e)}")
 
 
 @router.get(
@@ -403,59 +333,6 @@ async def get_bet_lucky_users(
         return [LuckyUser(**user) for user in data]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка получения удачливых пользователей: {str(e)}")
-
-
-@router.get(
-    "/bet-user-stats/{username}",
-    response_model=BetUser,
-    summary="Статистика ставок пользователя",
-    description="Получить подробную статистику ставок для конкретного пользователя",
-    tags=["Bet Analytics"]
-)
-async def get_bet_user_stats(
-    username: str,
-    days: int = Query(30, ge=1, le=365, description="Количество дней для анализа")
-) -> BetUser:
-    try:
-        ai_service = AIService()
-        twitch_repository = TwitchService(ai_service)
-
-        stats = twitch_repository.get_user_bet_stats(username, "artemnefrit")
-
-        if stats["total_bets"] == 0:
-            return BetUser(
-                username=username,
-                total_bets=0,
-                jackpots=0,
-                partial_matches=0,
-                misses=0,
-                mythical_count=0,
-                legendary_count=0,
-                epic_count=0,
-                rare_count=0,
-                uncommon_count=0,
-                common_count=0,
-                jackpot_rate=0.0,
-                mythical_rate=0.0
-            )
-
-        return BetUser(
-            username=username,
-            total_bets=stats["total_bets"],
-            jackpots=stats["jackpots"],
-            partial_matches=stats["partial_matches"],
-            misses=stats["misses"],
-            mythical_count=stats["mythical_count"],
-            legendary_count=stats["legendary_count"],
-            epic_count=stats["epic_count"],
-            rare_count=stats["rare_count"],
-            uncommon_count=stats["uncommon_count"],
-            common_count=stats["common_count"],
-            jackpot_rate=stats["jackpot_rate"],
-            mythical_rate=stats["mythical_rate"]
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения статистики пользователя: {str(e)}")
 
 
 @router.get(

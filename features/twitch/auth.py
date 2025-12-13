@@ -7,19 +7,25 @@ from config import config
 logger = logging.getLogger(__name__)
 
 class TwitchAuth:
-
-    def __init__(self):
-        self.access_token = config.twitch.access_token
-        self.refresh_token = config.twitch.refresh_token
-        self.client_id = config.twitch.client_id
+    def __init__(
+        self,
+        access_token: str,
+        refresh_token: str,
+        client_id: str | None = None,
+        client_secret: str | None = None,
+    ):
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.client_id = client_id or config.twitch.client_id
+        self.client_secret = client_secret or config.twitch.client_secret
 
     def update_access_token(self):
         logger.info("updating access token")
         url = 'https://id.twitch.tv/oauth2/token'
 
         data = {
-            'client_id': config.twitch.client_id,
-            'client_secret': config.twitch.client_secret,
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
             'grant_type': 'refresh_token',
             'refresh_token': self.refresh_token
         }
@@ -34,6 +40,9 @@ class TwitchAuth:
             raise Exception('Ошибка обновления токена:', token_data)
 
     def check_token_is_valid(self) -> bool:
+        if not self.access_token:
+            raise ValueError("Access token пуст")
+
         url = 'https://id.twitch.tv/oauth2/validate'
         headers = {'Authorization': f'OAuth {self.access_token}'}
         response = requests.get(url, headers=headers)

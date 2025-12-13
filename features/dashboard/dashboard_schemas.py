@@ -51,7 +51,6 @@ class BattleStats(BaseModel):
 
 class AIInteractionStats(BaseModel):
     twitch_interactions: int = Field(..., description="AI взаимодействия в Twitch")
-    telegram_interactions: int = Field(..., description="AI взаимодействия в Telegram")
     total_interactions: int = Field(..., description="Общее количество AI взаимодействий")
 
 
@@ -131,48 +130,6 @@ class JokeGeneratedResponse(BaseModel):
     success: bool = Field(..., description="Успешность операции")
     message: str = Field(..., description="Сообщение о результате")
     next_joke: Dict[str, Any] = Field(..., description="Информация о следующем анекдоте")
-
-
-class BetStats(BaseModel):
-    total_bets: int = Field(..., description="Общее количество ставок")
-    unique_users: int = Field(..., description="Количество уникальных пользователей")
-    jackpots: int = Field(..., description="Количество джекпотов")
-    partial_matches: int = Field(..., description="Количество частичных совпадений")
-    misses: int = Field(..., description="Количество промахов")
-    mythical_count: int = Field(..., description="Количество мифических событий")
-    legendary_count: int = Field(..., description="Количество легендарных событий")
-    epic_count: int = Field(..., description="Количество эпических событий")
-    rare_count: int = Field(..., description="Количество редких событий")
-    uncommon_count: int = Field(..., description="Количество необычных событий")
-    common_count: int = Field(..., description="Количество обычных событий")
-    jackpot_rate: float = Field(..., description="Процент джекпотов")
-    mythical_rate: float = Field(..., description="Процент мифических событий")
-    rarity_distribution: Dict[str, int] = Field(..., description="Распределение по уровням редкости")
-    daily_bets: Dict[str, int] = Field(..., description="Ставки по дням")
-
-
-class BetUser(BaseModel):
-    username: str = Field(..., description="Имя пользователя")
-    total_bets: int = Field(..., description="Общее количество ставок")
-    jackpots: int = Field(..., description="Количество джекпотов")
-    partial_matches: int = Field(..., description="Количество частичных совпадений")
-    misses: int = Field(..., description="Количество промахов")
-    mythical_count: int = Field(..., description="Количество мифических событий")
-    legendary_count: int = Field(..., description="Количество легендарных событий")
-    epic_count: int = Field(..., description="Количество эпических событий")
-    rare_count: int = Field(..., description="Количество редких событий")
-    uncommon_count: int = Field(..., description="Количество необычных событий")
-    common_count: int = Field(..., description="Количество обычных событий")
-    jackpot_rate: float = Field(..., description="Процент джекпотов")
-    mythical_rate: float = Field(..., description="Процент мифических событий")
-
-
-class RarityEvent(BaseModel):
-    username: str = Field(..., description="Имя пользователя")
-    slot_result: str = Field(..., description="Результат слот-машины")
-    result_type: str = Field(..., description="Тип результата")
-    rarity_level: str = Field(..., description="Уровень редкости")
-    created_at: str = Field(..., description="Время события")
 
 
 class MythicalEvent(BaseModel):
