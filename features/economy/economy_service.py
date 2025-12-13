@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
-from db.database import SessionLocal
+from db.base import SessionLocal
 from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory, TransactionType
 from features.equipment.model.user_equipment_item import UserEquipmentItem
@@ -84,11 +84,8 @@ class EconomyService:
                 user_balance.balance += self.ACTIVITY_REWARD
                 user_balance.total_earned += self.ACTIVITY_REWARD
 
-                self._create_transaction(
-                    db, channel_name, user_name, TransactionType.MESSAGE_REWARD,
-                    self.ACTIVITY_REWARD, balance_before, user_balance.balance,
-                    "Награда за активность в чате"
-                )
+                self._create_transaction(db, channel_name, user_name, TransactionType.MESSAGE_REWARD, self.ACTIVITY_REWARD, balance_before, user_balance.balance,
+                                         "Награда за активность в чате")
 
                 db.commit()
                 logger.info(f"Пользователь {user_name} получил {self.ACTIVITY_REWARD} монет за активность. Новый баланс: {user_balance.balance}")

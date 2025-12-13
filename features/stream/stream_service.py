@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, List
 from datetime import datetime
-from db.database import SessionLocal
+from db.base import SessionLocal
 from features.stream.db.stream import Stream
 from features.stream.db.stream_viewer_session import StreamViewerSession
 

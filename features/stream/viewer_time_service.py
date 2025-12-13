@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List
 from datetime import datetime, timedelta
 
-from db.database import SessionLocal
+from db.base import SessionLocal
 from features.stream.db.stream_viewer_session import StreamViewerSession
 from features.economy.db.transaction_history import TransactionType
 from features.economy.economy_service import EconomyService

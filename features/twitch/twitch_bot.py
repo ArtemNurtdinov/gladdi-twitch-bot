@@ -6,7 +6,7 @@ from twitchio.ext import commands
 from datetime import datetime, timedelta
 import telegram
 from config import config
-from db.database import SessionLocal
+from db.base import SessionLocal
 from features.ai.ai_service import AIService
 from features.ai.intent import Intent
 from features.equipment.equipment_service import EquipmentService

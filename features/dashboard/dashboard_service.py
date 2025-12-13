@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from collections import Counter
 from sqlalchemy import func, case
-from db.database import SessionLocal
+from db.base import SessionLocal
 from features.stream.db.stream_messages import ChatMessageLog, TwitchMessage
 from features.battle.db.battle_history import BattleHistory
 from features.betting.db.bet_history import BetHistory

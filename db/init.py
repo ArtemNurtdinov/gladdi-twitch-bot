@@ -1,8 +1,8 @@
 from sqlalchemy import text
-from db.database import engine
-from features.twitch.data.db.model import WordHistory
+from db.base import engine
 from features.battle.db.battle_history import BattleHistory
 from features.betting.db.bet_history import BetHistory
+from features.minigame.word.db.word_history import WordHistory
 from features.stream.db.stream_messages import TwitchMessage, ChatMessageLog
 from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory

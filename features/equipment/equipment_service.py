@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from db.database import SessionLocal
+from db.base import SessionLocal
 from features.equipment.db.user_equipment import UserEquipment
 from features.equipment.model.user_equipment_item import UserEquipmentItem
 from features.economy.model.shop_items import ShopItems

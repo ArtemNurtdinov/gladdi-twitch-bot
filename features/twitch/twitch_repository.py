@@ -3,7 +3,7 @@ from collections import Counter
 from datetime import datetime
 from sqlalchemy import func, case
 
-from db.database import SessionLocal
+from db.base import SessionLocal
 from features.ai.ai_service import AIService
 from features.ai.message import AIMessage, Role
 from features.stream.db.stream_messages import TwitchMessage, ChatMessageLog
