@@ -9,9 +9,10 @@ from config import config
 from db.base import SessionLocal
 from features.ai.ai_service import AIService
 from features.ai.intent import Intent
+from features.betting.betting_service import BettingService
 from features.equipment.equipment_service import EquipmentService
+from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
-from features.twitch.api.twitch_api_interface import ITwitchApiService
 from features.stream.db.stream_messages import ChatMessageLog
 from features.economy.db.transaction_history import TransactionType
 from features.twitch.twitch_repository import TwitchService
@@ -50,15 +51,10 @@ class Bot(commands.Bot):
     _GROUP_ID = config.telegram.group_id
     _SOURCE_TWITCH = "twitch"
 
-    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: ITwitchApiService, twitch_repository: TwitchService, ai_repository: AIService):
+    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService, twitch_repository: TwitchService, ai_repository: AIService):
         self._prefix = '!'
         self.initial_channels = ['artemnefrit']
-
-        try:
-            super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
-        except Exception as e:
-            logger.error(f"Ошибка при инициализации базового класса twitchio.Bot: {e}")
-            raise
+        super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
 
         self.twitch_auth = twitch_auth
         self.twitch_api_service = twitch_api_service
@@ -70,6 +66,7 @@ class Bot(commands.Bot):
         self.economy_service = EconomyService(self.stream_service)
         self.minigame_service = MinigameService(self.economy_service)
         self.viewer_time_service = ViewerTimeService(self.economy_service, self.stream_service)
+        self.betting_service = BettingService(self.economy_service)
 
         self._restore_stream_state()
 
@@ -388,13 +385,13 @@ class Bot(commands.Bot):
         channel_name = ctx.channel.name
         nickname = ctx.author.display_name
 
-        bet_amount = self.economy_service.BET_COST
+        bet_amount = self.betting_service.BET_COST
         if amount:
             try:
                 bet_amount = int(amount)
             except ValueError:
                 result = (f"@{nickname}, неверная сумма ставки! Используй: {self._prefix}{self._COMMAND_ROLL} [сумма] (например: {self._prefix}{self._COMMAND_ROLL} 100). "
-                          f"Диапазон: {self.economy_service.MIN_BET_AMOUNT}-{self.economy_service.MAX_BET_AMOUNT} монет.")
+                          f"Диапазон: {self.betting_service.MIN_BET_AMOUNT}-{self.betting_service.MAX_BET_AMOUNT} монет.")
                 self.twitch_repository.log_chat_message(channel_name, self.nick, result)
                 await ctx.send(result)
                 return
@@ -443,7 +440,7 @@ class Bot(commands.Bot):
             db_result_type = "miss"
 
         equipment = self.equipment_service.get_user_equipment(channel_name, nickname)
-        bet_result = self.economy_service.process_bet_result_with_amount(channel_name, nickname, db_result_type, slot_result_string, bet_amount, equipment)
+        bet_result = self.betting_service.process_bet_result_with_amount(channel_name, nickname, db_result_type, slot_result_string, bet_amount, equipment)
 
         if not bet_result.success:
             result = bet_result.message

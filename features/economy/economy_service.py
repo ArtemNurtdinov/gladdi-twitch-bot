@@ -1,11 +1,11 @@
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
-from dataclasses import dataclass
 from sqlalchemy.orm import Session
 from db.base import SessionLocal
 from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory, TransactionType
+from features.economy.model.daily_bonus import DailyBonusResult
 from features.equipment.model.user_equipment_item import UserEquipmentItem
 from features.betting.model.rarity_level import RarityLevel
 from features.economy.model.user_stats import UserStats
@@ -20,47 +20,16 @@ from features.stream.stream_service import StreamService
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class DailyBonusResult:
-    success: bool
-    user_balance: Optional[UserBalance] = None
-    bonus_amount: int = 0
-    bonus_message: str = ""
-    failure_reason: str = ""
-
-
 class EconomyService:
     STARTING_BALANCE = 1000
     DAILY_BONUS = 200
 
-    BET_COST = 50
-    MIN_BET_AMOUNT = 10
-    MAX_BET_AMOUNT = 100000
+    MIN_TRANSFER_AMOUNT = 100
+    MAX_TRANSFER_AMOUNT = 50000
 
     ACTIVITY_MESSAGES_REQUIRED = 1
     ACTIVITY_REWARD = 10
     ACTIVITY_COOLDOWN_MINUTES = 10
-
-    RARITY_MULTIPLIERS = {
-        RarityLevel.COMMON: 0.2,
-        RarityLevel.UNCOMMON: 0.4,
-        RarityLevel.RARE: 0.6,
-        RarityLevel.EPIC: 1,
-        RarityLevel.LEGENDARY: 5,
-        RarityLevel.MYTHICAL: 100
-    }
-
-    JACKPOT_MULTIPLIER = 7
-    PARTIAL_MULTIPLIER = 2
-
-    CONSOLATION_PRIZES = {
-        RarityLevel.MYTHICAL: 5000,
-        RarityLevel.LEGENDARY: 50,
-        RarityLevel.EPIC: 25,
-        RarityLevel.RARE: 0,
-        RarityLevel.UNCOMMON: 0,
-        RarityLevel.COMMON: 0
-    }
 
     BATTLE_ENTRY_FEE = 100
     BATTLE_WINNER_PRIZE = 200
@@ -111,20 +80,6 @@ class EconomyService:
                 return False
 
         return True
-
-    def user_exists(self, channel_name: str, user_name: str) -> bool:
-        db = SessionLocal()
-        try:
-            normalized_user_name = user_name.lower()
-
-            user_balance = (
-                db.query(UserBalance)
-                .filter_by(channel_name=channel_name, user_name=normalized_user_name)
-                .first()
-            )
-            return user_balance is not None
-        finally:
-            db.close()
 
     def get_user_balance(self, channel_name: str, user_name: str) -> UserBalance:
         db = SessionLocal()
@@ -232,24 +187,28 @@ class EconomyService:
             db.close()
 
     def transfer_money(self, channel_name: str, sender_name: str, receiver_name: str, amount: int) -> TransferResult:
-        MIN_TRANSFER_AMOUNT = 100
-        if amount < MIN_TRANSFER_AMOUNT:
-            return TransferResult.failure_result(f"Минимальная сумма перевода: {MIN_TRANSFER_AMOUNT} монет", amount)
+        if amount < self.MIN_TRANSFER_AMOUNT:
+            return TransferResult.failure_result(f"Минимальная сумма перевода: {self.MIN_TRANSFER_AMOUNT} монет", amount)
 
-        MAX_TRANSFER_AMOUNT = 5000
-        if amount > MAX_TRANSFER_AMOUNT:
-            return TransferResult.failure_result(f"Максимальная сумма перевода: {MAX_TRANSFER_AMOUNT} монет", amount)
+        if amount > self.MAX_TRANSFER_AMOUNT:
+            return TransferResult.failure_result(f"Максимальная сумма перевода: {self.MAX_TRANSFER_AMOUNT} монет", amount)
 
         if sender_name.lower() == receiver_name.lower():
             return TransferResult.failure_result("Нельзя переводить деньги самому себе!", amount)
-
-        if not self.user_exists(channel_name, receiver_name):
-            return TransferResult.failure_result(f"Пользователь @{receiver_name} не найден в системе!", amount)
 
         db = SessionLocal()
         try:
             normalized_sender_name = sender_name.lower()
             normalized_receiver_name = receiver_name.lower()
+
+            user_balance = (
+                db.query(UserBalance)
+                .filter_by(channel_name=channel_name, user_name=normalized_receiver_name)
+                .first()
+            )
+
+            if user_balance is None:
+                return TransferResult.failure_result(f"Пользователь @{receiver_name} не найден в системе!", amount)
 
             sender_balance = self.get_user_balance(channel_name, sender_name)
             receiver_balance = self.get_user_balance(channel_name, receiver_name)
@@ -276,11 +235,9 @@ class EconomyService:
 
             self._create_transaction(db, channel_name, normalized_receiver_name, TransactionType.TRANSFER_RECEIVED, amount, receiver_balance_before, receiver_balance.balance,
                                      f"Получен перевод {amount} монет от {normalized_sender_name}")
-
             db.commit()
 
-            logger.info(
-                f"Перевод выполнен: {normalized_sender_name} -> {normalized_receiver_name}, сумма: {amount}, баланс отправителя: {sender_balance.balance}, баланс получателя: {receiver_balance.balance}")
+            logger.info(f"Перевод выполнен: {normalized_sender_name} -> {normalized_receiver_name}")
 
             return TransferResult.success_result(amount=amount, sender_balance=sender_balance.balance, receiver_balance=receiver_balance.balance,
                                                  sender_name=sender_name, receiver_name=receiver_name)
@@ -383,132 +340,6 @@ class EconomyService:
             return DailyBonusResult(success=False, failure_reason="error")
         finally:
             db.close()
-
-    def _determine_correct_rarity(self, slot_result: str, result_type: str) -> RarityLevel:
-        emojis = EmojiConfig.parse_slot_result(slot_result)
-
-        if result_type == "jackpot":
-            return EmojiConfig.get_emoji_rarity(emojis[0])
-
-        elif result_type == "partial":
-            repeated_emoji = None
-            for emoji in emojis:
-                if emojis.count(emoji) == 2:
-                    repeated_emoji = emoji
-                    break
-
-            if not repeated_emoji:
-                return EmojiConfig.get_emoji_rarity(emojis[0])
-
-            unique_emoji = None
-            for emoji in emojis:
-                if emojis.count(emoji) == 1:
-                    unique_emoji = emoji
-                    break
-
-            repeated_rarity = EmojiConfig.get_emoji_rarity(repeated_emoji)
-            unique_rarity = EmojiConfig.get_emoji_rarity(unique_emoji) if unique_emoji else RarityLevel.COMMON
-
-            rarity_priority = {
-                RarityLevel.COMMON: 1,
-                RarityLevel.UNCOMMON: 2,
-                RarityLevel.RARE: 3,
-                RarityLevel.EPIC: 4,
-                RarityLevel.LEGENDARY: 5,
-                RarityLevel.MYTHICAL: 6
-            }
-
-            if rarity_priority[repeated_rarity] >= rarity_priority[unique_rarity]:
-                return repeated_rarity
-            else:
-                return unique_rarity
-
-        else:
-            max_rarity = RarityLevel.COMMON
-            for emoji in emojis:
-                emoji_rarity = EmojiConfig.get_emoji_rarity(emoji)
-                if emoji_rarity == RarityLevel.MYTHICAL:
-                    max_rarity = RarityLevel.MYTHICAL
-                    break
-                elif emoji_rarity == RarityLevel.LEGENDARY and max_rarity != RarityLevel.MYTHICAL:
-                    max_rarity = RarityLevel.LEGENDARY
-                elif emoji_rarity == RarityLevel.EPIC and max_rarity not in [RarityLevel.MYTHICAL, RarityLevel.LEGENDARY]:
-                    max_rarity = RarityLevel.EPIC
-                elif emoji_rarity == RarityLevel.RARE and max_rarity not in [RarityLevel.MYTHICAL, RarityLevel.LEGENDARY, RarityLevel.EPIC]:
-                    max_rarity = RarityLevel.RARE
-                elif emoji_rarity == RarityLevel.UNCOMMON and max_rarity == RarityLevel.COMMON:
-                    max_rarity = RarityLevel.UNCOMMON
-            return max_rarity
-
-    def process_bet_result_with_amount(self, channel_name: str, user_name: str, result_type: str, slot_result: str, bet_amount: int,
-                                       equipment: list[UserEquipmentItem]) -> BetResult:
-        if bet_amount < self.MIN_BET_AMOUNT:
-            return BetResult.failure_result(f"Минимальная сумма ставки: {self.MIN_BET_AMOUNT} монет. Указано: {bet_amount} монет.", bet_amount)
-
-        if bet_amount > self.MAX_BET_AMOUNT:
-            return BetResult.failure_result(f"Максимальная сумма ставки: {self.MAX_BET_AMOUNT} монет. Указано: {bet_amount} монет.", bet_amount)
-
-        rarity_level = self._determine_correct_rarity(slot_result, result_type)
-
-        user_balance = self.subtract_balance(channel_name, user_name, bet_amount, TransactionType.BET_LOSS, f"Ставка в слот-машине: {slot_result}")
-
-        if not user_balance:
-            return BetResult.failure_result(f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет.", bet_amount)
-
-        base_payout = self.RARITY_MULTIPLIERS.get(rarity_level, 0.2) * bet_amount
-        timeout_seconds = None
-
-        if result_type == "jackpot":
-            payout = base_payout * self.JACKPOT_MULTIPLIER
-        elif result_type == "partial":
-            payout = base_payout * self.PARTIAL_MULTIPLIER
-        else:
-            consolation_prize = self.CONSOLATION_PRIZES.get(rarity_level, 0)
-            if consolation_prize > 0:
-                payout = max(consolation_prize, bet_amount * 0.1)
-                if rarity_level in [RarityLevel.MYTHICAL, RarityLevel.LEGENDARY]:
-                    timeout_seconds = 0
-                elif rarity_level == RarityLevel.EPIC:
-                    timeout_seconds = 60
-                else:
-                    timeout_seconds = 120
-            else:
-                payout = 0
-                timeout_seconds = 180
-
-        if payout > 0:
-            if result_type in ("jackpot", "partial"):
-                jackpot_multiplier = 1.0
-                partial_multiplier = 1.0
-                for item in equipment:
-                    for effect in item.shop_item.effects:
-                        if isinstance(effect, JackpotPayoutMultiplierEffect) and result_type == "jackpot":
-                            jackpot_multiplier *= effect.multiplier
-                        if isinstance(effect, PartialPayoutMultiplierEffect) and result_type == "partial":
-                            partial_multiplier *= effect.multiplier
-                if result_type == "jackpot" and jackpot_multiplier != 1.0:
-                    payout *= jackpot_multiplier
-                if result_type == "partial" and partial_multiplier != 1.0:
-                    payout *= partial_multiplier
-            elif result_type == "miss":
-                miss_multiplier = 1.0
-                for item in equipment:
-                    for effect in item.shop_item.effects:
-                        if isinstance(effect, MissPayoutMultiplierEffect):
-                            miss_multiplier *= effect.multiplier
-                if miss_multiplier != 1.0:
-                    payout *= miss_multiplier
-
-        payout = int(payout) if payout > 0 else 0
-
-        if payout > 0:
-            transaction_type = TransactionType.BET_WIN if result_type != "miss" else TransactionType.BET_WIN
-            description = f"Выигрыш в слот-машине: {slot_result}" if result_type != "miss" else f"Консольный приз: {slot_result}"
-
-            user_balance = self.add_balance(channel_name, user_name, payout, transaction_type, description)
-
-        return BetResult.success_result(bet_cost=bet_amount, payout=payout, balance=user_balance.balance, result_type=result_type, rarity_level=rarity_level,
-                                        timeout_seconds=timeout_seconds)
 
     def can_join_battle(self, channel_name: str, user_name: str) -> bool:
         user_balance = self.get_user_balance(channel_name, user_name)
@@ -674,7 +505,6 @@ class EconomyService:
                 expires_at=UserEquipment.get_expiry_date()
             )
             db.add(equipment)
-
             db.commit()
 
             logger.info(f"Пользователь {normalized_user_name} купил '{item.name}' за {item.price} монет")

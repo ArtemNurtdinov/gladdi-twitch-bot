@@ -1,7 +1,6 @@
 import logging
-import requests
+import httpx
 from typing import Optional, Dict, Any, List
-from features.twitch.api.twitch_api_interface import ITwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.twitch.api.model.stream_info import StreamInfo
 from features.twitch.api.model.user_info import UserInfo
@@ -12,7 +11,7 @@ from features.twitch.api.model.channel_info import ChannelInfo
 logger = logging.getLogger(__name__)
 
 
-class TwitchApiService(ITwitchApiService):
+class TwitchApiService:
 
     def __init__(self, twitch_auth: TwitchAuth):
         self.twitch_auth = twitch_auth
@@ -24,7 +23,7 @@ class TwitchApiService(ITwitchApiService):
             'Authorization': f'Bearer {self.twitch_auth.access_token}'
         }
 
-    def _handle_api_response(self, response: requests.Response, operation: str) -> Dict[str, Any]:
+    async def _handle_api_response(self, response: httpx.Response, operation: str) -> Dict[str, Any]:
         if response.status_code == 200:
             logger.debug(f"API операция '{operation}' выполнена успешно")
             return response.json()
@@ -39,51 +38,49 @@ class TwitchApiService(ITwitchApiService):
         headers = self._get_headers()
         params = {'login': login}
 
-        try:
-            response = requests.get(url, headers=headers, params=params, timeout=10)
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url, headers=headers, params=params, timeout=10)
+                if response.status_code == 401:
+                    logger.error(f"Ошибка авторизации при получении пользователя {login}. Проверьте токен.")
+                    return None
+                elif response.status_code == 404:
+                    logger.warning(f"Пользователь {login} не найден")
+                    return None
+                elif response.status_code != 200:
+                    logger.error(f"API ошибка при получении пользователя {login}: {response.status_code}, {response.text}")
+                    return None
 
-            if response.status_code == 401:
-                logger.error(f"Ошибка авторизации при получении пользователя {login}. Проверьте токен.")
+                data = response.json()
+                if not data.get('data'):
+                    logger.warning(f"Пользователь {login} не найден в ответе API")
+                    return None
+
+                user_data = data['data'][0]
+                logger.debug(f"Информация о пользователе {login} получена")
+
+                return UserInfo(
+                    id=user_data['id'],
+                    login=user_data['login'],
+                    display_name=user_data['display_name'],
+                    type=user_data.get('type', ''),
+                    broadcaster_type=user_data.get('broadcaster_type', ''),
+                    description=user_data.get('description', ''),
+                    profile_image_url=user_data.get('profile_image_url', ''),
+                    offline_image_url=user_data.get('offline_image_url', ''),
+                    view_count=user_data.get('view_count', 0),
+                    email=user_data.get('email'),
+                    created_at=user_data.get('created_at')
+                )
+            except httpx.TimeoutException:
+                logger.error(f"Таймаут при получении пользователя {login}")
                 return None
-            elif response.status_code == 404:
-                logger.warning(f"Пользователь {login} не найден")
+            except httpx.RequestError as e:
+                logger.error(f"Ошибка соединения при получении пользователя {login}: {e}")
                 return None
-            elif response.status_code != 200:
-                logger.error(f"API ошибка при получении пользователя {login}: {response.status_code}, {response.text}")
+            except Exception as e:
+                logger.error(f"Неожиданная ошибка при получении пользователя {login}: {e}")
                 return None
-
-            data = response.json()
-
-            if not data.get('data'):
-                logger.warning(f"Пользователь {login} не найден в ответе API")
-                return None
-
-            user_data = data['data'][0]
-            logger.debug(f"Информация о пользователе {login} получена")
-
-            return UserInfo(
-                id=user_data['id'],
-                login=user_data['login'],
-                display_name=user_data['display_name'],
-                type=user_data.get('type', ''),
-                broadcaster_type=user_data.get('broadcaster_type', ''),
-                description=user_data.get('description', ''),
-                profile_image_url=user_data.get('profile_image_url', ''),
-                offline_image_url=user_data.get('offline_image_url', ''),
-                view_count=user_data.get('view_count', 0),
-                email=user_data.get('email'),
-                created_at=user_data.get('created_at')
-            )
-
-        except requests.exceptions.Timeout:
-            logger.error(f"Таймаут при получении пользователя {login}")
-            return None
-        except requests.exceptions.ConnectionError:
-            logger.error(f"Ошибка соединения при получении пользователя {login}")
-            return None
-        except Exception as e:
-            logger.error(f"Неожиданная ошибка при получении пользователя {login}: {e}")
-            return None
 
     async def get_user_followage(self, broadcaster_id: str, user_id: str) -> Optional[FollowInfo]:
         logger.debug(f"Получение информации о подписке пользователя {user_id} на канал {broadcaster_id}")
@@ -95,32 +92,23 @@ class TwitchApiService(ITwitchApiService):
             'user_id': user_id
         }
 
-        response = requests.get(url, headers=headers, params=params)
-        data = self._handle_api_response(response, f"get_user_followage({broadcaster_id}, {user_id})")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers, params=params)
+            data = await self._handle_api_response(response, f"get_user_followage({broadcaster_id}, {user_id})")
 
-        if data['data']:
-            follow_data = data['data'][0]
-            logger.debug(f"Пользователь {user_id} подписан с {follow_data['followed_at']}")
-            return FollowInfo(
-                user_id=follow_data['user_id'],
-                user_name=follow_data['user_name'],
-                user_login=follow_data['user_login'],
-                followed_at=follow_data['followed_at']
-            )
-        else:
-            logger.debug(f"Пользователь {user_id} не подписан на канал {broadcaster_id}")
-            return None
+            if data['data']:
+                follow_data = data['data'][0]
+                logger.debug(f"Пользователь {user_id} подписан с {follow_data['followed_at']}")
+                return FollowInfo( follow_data['user_id'], follow_data['user_name'], follow_data['user_login'],follow_data['followed_at'])
+            else:
+                logger.debug(f"Пользователь {user_id} не подписан на канал {broadcaster_id}")
+                return None
 
     async def get_stream_info(self, broadcaster_id: str) -> StreamInfo:
         logger.debug(f"Получение информации о стриме для канала: {broadcaster_id}")
-
         channel_info = await self.get_channel_info(broadcaster_id)
-
         logger.debug(f"Информация о стриме: игра={channel_info.game_name}, название={channel_info.title}")
-        return StreamInfo(
-            game_name=channel_info.game_name,
-            title=channel_info.title
-        )
+        return StreamInfo(channel_info.game_name, channel_info.title)
 
     async def get_stream_status(self, broadcaster_id: str) -> Optional[StreamStatus]:
         logger.debug(f"Проверка статуса стрима для канала: {broadcaster_id}")
@@ -129,51 +117,49 @@ class TwitchApiService(ITwitchApiService):
         headers = self._get_headers()
         params = {'user_id': broadcaster_id}
 
-        try:
-            response = requests.get(url, headers=headers, params=params, timeout=10)
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url, headers=headers, params=params, timeout=10)
+                if response.status_code == 401:
+                    logger.error(f"Ошибка авторизации при получении статуса стрима {broadcaster_id}. Проверьте токен.")
+                    return None
+                elif response.status_code != 200:
+                    logger.error(f"API ошибка при получении статуса стрима {broadcaster_id}: {response.status_code}, {response.text}")
+                    return None
 
-            if response.status_code == 401:
-                logger.error(f"Ошибка авторизации при получении статуса стрима {broadcaster_id}. Проверьте токен.")
+                data = response.json()
+                if data.get('data'):
+                    stream_raw = data['data'][0]
+                    stream_data = StreamData(
+                        id=stream_raw['id'],
+                        user_id=stream_raw['user_id'],
+                        user_login=stream_raw['user_login'],
+                        user_name=stream_raw['user_name'],
+                        game_id=stream_raw['game_id'],
+                        game_name=stream_raw['game_name'],
+                        type=stream_raw['type'],
+                        title=stream_raw['title'],
+                        viewer_count=stream_raw['viewer_count'],
+                        started_at=stream_raw['started_at'],
+                        language=stream_raw['language'],
+                        thumbnail_url=stream_raw['thumbnail_url'],
+                        tag_ids=stream_raw.get('tag_ids', []),
+                        is_mature=stream_raw.get('is_mature', False)
+                    )
+                    logger.debug(f"Стрим для {broadcaster_id}: онлайн")
+                    return StreamStatus.online(stream_data)
+                else:
+                    logger.debug(f"Стрим для {broadcaster_id}: офлайн")
+                    return StreamStatus.offline()
+            except httpx.TimeoutException:
+                logger.error(f"Таймаут при получении статуса стрима {broadcaster_id}")
                 return None
-            elif response.status_code != 200:
-                logger.error(f"API ошибка при получении статуса стрима {broadcaster_id}: {response.status_code}, {response.text}")
+            except httpx.RequestError as e:
+                logger.error(f"Ошибка соединения при получении статуса стрима {broadcaster_id}: {e}")
                 return None
-
-            data = response.json()
-
-            if data.get('data'):
-                stream_raw = data['data'][0]
-                stream_data = StreamData(
-                    id=stream_raw['id'],
-                    user_id=stream_raw['user_id'],
-                    user_login=stream_raw['user_login'],
-                    user_name=stream_raw['user_name'],
-                    game_id=stream_raw['game_id'],
-                    game_name=stream_raw['game_name'],
-                    type=stream_raw['type'],
-                    title=stream_raw['title'],
-                    viewer_count=stream_raw['viewer_count'],
-                    started_at=stream_raw['started_at'],
-                    language=stream_raw['language'],
-                    thumbnail_url=stream_raw['thumbnail_url'],
-                    tag_ids=stream_raw.get('tag_ids', []),
-                    is_mature=stream_raw.get('is_mature', False)
-                )
-                logger.debug(f"Стрим для {broadcaster_id}: онлайн")
-                return StreamStatus.online(stream_data)
-            else:
-                logger.debug(f"Стрим для {broadcaster_id}: офлайн")
-                return StreamStatus.offline()
-
-        except requests.exceptions.Timeout:
-            logger.error(f"Таймаут при получении статуса стрима {broadcaster_id}")
-            return None
-        except requests.exceptions.ConnectionError:
-            logger.error(f"Ошибка соединения при получении статуса стрима {broadcaster_id}")
-            return None
-        except Exception as e:
-            logger.error(f"Неожиданная ошибка при получении статуса стрима {broadcaster_id}: {e}")
-            return None
+            except Exception as e:
+                logger.error(f"Неожиданная ошибка при получении статуса стрима {broadcaster_id}: {e}")
+                return None
 
     async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool:
         logger.debug(f"Применение таймаута пользователю {user_id} на {duration_seconds} секунд")
@@ -195,14 +181,14 @@ class TwitchApiService(ITwitchApiService):
             'moderator_id': moderator_id
         }
 
-        response = requests.post(url, headers=headers, json=data, params=params)
-
-        if response.status_code == 200:
-            logger.info(f"Таймаут успешно применён для пользователя {user_id} на {duration_seconds} секунд за: {reason}")
-            return True
-        else:
-            logger.error(f"Не удалось дать таймаут пользователю {user_id}. Status: {response.status_code}, Response: {response.text}")
-            return False
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=data, params=params)
+            if response.status_code == 200:
+                logger.info(f"Таймаут успешно применён для пользователя {user_id} на {duration_seconds} секунд за: {reason}")
+                return True
+            else:
+                logger.error(f"Не удалось дать таймаут пользователю {user_id}. Status: {response.status_code}, Response: {response.text}")
+                return False
 
     async def get_channel_info(self, broadcaster_id: str) -> ChannelInfo:
         logger.debug(f"Получение информации о канале: {broadcaster_id}")
@@ -211,27 +197,28 @@ class TwitchApiService(ITwitchApiService):
         headers = self._get_headers()
         params = {'broadcaster_id': broadcaster_id}
 
-        response = requests.get(url, headers=headers, params=params)
-        data = self._handle_api_response(response, f"get_channel_info({broadcaster_id})")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers, params=params)
+            data = await self._handle_api_response(response, f"get_channel_info({broadcaster_id})")
 
-        if not data['data']:
-            logger.error(f"Не удалось получить информацию о канале {broadcaster_id}")
-            raise Exception('Не удалось получить информацию о канале')
+            if not data['data']:
+                logger.error(f"Не удалось получить информацию о канале {broadcaster_id}")
+                raise Exception('Не удалось получить информацию о канале')
 
-        channel_data = data['data'][0]
-        return ChannelInfo(
-            broadcaster_id=channel_data['broadcaster_id'],
-            broadcaster_login=channel_data['broadcaster_login'],
-            broadcaster_name=channel_data['broadcaster_name'],
-            broadcaster_language=channel_data.get('broadcaster_language', ''),
-            game_id=channel_data.get('game_id', ''),
-            game_name=channel_data.get('game_name', ''),
-            title=channel_data.get('title', ''),
-            delay=channel_data.get('delay', 0),
-            tags=channel_data.get('tags', []),
-            content_classification_labels=channel_data.get('content_classification_labels'),
-            is_branded_content=channel_data.get('is_branded_content', False)
-        )
+            channel_data = data['data'][0]
+            return ChannelInfo(
+                broadcaster_id=channel_data['broadcaster_id'],
+                broadcaster_login=channel_data['broadcaster_login'],
+                broadcaster_name=channel_data['broadcaster_name'],
+                broadcaster_language=channel_data.get('broadcaster_language', ''),
+                game_id=channel_data.get('game_id', ''),
+                game_name=channel_data.get('game_name', ''),
+                title=channel_data.get('title', ''),
+                delay=channel_data.get('delay', 0),
+                tags=channel_data.get('tags', []),
+                content_classification_labels=channel_data.get('content_classification_labels'),
+                is_branded_content=channel_data.get('is_branded_content', False)
+            )
 
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> List[str]:
         logger.debug(f"Получение списка зрителей для канала {broadcaster_id}")
@@ -243,18 +230,19 @@ class TwitchApiService(ITwitchApiService):
             'moderator_id': moderator_id
         }
 
-        try:
-            response = requests.get(url, headers=headers, params=params)
-            data = self._handle_api_response(response, f"get_stream_chatters({broadcaster_id})")
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url, headers=headers, params=params)
+                data = await self._handle_api_response(response, f"get_stream_chatters({broadcaster_id})")
 
-            chatters = []
-            if 'data' in data:
-                for chatter in data['data']:
-                    if 'user_login' in chatter:
-                        chatters.append(chatter['user_login'])
+                chatters = []
+                if 'data' in data:
+                    for chatter in data['data']:
+                        if 'user_login' in chatter:
+                            chatters.append(chatter['user_login'])
 
-            logger.debug(f"Получено {len(chatters)} зрителей в чате канала {broadcaster_id}")
-            return chatters
-        except Exception as e:
-            logger.error(f"Ошибка при получении списка зрителей: {e}")
-            return []
+                logger.debug(f"Получено {len(chatters)} зрителей в чате канала {broadcaster_id}")
+                return chatters
+            except Exception as e:
+                logger.error(f"Ошибка при получении списка зрителей: {e}")
+                return []
