@@ -85,7 +85,6 @@ class Bot(commands.Bot):
 
     def _start_background_tasks(self):
         if self._tasks_started:
-            logger.warning("Задачи уже запущены, пропускаем повторный запуск")
             return
 
         asyncio.create_task(self.post_joke_periodically())
@@ -99,12 +98,10 @@ class Bot(commands.Bot):
 
     async def validate_channels(self):
         if not self.initial_channels:
-            logger.error("Список каналов пуст!")
             return False
 
         valid_channels = []
         for channel in self.initial_channels:
-            logger.info(f"Проверка доступности канала: {channel}")
             user_info = await self.twitch_api_service.get_user_by_login(channel)
             if user_info:
                 valid_channels.append(channel)
@@ -123,7 +120,7 @@ class Bot(commands.Bot):
         return True
 
     async def event_ready(self):
-        logger.info(f'Бот подключен как {self.nick}')
+        logger.info(f'Бот {self.nick} готов')
         channels_valid = await self.validate_channels()
         if channels_valid and self.initial_channels:
             logger.info(f'Бот успешно подключен к каналу(ам): {", ".join(self.initial_channels)}')
@@ -989,7 +986,6 @@ class Bot(commands.Bot):
             token_is_valid = self.twitch_auth.check_token_is_valid()
             logger.info(f"Статус токена: {'действителен' if token_is_valid else 'недействителен'}")
             if not token_is_valid:
-                logger.warning("Токен недействителен, обновляем...")
                 self.twitch_auth.update_access_token()
                 logger.info("Токен обновлён")
 
