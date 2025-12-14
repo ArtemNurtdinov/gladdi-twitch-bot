@@ -15,14 +15,14 @@ class TelegramConfig:
 class TwitchConfig:
     client_id: str = os.getenv("TWITCH_CLIENT_ID", "")
     client_secret: str = os.getenv("TWITCH_CLIENT_SECRET", "")
-    redirect_url: str = os.getenv("TWITCH_REDIRECT_URL", "http://localhost:5000")
+    redirect_url: str = os.getenv("TWITCH_REDIRECT_URL", "http://localhost:8003/api/v1/bot/callback")
     channel_name: str = os.getenv("TWITCH_CHANNEL", "artemnefrit")
 
 
 @dataclass
 class DashboardConfig:
     host: str = os.getenv("DASHBOARD_HOST", "0.0.0.0")
-    port: int = int(os.getenv("DASHBOARD_PORT", "8000"))
+    port: int = int(os.getenv("DASHBOARD_PORT", "8003"))
     log_level: str = os.getenv("DASHBOARD_LOG_LEVEL", "info")
 
 

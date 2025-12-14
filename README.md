@@ -41,21 +41,22 @@
    ```bash
    python main.py
    ```
-4) Проверьте статус: `GET http://localhost:8000/health` (порт настраивается).
+4) Проверьте статус: `GET http://localhost:8003/health` (порт настраивается).
 
 ### Запуск в Docker
 
 ```bash
 docker build -t gladdi-twitch-bot .
-docker run --env-file .env -p 8000:8000 gladdi-twitch-bot
+docker run --env-file .env -p 8003:8003 gladdi-twitch-bot
 ```
 
 ## Переменные окружения
 
 - `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` — получите
   на [twitch developers](https://dev.twitch.tv/docs/authentication/register-app)
+- `TWITCH_REDIRECT_URL` — callback Twitch OAuth (по умолчанию `http://localhost:8003/api/v1/bot/callback`)
 - `TWITCH_CHANNEL` — канал, где работает бот
-- `DASHBOARD_PORT` — порт API (по умолчанию 8000)
+- `DASHBOARD_PORT` — порт API (по умолчанию 8003)
 - `TELEGRAM_BOT_TOKEN` — токен телеграм бота (анонсы стрима)
 - `DATABASE_URL` — урл базы данных (PostgreSQL)
 - `LLMBOX_DOMAIN` — домен LLMBox (см. https://github.com/ArtemNurtdinov/llmbox)

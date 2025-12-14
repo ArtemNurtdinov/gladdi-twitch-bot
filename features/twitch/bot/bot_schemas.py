@@ -22,7 +22,3 @@ class BotActionResult(BotStatus):
 class AuthStartResponse(BaseModel):
     auth_url: str = Field(..., description="Ссылка для авторизации Twitch")
     message: str = Field(..., description="Дополнительная информация")
-
-
-class AuthCodeRequest(BaseModel):
-    code: str = Field(..., description="Параметр 'code' из callback Twitch")
