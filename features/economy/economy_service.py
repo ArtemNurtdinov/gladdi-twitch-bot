@@ -173,23 +173,20 @@ class EconomyService:
 
     def transfer_money(self, channel_name: str, sender_name: str, receiver_name: str, amount: int) -> TransferResult:
         if amount < self.MIN_TRANSFER_AMOUNT:
-            return TransferResult.failure_result(f"Минимальная сумма перевода: {self.MIN_TRANSFER_AMOUNT} монет", amount)
+            return TransferResult.failure_result(f"Минимальная сумма перевода: {self.MIN_TRANSFER_AMOUNT} монет")
 
         if amount > self.MAX_TRANSFER_AMOUNT:
-            return TransferResult.failure_result(f"Максимальная сумма перевода: {self.MAX_TRANSFER_AMOUNT} монет", amount)
+            return TransferResult.failure_result(f"Максимальная сумма перевода: {self.MAX_TRANSFER_AMOUNT} монет")
 
-        if sender_name.lower() == receiver_name.lower():
-            return TransferResult.failure_result("Нельзя переводить деньги самому себе!", amount)
+        if sender_name == receiver_name:
+            return TransferResult.failure_result("Нельзя переводить деньги самому себе!")
 
         db = SessionLocal()
         try:
-            normalized_sender_name = sender_name.lower()
-            normalized_receiver_name = receiver_name.lower()
-
-            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=normalized_receiver_name).first()
+            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=receiver_name).first()
 
             if user_balance is None:
-                return TransferResult.failure_result(f"Пользователь @{receiver_name} не найден в системе!", amount)
+                return TransferResult.failure_result(f"Пользователь @{receiver_name} не найден в системе!")
 
             sender_balance = self.get_user_balance(channel_name, sender_name)
             receiver_balance = self.get_user_balance(channel_name, receiver_name)
@@ -198,7 +195,7 @@ class EconomyService:
             receiver_balance = db.merge(receiver_balance)
 
             if sender_balance.balance < amount:
-                return TransferResult.failure_result(f"Недостаточно средств! У вас {sender_balance.balance} монет, нужно {amount}", amount)
+                return TransferResult.failure_result(f"Недостаточно средств! У вас {sender_balance.balance} монет, нужно {amount}")
 
             sender_balance_before = sender_balance.balance
             receiver_balance_before = receiver_balance.balance
@@ -213,33 +210,33 @@ class EconomyService:
 
             transaction = TransactionHistory(
                 channel_name=channel_name,
-                user_name=normalized_sender_name,
+                user_name=sender_name,
                 transaction_type=TransactionType.TRANSFER_SENT,
                 amount=-amount,
                 balance_before=sender_balance_before,
                 balance_after=sender_balance.balance,
-                description=f"Перевод {amount} монет пользователю {normalized_receiver_name}",
+                description=f"Перевод {amount} монет пользователю {receiver_name}",
             )
             db.add(transaction)
 
             transaction2 = TransactionHistory(
                 channel_name=channel_name,
-                user_name=normalized_receiver_name,
+                user_name=receiver_name,
                 transaction_type=TransactionType.TRANSFER_RECEIVED,
                 amount=amount,
                 balance_before=receiver_balance_before,
                 balance_after=receiver_balance.balance,
-                description=f"Получен перевод {amount} монет от {normalized_sender_name}",
+                description=f"Получен перевод {amount} монет от {sender_name}",
             )
             db.add(transaction2)
 
             db.commit()
 
-            return TransferResult.success_result(amount, sender_balance.balance, receiver_balance.balance, sender_name, receiver_name)
+            return TransferResult.success_result()
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при переводе денег от {sender_name} к {receiver_name}: {e}")
-            return TransferResult.failure_result("Произошла ошибка при выполнении перевода", amount)
+            return TransferResult.failure_result("Произошла ошибка при выполнении перевода")
         finally:
             db.close()
 

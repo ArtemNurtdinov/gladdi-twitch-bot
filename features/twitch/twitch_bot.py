@@ -613,14 +613,16 @@ class Bot(commands.Bot):
 
         recipient = recipient.lstrip('@')
 
-        transfer_result = self.economy_service.transfer_money(channel_name, sender_name, recipient, transfer_amount)
+        normalized_sender_name = sender_name.lower()
+        normalized_receiver_name = recipient.lower()
+
+        transfer_result = self.economy_service.transfer_money(channel_name, normalized_sender_name, normalized_receiver_name, transfer_amount)
         logger.info(f"Перевод выполнен: {sender_name} -> {recipient}")
 
         if transfer_result.success:
-            result = (f"@{transfer_result.sender_name} перевел {transfer_result.amount} монет пользователю @{transfer_result.receiver_name}! "
-                      f"Баланс отправителя: {transfer_result.sender_balance} монет, баланс получателя: {transfer_result.receiver_balance} монет.")
+            result = f"@{sender_name} перевел {transfer_amount} монет пользователю @{recipient}! "
         else:
-            result = f"@{transfer_result.sender_name}, {transfer_result.message}"
+            result = f"@{sender_name}, {transfer_result.message}"
 
         self.twitch_repository.log_chat_message(channel_name, self.nick, result)
         await ctx.send(result)
