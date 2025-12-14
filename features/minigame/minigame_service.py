@@ -233,9 +233,7 @@ class MinigameService:
         )
         self.active_word_games[channel_name] = game
         self.last_game_time[channel_name] = start_time
-        logger.info(
-            f"Запущена игра 'поле чудес' в канале {channel_name}. Слово: {word}, подсказка: {hint}"
-        )
+        logger.info(f"Запущена игра 'поле чудес' в канале {channel_name}. Слово: {word}, подсказка: {hint}")
         return game
 
     def process_letter(self, channel_name: str, user_name: str, letter: str) -> tuple[bool, str]:

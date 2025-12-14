@@ -95,9 +95,7 @@ class TwitchService:
             if limit and limit > 0:
                 q = q.limit(limit)
             rows = q.all()
-            # rows is list of tuples like [('слово',), ...]
             words = [row[0].lower() for row in rows]
-            # Сохраняем порядок по времени (последние сверху), но удалим дубли, сохраняя первый встретившийся
             seen = set()
             unique_in_order = []
             for w in words:
