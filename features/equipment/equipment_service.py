@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from db.base import SessionLocal
 from features.equipment.db.user_equipment import UserEquipment
 from features.equipment.model.user_equipment_item import UserEquipmentItem
@@ -111,7 +111,8 @@ class EquipmentService:
     def add_equipment_to_user(self, channel_name: str, user_name: str, item_type: ShopItemType):
         db = SessionLocal()
         try:
-            equipment = UserEquipment(channel_name=channel_name, user_name=user_name, item_type=item_type, expires_at=UserEquipment.get_expiry_date())
+            expires_at = datetime.utcnow() + timedelta(days=30)
+            equipment = UserEquipment(channel_name=channel_name, user_name=user_name, item_type=item_type, expires_at=expires_at)
             db.add(equipment)
             db.commit()
         except Exception as e:

@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 from db.base import SessionLocal
 from features.stream.db.stream import Stream

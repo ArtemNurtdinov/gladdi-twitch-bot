@@ -186,8 +186,8 @@ class SettingsManager:
         settings = self.get_settings()
         return settings.jokes_interval_min, settings.jokes_interval_max
 
-    def set_jokes_interval(self, interval_min: int, interval_max: int) -> bool:
-        return self.update_settings(jokes_interval_min=interval_min, jokes_interval_max=interval_max)
+    def set_jokes_interval(self, interval_min: int, interval_max: int):
+        self.update_settings(jokes_interval_min=interval_min, jokes_interval_max=interval_max)
 
     def is_time_for_joke(self) -> bool:
         settings = self.get_settings()

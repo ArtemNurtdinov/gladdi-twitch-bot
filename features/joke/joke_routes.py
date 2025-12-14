@@ -21,8 +21,7 @@ def get_joke_service() -> JokeService:
 async def get_jokes_status() -> JokesStatus:
     try:
         joke_service = get_joke_service()
-        status = joke_service.get_jokes_status()
-        return JokesStatus(**status)
+        return joke_service.get_jokes_status()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка получения статуса анекдотов: {str(e)}")
 
@@ -37,8 +36,7 @@ async def get_jokes_status() -> JokesStatus:
 async def enable_jokes() -> JokesResponse:
     try:
         joke_service = get_joke_service()
-        result = joke_service.enable_jokes()
-        return JokesResponse(**result)
+        return joke_service.enable_jokes()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка включения анекдотов: {str(e)}")
 
@@ -53,8 +51,7 @@ async def enable_jokes() -> JokesResponse:
 async def disable_jokes() -> JokesResponse:
     try:
         joke_service = get_joke_service()
-        result = joke_service.disable_jokes()
-        return JokesResponse(**result)
+        return joke_service.disable_jokes()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка отключения анекдотов: {str(e)}")
 
@@ -69,8 +66,7 @@ async def disable_jokes() -> JokesResponse:
 async def get_jokes_interval() -> JokesIntervalInfo:
     try:
         joke_service = get_joke_service()
-        result = joke_service.get_jokes_interval()
-        return JokesIntervalInfo(**result)
+        return joke_service.get_jokes_interval()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка получения интервала анекдотов: {str(e)}")
 
@@ -88,9 +84,6 @@ async def set_jokes_interval(request: JokesIntervalRequest) -> JokesIntervalResp
             raise HTTPException(status_code=400, detail=f"Минимальный интервал ({request.min_minutes}) не может быть больше максимального ({request.max_minutes})")
 
         joke_service = get_joke_service()
-        result = joke_service.set_jokes_interval(request.min_minutes, request.max_minutes)
-        return JokesIntervalResponse(**result)
-    except HTTPException:
-        raise
+        return joke_service.set_jokes_interval(request.min_minutes, request.max_minutes)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка установки интервала анекдотов: {str(e)}")

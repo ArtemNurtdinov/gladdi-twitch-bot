@@ -1011,12 +1011,7 @@ class Bot(commands.Bot):
                 channel = self.get_channel(channel_name)
                 await channel.send(result)
                 logger.info(f"Анекдот сгенерирован: {result}")
-
-                success = self.settings_manager.mark_joke_generated()
-                if success:
-                    next_joke_info = self.settings_manager.get_next_joke_info()
-                    logger.info(f"Следующий анекдот запланирован на: {next_joke_info.get('next_joke_time')}")
-
+                self.settings_manager.mark_joke_generated()
             except Exception as e:
                 logger.error(f"Ошибка при генерации анекдота: {e}")
                 await asyncio.sleep(60)
