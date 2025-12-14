@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
-from sqlalchemy.orm import Session
 from db.base import SessionLocal
 from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory, TransactionType
@@ -9,9 +8,7 @@ from features.economy.model.daily_bonus import DailyBonusResult
 from features.equipment.model.user_equipment_item import UserEquipmentItem
 from features.economy.model.user_stats import UserStats
 from features.economy.model.transfer_result import TransferResult
-from features.economy.model.shop_items import ShopItems, ShopItemType, DailyBonusMultiplierEffect, TimeoutProtectionEffect, TimeoutReductionEffect, \
-    RollCooldownOverrideEffect
-from features.equipment.db.user_equipment import UserEquipment
+from features.economy.model.shop_items import ShopItemType, DailyBonusMultiplierEffect
 from features.stream.stream_service import StreamService
 
 logger = logging.getLogger(__name__)
@@ -419,164 +416,3 @@ class EconomyService:
             ]
         finally:
             db.close()
-
-    def purchase_item(self, channel_name: str, user_name: str, item_name: str) -> dict:
-        try:
-            item_type = ShopItems.find_item_by_name(item_name)
-            item = ShopItems.get_item(item_type)
-        except ValueError as e:
-            return {
-                "success": False,
-                "message": str(e)
-            }
-
-        db = SessionLocal()
-        try:
-            user_balance = self.get_user_balance(channel_name, user_name)
-            user_balance = db.merge(user_balance)
-
-            if user_balance.balance < item.price:
-                return {
-                    "success": False,
-                    "message": f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
-                }
-
-            normalized_user_name = user_name.lower()
-
-            existing_item = (
-                db.query(UserEquipment)
-                .filter_by(channel_name=channel_name, user_name=normalized_user_name, item_type=item_type)
-                .filter(UserEquipment.expires_at > datetime.utcnow())
-                .first()
-            )
-
-            if existing_item:
-                return {
-                    "success": False,
-                    "message": f"У вас уже есть '{item.name}' до {existing_item.expires_at.strftime('%d.%m.%Y')}"
-                }
-
-            balance_before = user_balance.balance
-            user_balance.balance -= item.price
-            user_balance.total_spent += item.price
-            user_balance.updated_at = datetime.utcnow()
-
-            transaction = TransactionHistory(
-                channel_name=channel_name,
-                user_name=normalized_user_name,
-                transaction_type=TransactionType.SHOP_PURCHASE,
-                amount=-item.price,
-                balance_before=balance_before,
-                balance_after=user_balance.balance,
-                description=f"Покупка '{item.name}'",
-            )
-            db.add(transaction)
-
-            equipment = UserEquipment(
-                channel_name=channel_name,
-                user_name=normalized_user_name,
-                item_type=item_type,
-                expires_at=UserEquipment.get_expiry_date()
-            )
-            db.add(equipment)
-            db.commit()
-
-            logger.info(f"Пользователь {normalized_user_name} купил '{item.name}' за {item.price} монет")
-
-            return {
-                "success": True,
-                "item": item,
-                "expires_at": equipment.expires_at
-            }
-
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Ошибка при покупке предмета пользователем {user_name}: {e}")
-            return {
-                "success": False,
-                "message": "Произошла ошибка при покупке предмета"
-            }
-        finally:
-            db.close()
-
-    def cleanup_expired_equipment(self, channel_name: str) -> int:
-        db = SessionLocal()
-        try:
-            expired_count = (
-                db.query(UserEquipment)
-                .filter_by(channel_name=channel_name)
-                .filter(UserEquipment.expires_at <= datetime.utcnow())
-                .delete()
-            )
-
-            db.commit()
-            logger.info(f"Удалено {expired_count} просроченных предметов экипировки")
-            return expired_count
-
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Ошибка при очистке просроченной экипировки: {e}")
-            return 0
-        finally:
-            db.close()
-
-    def calculate_timeout_with_equipment(self, user_name: str, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
-        if base_timeout_seconds <= 0:
-            return 0, ""
-
-        if not equipment:
-            return base_timeout_seconds, ""
-
-        for item in equipment:
-            for effect in item.shop_item.effects:
-                if isinstance(effect, TimeoutProtectionEffect):
-                    logger.info(f"⚡ ЗАЩИТА ОТ ТАЙМАУТА: {user_name} спасен предметом {item.shop_item.name} (базовый таймаут: {base_timeout_seconds}с)")
-
-                    if item.item_type == ShopItemType.MAEL_EXPEDITION:
-                        return 0, "⚔️ Маэль перерисовала судьбу и полностью спасла от таймаута! Фоном играет \"Алиииинаааа аииииии\"..."
-                    elif item.item_type == ShopItemType.COMMUNIST_PARTY:
-                        return 0, "☭ Партия коммунистов защитила товарища! Единство спасло от таймаута!"
-                    elif item.item_type == ShopItemType.GAMBLER_AMULET:
-                        return 0, "🎰 Амулет лудомана защитил от таймаута!"
-                    else:
-                        return 0, f"{item.shop_item.emoji} {item.shop_item.name} спас от таймаута!"
-
-        reduction_items = []
-        cumulative_reduction = 1.0
-        timeout_messages = []
-
-        for item in equipment:
-            for effect in item.shop_item.effects:
-                if isinstance(effect, TimeoutReductionEffect):
-                    reduction_items.append(item)
-                    cumulative_reduction *= effect.reduction_factor
-
-                    if item.item_type == ShopItemType.CHAIR:
-                        timeout_messages.append("🪑 Стул обеспечил надёжную опору и снизил таймаут!")
-                    elif item.item_type == ShopItemType.BONFIRE:
-                        timeout_messages.append("🔥 Костёр согрел душу и стал чекпоинтом, снизив таймаут!")
-                    else:
-                        timeout_messages.append(f"{item.shop_item.emoji} {item.shop_item.name} снизил таймаут!")
-
-                    logger.info(f"⚡ СНИЖЕНИЕ ТАЙМАУТА: {user_name} применен эффект от {item.shop_item.name} (множитель: {effect.reduction_factor})")
-
-        if reduction_items:
-            reduced_timeout = int(base_timeout_seconds * cumulative_reduction)
-
-            if len(timeout_messages) == 1:
-                message = timeout_messages[0]
-            else:
-                message = f"🔥 СТАК ЗАЩИТЫ! {' + '.join(timeout_messages)}"
-
-            logger.info(f"⚡ ИТОГОВОЕ СНИЖЕНИЕ ТАЙМАУТА: {user_name} (было: {base_timeout_seconds}с, стало: {reduced_timeout}с, общий множитель: {cumulative_reduction:.2f})")
-            return reduced_timeout, message
-
-        return base_timeout_seconds, ""
-
-    def calculate_roll_cooldown_seconds(self, default_cooldown_seconds: int, equipment: list[UserEquipmentItem]) -> int:
-        min_cooldown = default_cooldown_seconds
-        for item in equipment:
-            for effect in item.shop_item.effects:
-                if isinstance(effect, RollCooldownOverrideEffect):
-                    min_cooldown = min(min_cooldown, effect.cooldown_seconds)
-        return min_cooldown

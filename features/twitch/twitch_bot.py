@@ -377,7 +377,7 @@ class Bot(commands.Bot):
         base_battle_timeout = 120
 
         equipment = self.equipment_service.get_user_equipment(channel_name, loser)
-        final_timeout, protection_message = self.economy_service.calculate_timeout_with_equipment(loser, base_battle_timeout, equipment)
+        final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(loser, base_battle_timeout, equipment)
 
         if final_timeout == 0:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
@@ -419,7 +419,7 @@ class Bot(commands.Bot):
 
         current_time = datetime.now()
         equipment = self.equipment_service.get_user_equipment(channel_name, nickname)
-        cooldown_seconds = self.economy_service.calculate_roll_cooldown_seconds(self._ROLL_COOLDOWN_SECONDS, equipment)
+        cooldown_seconds = self.equipment_service.calculate_roll_cooldown_seconds(self._ROLL_COOLDOWN_SECONDS, equipment)
 
         if nickname in self.roll_cooldowns:
             time_since_last = (current_time - self.roll_cooldowns[nickname]).total_seconds()
@@ -493,7 +493,7 @@ class Bot(commands.Bot):
             base_timeout_duration = bet_result.get_timeout_duration()
 
             equipment = self.equipment_service.get_user_equipment(channel_name, nickname)
-            final_timeout, protection_message = self.economy_service.calculate_timeout_with_equipment(nickname, base_timeout_duration, equipment)
+            final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(nickname, base_timeout_duration, equipment)
 
             if final_timeout == 0:
                 if bet_result.is_consolation_prize():
@@ -634,7 +634,7 @@ class Bot(commands.Bot):
 
         all_items = ShopItems.get_all_items()
 
-        result = "🛒 МАГАЗИН АРТЕФАКТОВ:\n"
+        result = "МАГАЗИН АРТЕФАКТОВ:\n"
 
         sorted_items = sorted(all_items.items(), key=lambda x: x[1].price)
 
@@ -663,15 +663,36 @@ class Bot(commands.Bot):
             await ctx.send(result)
             return
 
-        purchase_result = self.economy_service.purchase_item(channel_name, user_name, item_name.strip())
+        try:
+            item_type = ShopItems.find_item_by_name(item_name)
+        except ValueError as e:
+            result = str(e)
+            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            await ctx.send(result)
+            return
 
-        if purchase_result["success"]:
-            item = purchase_result["item"]
-            expires_date = purchase_result["expires_at"].strftime("%d.%m.%Y")
-            result = f"@{user_name} купил {item.emoji} '{item.name}' за {item.price} монет! "
-            result += f"Действует до {expires_date}."
-        else:
-            result = f"@{user_name}, {purchase_result['message']}"
+        item = ShopItems.get_item(item_type)
+
+        normalized_user_name = user_name.lower()
+        equipment_exists = self.equipment_service.equipment_exists(channel_name, normalized_user_name, item_type)
+
+        if equipment_exists:
+            result = f"У вас уже есть {item.name}"
+            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            await ctx.send(result)
+            return
+
+        user_balance = self.economy_service.get_user_balance(channel_name, normalized_user_name)
+        if user_balance.balance < item.price:
+            result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
+            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            await ctx.send(result)
+            return
+
+        self.economy_service.subtract_balance(channel_name, normalized_user_name, item.price, TransactionType.SHOP_PURCHASE, f"Покупка '{item.name}'")
+        self.equipment_service.add_equipment_to_user(channel_name, normalized_user_name, item_type)
+
+        result = f"@{user_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
         self.twitch_repository.log_chat_message(channel_name, self.nick, result)
         await ctx.send(result)
@@ -688,7 +709,7 @@ class Bot(commands.Bot):
         if not equipment:
             result = f"@{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"
         else:
-            result = f"⚔Экипировка @{user_name}:\n"
+            result = f"Экипировка @{user_name}:\n"
 
             for item in equipment:
                 expires_date = item.expires_at.strftime("%d.%m.%Y")
