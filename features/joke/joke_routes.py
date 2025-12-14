@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from features.joke.joke_schemas import JokesStatus, JokesResponse, JokesIntervalInfo, JokesIntervalResponse, JokesIntervalRequest
+from features.joke.joke_schemas import JokesStatus, JokesResponse, JokesIntervalResponse, JokesIntervalRequest
 from features.joke.joke_service import JokeService
 from features.joke.settings_manager import SettingsManager
 
@@ -54,21 +54,6 @@ async def disable_jokes() -> JokesResponse:
         return joke_service.disable_jokes()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка отключения анекдотов: {str(e)}")
-
-
-@router.get(
-    "/jokes/interval",
-    response_model=JokesIntervalInfo,
-    summary="Получить интервал между анекдотами",
-    description="Получить текущий интервал между генерацией анекдотов в минутах",
-    tags=["Bot Control"]
-)
-async def get_jokes_interval() -> JokesIntervalInfo:
-    try:
-        joke_service = get_joke_service()
-        return joke_service.get_jokes_interval()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения интервала анекдотов: {str(e)}")
 
 
 @router.post(

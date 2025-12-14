@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 import random
 import time
 
+from features.joke.joke_schemas import NextJoke
+
 
 @dataclass
 class BotSettings:
@@ -224,16 +226,11 @@ class SettingsManager:
 
         return success
 
-    def get_next_joke_info(self) -> Dict[str, Any]:
+    def get_next_joke_info(self) -> Optional[NextJoke]:
         settings = self.get_settings()
 
         if not settings.jokes_enabled:
-            return {
-                "enabled": False,
-                "next_joke_time": None,
-                "minutes_until_next": None,
-                "can_generate_now": False
-            }
+            return None
 
         can_generate_now = self.is_time_for_joke()
         minutes_until_next = None
@@ -245,13 +242,7 @@ class SettingsManager:
                 minutes_until_next = max(0, int(time_diff.total_seconds() / 60))
             except ValueError:
                 pass
-
-        return {
-            "enabled": True,
-            "next_joke_time": settings.next_joke_time,
-            "minutes_until_next": minutes_until_next,
-            "can_generate_now": can_generate_now
-        }
+        return NextJoke(next_joke_time=settings.next_joke_time, minutes_until_next=minutes_until_next)
 
     def get_all_settings_dict(self) -> Dict[str, Any]:
         return asdict(self.get_settings())

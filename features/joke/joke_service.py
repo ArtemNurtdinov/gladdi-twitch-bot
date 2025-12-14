@@ -1,7 +1,6 @@
-from features.joke.joke_schemas import JokesResponse, JokesIntervalInfo, JokesIntervalResponse, JokesStatus, JokeInterval
+from features.joke.joke_schemas import JokesResponse, JokesIntervalResponse, JokesStatus, JokeInterval
 from features.joke.settings_manager import SettingsManager
 import logging
-from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,22 +22,22 @@ class JokeService:
             description=f"Интервал: {interval_min}-{interval_max} минут"
         )
 
-        next_joke: Dict[str, Any] = self.settings_manager.get_next_joke_info()
+        next_joke = self.settings_manager.get_next_joke_info()
 
-        return JokesStatus(enabled=enabled, ready=True, message=f"Анекдоты {'включены' if enabled else 'отключены'}", interval=joke_interval, next_joke=next_joke)
+        return JokesStatus(enabled=enabled, message=f"Анекдоты {'включены' if enabled else 'отключены'}", interval=joke_interval, next_joke=next_joke)
 
     def enable_jokes(self) -> JokesResponse:
         try:
             success = self.settings_manager.set_jokes_enabled(True)
             if success:
                 logger.info("Анекдоты включены через API")
-                return JokesResponse(success=True, enabled=True, message="Анекдоты включены")
+                return JokesResponse(success=True, message="Анекдоты включены")
             else:
                 logger.warning("Не удалось включить анекдоты - ошибка сохранения")
-                return JokesResponse(success=False, enabled=False, message="Ошибка сохранения настроек")
+                return JokesResponse(success=False, message="Ошибка сохранения настроек")
         except Exception as e:
             logger.error(f"Ошибка включения анекдотов: {e}")
-            return JokesResponse(success=False, enabled=False, message="Ошибка включения анекдотов: {str(e)}")
+            return JokesResponse(success=False, message="Ошибка включения анекдотов: {str(e)}")
 
     def disable_jokes(self) -> JokesResponse:
         try:
@@ -46,20 +45,13 @@ class JokeService:
 
             if success:
                 logger.info("Анекдоты отключены через API")
-                return JokesResponse(success=True, enabled=False, message="Анекдоты отключены")
+                return JokesResponse(success=True, message="Анекдоты отключены")
             else:
                 logger.warning("Не удалось отключить анекдоты - ошибка сохранения")
-                return JokesResponse(success=False, enabled=True, message="Ошибка сохранения настроек")
+                return JokesResponse(success=False, message="Ошибка сохранения настроек")
         except Exception as e:
             logger.error(f"Ошибка отключения анекдотов: {e}")
-            return JokesResponse(success=False, enabled=True, message="Ошибка отключения анекдотов: {str(e)}")
-
-    def get_jokes_interval(self) -> JokesIntervalInfo:
-        interval_min, interval_max = self.settings_manager.get_jokes_interval()
-        next_joke_info = self.settings_manager.get_next_joke_info()
-        logger.debug(f"Получен интервал анекдотов: {interval_min}-{interval_max} минут")
-        description = f"Интервал генерации: {interval_min}-{interval_max} минут"
-        return JokesIntervalInfo(min_minutes=interval_min, max_minutes=interval_max, description=description, next_joke=next_joke_info)
+            return JokesResponse(success=False, message="Ошибка отключения анекдотов: {str(e)}")
 
     def set_jokes_interval(self, interval_min: int, interval_max: int) -> JokesIntervalResponse:
         self.settings_manager.set_jokes_interval(interval_min, interval_max)
