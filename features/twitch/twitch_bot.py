@@ -830,7 +830,7 @@ class Bot(commands.Bot):
 
         stats = self.economy_service.get_user_stats(normalized_user_name, user_name)
         bet_stats = self.betting_service.get_user_bet_stats(normalized_user_name, channel_name)
-        battle_stats = self.chat_service.get_user_battle_stats(user_name, channel_name)
+        battle_stats = self.battle_service.get_user_battle_stats(user_name, channel_name)
 
         result = f"📊 Статистика @{user_name}: "
         result += f"💰 Баланс: {stats.balance} монет."
@@ -845,11 +845,6 @@ class Bot(commands.Bot):
         if battle_stats.has_battles():
             result += f"⚔️ Битвы: {battle_stats.total_battles} | "
             result += f"Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%). "
-
-        if stats.is_profitable():
-            result += f"📈 Поздравляю, ты в прибыли! "
-        elif stats.net_profit < 0:
-            result += f"📉 Ты в убытке artemn3Cry "
 
         self.chat_service.save_chat_message(channel_name, self.nick, result)
 
