@@ -69,7 +69,7 @@ class Bot(commands.Bot):
         self.equipment_service = EquipmentService()
         self.economy_service = EconomyService(self.stream_service)
         self.minigame_service = MinigameService(self.economy_service)
-        self.viewer_service = ViewerTimeService(self.economy_service)
+        self.viewer_service = ViewerTimeService()
         self.betting_service = BettingService(self.economy_service)
 
         self._restore_stream_context()
@@ -1331,11 +1331,27 @@ class Bot(commands.Bot):
                 moderator_id = await self._get_user_id_cached(self.nick)
                 chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
                 if chatters:
-                    await self.viewer_service.update_viewers(active_stream.id, channel_name, chatters)
+                    self.viewer_service.update_viewers(active_stream.id, channel_name, chatters)
                 viewers_count = self.viewer_service.get_stream_watchers_count(active_stream.id)
                 if viewers_count > active_stream.max_concurrent_viewers:
                     self.stream_service.update_max_concurrent_viewers_count(active_stream.id, viewers_count)
-                self.viewer_service.check_and_grant_rewards(active_stream.id, channel_name)
+
+                viewer_sessions = self.viewer_service.get_stream_viewer_sessions(active_stream.id)
+
+                for session in viewer_sessions:
+                    available_rewards = self.viewer_service.get_available_rewards(session)
+                    for minutes_threshold, reward_amount in available_rewards:
+                        claimed_list = session.get_claimed_rewards_list()
+                        if minutes_threshold not in claimed_list:
+                            claimed_list.append(minutes_threshold)
+                            session.rewards_claimed = ','.join(map(str, sorted(claimed_list)))
+                            session.last_reward_claimed = datetime.utcnow()
+
+                        session.updated_at = datetime.utcnow()
+                        description = f"Награда за {minutes_threshold} минут просмотра стрима"
+
+                        self.economy_service.add_balance(channel_name, session.user_name, reward_amount, TransactionType.VIEWER_TIME_REWARD, description)
+
             except Exception as e:
                 logger.error(f"Ошибка в check_viewer_time_periodically: {e}")
 

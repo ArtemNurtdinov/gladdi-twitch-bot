@@ -1,11 +1,9 @@
 import logging
-from typing import Dict, List
+from typing import List
 from datetime import datetime, timedelta
 
 from db.base import SessionLocal
 from features.stream.db.stream_viewer_session import StreamViewerSession
-from features.economy.db.transaction_history import TransactionType
-from features.economy.economy_service import EconomyService
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +19,6 @@ class ViewerTimeService:
     }
     ACTIVITY_TIMEOUT_MINUTES = 5
     CHECK_INTERVAL_SECONDS = 60
-
-    def __init__(self, economy_service: EconomyService):
-        self.economy_service = economy_service
 
     def update_activity(self, stream_id: int, channel_name: str, user_name: str) -> None:
         db = SessionLocal()
@@ -56,7 +51,7 @@ class ViewerTimeService:
         finally:
             db.close()
 
-    async def update_viewers(self, active_stream_id: int, channel_name: str, chatters: List[str]):
+    def update_viewers(self, active_stream_id: int, channel_name: str, chatters: List[str]):
         if not chatters:
             return
 
@@ -122,30 +117,14 @@ class ViewerTimeService:
 
         return inactive_users
 
-    def check_and_grant_rewards(self, stream_id: int, channel_name: str):
+    def get_stream_viewer_sessions(self, stream_id: int) -> list[StreamViewerSession]:
         db = SessionLocal()
         try:
-            sessions = db.query(StreamViewerSession).filter_by(stream_id=stream_id).all()
-            for session in sessions:
-                available_rewards = self._get_available_rewards(session)
-                for minutes_threshold, reward_amount in available_rewards:
-                    claimed_list = session.get_claimed_rewards_list()
-                    if minutes_threshold not in claimed_list:
-                        claimed_list.append(minutes_threshold)
-                        session.rewards_claimed = ','.join(map(str, sorted(claimed_list)))
-                        session.last_reward_claimed = datetime.utcnow()
-
-                    session.updated_at = datetime.utcnow()
-                    description = f"Награда за {minutes_threshold} минут просмотра стрима"
-                    self.economy_service.add_balance_with_session(db, channel_name, session.user_name, reward_amount, TransactionType.VIEWER_TIME_REWARD, description)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Ошибка при проверке и выдаче наград: {e}")
+            return db.query(StreamViewerSession).filter_by(stream_id=stream_id).all()
         finally:
             db.close()
 
-    def _get_available_rewards(self, session: StreamViewerSession) -> List[tuple]:
+    def get_available_rewards(self, session: StreamViewerSession) -> List[tuple]:
         available_rewards = []
 
         if session.is_watching and session.session_start:

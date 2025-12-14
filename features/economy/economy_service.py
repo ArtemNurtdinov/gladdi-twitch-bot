@@ -131,32 +131,6 @@ class EconomyService:
         finally:
             db.close()
 
-    def add_balance_with_session(self, db: Session, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None):
-        normalized_user_name = user_name.lower()
-
-        user_balance = (
-            db.query(UserBalance)
-            .filter_by(channel_name=channel_name, user_name=normalized_user_name)
-            .first()
-        )
-
-        if not user_balance:
-            user_balance = UserBalance(channel_name=channel_name, user_name=normalized_user_name, balance=self.STARTING_BALANCE)
-            db.add(user_balance)
-
-            self._create_transaction(db, channel_name, normalized_user_name, TransactionType.ADMIN_ADJUST, self.STARTING_BALANCE, 0,
-                                     self.STARTING_BALANCE, "Создание нового аккаунта")
-            logger.info(f"Создан новый пользователь {normalized_user_name} с балансом {self.STARTING_BALANCE}")
-
-        balance_before = user_balance.balance or 0
-        user_balance.balance = (user_balance.balance or 0) + amount
-        user_balance.total_earned = (user_balance.total_earned or 0) + max(0, amount)
-        user_balance.updated_at = datetime.utcnow()
-
-        self._create_transaction(db, channel_name, normalized_user_name, transaction_type, amount, balance_before, user_balance.balance, description)
-
-        logger.info(f"Пользователю {normalized_user_name} добавлено {amount} монет. Новый баланс: {user_balance.balance}")
-
     def subtract_balance(self, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> Optional[UserBalance]:
         db = SessionLocal()
         try:
