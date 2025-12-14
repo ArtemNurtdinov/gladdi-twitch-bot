@@ -1,4 +1,3 @@
-import json
 from collections import Counter
 from datetime import datetime, timedelta
 from sqlalchemy import func, case
@@ -7,7 +6,6 @@ from db.base import SessionLocal
 from features.ai.ai_service import AIService
 from features.ai.message import AIMessage, Role
 from features.stream.db.stream_messages import TwitchMessage, ChatMessageLog
-from features.minigame.word.db.word_history import WordHistory
 from features.battle.db.battle_history import BattleHistory
 from features.betting.db.bet_history import BetHistory
 from features.stream.model.stream_statistics import StreamStatistics
@@ -85,87 +83,16 @@ class ChatService:
         finally:
             db.close()
 
-    def get_used_words(self, channel_name: str, limit: int = 50) -> list[str]:
+    def save_chat_message(self, channel_name: str, user_name: str, content: str):
         db = SessionLocal()
         try:
-            q = db.query(WordHistory.word).filter(WordHistory.channel_name == channel_name).order_by(WordHistory.created_at.desc())
-            if limit and limit > 0:
-                q = q.limit(limit)
-            rows = q.all()
-            words = [row[0].lower() for row in rows]
-            seen = set()
-            unique_in_order = []
-            for w in words:
-                if w not in seen:
-                    seen.add(w)
-                    unique_in_order.append(w)
-            return unique_in_order
-        finally:
-            db.close()
-
-    def add_used_word(self, channel_name: str, word: str) -> None:
-        normalized = "".join(ch for ch in str(word).lower() if ch.isalpha())
-        if not normalized:
-            return
-        db = SessionLocal()
-        try:
-            record = WordHistory(channel_name=channel_name, word=normalized)
-            db.add(record)
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
-
-    def log_chat_message(self, channel_name: str, user: str, content: str):
-        db = SessionLocal()
-
-        try:
-            normalized_user = user.lower()
+            normalized_user = user_name.lower()
             msg = ChatMessageLog(channel_name=channel_name, user_name=normalized_user, content=content, created_at=datetime.utcnow())
             db.add(msg)
             db.commit()
         except Exception as e:
             db.rollback()
             raise Exception(f"Ошибка при сохранении сообщения: {e}")
-        finally:
-            db.close()
-
-    def get_top_chat_user_for_all_time(self, channel_name: str) -> str | None:
-        db = SessionLocal()
-        try:
-            top = (
-                db.query(ChatMessageLog.user_name)
-                .filter(ChatMessageLog.channel_name == channel_name)
-                .group_by(ChatMessageLog.user_name)
-                .order_by(func.count(ChatMessageLog.id).desc())
-                .limit(1)
-                .first()
-            )
-            return top[0] if top else None
-
-        except Exception as e:
-            db.rollback()
-            raise Exception(f"Ошибка при сохранении сообщения: {e}")
-        finally:
-            db.close()
-
-    def save_battle_history(self, channel_name: str, opponent_1: str, opponent_2: str, winner: str, result_text: str):
-        db = SessionLocal()
-        try:
-            battle = BattleHistory(
-                channel_name=channel_name,
-                opponent_1=opponent_1,
-                opponent_2=opponent_2,
-                winner=winner,
-                result_text=result_text
-            )
-            db.add(battle)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            raise Exception(f"Ошибка при сохранении истории битвы: {e}")
         finally:
             db.close()
 
@@ -312,20 +239,6 @@ class ChatService:
             return UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
         finally:
             db.close()
-
-    def suggest_word_and_hint_from_chat(self, channel_name: str, prompt: str) -> tuple[str, str]:
-        system_prompt = self.SYSTEM_PROMPT_FOR_GROUP
-        ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
-        response = self.ai_repository.generate_ai_response(ai_messages)
-
-        self.save_conversation_to_db(channel_name, prompt, response)
-
-        data = json.loads(response)
-        word = str(data.get("word", "")).strip()
-        hint = str(data.get("hint", "")).strip()
-        final_word = word.lower()
-
-        return final_word, hint
 
     def get_chat_messages(self, channel_name: str, from_time, to_time):
         db = SessionLocal()
