@@ -18,7 +18,7 @@ from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.stream.db.stream_messages import ChatMessageLog
 from features.economy.db.transaction_history import TransactionType
-from features.twitch.twitch_service import TwitchService
+from features.twitch.chat_service import ChatService
 from features.joke.settings_manager import SettingsManager
 from features.economy.economy_service import EconomyService
 from features.minigame.minigame_service import MinigameService
@@ -55,14 +55,14 @@ class Bot(commands.Bot):
     _GROUP_ID = config.telegram.group_id
     _SOURCE_TWITCH = "twitch"
 
-    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService, twitch_repository: TwitchService, ai_repository: AIService):
+    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService, chat_service: ChatService, ai_repository: AIService):
         self._prefix = '!'
         self.initial_channels = ['artemnefrit']
         super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
 
         self.twitch_auth = twitch_auth
         self.twitch_api_service = twitch_api_service
-        self.twitch_repository = twitch_repository
+        self.chat_service = chat_service
         self.ai_repository = ai_repository
         self.settings_manager = SettingsManager()
         self.stream_service = StreamService()
@@ -171,7 +171,7 @@ class Bot(commands.Bot):
         content = message.content
         channel_name = message.channel.name
 
-        self.twitch_repository.log_chat_message(channel_name, nickname, content)
+        self.chat_service.log_chat_message(channel_name, nickname, content)
         self.economy_service.process_user_message_activity(channel_name, nickname)
         logger.info(f"Награда за активность: {nickname} получил {self.economy_service.ACTIVITY_REWARD} монет")
 
@@ -196,9 +196,9 @@ class Bot(commands.Bot):
             prompt = self.ai_repository.get_hello_prompt(self._SOURCE_TWITCH, nickname, content)
 
         if prompt is not None:
-            result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
+            result = self.chat_service.generate_response_in_chat(prompt, channel_name)
             await self._post_message_in_twitch_chat(result, message.channel)
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             logger.info(f"Отправлен ответ на сообщение от {nickname}")
 
     @commands.command(name=_COMMAND_FOLLOWAGE)
@@ -217,7 +217,7 @@ class Bot(commands.Bot):
         if not broadcaster_id:
             logger.error(f"Не удалось получить ID канала {channel_name}")
             result = f'@{user_name}, произошла ошибка при получении информации о канале {channel_name}.'
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
@@ -236,14 +236,14 @@ class Bot(commands.Bot):
             minutes, _ = divmod(remainder, 60)
             logger.info(f"Пользователь {user_name} подписан на {days} дней, {hours} часов, {minutes} минут")
             prompt = f"@{user_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и {minutes} минут. Сообщи ему об этом как-нибудь оригинально."
-            result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
-            self.twitch_repository.save_conversation_to_db(channel_name, prompt, result)
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+            self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
         else:
             result = f'@{user_name}, вы не отслеживаете канал {channel_name}.'
             logger.info(f"Пользователь {user_name} не подписан на канал {channel_name}")
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
 
     @commands.command(name=_COMMAND_GLADDI)
@@ -269,9 +269,9 @@ class Bot(commands.Bot):
         else:
             prompt = self.ai_repository.get_default_prompt(self._SOURCE_TWITCH, nickname, question)
 
-        result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
-        self.twitch_repository.save_conversation_to_db(channel_name, prompt, result)
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+        self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
         logger.info(f"Отправлен ответ пользователю {nickname}")
         await self._post_message_in_twitch_chat(result, ctx)
 
@@ -287,7 +287,7 @@ class Bot(commands.Bot):
 
         if user_balance.balance < fee:
             result = f"@{challenger}, недостаточно монет для участия в битве! Необходимо: {self.economy_service.BATTLE_ENTRY_FEE} монет."
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
@@ -295,28 +295,28 @@ class Bot(commands.Bot):
             user_balance = self.economy_service.subtract_balance(channel_name, challenger, fee, TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
             if not user_balance:
                 result = f"@{challenger}, произошла ошибка при списании взноса за битву."
-                self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+                self.chat_service.log_chat_message(channel_name, self.nick, result)
                 await ctx.send(result)
                 return
 
             self.battle_waiting_user = challenger
             result = f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {self.economy_service.BATTLE_ENTRY_FEE} монет. Используй {self._prefix}{self._COMMAND_FIGHT}, чтобы принять вызов. Баланс {challenger}: {user_balance.balance} монет."
             logger.info(f"{challenger} ищет оппонента для битвы")
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
         if self.battle_waiting_user == challenger:
             result = f"@{challenger}, ты не можешь сражаться сам с собой. Подожди достойного противника."
             logger.warning(f"{challenger} пытается сражаться сам с собой")
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
         challenger_balance = self.economy_service.subtract_balance(channel_name, challenger, fee, TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
         if not challenger_balance:
             result = f"@{challenger}, произошла ошибка при списании взноса за битву."
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
@@ -350,15 +350,15 @@ class Bot(commands.Bot):
             f"\n\nПроигравший получит таймаут! Победитель получит {self.economy_service.BATTLE_WINNER_PRIZE} монет!"
         )
 
-        result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
+        result = self.chat_service.generate_response_in_chat(prompt, channel_name)
 
         logger.info(f"Битва завершена. Победитель: {winner}")
 
         winner_amount = self.economy_service.BATTLE_WINNER_PRIZE
         self.economy_service.add_balance(channel_name, winner, winner_amount, TransactionType.BATTLE_WIN, f"Победа в битве против {loser}")
-        self.twitch_repository.save_conversation_to_db(channel_name, prompt, result)
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
-        self.twitch_repository.save_battle_history(channel_name, opponent, challenger, winner, result)
+        self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.save_battle_history(channel_name, opponent, challenger, winner, result)
 
         messages = self.split_text(result)
 
@@ -371,7 +371,7 @@ class Bot(commands.Bot):
         winner_message = f"{winner} получает {self.economy_service.BATTLE_WINNER_PRIZE} монет!"
         await ctx.send(winner_message)
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, winner_message)
+        self.chat_service.log_chat_message(channel_name, self.nick, winner_message)
         await asyncio.sleep(1)
 
         base_battle_timeout = 120
@@ -382,7 +382,7 @@ class Bot(commands.Bot):
         if final_timeout == 0:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
             await ctx.send(no_timeout_message)
-            self.twitch_repository.log_chat_message(channel_name, self.nick, no_timeout_message)
+            self.chat_service.log_chat_message(channel_name, self.nick, no_timeout_message)
         else:
             timeout_minutes = final_timeout // 60
             timeout_seconds_remainder = final_timeout % 60
@@ -411,7 +411,7 @@ class Bot(commands.Bot):
             except ValueError:
                 result = (f"@{nickname}, неверная сумма ставки! Используй: {self._prefix}{self._COMMAND_ROLL} [сумма] (например: {self._prefix}{self._COMMAND_ROLL} 100). "
                           f"Диапазон: {self.betting_service.MIN_BET_AMOUNT}-{self.betting_service.MAX_BET_AMOUNT} монет.")
-                self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+                self.chat_service.log_chat_message(channel_name, self.nick, result)
                 await ctx.send(result)
                 return
 
@@ -427,7 +427,7 @@ class Bot(commands.Bot):
                 remaining_time = cooldown_seconds - time_since_last
                 result = f"@{nickname}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
                 logger.info(f"Пользователь {nickname} попытался использовать команду в кулдауне. Осталось: {remaining_time:.0f} сек")
-                self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+                self.chat_service.log_chat_message(channel_name, self.nick, result)
                 await ctx.send(result)
                 return
 
@@ -463,13 +463,13 @@ class Bot(commands.Bot):
 
         if not bet_result.success:
             result = bet_result.message
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
         try:
             rarity_enum = RarityLevel(bet_result.rarity)
-            self.twitch_repository.save_bet_history(channel_name=channel_name, user_name=nickname, slot_result=slot_result_string, result_type=db_result_type,
+            self.chat_service.save_bet_history(channel_name=channel_name, user_name=nickname, slot_result=slot_result_string, result_type=db_result_type,
                                                     rarity_level=rarity_enum)
             logger.info(f"Результат ставки сохранён в БД для {nickname}: {slot_result_string}, редкость: {bet_result.rarity}")
         except Exception as e:
@@ -482,7 +482,7 @@ class Bot(commands.Bot):
 
         final_result = f"{slot_result_string} {economic_info}"
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, final_result)
+        self.chat_service.log_chat_message(channel_name, self.nick, final_result)
 
         messages = self.split_text(final_result)
         for msg in messages:
@@ -501,7 +501,7 @@ class Bot(commands.Bot):
                 else:
                     no_timeout_message = f"🛡️ @{nickname}, спасен от таймаута! {protection_message}"
 
-                self.twitch_repository.log_chat_message(channel_name, self.nick, no_timeout_message)
+                self.chat_service.log_chat_message(channel_name, self.nick, no_timeout_message)
 
                 messages = self.split_text(no_timeout_message)
                 for msg in messages:
@@ -532,7 +532,7 @@ class Bot(commands.Bot):
             for msg in messages:
                 await ctx.send(msg)
                 await asyncio.sleep(0.3)
-            self.twitch_repository.log_chat_message(channel_name, self.nick, no_timeout_message)
+            self.chat_service.log_chat_message(channel_name, self.nick, no_timeout_message)
 
         self._cleanup_old_cooldowns()
 
@@ -549,7 +549,7 @@ class Bot(commands.Bot):
         if self.economy_service.can_claim_daily_bonus(channel_name, user_name):
             result += f" | Доступен бонус! Используй {self._prefix}{self._COMMAND_BONUS}"
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
         await ctx.send(result)
 
     @commands.command(name=_COMMAND_BONUS)
@@ -577,7 +577,7 @@ class Bot(commands.Bot):
             else:
                 result = f"❌ @{user_name}, бонус недоступен!"
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -593,7 +593,7 @@ class Bot(commands.Bot):
 
         if not recipient or not amount:
             result = f"@{sender_name}, используй: {self._prefix}{self._COMMAND_TRANSFER} [никнейм] [сумма]. Например: {self._prefix}{self._COMMAND_TRANSFER} @ArtemNeFRiT 100"
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
@@ -601,13 +601,13 @@ class Bot(commands.Bot):
             transfer_amount = int(amount)
         except ValueError:
             result = f"@{sender_name}, неверная сумма! Укажи число. Например: {self._prefix}{self._COMMAND_TRANSFER} {recipient} 100"
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
         if transfer_amount <= 0:
             result = f"@{sender_name}, сумма должна быть больше 0!"
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
@@ -624,7 +624,7 @@ class Bot(commands.Bot):
         else:
             result = f"@{sender_name}, {transfer_result.message}"
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
         await ctx.send(result)
 
     @commands.command(name=_COMMAND_SHOP)
@@ -645,7 +645,7 @@ class Bot(commands.Bot):
 
         result += f"Используй: {self._prefix}{self._COMMAND_BUY} [название предмета]. Пример: {self._prefix}{self._COMMAND_BUY} стул. Все предметы действуют 30 дней!"
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -661,7 +661,7 @@ class Bot(commands.Bot):
 
         if not item_name:
             result = f"@{user_name}, укажи название предмета! Используй: {self._prefix}{self._COMMAND_BUY} [название]. Пример: {self._prefix}{self._COMMAND_BUY} стул"
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
@@ -669,7 +669,7 @@ class Bot(commands.Bot):
             item_type = ShopItems.find_item_by_name(item_name)
         except ValueError as e:
             result = str(e)
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
@@ -680,14 +680,14 @@ class Bot(commands.Bot):
 
         if equipment_exists:
             result = f"У вас уже есть {item.name}"
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
         user_balance = self.economy_service.get_user_balance(channel_name, normalized_user_name)
         if user_balance.balance < item.price:
             result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
@@ -696,7 +696,7 @@ class Bot(commands.Bot):
 
         result = f"@{user_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
         await ctx.send(result)
 
     @commands.command(name=_COMMAND_EQUIPMENT)
@@ -717,7 +717,7 @@ class Bot(commands.Bot):
                 expires_date = item.expires_at.strftime("%d.%m.%Y")
                 result += f"{item.shop_item.emoji} {item.shop_item.name} до {expires_date}\n"
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -739,7 +739,7 @@ class Bot(commands.Bot):
             for i, user in enumerate(top_users, 1):
                 result += f"{i}. {user['user_name']}: {user['balance']} монет."
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -761,7 +761,7 @@ class Bot(commands.Bot):
             for i, user in enumerate(bottom_users, 1):
                 result += f"{i}. {user['user_name']}: {user['balance']} монет."
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -789,7 +789,7 @@ class Bot(commands.Bot):
             f"{prefix}{self._COMMAND_FOLLOWAGE}: сколько подписан. "
         )
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, help_text)
+        self.chat_service.log_chat_message(channel_name, self.nick, help_text)
 
         messages = self.split_text(help_text)
         for msg in messages:
@@ -804,8 +804,8 @@ class Bot(commands.Bot):
         logger.info(f"Команда {self._COMMAND_STATS} от пользователя {user_name}")
 
         stats = self.economy_service.get_user_stats(channel_name, user_name)
-        bet_stats = self.twitch_repository.get_user_bet_stats(user_name, channel_name)
-        battle_stats = self.twitch_repository.get_user_battle_stats(user_name, channel_name)
+        bet_stats = self.chat_service.get_user_bet_stats(user_name, channel_name)
+        battle_stats = self.chat_service.get_user_battle_stats(user_name, channel_name)
 
         result = f"📊 Статистика @{user_name}: "
         result += f"💰 Баланс: {stats.balance} монет."
@@ -828,7 +828,7 @@ class Bot(commands.Bot):
         elif stats.net_profit < 0:
             result += f"📉 Ты в убытке artemn3Cry "
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+        self.chat_service.log_chat_message(channel_name, self.nick, result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -848,7 +848,7 @@ class Bot(commands.Bot):
             else:
                 result = f"@{user_name}, сейчас нет активной игры 'угадай число'. Используй: {self._prefix}{self._COMMAND_GUESS} [число]"
 
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
@@ -856,13 +856,13 @@ class Bot(commands.Bot):
             guess = int(number)
         except ValueError:
             result = f"@{user_name}, укажи правильное число! Например: {self._prefix}{self._COMMAND_GUESS} 42"
-            self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+            self.chat_service.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
         success, message = self.minigame_service.process_guess(channel_name, user_name, guess)
 
-        self.twitch_repository.log_chat_message(channel_name, self.nick, message)
+        self.chat_service.log_chat_message(channel_name, self.nick, message)
         await ctx.send(message)
 
     @commands.command(name=_COMMAND_GUESS_LETTER)
@@ -873,13 +873,13 @@ class Bot(commands.Bot):
             status = self.minigame_service.get_word_game_status(channel_name)
             if status:
                 await ctx.send(status)
-                self.twitch_repository.log_chat_message(channel_name, self.nick, status)
+                self.chat_service.log_chat_message(channel_name, self.nick, status)
             else:
                 await ctx.send(f"@{user_name}, сейчас нет активной игры 'поле чудес' — дождитесь автоматического запуска.")
             return
         success, message = self.minigame_service.process_letter(channel_name, user_name, letter)
         await ctx.send(message)
-        self.twitch_repository.log_chat_message(channel_name, self.nick, message)
+        self.chat_service.log_chat_message(channel_name, self.nick, message)
 
     @commands.command(name=_COMMAND_GUESS_WORD)
     async def guess_word(self, ctx, *, word: str = None):
@@ -889,13 +889,13 @@ class Bot(commands.Bot):
             status = self.minigame_service.get_word_game_status(channel_name)
             if status:
                 await ctx.send(status)
-                self.twitch_repository.log_chat_message(channel_name, self.nick, status)
+                self.chat_service.log_chat_message(channel_name, self.nick, status)
             else:
                 await ctx.send(f"@{user_name}, сейчас нет активной игры 'поле чудес' — дождитесь автоматического запуска.")
             return
         success, message = self.minigame_service.process_word(channel_name, user_name, word)
         await ctx.send(message)
-        self.twitch_repository.log_chat_message(channel_name, self.nick, message)
+        self.chat_service.log_chat_message(channel_name, self.nick, message)
 
     @commands.command(name=_COMMAND_RPS)
     async def join_rps(self, ctx, choice: str = None):
@@ -908,7 +908,7 @@ class Bot(commands.Bot):
         message = self.minigame_service.join_rps(channel_name, user_name, choice)
 
         await ctx.send(message)
-        self.twitch_repository.log_chat_message(channel_name, self.nick, message)
+        self.chat_service.log_chat_message(channel_name, self.nick, message)
 
     def _cleanup_old_cooldowns(self):
         current_time = datetime.now()
@@ -1005,9 +1005,9 @@ class Bot(commands.Bot):
 
                 stream_info = await self.twitch_api_service.get_stream_info(broadcaster_id)
                 prompt = f"Придумай анекдот, связанной с категорией трансляции: {stream_info.game_name}."
-                result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
-                self.twitch_repository.save_conversation_to_db(channel_name, prompt, result)
-                self.twitch_repository.log_chat_message(channel_name, self.nick, result)
+                result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+                self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+                self.chat_service.log_chat_message(channel_name, self.nick, result)
                 channel = self.get_channel(channel_name)
                 await channel.send(result)
                 logger.info(f"Анекдот сгенерирован: {result}")
@@ -1081,7 +1081,7 @@ class Bot(commands.Bot):
                     self.minigame_service.reset_stream_state(channel_name)
                     logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
-                    stats = self.twitch_repository.get_stream_statistics(channel_name, active_stream.started_at)
+                    stats = self.chat_service.get_stream_statistics(channel_name, active_stream.started_at)
 
                     try:
                         await self.stream_summarize(stats, channel_name, active_stream.started_at, finish_time)
@@ -1100,10 +1100,10 @@ class Bot(commands.Bot):
 
     async def stream_announcement(self, game_name: str, title: str, channel_name: str):
         prompt = f"Начался стрим. Категория: {game_name}, название: {title}. Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/artemnefrit"
-        result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
+        result = self.chat_service.generate_response_in_chat(prompt, channel_name)
         try:
             await self.telegram_bot.send_message(chat_id=self._GROUP_ID, text=result)
-            self.twitch_repository.save_conversation_to_db(channel_name, prompt, result)
+            self.chat_service.save_conversation_to_db(channel_name, prompt, result)
             logger.info(f"Анонс стрима отправлен в Telegram: {result}")
         except Exception as e:
             logger.error(f"Ошибка отправки анонса в Telegram: {e}")
@@ -1114,7 +1114,7 @@ class Bot(commands.Bot):
         if self.last_chat_summary_time is None:
             self.last_chat_summary_time = stream_start_dt
 
-        last_messages = self.twitch_repository.get_chat_messages(channel_name, self.last_chat_summary_time, stream_end_dt)
+        last_messages = self.chat_service.get_chat_messages(channel_name, self.last_chat_summary_time, stream_end_dt)
 
         if last_messages:
             chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
@@ -1122,7 +1122,7 @@ class Bot(commands.Bot):
                 f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
                 f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
             )
-            result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
+            result = self.chat_service.generate_response_in_chat(prompt, channel_name)
             self.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
@@ -1151,9 +1151,9 @@ class Bot(commands.Bot):
             prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
 
         prompt += f"\n\nНа основе предоставленной информации подведи краткий итог трансляции"
-        result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
+        result = self.chat_service.generate_response_in_chat(prompt, channel_name)
 
-        self.twitch_repository.save_conversation_to_db(channel_name, prompt, result)
+        self.chat_service.save_conversation_to_db(channel_name, prompt, result)
 
         self.current_stream_summaries = []
         self.last_chat_summary_time = None
@@ -1201,7 +1201,7 @@ class Bot(commands.Bot):
                 chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in messages)
                 prompt = (f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
                           f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}")
-                result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
+                result = self.chat_service.generate_response_in_chat(prompt, channel_name)
                 self.current_stream_summaries.append(result)
                 self.last_chat_summary_time = datetime.utcnow()
                 logger.info(f"Создан периодический анализ чата: {result}")
@@ -1224,7 +1224,7 @@ class Bot(commands.Bot):
                 expired_games = self.minigame_service.check_expired_games()
                 for channel, timeout_message in expired_games.items():
                     await self.get_channel(channel).send(timeout_message)
-                    self.twitch_repository.log_chat_message(channel, self.nick, timeout_message)
+                    self.chat_service.log_chat_message(channel, self.nick, timeout_message)
 
                 active_stream = self.stream_service.get_active_stream(channel_name)
                 if not active_stream:
@@ -1244,8 +1244,8 @@ class Bot(commands.Bot):
                     choice = random.choice(["number", "word", "rps"])
 
                     if choice == "word":
-                        used_words = self.twitch_repository.get_used_words(channel_name, limit=50)
-                        last_messages = self.twitch_repository.get_last_chat_messages(channel_name, limit=50)
+                        used_words = self.chat_service.get_used_words(channel_name, limit=50)
+                        last_messages = self.chat_service.get_last_chat_messages(channel_name, limit=50)
 
                         if used_words:
                             avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words)))
@@ -1262,11 +1262,11 @@ class Bot(commands.Bot):
                             "\n\nВот сообщения чата (ник: текст):\n" + chat_text
                         )
 
-                        system_prompt = TwitchService.SYSTEM_PROMPT_FOR_GROUP
+                        system_prompt = ChatService.SYSTEM_PROMPT_FOR_GROUP
                         ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
                         response = self.ai_repository.generate_ai_response(ai_messages)
 
-                        self.twitch_repository.save_conversation_to_db(channel_name, prompt, response)
+                        self.chat_service.save_conversation_to_db(channel_name, prompt, response)
 
                         data = json.loads(response)
                         word = str(data.get("word", "")).strip()
@@ -1274,7 +1274,7 @@ class Bot(commands.Bot):
                         final_word = word.strip().lower()
 
                         game = self.minigame_service.start_word_guess_game(channel_name, final_word, hint)
-                        self.twitch_repository.add_used_word(channel_name, final_word)
+                        self.chat_service.add_used_word(channel_name, final_word)
 
                         masked = game.get_masked_word()
                         game_message = (
@@ -1288,7 +1288,7 @@ class Bot(commands.Bot):
                         for msg in messages:
                             await self.get_channel(channel_name).send(msg)
                             await asyncio.sleep(0.3)
-                        self.twitch_repository.log_chat_message(channel_name, self.nick, game_message)
+                        self.chat_service.log_chat_message(channel_name, self.nick, game_message)
                     if choice == "number":
                         game = self.minigame_service.start_guess_number_game(channel_name)
                         game_message = (f"🎯 НОВАЯ МИНИ-ИГРА! Угадай число от {game.min_number} до {game.max_number}! "
@@ -1300,7 +1300,7 @@ class Bot(commands.Bot):
                         for msg in messages:
                             await self.get_channel(channel_name).send(msg)
                             await asyncio.sleep(0.3)
-                        self.twitch_repository.log_chat_message(channel_name, self.nick, game_message)
+                        self.chat_service.log_chat_message(channel_name, self.nick, game_message)
                     if choice == "rps":
                         self.minigame_service.start_rps_game(channel_name)
                         game_message = (
@@ -1314,7 +1314,7 @@ class Bot(commands.Bot):
                         for msg in messages:
                             await self.get_channel(channel_name).send(msg)
                             await asyncio.sleep(0.3)
-                        self.twitch_repository.log_chat_message(channel_name, self.nick, game_message)
+                        self.chat_service.log_chat_message(channel_name, self.nick, game_message)
 
             except Exception as e:
                 logger.error(f"Ошибка в check_minigames_periodically: {e}")
@@ -1380,8 +1380,8 @@ class Bot(commands.Bot):
 
             if active_stream:
                 self.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
-                logger.info(f"Восстановлено состояние: найден активный стрим ID {active_stream.id}")
+                logger.info(f"Найден активный стрим ID {active_stream.id}")
             else:
-                logger.info("Восстановлено состояние: активных стримов не найдено")
+                logger.info("Активных стримов не найдено")
         except Exception as e:
             logger.error(f"Ошибка при восстановлении состояния стрима: {e}")

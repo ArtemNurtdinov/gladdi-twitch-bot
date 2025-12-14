@@ -16,7 +16,7 @@ from features.battle.model.user_battle_stats import UserBattleStats
 from features.twitch.chat_schemas import TopChatUser
 
 
-class TwitchService:
+class ChatService:
     SYSTEM_PROMPT_FOR_GROUP = (
         "Ты — GLaDDi, цифровой ассистент нового поколения."
         "\nТы обладаешь характером GLaDOS, но являешься искусственным интеллектом мужского пола."

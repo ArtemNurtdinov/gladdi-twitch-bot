@@ -3,11 +3,11 @@ from typing import List
 
 from features.ai.ai_service import AIService
 from features.twitch.chat_schemas import TopChatUser
-from features.twitch.twitch_service import TwitchService
+from features.twitch.chat_service import ChatService
 
 router = APIRouter()
 ai_service = AIService()
-chat_service = TwitchService(ai_service)
+chat_service = ChatService(ai_service)
 
 @router.get(
     "/top-users",

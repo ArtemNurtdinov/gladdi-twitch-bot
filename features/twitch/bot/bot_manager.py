@@ -8,7 +8,7 @@ from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.twitch.bot.bot_schemas import BotActionResult, BotStatus, BotStatusEnum
 from features.twitch.twitch_bot import Bot as TwitchBot
-from features.twitch.twitch_service import TwitchService
+from features.twitch.chat_service import ChatService
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +69,10 @@ class BotManager:
             self._ensure_credentials(auth)
 
             ai_service = AIService()
-            twitch_repository = TwitchService(ai_service)
+            chat_service = ChatService(ai_service)
             twitch_api_service = TwitchApiService(auth)
 
-            self._bot = TwitchBot(auth, twitch_api_service, twitch_repository, ai_service)
+            self._bot = TwitchBot(auth, twitch_api_service, chat_service, ai_service)
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None
