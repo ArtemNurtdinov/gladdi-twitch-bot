@@ -1051,8 +1051,9 @@ class Bot(commands.Bot):
                     logger.info(f"Стрим начался: {game_name} - {title}")
 
                     try:
-                        active_stream = self.stream_service.create_stream(channel_name, game_name, title)
-                        self.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
+                        started_at = datetime.utcnow()
+                        self.stream_service.create_stream(channel_name, started_at, game_name, title)
+                        self.minigame_service.set_stream_start_time(channel_name, started_at)
                         await self.stream_announcement(game_name, title, channel_name)
                         self.current_stream_summaries = []
                     except Exception as e:
@@ -1077,7 +1078,7 @@ class Bot(commands.Bot):
 
                 elif stream_status.is_online and active_stream:
                     if active_stream.game_name != game_name or active_stream.title != title:
-                        self.stream_service.update_stream_metadata(channel_name=channel_name, game_name=game_name, title=title)
+                        self.stream_service.update_stream_metadata(active_stream.id, game_name, title)
                         logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
             except Exception as e:

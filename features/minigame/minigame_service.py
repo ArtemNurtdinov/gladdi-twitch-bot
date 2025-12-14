@@ -115,19 +115,19 @@ class MinigameService:
     
     def process_guess(self, channel_name: str, user_name: str, guess: int) -> tuple[bool, str]:
         if channel_name not in self.active_games:
-            return False, "❌ Сейчас нет активной игры 'угадай число'"
+            return False, "Сейчас нет активной игры 'угадай число'"
         
         game = self.active_games[channel_name]
 
         if game.is_expired():
             self._finish_game_timeout(channel_name)
-            return False, f"⏰ Время игры истекло! Загаданное число было {game.target_number}"
+            return False, f"Время игры истекло! Загаданное число было {game.target_number}"
 
         if not game.is_active:
-            return False, "❌ Игра уже завершена"
+            return False, "Игра уже завершена"
 
         if not game.is_valid_guess(guess):
-            return False, f"❌ Число должно быть от {game.min_number} до {game.max_number}"
+            return False, f"Число должно быть от {game.min_number} до {game.max_number}"
 
         if game.is_correct_guess(guess):
             return self._finish_game_with_winner(channel_name, user_name, guess)
@@ -143,14 +143,11 @@ class MinigameService:
         game.finish_game(winner_name)
 
         try:
-            winner_balance = self.economy_service.add_balance(channel_name, winner_name, game.prize_amount, TransactionType.MINIGAME_WIN,
-                                                              f"Победа в игре 'угадай число': {winning_number}")
+            description = f"Победа в игре 'угадай число': {winning_number}"
+            winner_balance = self.economy_service.add_balance(channel_name, winner_name, game.prize_amount, TransactionType.MINIGAME_WIN, description)
             
-            success_message = (f"🎉 ПОЗДРАВЛЯЕМ! @{winner_name} угадал число {winning_number} и "
-                             f"выиграл {game.prize_amount} монет! Баланс: {winner_balance.balance} монет")
-            
-            logger.info(f"Игра 'угадай число' завершена в канале {channel_name}. "
-                       f"Победитель: {winner_name}, число: {winning_number}, приз: {game.prize_amount}")
+            success_message = f"ПОЗДРАВЛЯЕМ! @{winner_name} угадал число {winning_number} и выиграл {game.prize_amount} монет! Баланс: {winner_balance.balance} монет"
+            logger.info(f"Игра 'угадай число' завершена в канале {channel_name}. Победитель: {winner_name}, число: {winning_number}, приз: {game.prize_amount}")
 
             del self.active_games[channel_name]
             
@@ -169,7 +166,7 @@ class MinigameService:
         game = self.active_games[channel_name]
         game.timeout_game()
         
-        timeout_message = f"⏰ Время игры 'угадай число' истекло! Загаданное число было {game.target_number}. Никто не выиграл на этот раз."
+        timeout_message = f"Время игры 'угадай число' истекло! Загаданное число было {game.target_number}. Никто не выиграл на этот раз."
         
         logger.info(f"Игра 'угадай число' завершена по таймауту. Число: {game.target_number}")
 
@@ -213,7 +210,7 @@ class MinigameService:
     
     def force_end_game(self, channel_name: str) -> str:
         if channel_name not in self.active_games:
-            return "❌ Нет активной игры для завершения"
+            return "Нет активной игры для завершения"
         
         return self._finish_game_timeout(channel_name) 
 
@@ -231,49 +228,48 @@ class MinigameService:
 
     def process_letter(self, channel_name: str, user_name: str, letter: str) -> tuple[bool, str]:
         if channel_name not in self.active_word_games:
-            return False, "❌ Сейчас нет активной игры 'поле чудес'"
+            return False, "Сейчас нет активной игры 'поле чудес'"
 
         game = self.active_word_games[channel_name]
         if game.is_expired():
             self._finish_word_game_timeout(channel_name)
-            return False, f"⏰ Время игры истекло! Слово было '{game.target_word}'"
+            return False, f"Время игры истекло! Слово было '{game.target_word}'"
         if not game.is_active:
-            return False, "❌ Игра уже завершена"
+            return False, "Игра уже завершена"
         if not game.is_valid_letter_guess(letter):
-            return False, "❌ Введите одну букву русского алфавита"
+            return False, "Введите одну букву русского алфавита"
 
         was_revealed = game.reveal_letter(letter)
         masked = game.get_masked_word()
         time_left = game.get_time_left_display()
 
         if was_revealed:
-            # Decrease prize for correct unique letter reveal
             if game.prize_amount > self.WORD_GAME_MIN_PRIZE:
                 game.prize_amount = max(self.WORD_GAME_MIN_PRIZE, game.prize_amount - self.WORD_GAME_LETTER_REWARD_DECREASE)
 
             if game.all_letters_revealed():
                 return self._finish_word_game_with_winner(channel_name, user_name)
 
-            return False, f"✅ Буква есть! Слово: {masked}. Осталось: {time_left}"
+            return False, f"Буква есть! Слово: {masked}. Осталось: {time_left}"
         else:
-            return False, f"❌ Такой буквы нет. Слово: {masked}. Осталось: {time_left}"
+            return False, f"Такой буквы нет. Слово: {masked}. Осталось: {time_left}"
 
     def process_word(self, channel_name: str, user_name: str, word: str) -> tuple[bool, str]:
         if channel_name not in self.active_word_games:
-            return False, "❌ Сейчас нет активной игры 'поле чудес'"
+            return False, "Сейчас нет активной игры 'поле чудес'"
         game = self.active_word_games[channel_name]
         if game.is_expired():
             self._finish_word_game_timeout(channel_name)
-            return False, f"⏰ Время игры истекло! Слово было '{game.target_word}'"
+            return False, f"Время игры истекло! Слово было '{game.target_word}'"
         if not game.is_active:
-            return False, "❌ Игра уже завершена"
+            return False, "Игра уже завершена"
 
         if game.is_correct_word_guess(word):
             return self._finish_word_game_with_winner(channel_name, user_name)
         else:
             masked = game.get_masked_word()
             time_left = game.get_time_left_display()
-            return False, f"❌ Неверное слово. Слово: {masked}. Осталось: {time_left}"
+            return False, f"Неверное слово. Слово: {masked}. Осталось: {time_left}"
 
     def get_word_game_status(self, channel_name: str) -> Optional[str]:
         if channel_name not in self.active_word_games:
@@ -295,7 +291,7 @@ class MinigameService:
                 f"Победа в игре 'поле чудес'"
             )
             success_message = (
-                f"🎉 ПОЗДРАВЛЯЕМ! @{winner_name} угадал слово '{game.target_word}' и "
+                f"ПОЗДРАВЛЯЕМ! @{winner_name} угадал слово '{game.target_word}' и "
                 f"выиграл {game.prize_amount} монет! Баланс: {winner_balance.balance} монет"
             )
             logger.info(
@@ -314,7 +310,7 @@ class MinigameService:
             return "Игра не найдена"
         game = self.active_word_games[channel_name]
         game.timeout_game()
-        timeout_message = f"⏰ Время игры 'поле чудес' истекло! Слово было '{game.target_word}'. Никто не выиграл."
+        timeout_message = f"Время игры 'поле чудес' истекло! Слово было '{game.target_word}'. Никто не выиграл."
         logger.info(f"Игра 'поле чудес' завершена по таймауту. Слово: {game.target_word}")
         del self.active_word_games[channel_name]
         return timeout_message 
@@ -332,31 +328,31 @@ class MinigameService:
 
     def join_rps(self, channel_name: str, user_name: str, choice: str) -> tuple[bool, str]:
         if channel_name not in self.active_rps_games:
-            return False, "❌ Сейчас нет активной игры 'камень-ножницы-бумага'"
+            return False, "Сейчас нет активной игры 'камень-ножницы-бумага'"
         game = self.active_rps_games[channel_name]
         if game.is_expired():
             self._finish_rps_timeout(channel_name)
-            return False, "⏰ Время игры истекло!"
+            return False, "Время игры истекло!"
         if not game.is_active:
-            return False, "❌ Игра уже завершена"
+            return False, "Игра уже завершена"
 
         normalized_choice = choice.strip().lower()
         if normalized_choice not in RPS_CHOICES:
-            return False, "❌ Выберите: камень, ножницы или бумага"
+            return False, "Выберите: камень, ножницы или бумага"
 
         normalized_user = user_name.lower()
         if normalized_user in game.user_choices:
             existing = game.user_choices[normalized_user]
-            return False, f"❌ Вы уже выбрали: {existing}. Сменить нельзя в текущей игре"
+            return False, f"Вы уже выбрали: {existing}. Сменить нельзя в текущей игре"
 
         user_balance = self.economy_service.subtract_balance(channel_name, user_name, self.RPS_ENTRY_FEE_PER_USER, TransactionType.SPECIAL_EVENT,
                                                              "Участие в игре 'камень-ножницы-бумага'")
         if not user_balance:
-            return False, f"❌ Недостаточно средств! Требуется {self.RPS_ENTRY_FEE_PER_USER} монет"
+            return False, f"Недостаточно средств! Требуется {self.RPS_ENTRY_FEE_PER_USER} монет"
         game.bank += self.RPS_ENTRY_FEE_PER_USER
 
         game.set_choice(user_name, normalized_choice)
-        return True, f"✅ Принято: @{user_name} — {normalized_choice}. Участников: {game.get_participants_count()}"
+        return True, f"Принято: @{user_name} — {normalized_choice}. Участников: {game.get_participants_count()}"
 
     def finish_rps(self, channel_name: str) -> tuple[bool, str]:
         if channel_name not in self.active_rps_games:
@@ -380,11 +376,9 @@ class MinigameService:
             for winner in winners:
                 self.economy_service.add_balance(channel_name, winner, share, TransactionType.MINIGAME_WIN, f"Победа в КНБ ({winning_choice})")
             winners_display = ", ".join(f"@{winner}" for winner in winners)
-            message = (f"🤖 Выбор бота: {bot_choice}. 🏆 Побеждает вариант: {winning_choice}. "
-                       f"Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}.")
+            message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
         else:
-            message = (f"🤖 Выбор бота: {bot_choice}. 🏆 Побеждает вариант: {winning_choice}. "
-                       f"Победителей нет. Банк {game.bank} монет сгорает.")
+            message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
 
         game.finish_game()
         del self.active_rps_games[channel_name]
