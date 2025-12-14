@@ -344,15 +344,14 @@ class EconomyService:
     def get_user_stats(self, channel_name: str, user_name: str) -> UserStats:
         db = SessionLocal()
         try:
-            normalized_user_name = user_name.lower()
-            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=normalized_user_name).first()
+            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=channel_name).first()
 
             if not user_balance:
-                user_balance = UserBalance(channel_name=channel_name, user_name=normalized_user_name, balance=self.STARTING_BALANCE)
+                user_balance = UserBalance(channel_name=channel_name, user_name=channel_name, balance=self.STARTING_BALANCE)
                 db.add(user_balance)
                 transaction = TransactionHistory(
                     channel_name=channel_name,
-                    user_name=normalized_user_name,
+                    user_name=channel_name,
                     transaction_type=TransactionType.ADMIN_ADJUST,
                     amount=self.STARTING_BALANCE,
                     balance_before=0,
@@ -362,9 +361,9 @@ class EconomyService:
                 db.add(transaction)
 
                 db.commit()
-                logger.info(f"Создан новый пользователь {normalized_user_name} с балансом {self.STARTING_BALANCE}")
+                logger.info(f"Создан новый пользователь {channel_name} с балансом {self.STARTING_BALANCE}")
 
-            transactions = db.query(TransactionHistory).filter_by(channel_name=channel_name, user_name=normalized_user_name).all()
+            transactions = db.query(TransactionHistory).filter_by(channel_name=channel_name, user_name=channel_name).all()
 
             transaction_counts = {}
             for transaction_type in TransactionType:

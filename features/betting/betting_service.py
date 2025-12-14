@@ -181,14 +181,7 @@ class BettingService:
     def get_user_bet_stats(self, user_name: str, channel_name: str) -> UserBetStats:
         db = SessionLocal()
         try:
-            normalized_user_name = user_name.lower()
-
-            bets = (
-                db.query(BetHistory)
-                .filter(BetHistory.user_name == normalized_user_name)
-                .filter(BetHistory.channel_name == channel_name)
-                .all()
-            )
+            bets = db.query(BetHistory).filter(BetHistory.user_name == user_name).filter(BetHistory.channel_name == channel_name).all()
 
             if not bets:
                 return UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)

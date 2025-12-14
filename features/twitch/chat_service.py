@@ -105,10 +105,7 @@ class ChatService:
         try:
             battles = (
                 db.query(BattleHistory)
-                .filter(
-                    ((BattleHistory.opponent_1 == user_name) | (BattleHistory.opponent_2 == user_name))
-                    & (BattleHistory.channel_name == channel_name)
-                )
+                .filter(((BattleHistory.opponent_1 == user_name) | (BattleHistory.opponent_2 == user_name)) & (BattleHistory.channel_name == channel_name))
                 .all()
             )
 

@@ -826,8 +826,10 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда {self._COMMAND_STATS} от пользователя {user_name}")
 
-        stats = self.economy_service.get_user_stats(channel_name, user_name)
-        bet_stats = self.betting_service.get_user_bet_stats(user_name, channel_name)
+        normalized_user_name = user_name.lower()
+
+        stats = self.economy_service.get_user_stats(normalized_user_name, user_name)
+        bet_stats = self.betting_service.get_user_bet_stats(normalized_user_name, channel_name)
         battle_stats = self.chat_service.get_user_battle_stats(user_name, channel_name)
 
         result = f"📊 Статистика @{user_name}: "
