@@ -1,11 +1,11 @@
+from features.joke.settings_manager import SettingsManager
 import logging
 from typing import Dict, Any
-from features.settings.settings_manager import SettingsManager
 
 
-class BotControlService:
+class JokeService:
 
-    def __init__(self, settings_manager: SettingsManager = None):
+    def __init__(self, settings_manager: SettingsManager):
         self.logger = logging.getLogger(__name__)
         self.settings_manager = settings_manager or SettingsManager()
 

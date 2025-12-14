@@ -18,8 +18,8 @@ from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.stream.db.stream_messages import ChatMessageLog
 from features.economy.db.transaction_history import TransactionType
-from features.twitch.twitch_repository import TwitchService
-from features.settings.settings_manager import SettingsManager
+from features.twitch.twitch_service import TwitchService
+from features.joke.settings_manager import SettingsManager
 from features.economy.economy_service import EconomyService
 from features.minigame.minigame_service import MinigameService
 from features.stream.stream_service import StreamService

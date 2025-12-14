@@ -23,11 +23,3 @@ class Stream(Base):
     def __repr__(self):
         status = "активен" if self.is_active else "завершен"
         return f"<Stream(channel='{self.channel_name}', started='{self.started_at}', status='{status}')>"
-    
-    def get_duration_minutes(self) -> int:
-        if not self.ended_at:
-            duration = datetime.utcnow() - self.started_at
-        else:
-            duration = self.ended_at - self.started_at
-        
-        return int(duration.total_seconds() / 60)
