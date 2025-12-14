@@ -15,8 +15,7 @@ def get_joke_service() -> JokeService:
     "/jokes/status",
     response_model=JokesStatus,
     summary="Статус анекдотов",
-    description="Получить текущий статус включения/отключения анекдотов в Twitch боте",
-    tags=["Bot Control"]
+    description="Получить текущий статус включения/отключения анекдотов в Twitch боте"
 )
 async def get_jokes_status() -> JokesStatus:
     try:
@@ -30,8 +29,7 @@ async def get_jokes_status() -> JokesStatus:
     "/jokes/enable",
     response_model=JokesResponse,
     summary="Включить анекдоты",
-    description="Включить анекдоты в Twitch боте",
-    tags=["Bot Control"]
+    description="Включить анекдоты в Twitch боте"
 )
 async def enable_jokes() -> JokesResponse:
     try:
@@ -45,8 +43,7 @@ async def enable_jokes() -> JokesResponse:
     "/jokes/disable",
     response_model=JokesResponse,
     summary="Отключить анекдоты",
-    description="Отключить анекдоты в Twitch боте",
-    tags=["Bot Control"]
+    description="Отключить анекдоты в Twitch боте"
 )
 async def disable_jokes() -> JokesResponse:
     try:
@@ -60,8 +57,7 @@ async def disable_jokes() -> JokesResponse:
     "/jokes/interval",
     response_model=JokesIntervalResponse,
     summary="Установить интервал между анекдотами",
-    description="Установить интервал между генерацией анекдотов в минутах. Бот будет генерировать анекдоты через случайное время от min_minutes до max_minutes",
-    tags=["Bot Control"]
+    description="Установить интервал между генерацией анекдотов в минутах. Бот будет генерировать анекдоты через случайное время от min_minutes до max_minutes"
 )
 async def set_jokes_interval(request: JokesIntervalRequest) -> JokesIntervalResponse:
     try:

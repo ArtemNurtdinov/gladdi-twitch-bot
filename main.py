@@ -3,8 +3,8 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from config import config
-from features.dashboard import dashboard_routes
 from features.joke import joke_routes
+from features.twitch import chat_routes
 from features.twitch.bot import bot_routes
 
 logging.basicConfig(
@@ -34,8 +34,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(dashboard_routes.router, prefix="/api/v1", tags=["Analytics"])
-app.include_router(bot_routes.router, prefix="/api/v1", tags=["Bot"])
+app.include_router(chat_routes.router, prefix="/api/v1", tags=["Chat"])
+app.include_router(bot_routes.router, prefix="/api/v1", tags=["Twitch Bot"])
 app.include_router(joke_routes.router, prefix="/api/v1", tags=["Jokes"])
 
 

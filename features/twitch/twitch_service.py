@@ -1,6 +1,6 @@
 import json
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import func, case
 
 from db.base import SessionLocal
@@ -13,6 +13,7 @@ from features.betting.db.bet_history import BetHistory
 from features.stream.model.stream_statistics import StreamStatistics
 from features.betting.model.rarity_level import RarityLevel
 from features.battle.model.user_battle_stats import UserBattleStats
+from features.twitch.chat_schemas import TopChatUser
 
 
 class TwitchService:
@@ -353,5 +354,24 @@ class TwitchService:
             )
             messages.reverse()
             return messages
+        finally:
+            db.close()
+
+    def get_top_chat_users(self, channel_name: str, days: int, limit: int) -> list[TopChatUser]:
+        db = SessionLocal()
+        try:
+            since = datetime.utcnow() - timedelta(days=days)
+
+            user_stats = (
+                db.query(ChatMessageLog.user_name, func.count(ChatMessageLog.id).label('message_count'))
+                .filter(ChatMessageLog.channel_name == channel_name)
+                .filter(ChatMessageLog.created_at >= since)
+                .group_by(ChatMessageLog.user_name)
+                .order_by(func.count(ChatMessageLog.id).desc())
+                .limit(limit)
+                .all()
+            )
+
+            return [TopChatUser(username=stat.user_name, message_count=stat.message_count) for stat in user_stats]
         finally:
             db.close()

@@ -11,7 +11,7 @@ TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 
 PERMISSIONS_SCOPE = "chat:read chat:edit user:read:follows moderator:read:followers moderator:manage:banned_users moderator:read:chatters"
 
-router = APIRouter(prefix="/bot", tags=["Bot"])
+router = APIRouter(prefix="/bot")
 
 bot_manager = BotManager()
 
