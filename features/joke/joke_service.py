@@ -1,4 +1,4 @@
-from features.joke.joke_schemas import JokesResponse, JokesIntervalInfo, JokesIntervalResponse, JokesStatus
+from features.joke.joke_schemas import JokesResponse, JokesIntervalInfo, JokesIntervalResponse, JokesStatus, JokeInterval
 from features.joke.settings_manager import SettingsManager
 import logging
 from typing import Dict, Any
@@ -17,14 +17,15 @@ class JokeService:
 
         logger.debug(f"Получен статус анекдотов: enabled={enabled}, interval={interval_min}-{interval_max}")
 
-        interval: Dict[str, Any] = {
-            "min_minutes": interval_min,
-            "max_minutes": interval_max,
-            "description": f"Интервал: {interval_min}-{interval_max} минут"
-        }
+        joke_interval = JokeInterval(
+            min_minutes=interval_min,
+            max_minutes=interval_max,
+            description=f"Интервал: {interval_min}-{interval_max} минут"
+        )
+
         next_joke: Dict[str, Any] = self.settings_manager.get_next_joke_info()
 
-        return JokesStatus(enabled=enabled, ready=True, message=f"Анекдоты {'включены' if enabled else 'отключены'}", interval=interval, next_joke=next_joke)
+        return JokesStatus(enabled=enabled, ready=True, message=f"Анекдоты {'включены' if enabled else 'отключены'}", interval=joke_interval, next_joke=next_joke)
 
     def enable_jokes(self) -> JokesResponse:
         try:

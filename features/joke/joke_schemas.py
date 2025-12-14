@@ -2,11 +2,17 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any
 
 
+class JokeInterval(BaseModel):
+    min_minutes: int = Field(..., description="Нижняя граница интервала между анекдотами")
+    max_minutes: int = Field(..., description="Верхняя граница интервала между анекдотами")
+    description: str = Field(..., description="Описание интервала")
+
+
 class JokesStatus(BaseModel):
     enabled: bool = Field(..., description="Статус анекдотов (включены/отключены)")
     ready: bool = Field(..., description="Готовность бота")
     message: str = Field(..., description="Описание статуса")
-    interval: Dict[str, Any] = Field(..., description="Интервал между анекдотами")
+    interval: JokeInterval = Field(..., description="Интервал между анекдотами")
     next_joke: Dict[str, Any] = Field(..., description="Информация о следующем анекдоте")
 
 
