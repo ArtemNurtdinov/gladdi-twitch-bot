@@ -44,12 +44,10 @@ class MinigameService:
         
     def set_stream_start_time(self, channel_name: str, start_time: datetime) -> None:
         self.stream_start_time[channel_name] = start_time
-        logger.info(f"Установлено время начала стрима для канала {channel_name}: {start_time}")
         
     def reset_stream_state(self, channel_name: str) -> None:
         if channel_name in self.stream_start_time:
             del self.stream_start_time[channel_name]
-            logger.info(f"Сброшено состояние стрима для канала {channel_name}")
 
         if channel_name in self.active_games:
             self._finish_game_timeout(channel_name)

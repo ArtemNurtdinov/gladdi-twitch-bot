@@ -67,13 +67,8 @@ class ViewerTimeService:
         finally:
             db.close()
 
-    async def update_viewers(self, channel_name: str, chatters: List[str]) -> None:
+    async def update_viewers(self, active_stream_id: int, channel_name: str, chatters: List[str]):
         if not chatters:
-            return
-
-        active_stream = self.stream_service.get_active_stream(channel_name)
-        if not active_stream:
-            logger.debug("Нет активного стрима для обновления через API")
             return
 
         db = SessionLocal()
@@ -82,15 +77,10 @@ class ViewerTimeService:
 
             for user_name in chatters:
                 normalized_user_name = user_name.lower()
-
-                session = (
-                    db.query(StreamViewerSession)
-                    .filter_by(stream_id=active_stream.id, user_name=normalized_user_name, channel_name=channel_name)
-                    .first()
-                )
+                session = db.query(StreamViewerSession).filter_by(stream_id=active_stream_id, user_name=normalized_user_name, channel_name=channel_name).first()
 
                 if not session:
-                    session = StreamViewerSession(stream_id=active_stream.id, channel_name=channel_name, user_name=normalized_user_name,
+                    session = StreamViewerSession(stream_id=active_stream_id, channel_name=channel_name, user_name=normalized_user_name,
                                                   session_start=current_time, last_activity=current_time, is_watching=True)
                     db.add(session)
                 else:
@@ -100,29 +90,24 @@ class ViewerTimeService:
                     if not session.is_watching:
                         session.is_watching = True
                         session.session_start = current_time
-
             db.commit()
-            logger.debug(f"API: Обновлена активность для {len(chatters)} зрителей в стриме {active_stream.id}")
+            logger.debug(f"API: Обновлена активность для {len(chatters)} зрителей в стриме {active_stream_id}")
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при обновлении зрителей через API: {e}")
         finally:
             db.close()
 
-    def check_inactive_viewers(self, channel_name: str) -> List[str]:
-        active_stream = self.stream_service.get_active_stream(channel_name)
-        if not active_stream:
-            return []
-
-        db = SessionLocal()
+    def check_inactive_viewers(self, active_stream_id: int) -> List[str]:
         inactive_users = []
 
+        db = SessionLocal()
         try:
             cutoff_time = datetime.utcnow() - timedelta(minutes=self.ACTIVITY_TIMEOUT_MINUTES)
 
             inactive_sessions = (
                 db.query(StreamViewerSession)
-                .filter_by(stream_id=active_stream.id, is_watching=True)
+                .filter_by(stream_id=active_stream_id, is_watching=True)
                 .filter(StreamViewerSession.last_activity < cutoff_time)
                 .all()
             )
@@ -139,13 +124,8 @@ class ViewerTimeService:
                 session.is_watching = False
                 session.updated_at = datetime.utcnow()
 
-                logger.debug(f"Пользователь {session.user_name} помечен как неактивный в стриме {active_stream.id}")
-
+                logger.debug(f"Пользователь {session.user_name} помечен как неактивный в стриме {active_stream_id}")
             db.commit()
-
-            if inactive_users:
-                logger.info(f"Найдено {len(inactive_users)} неактивных зрителей в стриме {active_stream.id}")
-
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при проверке неактивных зрителей: {e}")

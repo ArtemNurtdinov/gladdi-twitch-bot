@@ -1013,7 +1013,6 @@ class Bot(commands.Bot):
 
     async def check_stream_start_periodically(self):
         logger.info("Запуск периодической проверки статуса стрима")
-        current_stream = None
 
         while True:
             try:
@@ -1030,8 +1029,7 @@ class Bot(commands.Bot):
                     await asyncio.sleep(60)
                     continue
 
-                if current_stream is None:
-                    current_stream = self.stream_service.get_active_stream(channel_name)
+                current_stream = self.stream_service.get_active_stream(channel_name)
 
                 stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
 
@@ -1052,14 +1050,13 @@ class Bot(commands.Bot):
                     logger.info(f"Стрим начался: {game_name} - {title}")
 
                     try:
-                        current_stream = self.stream_service.start_stream(channel_name=channel_name, game_name=game_name, title=title)
-                        logger.info(f"Создан стрим в БД: ID {current_stream.id}")
+                        current_stream = self.stream_service.create_stream(channel_name, game_name, title)
 
                         self.minigame_service.set_stream_start_time(channel_name, current_stream.started_at)
 
                         await self.stream_announcement(game_name, title, channel_name)
-                        self.current_stream_summaries = []
 
+                        self.current_stream_summaries = []
                     except Exception as e:
                         logger.error(f"Ошибка при создании стрима: {e}")
 
@@ -1077,23 +1074,13 @@ class Bot(commands.Bot):
                             await self.stream_summarize(stats, channel_name, stream_start_dt, stream_end_dt)
 
                         self.minigame_service.reset_stream_state(channel_name)
-
-                        current_stream = None
                     except Exception as e:
                         logger.error(f"Ошибка при завершении стрима: {e}")
 
                 elif is_online and current_stream:
-                    try:
-                        if current_stream.game_name != game_name or current_stream.title != title:
-                            updated = self.stream_service.update_stream_metadata(channel_name=channel_name, game_name=game_name, title=title)
-
-                            if updated:
-                                logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
-                                current_stream.game_name = game_name
-                                current_stream.title = title
-
-                    except Exception as e:
-                        logger.error(f"Ошибка при обновлении метаданных стрима: {e}")
+                    if current_stream.game_name != game_name or current_stream.title != title:
+                        self.stream_service.update_stream_metadata(channel_name=channel_name, game_name=game_name, title=title)
+                        logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
                 self._stream_online = is_online
 
@@ -1103,7 +1090,6 @@ class Bot(commands.Bot):
             await asyncio.sleep(60)
 
     async def stream_announcement(self, game_name: str, title: str, channel_name: str):
-        logger.info(f"Создание анонса стрима: {game_name} - {title}")
         prompt = f"Начался стрим. Категория: {game_name}, название: {title}. Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/artemnefrit"
         result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
         try:
@@ -1326,35 +1312,17 @@ class Bot(commands.Bot):
                     continue
 
                 channel_name = self.initial_channels[0]
+                active_stream = self.stream_service.get_active_stream(channel_name)
 
-                inactive_users = self.viewer_time_service.check_inactive_viewers(channel_name)
-                if inactive_users:
-                    logger.debug(f"Найдено {len(inactive_users)} неактивных зрителей")
+                if active_stream:
+                    self.viewer_time_service.check_inactive_viewers(active_stream.id)
 
-                try:
                     broadcaster_id = await self._get_user_id_cached(channel_name)
                     moderator_id = await self._get_user_id_cached(self.nick)
-
-                    if broadcaster_id and moderator_id:
-                        if self._stream_online:
-                            chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
-                            if chatters:
-                                await self.viewer_time_service.update_viewers(channel_name, chatters)
-                                logger.debug(f"API: Обновлена активность для {len(chatters)} зрителей")
-                        else:
-                            logger.debug("Стрим офлайн, список зрителей не запрашиваем")
-                    else:
-                        logger.warning(f"Не удалось получить broadcaster_id или moderator_id для канала {channel_name}")
-
-                except Exception as e:
-                    logger.error(f"Ошибка при получении зрителей через API: {e}")
-
-                try:
-                    current_concurrent = self.stream_service.update_concurrent_viewers_count(channel_name)
-                    if current_concurrent is not None:
-                        logger.debug(f"Текущих одновременных зрителей: {current_concurrent}")
-                except Exception as e:
-                    logger.error(f"Ошибка при обновлении concurrent viewers: {e}")
+                    chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
+                    if chatters:
+                        await self.viewer_time_service.update_viewers(active_stream.id, channel_name, chatters)
+                    self.stream_service.update_concurrent_viewers_count(active_stream.id)
 
                 rewards = self.viewer_time_service.check_and_grant_rewards(channel_name)
                 for reward in rewards:

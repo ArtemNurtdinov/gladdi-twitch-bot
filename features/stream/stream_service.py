@@ -13,7 +13,7 @@ class StreamService:
     def __init__(self):
         pass
     
-    def start_stream(self, channel_name: str, game_name: str = None, title: str = None) -> Stream:
+    def create_stream(self, channel_name: str, game_name: str = None, title: str = None) -> Stream:
         db = SessionLocal()
         try:
             active_stream = self.get_active_stream(channel_name)
@@ -29,7 +29,6 @@ class StreamService:
             
             logger.info(f"Начат новый стрим: ID {stream.id}, канал {channel_name}, игра: {game_name}")
             return stream
-            
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при начале стрима: {e}")
@@ -94,34 +93,20 @@ class StreamService:
     def get_active_stream(self, channel_name: str) -> Optional[Stream]:
         db = SessionLocal()
         try:
-            stream = (
-                db.query(Stream)
-                .filter_by(channel_name=channel_name, is_active=True)
-                .first()
-            )
-            
-            if stream:
-                db.refresh(stream)
-            
-            return stream
-            
+            return db.query(Stream).filter_by(channel_name=channel_name, is_active=True).first()
         except Exception as e:
             logger.error(f"Ошибка при получении активного стрима: {e}")
             return None
         finally:
             db.close()
     
-    def update_stream_metadata(self, channel_name: str, game_name: str = None, title: str = None) -> bool:
+    def update_stream_metadata(self, channel_name: str, game_name: str = None, title: str = None):
         db = SessionLocal()
         try:
-            stream = (
-                db.query(Stream)
-                .filter_by(channel_name=channel_name, is_active=True)
-                .first()
-            )
+            stream = db.query(Stream).filter_by(channel_name=channel_name, is_active=True).first()
             
             if not stream:
-                return False
+                return
             
             if game_name is not None:
                 stream.game_name = game_name
@@ -129,15 +114,10 @@ class StreamService:
                 stream.title = title
             
             stream.updated_at = datetime.utcnow()
-            
             db.commit()
-            logger.debug(f"Обновлены метаданные стрима {stream.id}: игра={game_name}, название={title}")
-            return True
-            
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при обновлении метаданных стрима: {e}")
-            return False
         finally:
             db.close()
     
@@ -160,34 +140,21 @@ class StreamService:
         finally:
             db.close()
 
-    def update_concurrent_viewers_count(self, channel_name: str) -> Optional[int]:
+    def update_concurrent_viewers_count(self, active_stream_id: int) -> Optional[int]:
         db = SessionLocal()
         try:
-            active_stream = self.get_active_stream(channel_name)
-            if not active_stream:
-                logger.debug(f"Нет активного стрима для обновления concurrent viewers в канале {channel_name}")
-                return None
-            
-            current_concurrent = (
-                db.query(StreamViewerSession)
-                .filter_by(stream_id=active_stream.id, is_watching=True)
-                .count()
-            )
-            
-            stream = db.query(Stream).filter_by(id=active_stream.id).first()
+            current_concurrent = db.query(StreamViewerSession).filter_by(stream_id=active_stream_id, is_watching=True).count()
+            stream = db.query(Stream).filter_by(id=active_stream_id).first()
+
             if not stream:
                 return current_concurrent
             
             if current_concurrent > stream.max_concurrent_viewers:
-                old_max = stream.max_concurrent_viewers
                 stream.max_concurrent_viewers = current_concurrent
                 stream.updated_at = datetime.utcnow()
-                
                 db.commit()
-                logger.info(f"Новый рекорд одновременных зрителей в стриме {stream.id}: {current_concurrent} (было: {old_max})")
-            
+                logger.info(f"Новый рекорд одновременных зрителей в стриме {stream.id}: {current_concurrent}")
             return current_concurrent
-            
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при обновлении concurrent viewers: {e}")
