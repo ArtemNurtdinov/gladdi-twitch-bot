@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, case
 
 from db.base import SessionLocal
-from features.ai.ai_service import AIService
 from features.ai.message import AIMessage, Role
 from features.stream.db.stream_messages import TwitchMessage, ChatMessageLog
 from features.battle.db.battle_history import BattleHistory
@@ -15,35 +14,13 @@ from features.twitch.chat_schemas import TopChatUser
 
 
 class ChatService:
-    SYSTEM_PROMPT_FOR_GROUP = (
-        "Ты — GLaDDi, цифровой ассистент нового поколения."
-        "\nТы обладаешь характером GLaDOS, но являешься искусственным интеллектом мужского пола."
-        "\n\nИнформация о твоем создателе:"
-        "\nИмя: Артем"
-        "\nДата рождения: 04.12.1992"
-        "\nПол: мужской"
-        "\nНикнейм на twitch: ArtemNeFRiT"
-        "\nОбщая информация: Более 10 лет опыта в разработке программного обеспечения. Увлекается AI и NLP. Любит играть в игры на ПК, иногда проводит стримы на Twitch."
-        "\n- Twitch канал: https://www.twitch.tv/artemnefrit"
-        "\n- Instagram: https://www.instagram.com/artem_nfrt/profilecard"
-        "\n- Steam: https://steamcommunity.com/id/ArtNeFRiT"
-        "\n- Telegram канал: https://t.me/artem_nefrit_gaming"
-        "\n- Любимые игры: World of Warcraft, Cyberpunk 2077, Skyrim, CS2, Clair Obscur: Expedition 33"
-        "\n\nТвоя задача — взаимодействие с чатом на Twitch. Модераторы канала: d3ar_88, voidterror. Vip-пользователи канала: dankar1000, gidrovlad, vrrrrrrredinka, rympelina"
-        "\n\nОтвечай с юмором в стиле GLaDOS, не уступай, подкалывай, но оставайся полезным."
-        "\nНе обсуждай политические темы, интим и криминал."
-        "\nОтвечай кратко."
-    )
 
-    def __init__(self, ai_repository: AIService):
-        self.ai_repository = ai_repository
-
-    def generate_response_in_chat(self, prompt: str, channel_name: str) -> str:
+    def get_last_ai_messages(self, channel_name: str, system_prompt: str) -> list[AIMessage]:
         db = SessionLocal()
         try:
             role_order = case((TwitchMessage.role == Role.USER, 2), (TwitchMessage.role == Role.ASSISTANT, 1), else_=3)
 
-            non_system_messages = (
+            messages = (
                 db.query(TwitchMessage)
                 .filter_by(channel_name=channel_name)
                 .filter(TwitchMessage.role != Role.SYSTEM)
@@ -51,19 +28,12 @@ class ChatService:
                 .limit(50)
                 .all()
             )
-
-            non_system_messages.reverse()
-
-            system_prompt = self.SYSTEM_PROMPT_FOR_GROUP
+            messages.reverse()
             ai_messages = [AIMessage(Role.SYSTEM, system_prompt)]
 
-            for message in non_system_messages:
+            for message in messages:
                 ai_messages.append(AIMessage(message.role, message.content))
-
-            ai_messages.append(AIMessage(Role.USER, prompt))
-
-            assistant_message = self.ai_repository.generate_ai_response(ai_messages)
-            return assistant_message
+            return ai_messages
         finally:
             db.close()
 

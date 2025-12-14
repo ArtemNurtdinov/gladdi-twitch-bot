@@ -35,6 +35,25 @@ logger = logging.getLogger(__name__)
 
 
 class Bot(commands.Bot):
+    SYSTEM_PROMPT_FOR_GROUP = (
+        "Ты — GLaDDi, цифровой ассистент нового поколения."
+        "\nТы обладаешь характером GLaDOS, но являешься искусственным интеллектом мужского пола."
+        "\n\nИнформация о твоем создателе:"
+        "\nИмя: Артем"
+        "\nДата рождения: 04.12.1992"
+        "\nПол: мужской"
+        "\nНикнейм на twitch: ArtemNeFRiT"
+        "\nОбщая информация: Более 10 лет опыта в разработке программного обеспечения. Увлекается AI и NLP. Любит играть в игры на ПК, иногда проводит стримы на Twitch."
+        "\n- Twitch канал: https://www.twitch.tv/artemnefrit"
+        "\n- Instagram: https://www.instagram.com/artem_nfrt/profilecard"
+        "\n- Steam: https://steamcommunity.com/id/ArtNeFRiT"
+        "\n- Telegram канал: https://t.me/artem_nefrit_gaming"
+        "\n- Любимые игры: World of Warcraft, Cyberpunk 2077, Skyrim, CS2, Clair Obscur: Expedition 33"
+        "\n\nТвоя задача — взаимодействие с чатом на Twitch. Модераторы канала: d3ar_88, voidterror. Vip-пользователи канала: dankar1000, gidrovlad, vrrrrrrredinka, rympelina"
+        "\n\nОтвечай с юмором в стиле GLaDOS, не уступай, подкалывай, но оставайся полезным."
+        "\nНе обсуждай политические темы, интим и криминал."
+        "\nОтвечай кратко."
+    )
     _COMMAND_ROLL = "ставка"
     _COMMAND_FOLLOWAGE = "followage"
     _COMMAND_GLADDI = "gladdi"
@@ -200,7 +219,7 @@ class Bot(commands.Bot):
             prompt = self.ai_repository.get_hello_prompt(self._SOURCE_TWITCH, nickname, content)
 
         if prompt is not None:
-            result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+            result = self.generate_response_in_chat(prompt, channel_name)
             await self._post_message_in_twitch_chat(result, message.channel)
             self.chat_service.save_chat_message(channel_name, self.nick, result)
             logger.info(f"Отправлен ответ на сообщение от {nickname}")
@@ -240,7 +259,7 @@ class Bot(commands.Bot):
             minutes, _ = divmod(remainder, 60)
             logger.info(f"Пользователь {user_name} подписан на {days} дней, {hours} часов, {minutes} минут")
             prompt = f"@{user_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и {minutes} минут. Сообщи ему об этом как-нибудь оригинально."
-            result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+            result = self.generate_response_in_chat(prompt, channel_name)
             self.chat_service.save_conversation_to_db(channel_name, prompt, result)
             self.chat_service.save_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
@@ -273,7 +292,7 @@ class Bot(commands.Bot):
         else:
             prompt = self.ai_repository.get_default_prompt(self._SOURCE_TWITCH, nickname, question)
 
-        result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+        result = self.generate_response_in_chat(prompt, channel_name)
         self.chat_service.save_conversation_to_db(channel_name, prompt, result)
         self.chat_service.save_chat_message(channel_name, self.nick, result)
         logger.info(f"Отправлен ответ пользователю {nickname}")
@@ -354,7 +373,7 @@ class Bot(commands.Bot):
             f"\n\nПроигравший получит таймаут! Победитель получит {self.economy_service.BATTLE_WINNER_PRIZE} монет!"
         )
 
-        result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+        result = self.generate_response_in_chat(prompt, channel_name)
 
         logger.info(f"Битва завершена. Победитель: {winner}")
 
@@ -474,7 +493,7 @@ class Bot(commands.Bot):
         try:
             rarity_enum = RarityLevel(bet_result.rarity)
             self.chat_service.save_bet_history(channel_name=channel_name, user_name=nickname, slot_result=slot_result_string, result_type=db_result_type,
-                                                    rarity_level=rarity_enum)
+                                               rarity_level=rarity_enum)
             logger.info(f"Результат ставки сохранён в БД для {nickname}: {slot_result_string}, редкость: {bet_result.rarity}")
         except Exception as e:
             logger.error(f"Ошибка сохранения результата ставки в БД: {e}")
@@ -1009,7 +1028,7 @@ class Bot(commands.Bot):
 
                 stream_info = await self.twitch_api_service.get_stream_info(broadcaster_id)
                 prompt = f"Придумай анекдот, связанной с категорией трансляции: {stream_info.game_name}."
-                result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+                result = self.generate_response_in_chat(prompt, channel_name)
                 self.chat_service.save_conversation_to_db(channel_name, prompt, result)
                 self.chat_service.save_chat_message(channel_name, self.nick, result)
                 channel = self.get_channel(channel_name)
@@ -1104,7 +1123,7 @@ class Bot(commands.Bot):
 
     async def stream_announcement(self, game_name: str, title: str, channel_name: str):
         prompt = f"Начался стрим. Категория: {game_name}, название: {title}. Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/artemnefrit"
-        result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+        result = self.generate_response_in_chat(prompt, channel_name)
         try:
             await self.telegram_bot.send_message(chat_id=self._GROUP_ID, text=result)
             self.chat_service.save_conversation_to_db(channel_name, prompt, result)
@@ -1126,7 +1145,7 @@ class Bot(commands.Bot):
                 f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
                 f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
             )
-            result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+            result = self.generate_response_in_chat(prompt, channel_name)
             self.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
@@ -1155,7 +1174,7 @@ class Bot(commands.Bot):
             prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
 
         prompt += f"\n\nНа основе предоставленной информации подведи краткий итог трансляции"
-        result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+        result = self.generate_response_in_chat(prompt, channel_name)
 
         self.chat_service.save_conversation_to_db(channel_name, prompt, result)
 
@@ -1205,7 +1224,7 @@ class Bot(commands.Bot):
                 chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in messages)
                 prompt = (f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
                           f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}")
-                result = self.chat_service.generate_response_in_chat(prompt, channel_name)
+                result = self.generate_response_in_chat(prompt, channel_name)
                 self.current_stream_summaries.append(result)
                 self.last_chat_summary_time = datetime.utcnow()
                 logger.info(f"Создан периодический анализ чата: {result}")
@@ -1266,7 +1285,7 @@ class Bot(commands.Bot):
                             "\n\nВот сообщения чата (ник: текст):\n" + chat_text
                         )
 
-                        system_prompt = ChatService.SYSTEM_PROMPT_FOR_GROUP
+                        system_prompt = self.SYSTEM_PROMPT_FOR_GROUP
                         ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
                         response = self.ai_repository.generate_ai_response(ai_messages)
 
@@ -1389,3 +1408,9 @@ class Bot(commands.Bot):
                 logger.info("Активных стримов не найдено")
         except Exception as e:
             logger.error(f"Ошибка при восстановлении состояния стрима: {e}")
+
+    def generate_response_in_chat(self, prompt: str, channel_name: str) -> str:
+        messages = self.chat_service.get_last_ai_messages(channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
+        messages.append(AIMessage(Role.USER, prompt))
+        assistant_message = self.ai_repository.generate_ai_response(messages)
+        return assistant_message

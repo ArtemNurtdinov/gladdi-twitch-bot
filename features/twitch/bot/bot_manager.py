@@ -69,7 +69,7 @@ class BotManager:
             self._ensure_credentials(auth)
 
             ai_service = AIService()
-            chat_service = ChatService(ai_service)
+            chat_service = ChatService()
             twitch_api_service = TwitchApiService(auth)
 
             self._bot = TwitchBot(auth, twitch_api_service, chat_service, ai_service)

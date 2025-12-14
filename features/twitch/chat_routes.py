@@ -1,13 +1,10 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import List
-
-from features.ai.ai_service import AIService
 from features.twitch.chat_schemas import TopChatUser
 from features.twitch.chat_service import ChatService
 
 router = APIRouter()
-ai_service = AIService()
-chat_service = ChatService(ai_service)
+chat_service = ChatService()
 
 @router.get(
     "/top-users",
