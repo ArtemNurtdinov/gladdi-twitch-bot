@@ -354,8 +354,8 @@ class Bot(commands.Bot):
 
         logger.info(f"Битва завершена. Победитель: {winner}")
 
-        winner_balance = self.economy_service.process_battle_win(channel_name, winner, loser)
-
+        winner_amount = self.economy_service.BATTLE_WINNER_PRIZE
+        self.economy_service.add_balance(channel_name, winner, winner_amount, TransactionType.BATTLE_WIN, f"Победа в битве против {loser}")
         self.twitch_repository.save_conversation_to_db(channel_name, prompt, result)
         self.twitch_repository.log_chat_message(channel_name, self.nick, result)
         self.twitch_repository.save_battle_history(channel_name, opponent, challenger, winner, result)
@@ -368,7 +368,7 @@ class Bot(commands.Bot):
 
         logger.info(f"Проигравший: {loser}, получает таймаут")
 
-        winner_message = f"{winner} получает {self.economy_service.BATTLE_WINNER_PRIZE} монет! Баланс: {winner_balance.balance} монет."
+        winner_message = f"{winner} получает {self.economy_service.BATTLE_WINNER_PRIZE} монет!"
         await ctx.send(winner_message)
 
         self.twitch_repository.log_chat_message(channel_name, self.nick, winner_message)

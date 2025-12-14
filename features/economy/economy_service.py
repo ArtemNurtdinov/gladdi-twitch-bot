@@ -347,13 +347,6 @@ class EconomyService:
         finally:
             db.close()
 
-    def can_join_battle(self, channel_name: str, user_name: str) -> bool:
-        user_balance = self.get_user_balance(channel_name, user_name)
-        return user_balance.balance >= self.BATTLE_ENTRY_FEE
-
-    def process_battle_win(self, channel_name: str, winner: str, loser: str) -> UserBalance:
-        return self.add_balance(channel_name, winner, self.BATTLE_WINNER_PRIZE, TransactionType.BATTLE_WIN, f"Победа в битве против {loser}")
-
     def get_user_stats(self, channel_name: str, user_name: str) -> UserStats:
         db = SessionLocal()
         try:
