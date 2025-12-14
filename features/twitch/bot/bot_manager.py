@@ -94,8 +94,6 @@ class BotManager:
             self._task = asyncio.create_task(self._bot.start())
             self._task.add_done_callback(self._on_bot_done)
 
-            logger.info("Twitch бот запущен из API")
-
             return BotActionResult(**self.get_status().model_dump(), message="Запуск инициализирован")
 
     async def stop_bot(self) -> BotActionResult:

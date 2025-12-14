@@ -35,15 +35,38 @@ class StreamService:
             raise
         finally:
             db.close()
+
+    def end_stream(self, active_stream_id: int, finish_time):
+        db = SessionLocal()
+        try:
+            stream = db.query(Stream).filter_by(id=active_stream_id).first()
+            stream.ended_at = finish_time
+            stream.is_active = False
+            stream.updated_at = datetime.utcnow()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Ошибка при завершении стрима: {e}")
+            return None
+        finally:
+            db.close()
+
+    def update_stream_total_viewers(self, stream_id: int, total_viewers: int):
+        db = SessionLocal()
+        try:
+            stream = db.query(Stream).filter_by(id=stream_id).first()
+            stream.total_viewers = total_viewers
+            stream.updated_at = datetime.utcnow()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Ошибка при обновлении total_viewers: {e}")
+            return None
+        finally:
+            db.close()
     
     def end_stream(self, channel_name: str) -> Optional[Stream]:
         db = SessionLocal()
         try:
-            stream = (
-                db.query(Stream)
-                .filter_by(channel_name=channel_name, is_active=True)
-                .first()
-            )
+            stream = db.query(Stream).filter_by(channel_name=channel_name, is_active=True).first()
             
             if not stream:
                 logger.warning(f"Нет активного стрима для завершения в канале {channel_name}")
@@ -53,11 +76,7 @@ class StreamService:
             stream.is_active = False
             stream.updated_at = datetime.utcnow()
             
-            active_sessions = (
-                db.query(StreamViewerSession)
-                .filter_by(stream_id=stream.id, is_watching=True)
-                .all()
-            )
+            active_sessions = db.query(StreamViewerSession).filter_by(stream_id=stream.id, is_watching=True).all()
             
             for session in active_sessions:
                 if session.session_start:
@@ -79,10 +98,7 @@ class StreamService:
             
             db.commit()
             db.refresh(stream)
-            
-            logger.info(f"Стрим завершен: ID {stream.id}, длительность: {stream.get_formatted_duration()}, зрителей: {total_unique_viewers}")
             return stream
-            
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при завершении стрима: {e}")
@@ -140,24 +156,15 @@ class StreamService:
         finally:
             db.close()
 
-    def update_concurrent_viewers_count(self, active_stream_id: int) -> Optional[int]:
+    def update_max_concurrent_viewers_count(self, active_stream_id: int, viewers_count: int):
         db = SessionLocal()
         try:
-            current_concurrent = db.query(StreamViewerSession).filter_by(stream_id=active_stream_id, is_watching=True).count()
             stream = db.query(Stream).filter_by(id=active_stream_id).first()
-
-            if not stream:
-                return current_concurrent
-            
-            if current_concurrent > stream.max_concurrent_viewers:
-                stream.max_concurrent_viewers = current_concurrent
-                stream.updated_at = datetime.utcnow()
-                db.commit()
-                logger.info(f"Новый рекорд одновременных зрителей в стриме {stream.id}: {current_concurrent}")
-            return current_concurrent
+            stream.max_concurrent_viewers = viewers_count
+            stream.updated_at = datetime.utcnow()
+            db.commit()
         except Exception as e:
-            db.rollback()
             logger.error(f"Ошибка при обновлении concurrent viewers: {e}")
-            return None
+            db.rollback()
         finally:
             db.close()

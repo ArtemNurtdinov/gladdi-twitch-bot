@@ -16,7 +16,7 @@ from features.battle.model.user_battle_stats import UserBattleStats
 
 
 class TwitchService:
-    _SYSTEM_PROMPT_FOR_GROUP = (
+    SYSTEM_PROMPT_FOR_GROUP = (
         "Ты — GLaDDi, цифровой ассистент нового поколения."
         "\nТы обладаешь характером GLaDOS, но являешься искусственным интеллектом мужского пола."
         "\n\nИнформация о твоем создателе:"
@@ -55,7 +55,7 @@ class TwitchService:
 
             non_system_messages.reverse()
 
-            system_prompt = self._SYSTEM_PROMPT_FOR_GROUP
+            system_prompt = self.SYSTEM_PROMPT_FOR_GROUP
             ai_messages = [AIMessage(Role.SYSTEM, system_prompt)]
 
             for message in non_system_messages:
@@ -87,11 +87,7 @@ class TwitchService:
     def get_used_words(self, channel_name: str, limit: int = 50) -> list[str]:
         db = SessionLocal()
         try:
-            q = (
-                db.query(WordHistory.word)
-                .filter(WordHistory.channel_name == channel_name)
-                .order_by(WordHistory.created_at.desc())
-            )
+            q = db.query(WordHistory.word).filter(WordHistory.channel_name == channel_name).order_by(WordHistory.created_at.desc())
             if limit and limit > 0:
                 q = q.limit(limit)
             rows = q.all()
@@ -126,8 +122,8 @@ class TwitchService:
 
         try:
             normalized_user = user.lower()
-            
-            msg = ChatMessageLog(channel_name=channel_name, user_name=normalized_user, content=content,created_at=datetime.utcnow())
+
+            msg = ChatMessageLog(channel_name=channel_name, user_name=normalized_user, content=content, created_at=datetime.utcnow())
             db.add(msg)
             db.commit()
         except Exception as e:
@@ -205,13 +201,7 @@ class TwitchService:
             else:
                 top_winner = None
 
-            return StreamStatistics(
-                total_messages=total_messages,
-                unique_users=unique_users,
-                top_user=top_user,
-                total_battles=total_battles,
-                top_winner=top_winner
-            )
+            return StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
         finally:
             db.close()
 
@@ -219,7 +209,7 @@ class TwitchService:
         db = SessionLocal()
         try:
             normalized_user_name = user_name.lower()
-            
+
             bet = BetHistory(channel_name=channel_name, user_name=normalized_user_name, slot_result=slot_result, result_type=result_type, rarity_level=rarity_level)
             db.add(bet)
             db.commit()
@@ -233,7 +223,7 @@ class TwitchService:
         db = SessionLocal()
         try:
             normalized_user_name = user_name.lower()
-            
+
             count = (
                 db.query(BetHistory)
                 .filter(BetHistory.user_name == normalized_user_name)
@@ -248,7 +238,7 @@ class TwitchService:
         db = SessionLocal()
         try:
             normalized_user_name = user_name.lower()
-            
+
             bets = (
                 db.query(BetHistory)
                 .filter(BetHistory.user_name == normalized_user_name)
@@ -312,7 +302,7 @@ class TwitchService:
             )
 
             if not battles:
-                return UserBattleStats(total_battles=0, wins=0,losses=0, win_rate=0.0)
+                return UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
 
             total_battles = len(battles)
             wins = sum(1 for battle in battles if battle.winner == user_name)
@@ -323,56 +313,46 @@ class TwitchService:
         finally:
             db.close()
 
-    def suggest_word_and_hint_from_chat(self, channel_name: str, avoid_words: list[str] | None = None) -> tuple[str, str]:
-        avoid_words = avoid_words or []
-        if avoid_words:
-            avoid_clause = "\n\nНе используй ранее загаданные слова (избегай повторов): " + ", ".join(sorted(set(avoid_words)))
-        else:
-            avoid_clause = ""
+    def suggest_word_and_hint_from_chat(self, channel_name: str, prompt: str) -> tuple[str, str]:
+        system_prompt = self.SYSTEM_PROMPT_FOR_GROUP
+        ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
+        response = self.ai_repository.generate_ai_response(ai_messages)
 
+        self.save_conversation_to_db(channel_name, prompt, response)
+
+        data = json.loads(response)
+        word = str(data.get("word", "")).strip()
+        hint = str(data.get("hint", "")).strip()
+        final_word = word.lower()
+
+        return final_word, hint
+
+    def get_chat_messages(self, channel_name: str, from_time, to_time):
+        db = SessionLocal()
+        try:
+            messages = (
+                db.query(ChatMessageLog)
+                .filter(ChatMessageLog.channel_name == channel_name)
+                .filter(ChatMessageLog.created_at >= from_time)
+                .filter(ChatMessageLog.created_at < to_time)
+                .order_by(ChatMessageLog.created_at.asc())
+                .all()
+            )
+            return messages
+        finally:
+            db.close()
+
+    def get_last_chat_messages(self, channel_name: str, limit: int):
         db = SessionLocal()
         try:
             messages = (
                 db.query(ChatMessageLog)
                 .filter(ChatMessageLog.channel_name == channel_name)
                 .order_by(ChatMessageLog.created_at.desc())
-                .limit(100)
+                .limit(limit)
                 .all()
             )
-
             messages.reverse()
-            chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in messages)
-
-            instruction = (
-                "Проанализируй последние сообщения из чата и выбери одно подходящее русское существительное (ОДНО слово),"
-                " связанное по смыслу с обсуждаемыми темами. Придумай короткую подсказку-описание к нему. Не повторяйся в загаданных словах." +
-                avoid_clause +
-                "\nОтвет верни строго в JSON без дополнительного текста: {\"word\": \"слово\", \"hint\": \"краткая подсказка\"}.\n"
-                "Требования: слово только из букв, без пробелов и дефисов; подсказка до 100 символов.\n\n"
-                "Вот сообщения чата (ник: текст):\n" + chat_text
-            )
-
-            system_prompt = self._SYSTEM_PROMPT_FOR_GROUP
-            ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, instruction)]
-            response = self.ai_repository.generate_ai_response(ai_messages)
-
-            self.save_conversation_to_db(channel_name, instruction, response)
-
-            try:
-                data = json.loads(response)
-                word = str(data.get("word", "")).strip()
-                hint = str(data.get("hint", "")).strip()
-            except Exception:
-                parts = response.split("|", 1)
-                word = parts[0].strip() if parts else ""
-                hint = parts[1].strip() if len(parts) > 1 else ""
-
-            cleaned_word = "".join(ch for ch in word if ch.isalpha())
-            if not cleaned_word:
-                cleaned_word = "бот"
-            if len(cleaned_word) < 3:
-                cleaned_word = (cleaned_word + "бот")[:3]
-            final_word = cleaned_word.lower()
-            return final_word, hint or "Слово связано с последними темами чата"
+            return messages
         finally:
             db.close()

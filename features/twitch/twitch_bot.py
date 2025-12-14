@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import random
+import json
 from typing import Coroutine, Any
 from telegram.request import HTTPXRequest
 from twitchio.ext import commands
@@ -10,6 +11,7 @@ from config import config
 from db.base import SessionLocal
 from features.ai.ai_service import AIService
 from features.ai.intent import Intent
+from features.ai.message import AIMessage, Role
 from features.betting.betting_service import BettingService
 from features.equipment.equipment_service import EquipmentService
 from features.twitch.api.twitch_api_service import TwitchApiService
@@ -67,7 +69,7 @@ class Bot(commands.Bot):
         self.equipment_service = EquipmentService()
         self.economy_service = EconomyService(self.stream_service)
         self.minigame_service = MinigameService(self.economy_service)
-        self.viewer_time_service = ViewerTimeService(self.economy_service, self.stream_service)
+        self.viewer_service = ViewerTimeService(self.economy_service)
         self.betting_service = BettingService(self.economy_service)
 
         self._restore_stream_context()
@@ -149,7 +151,7 @@ class Bot(commands.Bot):
     async def event_ready(self):
         logger.info(f'Бот {self.nick} готов')
         if self.initial_channels:
-            logger.info(f'Бот успешно подключен к каналу(ам): {", ".join(self.initial_channels)}')
+            logger.info(f'Бот успешно подключен к каналу: {", ".join(self.initial_channels)}')
         else:
             logger.error('Проблемы с подключением к каналам!')
         await self._warmup_broadcaster_id()
@@ -181,7 +183,9 @@ class Bot(commands.Bot):
             logger.error(f"Ошибка при обработке активности пользователя {nickname}: {e}")
 
         try:
-            self.viewer_time_service.update_activity(channel_name, nickname)
+            active_stream = self.stream_service.get_active_stream(channel_name)
+            if active_stream:
+                self.viewer_service.update_activity(active_stream.id, channel_name, nickname)
         except Exception as e:
             logger.error(f"Ошибка при обновлении времени просмотра для {nickname}: {e}")
 
@@ -1029,7 +1033,7 @@ class Bot(commands.Bot):
                     await asyncio.sleep(60)
                     continue
 
-                current_stream = self.stream_service.get_active_stream(channel_name)
+                active_stream = self.stream_service.get_active_stream(channel_name)
 
                 stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
 
@@ -1038,47 +1042,42 @@ class Bot(commands.Bot):
                     await asyncio.sleep(60)
                     continue
 
-                is_online = stream_status.is_online
-
                 game_name = None
                 title = None
-                if is_online and stream_status.stream_data:
+                if stream_status.is_online and stream_status.stream_data:
                     game_name = stream_status.stream_data.game_name
                     title = stream_status.stream_data.title
 
-                if is_online and current_stream is None:
+                if stream_status.is_online and active_stream is None:
                     logger.info(f"Стрим начался: {game_name} - {title}")
 
                     try:
-                        current_stream = self.stream_service.create_stream(channel_name, game_name, title)
-
-                        self.minigame_service.set_stream_start_time(channel_name, current_stream.started_at)
-
+                        active_stream = self.stream_service.create_stream(channel_name, game_name, title)
+                        self.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
                         await self.stream_announcement(game_name, title, channel_name)
-
                         self.current_stream_summaries = []
                     except Exception as e:
                         logger.error(f"Ошибка при создании стрима: {e}")
 
-                elif not is_online and current_stream is not None:
+                elif not stream_status.is_online and active_stream is not None:
                     logger.info("Стрим завершён")
+                    finish_time = datetime.utcnow()
+                    self.stream_service.end_stream(active_stream.id, finish_time)
+                    self.viewer_service.finish_stream_sessions(active_stream.id)
+                    total_viewers = self.viewer_service.get_unique_viewers_count(active_stream.id)
+                    self.stream_service.update_stream_total_viewers(active_stream.id, total_viewers)
+                    self.minigame_service.reset_stream_state(channel_name)
+                    logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
+
+                    stats = self.twitch_repository.get_stream_statistics(channel_name, active_stream.started_at)
 
                     try:
-                        ended_stream = self.stream_service.end_stream(channel_name)
-                        if ended_stream:
-                            logger.info(f"Стрим завершен в БД: ID {ended_stream.id}, длительность: {ended_stream.get_formatted_duration()}")
-
-                            stream_start_dt = ended_stream.started_at
-                            stream_end_dt = ended_stream.ended_at
-                            stats = self.twitch_repository.get_stream_statistics(channel_name, stream_start_dt)
-                            await self.stream_summarize(stats, channel_name, stream_start_dt, stream_end_dt)
-
-                        self.minigame_service.reset_stream_state(channel_name)
+                        await self.stream_summarize(stats, channel_name, active_stream.started_at, finish_time)
                     except Exception as e:
-                        logger.error(f"Ошибка при завершении стрима: {e}")
+                        logger.error(f"Ошибка при вызове stream_summarize: {e}")
 
-                elif is_online and current_stream:
-                    if current_stream.game_name != game_name or current_stream.title != title:
+                elif stream_status.is_online and active_stream:
+                    if active_stream.game_name != game_name or active_stream.title != title:
                         self.stream_service.update_stream_metadata(channel_name=channel_name, game_name=game_name, title=title)
                         logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
@@ -1103,28 +1102,16 @@ class Bot(commands.Bot):
         if self.last_chat_summary_time is None:
             self.last_chat_summary_time = stream_start_dt
 
-        db = SessionLocal()
-        try:
-            messages = (
-                db.query(ChatMessageLog)
-                .filter(ChatMessageLog.channel_name == channel_name)
-                .filter(ChatMessageLog.created_at >= self.last_chat_summary_time)
-                .filter(ChatMessageLog.created_at < stream_end_dt)
-                .order_by(ChatMessageLog.created_at.asc())
-                .all()
+        last_messages = self.twitch_repository.get_chat_messages(channel_name, self.last_chat_summary_time, stream_end_dt)
+
+        if last_messages:
+            chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
+            prompt = (
+                f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
+                f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
             )
-            if messages:
-                chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in messages)
-                prompt = (
-                    f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-                    f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}")
-                result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
-                self.current_stream_summaries.append(result)
-                logger.debug(f"Добавлен итог чата: {result}")
-        except Exception as e:
-            logger.error(f"Ошибка при финальном сборе сообщений для summary: {e}")
-        finally:
-            db.close()
+            result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
+            self.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
         hours, remainder = divmod(int(duration.total_seconds()), 3600)
@@ -1138,14 +1125,10 @@ class Bot(commands.Bot):
             stream_stat_message += f" Битв за стрим: {stream_stat.total_battles}. Главный победитель: {stream_stat.top_winner}"
 
         if top_user and top_user != 'нет':
-            try:
-                reward_amount = 200
-                user_balance = self.economy_service.add_balance(channel_name, top_user, reward_amount, TransactionType.SPECIAL_EVENT,
-                                                                "Награда за самую высокую активность в стриме")
-                stream_stat_message += f" 🎉 {top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
-                logger.info(f"Самый активный пользователь {top_user} награжден {reward_amount} монетами. Новый баланс: {user_balance.balance}")
-            except Exception as e:
-                logger.error(f"Ошибка при награждении самого активного пользователя {top_user}: {e}")
+            reward_amount = 200
+            user_balance = self.economy_service.add_balance(channel_name, top_user, reward_amount, TransactionType.SPECIAL_EVENT,
+                                                            "Награда за самую высокую активность в стриме")
+            stream_stat_message += f"{top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
 
         logger.info(f"Статистика стрима: {stream_stat_message}")
 
@@ -1153,7 +1136,7 @@ class Bot(commands.Bot):
 
         if self.current_stream_summaries:
             summary_text = "\n".join(self.current_stream_summaries)
-            prompt += f"\n\nТакже прилагаю выжимки из того, что происходило в чате: {summary_text}"
+            prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
 
         prompt += f"\n\nНа основе предоставленной информации подведи краткий итог трансляции"
         result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
@@ -1163,7 +1146,6 @@ class Bot(commands.Bot):
         self.current_stream_summaries = []
         self.last_chat_summary_time = None
 
-        logger.info(f"Итоговый отчёт о стриме: {result}")
         await self.telegram_bot.send_message(chat_id=self._GROUP_ID, text=result)
 
     async def summarize_chat_periodically(self):
@@ -1241,68 +1223,89 @@ class Bot(commands.Bot):
                     self.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
 
                 if self.minigame_service.should_start_new_game(channel_name):
-                    try:
-                        broadcaster_id = await self._get_user_id_cached(channel_name)
+                    broadcaster_id = await self._get_user_id_cached(channel_name)
 
-                        if not broadcaster_id:
-                            logger.error(f"Не удалось получить ID канала {channel_name} для мини-игр")
-                            continue
+                    if not broadcaster_id:
+                        logger.error(f"Не удалось получить ID канала {channel_name} для мини-игр")
+                        continue
 
-                        choice = random.choice(["number", "word", "rps"])
-                        if choice == "word":
-                            try:
-                                used_words = self.twitch_repository.get_used_words(channel_name, limit=50)
-                                word, hint = self.twitch_repository.suggest_word_and_hint_from_chat(channel_name, avoid_words=used_words)
-                                game = self.minigame_service.start_word_guess_game(channel_name, word, hint)
-                                self.twitch_repository.add_used_word(channel_name, word)
-                                letters_count = sum(1 for ch in game.target_word if ch.isalpha())
-                                masked = game.get_masked_word()
-                                game_message = (
-                                    f"🔤 НОВАЯ ИГРА 'поле чудес'! Слово из {letters_count} букв. Подсказка: {hint}. "
-                                    f"Слово: {masked}. Приз: до {self.minigame_service.WORD_GAME_MAX_PRIZE} монет. "
-                                    f"Угадывайте буквы: {self._prefix}{self._COMMAND_GUESS_LETTER} <буква> или слово: {self._prefix}{self._COMMAND_GUESS_WORD} <слово>. "
-                                    f"Время на игру: {self.minigame_service.WORD_GAME_DURATION_MINUTES} минут ⏰"
-                                )
-                                logger.info(f"Запущена новая игра 'поле чудес' в канале {channel_name}")
-                                messages = self.split_text(game_message)
-                                for msg in messages:
-                                    await self.get_channel(channel_name).send(msg)
-                                    await asyncio.sleep(0.3)
-                                self.twitch_repository.log_chat_message(channel_name, self.nick, game_message)
-                            except Exception as e:
-                                logger.error(f"Не удалось запустить 'поле чудес' (падаем на 'угадай число'): {e}")
-                                choice = "number"
-                        if choice == "number":
-                            game = self.minigame_service.start_guess_number_game(channel_name)
-                            game_message = (f"🎯 НОВАЯ МИНИ-ИГРА! Угадай число от {game.min_number} до {game.max_number}! "
-                                            f"Первый, кто угадает, получит приз до {self.minigame_service.GUESS_GAME_PRIZE} монет! "
-                                            f"Используй: {self._prefix}{self._COMMAND_GUESS} [число]. "
-                                            f"Время на игру: {self.minigame_service.GUESS_GAME_DURATION_MINUTES} минут ⏰")
-                            logger.info(f"Запущена новая игра 'угадай число' в канале {channel_name}")
-                            messages = self.split_text(game_message)
-                            for msg in messages:
-                                await self.get_channel(channel_name).send(msg)
-                                await asyncio.sleep(0.3)
-                            self.twitch_repository.log_chat_message(channel_name, self.nick, game_message)
-                        if choice == "rps":
-                            self.minigame_service.start_rps_game(channel_name)
-                            game_message = (
-                                f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {self.minigame_service.RPS_BASE_BANK} монет + {self.minigame_service.RPS_ENTRY_FEE_PER_USER}"
-                                f" за каждого участника. "
-                                f"Участвовать: {self._prefix}{self._COMMAND_RPS} <камень/ножницы/бумага> — взнос {self.minigame_service.RPS_ENTRY_FEE_PER_USER} монет. "
-                                f"Время на голосование: {self.minigame_service.RPS_GAME_DURATION_MINUTES} минуты ⏰"
-                            )
-                            logger.info(f"Запущена новая игра КНБ в канале {channel_name}")
-                            messages = self.split_text(game_message)
-                            for msg in messages:
-                                await self.get_channel(channel_name).send(msg)
-                                await asyncio.sleep(0.3)
-                            self.twitch_repository.log_chat_message(channel_name, self.nick, game_message)
-                    except Exception as e:
-                        logger.error(f"Ошибка при проверке статуса стрима для мини-игр: {e}")
+                    choice = random.choice(["number", "word", "rps"])
+
+                    if choice == "word":
+                        used_words = self.twitch_repository.get_used_words(channel_name, limit=50)
+                        last_messages = self.twitch_repository.get_last_chat_messages(channel_name, limit=50)
+
+                        if used_words:
+                            avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words)))
+                        else:
+                            avoid_clause = ""
+
+                        chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
+
+                        prompt = (
+                            "Проанализируй последние сообщения из чата и выбери одно подходящее русское существительное (ОДНО слово),"
+                            " связанное по смыслу с обсуждаемыми темами. Придумай короткую подсказку-описание к нему. Не повторяйся в загаданных словах." + avoid_clause +
+                            "\nОтвет верни строго в JSON без дополнительного текста: {\"word\": \"слово\", \"hint\": \"краткая подсказка\"}."
+                            "\nТребования: слово только из букв, без пробелов и дефисов; подсказка до 100 символов."
+                            "\n\nВот сообщения чата (ник: текст):\n" + chat_text
+                        )
+
+                        system_prompt = TwitchService.SYSTEM_PROMPT_FOR_GROUP
+                        ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
+                        response = self.ai_repository.generate_ai_response(ai_messages)
+
+                        self.twitch_repository.save_conversation_to_db(channel_name, prompt, response)
+
+                        data = json.loads(response)
+                        word = str(data.get("word", "")).strip()
+                        hint = str(data.get("hint", "")).strip()
+                        final_word = word.lower()
+
+                        game = self.minigame_service.start_word_guess_game(channel_name, final_word, hint)
+                        self.twitch_repository.add_used_word(channel_name, final_word)
+
+                        masked = game.get_masked_word()
+                        game_message = (
+                            f"НОВАЯ ИГРА 'поле чудес'! Слово из {len(game.target_word)} букв. Подсказка: {hint}. "
+                            f"Слово: {masked}. Приз: до {self.minigame_service.WORD_GAME_MAX_PRIZE} монет. "
+                            f"Угадывайте буквы: {self._prefix}{self._COMMAND_GUESS_LETTER} <буква> или слово: {self._prefix}{self._COMMAND_GUESS_WORD} <слово>. "
+                            f"Время на игру: {self.minigame_service.WORD_GAME_DURATION_MINUTES} минут"
+                        )
+                        logger.info(f"Запущена новая игра 'поле чудес' в канале {channel_name}")
+                        messages = self.split_text(game_message)
+                        for msg in messages:
+                            await self.get_channel(channel_name).send(msg)
+                            await asyncio.sleep(0.3)
+                        self.twitch_repository.log_chat_message(channel_name, self.nick, game_message)
+                    if choice == "number":
+                        game = self.minigame_service.start_guess_number_game(channel_name)
+                        game_message = (f"🎯 НОВАЯ МИНИ-ИГРА! Угадай число от {game.min_number} до {game.max_number}! "
+                                        f"Первый, кто угадает, получит приз до {self.minigame_service.GUESS_GAME_PRIZE} монет! "
+                                        f"Используй: {self._prefix}{self._COMMAND_GUESS} [число]. "
+                                        f"Время на игру: {self.minigame_service.GUESS_GAME_DURATION_MINUTES} минут ⏰")
+                        logger.info(f"Запущена новая игра 'угадай число' в канале {channel_name}")
+                        messages = self.split_text(game_message)
+                        for msg in messages:
+                            await self.get_channel(channel_name).send(msg)
+                            await asyncio.sleep(0.3)
+                        self.twitch_repository.log_chat_message(channel_name, self.nick, game_message)
+                    if choice == "rps":
+                        self.minigame_service.start_rps_game(channel_name)
+                        game_message = (
+                            f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {self.minigame_service.RPS_BASE_BANK} монет + {self.minigame_service.RPS_ENTRY_FEE_PER_USER}"
+                            f" за каждого участника. "
+                            f"Участвовать: {self._prefix}{self._COMMAND_RPS} <камень/ножницы/бумага> — взнос {self.minigame_service.RPS_ENTRY_FEE_PER_USER} монет. "
+                            f"Время на голосование: {self.minigame_service.RPS_GAME_DURATION_MINUTES} минуты ⏰"
+                        )
+                        logger.info(f"Запущена новая игра КНБ в канале {channel_name}")
+                        messages = self.split_text(game_message)
+                        for msg in messages:
+                            await self.get_channel(channel_name).send(msg)
+                            await asyncio.sleep(0.3)
+                        self.twitch_repository.log_chat_message(channel_name, self.nick, game_message)
 
             except Exception as e:
-                logger.error(f"Ошибка в check_minigames_periodически: {e}")
+                logger.error(f"Ошибка в check_minigames_periodically: {e}")
 
             await asyncio.sleep(60)
 
@@ -1311,54 +1314,32 @@ class Bot(commands.Bot):
         while True:
             try:
                 if not self.initial_channels:
-                    logger.warning("Список каналов пуст в check_viewer_time_periodically. Ожидание...")
-                    await asyncio.sleep(self.viewer_time_service.CHECK_INTERVAL_SECONDS)
+                    logger.warning("Список каналов пуст в check_viewer_time_periodically")
+                    await asyncio.sleep(self.viewer_service.CHECK_INTERVAL_SECONDS)
                     continue
 
                 channel_name = self.initial_channels[0]
                 active_stream = self.stream_service.get_active_stream(channel_name)
 
-                if active_stream:
-                    self.viewer_time_service.check_inactive_viewers(active_stream.id)
+                if not active_stream:
+                    await asyncio.sleep(self.viewer_service.CHECK_INTERVAL_SECONDS)
+                    continue
 
-                    broadcaster_id = await self._get_user_id_cached(channel_name)
-                    moderator_id = await self._get_user_id_cached(self.nick)
-                    chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
-                    if chatters:
-                        await self.viewer_time_service.update_viewers(active_stream.id, channel_name, chatters)
-                    self.stream_service.update_concurrent_viewers_count(active_stream.id)
+                self.viewer_service.check_inactive_viewers(active_stream.id)
 
-                rewards = self.viewer_time_service.check_and_grant_rewards(channel_name)
-                for reward in rewards:
-                    logger.info(f"Награда выдана: {reward['user_name']} получил {reward['reward']} монет за {reward['minutes']} минут")
-
+                broadcaster_id = await self._get_user_id_cached(channel_name)
+                moderator_id = await self._get_user_id_cached(self.nick)
+                chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
+                if chatters:
+                    await self.viewer_service.update_viewers(active_stream.id, channel_name, chatters)
+                viewers_count = self.viewer_service.get_stream_watchers_count(active_stream.id)
+                if viewers_count > active_stream.max_concurrent_viewers:
+                    self.stream_service.update_max_concurrent_viewers_count(active_stream.id, viewers_count)
+                self.viewer_service.check_and_grant_rewards(active_stream.id, channel_name)
             except Exception as e:
                 logger.error(f"Ошибка в check_viewer_time_periodically: {e}")
 
-            await asyncio.sleep(self.viewer_time_service.CHECK_INTERVAL_SECONDS)
-
-    async def restore_initial_channels(self):
-        try:
-            logger.info("Восстановление списка каналов...")
-            original_channels = ['artemnefrit']
-
-            valid_channels = []
-            for channel in original_channels:
-                user_info = await self.twitch_api_service.get_user_by_login(channel)
-                if user_info:
-                    valid_channels.append(channel)
-                    logger.info(f"Канал {channel} восстановлен")
-                else:
-                    logger.warning(f"Канал {channel} все еще недоступен")
-
-            if valid_channels:
-                self.initial_channels = valid_channels
-                logger.info(f"Список каналов восстановлен: {valid_channels}")
-            else:
-                logger.error("Не удалось восстановить ни одного канала")
-
-        except Exception as e:
-            logger.error(f"Ошибка при восстановлении каналов: {e}")
+            await asyncio.sleep(self.viewer_service.CHECK_INTERVAL_SECONDS)
 
     def _restore_stream_context(self):
         try:

@@ -37,23 +37,3 @@ class StreamViewerSession(Base):
         if not self.rewards_claimed:
             return []
         return [int(x) for x in self.rewards_claimed.split(',') if x.strip()]
-    
-    def add_reward(self, minutes_threshold: int) -> None:
-        claimed_list = self.get_claimed_rewards_list()
-        if minutes_threshold not in claimed_list:
-            claimed_list.append(minutes_threshold)
-            self.rewards_claimed = ','.join(map(str, sorted(claimed_list)))
-            self.last_reward_claimed = datetime.utcnow()
-    
-    def has_reward(self, minutes_threshold: int) -> bool:
-        return minutes_threshold in self.get_claimed_rewards_list()
-    
-    def get_current_session_minutes(self) -> int:
-        if not self.is_watching or not self.session_start:
-            return 0
-        
-        duration = datetime.utcnow() - self.session_start
-        return int(duration.total_seconds() / 60)
-    
-    def get_total_minutes_with_current(self) -> int:
-        return self.total_minutes + self.get_current_session_minutes()

@@ -31,13 +31,3 @@ class Stream(Base):
             duration = self.ended_at - self.started_at
         
         return int(duration.total_seconds() / 60)
-    
-    def get_formatted_duration(self) -> str:
-        minutes = self.get_duration_minutes()
-        hours = minutes // 60
-        mins = minutes % 60
-        
-        if hours > 0:
-            return f"{hours}ч {mins}м"
-        else:
-            return f"{mins}м" 

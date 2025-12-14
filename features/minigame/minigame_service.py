@@ -14,21 +14,21 @@ logger = logging.getLogger(__name__)
 
 class MinigameService:
     GUESS_GAME_DURATION_MINUTES = 5
-    GUESS_GAME_PRIZE = 1000
+    GUESS_GAME_PRIZE = 3000
     GUESS_MIN_NUMBER = 1
     GUESS_MAX_NUMBER = 100
-    GUESS_PRIZE_DECREASE_PER_ATTEMPT = 50
+    GUESS_PRIZE_DECREASE_PER_ATTEMPT = 100
 
     WORD_GAME_DURATION_MINUTES = 5
     WORD_GAME_MIN_PRIZE = 300
-    WORD_GAME_MAX_PRIZE = 1000
-    WORD_GAME_LETTER_REWARD_DECREASE = 100
+    WORD_GAME_MAX_PRIZE = 5000
+    WORD_GAME_LETTER_REWARD_DECREASE = 200
 
     RPS_GAME_DURATION_MINUTES = 2
-    RPS_BASE_BANK = 500
+    RPS_BASE_BANK = 5000
     RPS_ENTRY_FEE_PER_USER = 50
 
-    FIRST_GAME_START_MIN = 5
+    FIRST_GAME_START_MIN = 15
     FIRST_GAME_START_MAX = 30
 
     GAME_START_INTERVAL_MIN = 30
@@ -223,14 +223,7 @@ class MinigameService:
 
         start_time = datetime.utcnow()
         end_time = start_time + timedelta(minutes=self.WORD_GAME_DURATION_MINUTES)
-        game = WordGuessGame(
-            channel_name=channel_name,
-            target_word=word,
-            hint=hint,
-            start_time=start_time,
-            end_time=end_time,
-            prize_amount=self.WORD_GAME_MAX_PRIZE,
-        )
+        game = WordGuessGame(channel_name, word, hint, start_time, end_time, prize_amount=self.WORD_GAME_MAX_PRIZE)
         self.active_word_games[channel_name] = game
         self.last_game_time[channel_name] = start_time
         logger.info(f"Запущена игра 'поле чудес' в канале {channel_name}. Слово: {word}, подсказка: {hint}")

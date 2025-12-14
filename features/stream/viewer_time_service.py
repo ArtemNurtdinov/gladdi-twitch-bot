@@ -6,7 +6,6 @@ from db.base import SessionLocal
 from features.stream.db.stream_viewer_session import StreamViewerSession
 from features.economy.db.transaction_history import TransactionType
 from features.economy.economy_service import EconomyService
-from features.stream.stream_service import StreamService
 
 logger = logging.getLogger(__name__)
 
@@ -23,41 +22,31 @@ class ViewerTimeService:
     ACTIVITY_TIMEOUT_MINUTES = 5
     CHECK_INTERVAL_SECONDS = 60
 
-    def __init__(self, economy_service: EconomyService, stream_service: StreamService):
+    def __init__(self, economy_service: EconomyService):
         self.economy_service = economy_service
-        self.stream_service = stream_service
 
-    def update_activity(self, channel_name: str, user_name: str) -> None:
+    def update_activity(self, stream_id: int, channel_name: str, user_name: str) -> None:
         db = SessionLocal()
         try:
             normalized_user_name = user_name.lower()
 
-            active_stream = self.stream_service.get_active_stream(channel_name)
-            if not active_stream:
-                logger.debug(f"Нет активного стрима для обновления активности {user_name}")
-                return
-
-            session = (
-                db.query(StreamViewerSession)
-                .filter_by(stream_id=active_stream.id, user_name=normalized_user_name, channel_name=channel_name)
-                .first()
-            )
+            session = db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=normalized_user_name, channel_name=channel_name).first()
 
             current_time = datetime.utcnow()
 
-            if not session:
-                session = StreamViewerSession(stream_id=active_stream.id, channel_name=channel_name, user_name=normalized_user_name, session_start=current_time,
-                                              last_activity=current_time, is_watching=True)
-                db.add(session)
-                logger.debug(f"Создана новая сессия просмотра: {normalized_user_name} -> стрим {active_stream.id}")
-            else:
+            if session:
                 session.last_activity = current_time
                 session.updated_at = current_time
 
                 if not session.is_watching:
                     session.is_watching = True
                     session.session_start = current_time
-                    logger.debug(f"Возобновлен просмотр: {normalized_user_name} -> стрим {active_stream.id}")
+                    logger.debug(f"Возобновлен просмотр: {normalized_user_name} -> стрим {stream_id}")
+            else:
+                session = StreamViewerSession(stream_id=stream_id, channel_name=channel_name, user_name=normalized_user_name, session_start=current_time,
+                                              last_activity=current_time, is_watching=True)
+                db.add(session)
+                logger.debug(f"Создана новая сессия просмотра: {normalized_user_name} -> стрим {stream_id}")
 
             db.commit()
 
@@ -91,7 +80,6 @@ class ViewerTimeService:
                         session.is_watching = True
                         session.session_start = current_time
             db.commit()
-            logger.debug(f"API: Обновлена активность для {len(chatters)} зрителей в стриме {active_stream_id}")
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при обновлении зрителей через API: {e}")
@@ -134,42 +122,22 @@ class ViewerTimeService:
 
         return inactive_users
 
-    def check_and_grant_rewards(self, channel_name: str) -> List[Dict]:
-        active_stream = self.stream_service.get_active_stream(channel_name)
-        if not active_stream:
-            return []
-
+    def check_and_grant_rewards(self, stream_id: int, channel_name: str):
         db = SessionLocal()
-        rewards_granted = []
-
         try:
-            sessions = (
-                db.query(StreamViewerSession)
-                .filter_by(stream_id=active_stream.id)
-                .all()
-            )
-
+            sessions = db.query(StreamViewerSession).filter_by(stream_id=stream_id).all()
             for session in sessions:
                 available_rewards = self._get_available_rewards(session)
-
                 for minutes_threshold, reward_amount in available_rewards:
-                    try:
-                        session.add_reward(minutes_threshold)
-                        session.updated_at = datetime.utcnow()
+                    claimed_list = session.get_claimed_rewards_list()
+                    if minutes_threshold not in claimed_list:
+                        claimed_list.append(minutes_threshold)
+                        session.rewards_claimed = ','.join(map(str, sorted(claimed_list)))
+                        session.last_reward_claimed = datetime.utcnow()
 
-                        self.economy_service.add_balance_with_session(db, channel_name, session.user_name, reward_amount, TransactionType.VIEWER_TIME_REWARD,
-                                                                      f"Награда за {minutes_threshold} минут просмотра стрима")
-                        rewards_granted.append({
-                            "user_name": session.user_name,
-                            "minutes": minutes_threshold,
-                            "reward": reward_amount,
-                            "stream_id": active_stream.id
-                        })
-
-                        logger.info(f"Награда выдана: {session.user_name} получил {reward_amount} монет за {minutes_threshold} минут просмотра стрима {active_stream.id}")
-                    except Exception as e:
-                        logger.error(f"Ошибка при выдаче награды пользователю {session.user_name}: {e}")
-
+                    session.updated_at = datetime.utcnow()
+                    description = f"Награда за {minutes_threshold} минут просмотра стрима"
+                    self.economy_service.add_balance_with_session(db, channel_name, session.user_name, reward_amount, TransactionType.VIEWER_TIME_REWARD, description)
             db.commit()
         except Exception as e:
             db.rollback()
@@ -177,17 +145,59 @@ class ViewerTimeService:
         finally:
             db.close()
 
-        return rewards_granted
-
     def _get_available_rewards(self, session: StreamViewerSession) -> List[tuple]:
         available_rewards = []
-        total_minutes = session.get_total_minutes_with_current()
+
+        if session.is_watching and session.session_start:
+            duration = datetime.utcnow() - session.session_start
+            current_session_minutes = int(duration.total_seconds() / 60)
+        else:
+            current_session_minutes = 0
+
+        total_minutes = session.total_minutes + current_session_minutes
         claimed_rewards = set(session.get_claimed_rewards_list())
 
         for minutes_threshold in sorted(self.STREAM_TIME_REWARDS.keys()):
-            if (total_minutes >= minutes_threshold and
-                minutes_threshold not in claimed_rewards):
+            if total_minutes >= minutes_threshold and minutes_threshold not in claimed_rewards:
                 reward_amount = self.STREAM_TIME_REWARDS[minutes_threshold]
                 available_rewards.append((minutes_threshold, reward_amount))
 
         return available_rewards
+
+    def get_stream_watchers_count(self, active_stream_id: int) -> int:
+        db = SessionLocal()
+        try:
+            return db.query(StreamViewerSession).filter_by(stream_id=active_stream_id, is_watching=True).count()
+        finally:
+            db.close()
+
+    def finish_stream_sessions(self, stream_id: int):
+        db = SessionLocal()
+        try:
+            active_sessions = db.query(StreamViewerSession).filter_by(stream_id=stream_id, is_watching=True).all()
+            for session in active_sessions:
+                if session.session_start:
+                    session_duration = datetime.utcnow() - session.session_start
+                    session_minutes = int(session_duration.total_seconds() / 60)
+                    session.total_minutes += session_minutes
+
+                session.session_end = datetime.utcnow()
+                session.is_watching = False
+                session.updated_at = datetime.utcnow()
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Ошибка при закрытии сессий стрима: {e}")
+            return None
+        finally:
+            db.close()
+
+    def get_unique_viewers_count(self, stream_id: int) -> int:
+        db = SessionLocal()
+        try:
+            return db.query(StreamViewerSession.user_name).filter_by(stream_id=stream_id).distinct().count()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Ошибка при получении кол-ва уникальных зрителей стрима: {e}")
+        finally:
+            db.close()
