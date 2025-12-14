@@ -6,9 +6,7 @@ from db.base import SessionLocal
 from features.ai.message import AIMessage, Role
 from features.stream.db.stream_messages import TwitchMessage, ChatMessageLog
 from features.battle.db.battle_history import BattleHistory
-from features.betting.db.bet_history import BetHistory
 from features.stream.model.stream_statistics import StreamStatistics
-from features.betting.model.rarity_level import RarityLevel
 from features.battle.model.user_battle_stats import UserBattleStats
 from features.twitch.chat_schemas import TopChatUser
 
@@ -99,90 +97,6 @@ class ChatService:
                 top_winner = None
 
             return StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
-        finally:
-            db.close()
-
-    def save_bet_history(self, channel_name: str, user_name: str, slot_result: str, result_type: str, rarity_level: RarityLevel):
-        db = SessionLocal()
-        try:
-            normalized_user_name = user_name.lower()
-
-            bet = BetHistory(channel_name=channel_name, user_name=normalized_user_name, slot_result=slot_result, result_type=result_type, rarity_level=rarity_level)
-            db.add(bet)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            raise Exception(f"Ошибка при сохранении истории ставки: {e}")
-        finally:
-            db.close()
-
-    def get_user_bet_count(self, user_name: str, channel_name: str) -> int:
-        db = SessionLocal()
-        try:
-            normalized_user_name = user_name.lower()
-
-            count = (
-                db.query(BetHistory)
-                .filter(BetHistory.user_name == normalized_user_name)
-                .filter(BetHistory.channel_name == channel_name)
-                .count()
-            )
-            return count
-        finally:
-            db.close()
-
-    def get_user_bet_stats(self, user_name: str, channel_name: str) -> dict:
-        db = SessionLocal()
-        try:
-            normalized_user_name = user_name.lower()
-
-            bets = (
-                db.query(BetHistory)
-                .filter(BetHistory.user_name == normalized_user_name)
-                .filter(BetHistory.channel_name == channel_name)
-                .all()
-            )
-
-            if not bets:
-                return {
-                    "total_bets": 0,
-                    "jackpots": 0,
-                    "partial_matches": 0,
-                    "misses": 0,
-                    "mythical_count": 0,
-                    "common_count": 0,
-                    "uncommon_count": 0,
-                    "rare_count": 0,
-                    "epic_count": 0,
-                    "legendary_count": 0
-                }
-
-            total_bets = len(bets)
-            jackpots = sum(1 for bet in bets if bet.result_type == "jackpot")
-            partial_matches = sum(1 for bet in bets if bet.result_type == "partial")
-            misses = sum(1 for bet in bets if bet.result_type == "miss")
-
-            mythical_count = sum(1 for bet in bets if bet.rarity_level == RarityLevel.MYTHICAL)
-            legendary_count = sum(1 for bet in bets if bet.rarity_level == RarityLevel.LEGENDARY)
-            epic_count = sum(1 for bet in bets if bet.rarity_level == RarityLevel.EPIC)
-            rare_count = sum(1 for bet in bets if bet.rarity_level == RarityLevel.RARE)
-            uncommon_count = sum(1 for bet in bets if bet.rarity_level == RarityLevel.UNCOMMON)
-            common_count = sum(1 for bet in bets if bet.rarity_level == RarityLevel.COMMON)
-
-            return {
-                "total_bets": total_bets,
-                "jackpots": jackpots,
-                "partial_matches": partial_matches,
-                "misses": misses,
-                "mythical_count": mythical_count,
-                "legendary_count": legendary_count,
-                "epic_count": epic_count,
-                "rare_count": rare_count,
-                "uncommon_count": uncommon_count,
-                "common_count": common_count,
-                "jackpot_rate": (jackpots / total_bets) * 100 if total_bets > 0 else 0,
-                "mythical_rate": (mythical_count / total_bets) * 100 if total_bets > 0 else 0
-            }
         finally:
             db.close()
 

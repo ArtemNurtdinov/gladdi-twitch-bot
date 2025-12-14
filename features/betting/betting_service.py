@@ -1,3 +1,6 @@
+from db.base import SessionLocal
+from features.betting.betting_schemas import UserBetStats
+from features.betting.db.bet_history import BetHistory
 from features.betting.model.emoji_config import EmojiConfig
 from features.betting.model.rarity_level import RarityLevel
 from features.economy.db.transaction_history import TransactionType
@@ -160,3 +163,40 @@ class BettingService:
 
         return BetResult.success_result(bet_cost=bet_amount, payout=payout, balance=user_balance.balance, result_type=result_type, rarity_level=rarity_level,
                                         timeout_seconds=timeout_seconds)
+
+    def save_bet_history(self, channel_name: str, user_name: str, slot_result: str, result_type: str, rarity_level: RarityLevel):
+        db = SessionLocal()
+        try:
+            normalized_user_name = user_name.lower()
+
+            bet = BetHistory(channel_name=channel_name, user_name=normalized_user_name, slot_result=slot_result, result_type=result_type, rarity_level=rarity_level)
+            db.add(bet)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise Exception(f"Ошибка при сохранении истории ставки: {e}")
+        finally:
+            db.close()
+
+    def get_user_bet_stats(self, user_name: str, channel_name: str) -> UserBetStats:
+        db = SessionLocal()
+        try:
+            normalized_user_name = user_name.lower()
+
+            bets = (
+                db.query(BetHistory)
+                .filter(BetHistory.user_name == normalized_user_name)
+                .filter(BetHistory.channel_name == channel_name)
+                .all()
+            )
+
+            if not bets:
+                return UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)
+
+            total_bets = len(bets)
+            jackpots = sum(1 for bet in bets if bet.result_type == "jackpot")
+            jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
+
+            return UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
+        finally:
+            db.close()

@@ -492,7 +492,7 @@ class Bot(commands.Bot):
 
         try:
             rarity_enum = RarityLevel(bet_result.rarity)
-            self.chat_service.save_bet_history(channel_name=channel_name, user_name=nickname, slot_result=slot_result_string, result_type=db_result_type,
+            self.betting_service.save_bet_history(channel_name=channel_name, user_name=nickname, slot_result=slot_result_string, result_type=db_result_type,
                                                rarity_level=rarity_enum)
             logger.info(f"Результат ставки сохранён в БД для {nickname}: {slot_result_string}, редкость: {bet_result.rarity}")
         except Exception as e:
@@ -827,7 +827,7 @@ class Bot(commands.Bot):
         logger.info(f"Команда {self._COMMAND_STATS} от пользователя {user_name}")
 
         stats = self.economy_service.get_user_stats(channel_name, user_name)
-        bet_stats = self.chat_service.get_user_bet_stats(user_name, channel_name)
+        bet_stats = self.betting_service.get_user_bet_stats(user_name, channel_name)
         battle_stats = self.chat_service.get_user_battle_stats(user_name, channel_name)
 
         result = f"📊 Статистика @{user_name}: "
@@ -836,11 +836,9 @@ class Bot(commands.Bot):
         result += f"📉 Всего потрачено: {stats.total_spent} монет. "
         result += f"💹 Чистая прибыль: {stats.net_profit} монет. "
 
-        if bet_stats['total_bets'] > 0:
-            result += f"\n🎰 Ставки: {bet_stats['total_bets']} | "
-            result += f"Джекпоты: {bet_stats['jackpots']} ({bet_stats['jackpot_rate']:.1f}%). "
-            if bet_stats['mythical_count'] > 0:
-                result += f"🦕 Мифических: {bet_stats['mythical_count']} ({bet_stats['mythical_rate']:.3f}%). "
+        if bet_stats.total_bets > 0:
+            result += f"\n🎰 Ставки: {bet_stats.total_bets} | "
+            result += f"Джекпоты: {bet_stats.jackpots} ({bet_stats.jackpot_rate:.1f}%). "
 
         if battle_stats.has_battles():
             result += f"⚔️ Битвы: {battle_stats.total_battles} | "
