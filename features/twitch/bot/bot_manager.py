@@ -68,20 +68,6 @@ class BotManager:
             auth = TwitchAuth(access_token=access_token, refresh_token=refresh_token)
             self._ensure_credentials(auth)
 
-            token_ready = False
-            try:
-                token_ready = auth.check_token_is_valid()
-            except Exception as e:
-                logger.warning(f"Не удалось проверить токен: {e}")
-
-            if not token_ready:
-                logger.info("Пробуем обновить токен Twitch...")
-                auth.update_access_token()
-                token_ready = auth.check_token_is_valid()
-
-            if not token_ready:
-                raise RuntimeError("Не удалось получить действительный Twitch токен. Проверьте код авторизации и попробуйте снова.")
-
             ai_service = AIService()
             twitch_repository = TwitchService(ai_service)
             twitch_api_service = TwitchApiService(auth)

@@ -1007,8 +1007,7 @@ class Bot(commands.Bot):
     async def check_token_periodically(self):
         logger.info("Запуск периодической проверки токена")
         while True:
-            wait_time = 1000
-            await asyncio.sleep(wait_time)
+            await asyncio.sleep(1000)
             token_is_valid = self.twitch_auth.check_token_is_valid()
             logger.info(f"Статус токена: {'действителен' if token_is_valid else 'недействителен'}")
             if not token_is_valid:
