@@ -16,8 +16,7 @@ class BetResult:
     timeout_seconds: Optional[int] = None
     
     @classmethod
-    def success_result(cls, bet_cost: int, payout: int, balance: int, result_type: str, 
-                      rarity_level: RarityLevel, timeout_seconds: Optional[int] = None) -> 'BetResult':
+    def success_result(cls, bet_cost: int, payout: int, balance: int, result_type: str, rarity_level: RarityLevel, timeout_seconds: Optional[int] = None) -> 'BetResult':
         profit = payout - bet_cost
         return cls(
             success=True,
@@ -32,12 +31,7 @@ class BetResult:
     
     @classmethod
     def failure_result(cls, message: str, required_cost: int) -> 'BetResult':
-        return cls(
-            success=False,
-            balance=0,
-            message=message,
-            bet_cost=required_cost
-        )
+        return cls(success=False, balance=0, message=message, bet_cost=required_cost)
     
     def is_win(self) -> bool:
         return self.success and self.payout is not None and self.payout > 0

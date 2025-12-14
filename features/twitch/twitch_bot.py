@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import random
+from typing import Coroutine, Any
 from telegram.request import HTTPXRequest
 from twitchio.ext import commands
 from datetime import datetime, timedelta
@@ -76,6 +77,7 @@ class Bot(commands.Bot):
         self.last_chat_summary_time = None
         self.roll_cooldowns = {}
         self._tasks_started = False
+        self._background_tasks: list[asyncio.Task] = []
         self._user_id_cache: dict[str, tuple[str, datetime]] = {}
         self._user_id_cache_ttl = timedelta(minutes=30)
 
@@ -109,17 +111,40 @@ class Bot(commands.Bot):
         except Exception as e:
             logger.error(f"Не удалось прогреть кеш ID канала: {e}")
 
+    def _create_background_task(self, coro: Coroutine[Any, Any, Any]) -> asyncio.Task:
+        task = asyncio.create_task(coro)
+        self._background_tasks.append(task)
+
+        def _cleanup(_task: asyncio.Task):
+            if _task in self._background_tasks:
+                self._background_tasks.remove(_task)
+
+        task.add_done_callback(_cleanup)
+        return task
+
     async def _start_background_tasks(self):
         if self._tasks_started:
             return
 
-        asyncio.create_task(self.post_joke_periodically())
-        asyncio.create_task(self.check_token_periodically())
-        asyncio.create_task(self.check_stream_start_periodically())
-        asyncio.create_task(self.summarize_chat_periodically())
-        asyncio.create_task(self.check_minigames_periodically())
-        asyncio.create_task(self.check_viewer_time_periodically())
+        self._create_background_task(self.post_joke_periodically())
+        self._create_background_task(self.check_token_periodically())
+        self._create_background_task(self.check_stream_start_periodically())
+        self._create_background_task(self.summarize_chat_periodically())
+        self._create_background_task(self.check_minigames_periodically())
+        self._create_background_task(self.check_viewer_time_periodically())
         self._tasks_started = True
+
+    async def close(self):
+        for task in list(self._background_tasks):
+            task.cancel()
+
+        if self._background_tasks:
+            await asyncio.gather(*self._background_tasks, return_exceptions=True)
+
+        self._background_tasks.clear()
+        self._tasks_started = False
+
+        await super().close()
 
     async def event_ready(self):
         logger.info(f'Бот {self.nick} готов')

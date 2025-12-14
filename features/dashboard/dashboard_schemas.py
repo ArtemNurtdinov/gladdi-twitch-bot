@@ -84,14 +84,6 @@ class AIMessage(BaseModel):
     created_at_formatted: str = Field(..., description="Время создания в читаемом формате")
 
 
-class AIMessagesResponse(BaseModel):
-    messages: List[AIMessage] = Field(..., description="Список AI сообщений")
-    total_count: int = Field(..., description="Общее количество сообщений")
-    page: int = Field(..., description="Номер страницы")
-    limit: int = Field(..., description="Лимит сообщений на странице")
-    total_pages: int = Field(..., description="Общее количество страниц")
-
-
 class JokesStatus(BaseModel):
     enabled: bool = Field(..., description="Статус анекдотов (включены/отключены)")
     ready: bool = Field(..., description="Готовность бота")
@@ -169,16 +161,6 @@ class UserBalanceStats(BaseModel):
     poor_users_count: int = Field(..., description="Количество бедных пользователей (<1000)")
 
 
-class BalanceUser(BaseModel):
-    username: str = Field(..., description="Имя пользователя")
-    balance: int = Field(..., description="Текущий баланс")
-    total_earned: int = Field(..., description="Общая сумма заработанных средств")
-    total_spent: int = Field(..., description="Общая сумма потраченных средств")
-    net_profit: int = Field(..., description="Чистая прибыль")
-    last_daily_claim: Optional[str] = Field(..., description="Последнее получение стримового бонуса")
-    created_at: str = Field(..., description="Дата создания аккаунта")
-
-
 class TransactionStats(BaseModel):
     total_transactions: int = Field(..., description="Общее количество транзакций")
     unique_users: int = Field(..., description="Количество уникальных пользователей")
@@ -202,38 +184,11 @@ class Transaction(BaseModel):
     created_at_formatted: str = Field(..., description="Время создания в читаемом формате")
 
 
-class UserTransactionsResponse(BaseModel):
-    transactions: List[Transaction] = Field(..., description="Список транзакций")
-    total_count: int = Field(..., description="Общее количество транзакций")
-    page: int = Field(..., description="Номер страницы")
-    limit: int = Field(..., description="Лимит транзакций на странице")
-    total_pages: int = Field(..., description="Общее количество страниц")
-    username: str = Field(..., description="Имя пользователя")
-
-
 class BiggestTransaction(BaseModel):
     username: Optional[str] = Field(..., description="Имя пользователя")
     amount: int = Field(..., description="Сумма транзакции")
     type: Optional[str] = Field(..., description="Тип транзакции")
     description: Optional[str] = Field(..., description="Описание транзакции")
-
-
-class EconomyOverview(BaseModel):
-    balance_stats: UserBalanceStats = Field(..., description="Статистика балансов")
-    transaction_stats: TransactionStats = Field(..., description="Статистика транзакций")
-    new_users: int = Field(..., description="Количество новых пользователей за период")
-    biggest_win: Optional[BiggestTransaction] = Field(..., description="Самый большой выигрыш")
-    biggest_loss: Optional[BiggestTransaction] = Field(..., description="Самый большой проигрыш")
-    period_days: int = Field(..., description="Период анализа в днях")
-
-
-class EarningsUser(BaseModel):
-    username: str = Field(..., description="Имя пользователя")
-    total_earned: int = Field(..., description="Общая сумма заработанных средств")
-    total_spent: int = Field(..., description="Общая сумма потраченных средств")
-    net_profit: int = Field(..., description="Чистая прибыль")
-    current_balance: int = Field(..., description="Текущий баланс")
-    profit_ratio: float = Field(..., description="Коэффициент прибыли")
 
 
 class StreamStats(BaseModel):

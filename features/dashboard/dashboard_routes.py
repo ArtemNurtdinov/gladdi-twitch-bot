@@ -2,11 +2,9 @@ from fastapi import APIRouter, Query, HTTPException
 from typing import List, Optional
 from datetime import datetime
 from features.dashboard.dashboard_schemas import OverviewStats, HourlyActivity, DailyActivity, TopUser, BattleStats, AIInteractionStats, ActivityHeatmap, MessagesResponse, \
-    AIMessagesResponse, JokesStatus, JokesResponse, JokesIntervalInfo, JokesIntervalResponse, JokesIntervalRequest, JokeGeneratedResponse, MythicalEvent, \
-    BetHourlyActivity, LuckyUser, EconomyOverview, UserBalanceStats, BalanceUser, EarningsUser, TransactionStats, UserTransactionsResponse, StreamStats, \
+    JokesStatus, JokesResponse, JokesIntervalInfo, JokesIntervalResponse, JokesIntervalRequest, JokeGeneratedResponse, MythicalEvent, \
+    BetHourlyActivity, LuckyUser, UserBalanceStats, TransactionStats, StreamStats, \
     StreamHistoryResponse, StreamInfo, CurrentStreamInfo, ViewerSessionStats, ViewerTopByTime, ViewerSessionRewards, ViewerSessionActivity
-from features.economy.economy_service import EconomyService
-from features.stream.stream_service import StreamService
 from features.dashboard.dashboard_service import DashboardService
 from features.dashboard.bot_control_service import BotControlService
 
@@ -149,41 +147,6 @@ async def get_chat_messages(
         return MessagesResponse(**data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка получения сообщений чата: {str(e)}")
-
-
-@router.get(
-    "/twitch-ai-messages",
-    response_model=AIMessagesResponse,
-    summary="История AI сообщений Twitch",
-    description="Получить историю AI сообщений Twitch с пагинацией и фильтрами"
-)
-async def get_twitch_ai_messages(
-    page: int = Query(1, ge=1, description="Номер страницы"),
-    limit: int = Query(50, ge=1, le=100, description="Количество сообщений на странице"),
-    date_from: Optional[str] = Query(None, description="Дата начала (YYYY-MM-DD)"),
-    date_to: Optional[str] = Query(None, description="Дата окончания (YYYY-MM-DD)")
-) -> AIMessagesResponse:
-    try:
-        date_from_parsed = None
-        date_to_parsed = None
-
-        if date_from:
-            try:
-                date_from_parsed = datetime.strptime(date_from, "%Y-%m-%d")
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Неверный формат даты date_from. Используйте YYYY-MM-DD")
-
-        if date_to:
-            try:
-                date_to_parsed = datetime.strptime(date_to, "%Y-%m-%d")
-                date_to_parsed = date_to_parsed.replace(hour=23, minute=59, second=59)
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Неверный формат даты date_to. Используйте YYYY-MM-DD")
-
-        data = analytics_service.get_twitch_ai_messages(page, limit, date_from_parsed, date_to_parsed)
-        return AIMessagesResponse(**data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения AI сообщений: {str(e)}")
 
 
 @router.get(
@@ -336,21 +299,6 @@ async def get_bet_lucky_users(
 
 
 @router.get(
-    "/economy/overview",
-    response_model=EconomyOverview,
-    summary="Обзор экономики",
-    description="Получить общий обзор экономической системы",
-    tags=["Economy Analytics"]
-)
-async def get_economy_overview(days: int = Query(30, ge=1, le=365, description="Количество дней для анализа")) -> EconomyOverview:
-    try:
-        data = analytics_service.get_economy_overview(days)
-        return EconomyOverview(**data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения обзора экономики: {str(e)}")
-
-
-@router.get(
     "/economy/balance-stats",
     response_model=UserBalanceStats,
     summary="Статистика балансов",
@@ -366,39 +314,6 @@ async def get_balance_stats(days: int = Query(30, ge=1, le=365, description="К�
 
 
 @router.get(
-    "/economy/top-balance",
-    response_model=List[BalanceUser],
-    summary="Топ пользователей по балансу",
-    description="Получить список пользователей с наибольшими балансами",
-    tags=["Economy Analytics"]
-)
-async def get_top_balance_users(limit: int = Query(10, ge=1, le=50, description="Максимальное количество пользователей в результате")) -> List[BalanceUser]:
-    try:
-        data = analytics_service.get_top_users_by_balance(limit)
-        return [BalanceUser(**user) for user in data]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения топа по балансу: {str(e)}")
-
-
-@router.get(
-    "/economy/top-earnings",
-    response_model=List[EarningsUser],
-    summary="Топ пользователей по заработку",
-    description="Получить список пользователей с наибольшими заработками",
-    tags=["Economy Analytics"]
-)
-async def get_top_earnings_users(
-    days: int = Query(30, ge=1, le=365, description="Количество дней для анализа"),
-    limit: int = Query(10, ge=1, le=50, description="Максимальное количество пользователей в результате")
-) -> List[EarningsUser]:
-    try:
-        data = analytics_service.get_richest_users_by_earnings(limit, days)
-        return [EarningsUser(**user) for user in data]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения топа по заработку: {str(e)}")
-
-
-@router.get(
     "/economy/transaction-stats",
     response_model=TransactionStats,
     summary="Статистика транзакций",
@@ -411,52 +326,6 @@ async def get_transaction_stats(days: int = Query(30, ge=1, le=365, description=
         return TransactionStats(**data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка получения статистики транзакций: {str(e)}")
-
-
-@router.get(
-    "/economy/user-transactions/{username}",
-    response_model=UserTransactionsResponse,
-    summary="История транзакций пользователя",
-    description="Получить историю транзакций конкретного пользователя",
-    tags=["Economy Analytics"]
-)
-async def get_user_transactions(
-    username: str,
-    page: int = Query(1, ge=1, description="Номер страницы"),
-    limit: int = Query(1000, ge=1, le=1000, description="Количество транзакций на странице"),
-    days: int = Query(30, ge=1, le=365, description="Количество дней для анализа")
-) -> UserTransactionsResponse:
-    try:
-        data = analytics_service.get_user_transactions(username, page, limit, days)
-        return UserTransactionsResponse(**data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения транзакций пользователя: {str(e)}")
-
-
-@router.get(
-    "/economy/user-balance/{username}",
-    response_model=BalanceUser,
-    summary="Баланс пользователя",
-    description="Получить подробную информацию о балансе конкретного пользователя",
-    tags=["Economy Analytics"]
-)
-async def get_user_balance(username: str) -> BalanceUser:
-    try:
-        stream_service = StreamService()
-        economy_service = EconomyService(stream_service)
-        user_stats = economy_service.get_user_stats("artemnefrit", username)
-
-        return BalanceUser(
-            username=username,
-            balance=user_stats.balance,
-            total_earned=user_stats.total_earned,
-            total_spent=user_stats.total_spent,
-            net_profit=user_stats.net_profit,
-            last_daily_claim=user_stats.last_daily_claim.isoformat() if user_stats.last_daily_claim else None,
-            created_at=user_stats.created_at.isoformat()
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения баланса пользователя: {str(e)}")
 
 
 @router.get(
