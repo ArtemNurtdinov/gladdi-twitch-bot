@@ -282,14 +282,17 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда {self._COMMAND_FIGHT} от пользователя {challenger}")
 
-        if not self.economy_service.can_join_battle(channel_name, challenger):
-            result = f"@{challenger}, недостаточно монет для участия в битве! Необходимо: {self.economy_service.BATTLE_ENTRY_FEE} монет. 💰"
+        user_balance = self.economy_service.get_user_balance(channel_name, challenger)
+        fee = self.economy_service.BATTLE_ENTRY_FEE
+
+        if user_balance.balance < fee:
+            result = f"@{challenger}, недостаточно монет для участия в битве! Необходимо: {self.economy_service.BATTLE_ENTRY_FEE} монет."
             self.twitch_repository.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
             return
 
         if not self.battle_waiting_user:
-            user_balance = self.economy_service.process_battle_entry(channel_name, challenger)
+            user_balance = self.economy_service.subtract_balance(channel_name, challenger, fee, TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
             if not user_balance:
                 result = f"@{challenger}, произошла ошибка при списании взноса за битву."
                 self.twitch_repository.log_chat_message(channel_name, self.nick, result)
@@ -297,7 +300,7 @@ class Bot(commands.Bot):
                 return
 
             self.battle_waiting_user = challenger
-            result = f"⚔️ @{challenger} ищет себе оппонента для эпичной битвы! Взнос: {self.economy_service.BATTLE_ENTRY_FEE} монет. Используй {self._prefix}{self._COMMAND_FIGHT}, чтобы принять вызов. Баланс {challenger}: {user_balance.balance} монет."
+            result = f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {self.economy_service.BATTLE_ENTRY_FEE} монет. Используй {self._prefix}{self._COMMAND_FIGHT}, чтобы принять вызов. Баланс {challenger}: {user_balance.balance} монет."
             logger.info(f"{challenger} ищет оппонента для битвы")
             self.twitch_repository.log_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
@@ -310,7 +313,7 @@ class Bot(commands.Bot):
             await ctx.send(result)
             return
 
-        challenger_balance = self.economy_service.process_battle_entry(channel_name, challenger)
+        challenger_balance = self.economy_service.subtract_balance(channel_name, challenger, fee, TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
         if not challenger_balance:
             result = f"@{challenger}, произошла ошибка при списании взноса за битву."
             self.twitch_repository.log_chat_message(channel_name, self.nick, result)
@@ -349,7 +352,7 @@ class Bot(commands.Bot):
 
         result = self.twitch_repository.generate_response_in_chat(prompt, channel_name)
 
-        logger.info(f"Битва завершена. Случайно выбранный победитель: {winner}")
+        logger.info(f"Битва завершена. Победитель: {winner}")
 
         winner_balance = self.economy_service.process_battle_win(channel_name, winner, loser)
 
@@ -365,7 +368,7 @@ class Bot(commands.Bot):
 
         logger.info(f"Проигравший: {loser}, получает таймаут")
 
-        winner_message = f"💰 {winner} получает {self.economy_service.BATTLE_WINNER_PRIZE} монет! Баланс: {winner_balance.balance} монет."
+        winner_message = f"{winner} получает {self.economy_service.BATTLE_WINNER_PRIZE} монет! Баланс: {winner_balance.balance} монет."
         await ctx.send(winner_message)
 
         self.twitch_repository.log_chat_message(channel_name, self.nick, winner_message)
@@ -377,7 +380,7 @@ class Bot(commands.Bot):
         final_timeout, protection_message = self.economy_service.calculate_timeout_with_equipment(loser, base_battle_timeout, equipment)
 
         if final_timeout == 0:
-            no_timeout_message = f"⚔️ @{loser}, спасен от таймаута! {protection_message}"
+            no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
             await ctx.send(no_timeout_message)
             self.twitch_repository.log_chat_message(channel_name, self.nick, no_timeout_message)
         else:
@@ -389,7 +392,7 @@ class Bot(commands.Bot):
             else:
                 time_display = f"{timeout_seconds_remainder} секунд"
 
-            reason = f"Поражение в битве! Время на тренировки: {time_display} ⚔️"
+            reason = f"Поражение в битве! Время на тренировки: {time_display}"
 
             if protection_message:
                 reason += f" {protection_message}"

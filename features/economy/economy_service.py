@@ -28,16 +28,16 @@ class EconomyService:
     ACTIVITY_REWARD = 10
     ACTIVITY_COOLDOWN_MINUTES = 10
 
-    BATTLE_ENTRY_FEE = 100
-    BATTLE_WINNER_PRIZE = 200
+    BATTLE_ENTRY_FEE = 500
+    BATTLE_WINNER_PRIZE = 1000
 
     def __init__(self, stream_service: StreamService):
         self.stream_service = stream_service
 
     def process_user_message_activity(self, channel_name: str, user_name: str):
         db = SessionLocal()
+        normalized_user_name = user_name.lower()
         try:
-            normalized_user_name = user_name.lower()
             user_balance = self.get_user_balance(channel_name, normalized_user_name)
             user_balance = db.merge(user_balance)
 
@@ -76,7 +76,6 @@ class EconomyService:
         if user_balance.last_activity_reward is not None:
             time_since_last = datetime.utcnow() - user_balance.last_activity_reward
             if time_since_last < timedelta(minutes=self.ACTIVITY_COOLDOWN_MINUTES):
-                logger.debug(f"{user_balance.user_name} в кулдауне активности. Осталось: {self.ACTIVITY_COOLDOWN_MINUTES * 60 - time_since_last.total_seconds():.0f} сек")
                 return False
 
         return True
@@ -240,7 +239,6 @@ class EconomyService:
             db.commit()
 
             return TransferResult.success_result(amount, sender_balance.balance, receiver_balance.balance, sender_name, receiver_name)
-
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при переводе денег от {sender_name} к {receiver_name}: {e}")
@@ -300,20 +298,20 @@ class EconomyService:
                         total_multiplier *= effect.multiplier
 
                         if item.item_type == ShopItemType.FREEZER_DUMPLINGS:
-                            bonus_messages.append("🥟 Нашелся счастливый пельмень, который увеличил бонус!")
+                            bonus_messages.append("Нашелся счастливый пельмень, который увеличил бонус!")
                         elif item.item_type == ShopItemType.OCTOPUSES:
-                            bonus_messages.append("🐙 Осьминоги принесли сокровища со дна и увеличили бонус!")
+                            bonus_messages.append("Осьминоги принесли сокровища со дна и увеличили бонус!")
                         elif item.item_type == ShopItemType.MAEL_EXPEDITION:
-                            bonus_messages.append("🎨 Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет \"Алиииинаааа аииииии\"...")
+                            bonus_messages.append("Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет \"Алиииинаааа аииииии\"...")
                         elif item.item_type == ShopItemType.COMMUNIST_PARTY:
-                            bonus_messages.append("☭ Партия коммунистов обеспечила тебе увеличенный бонус! Единство силу даёт, товарищ!")
+                            bonus_messages.append("Партия коммунистов обеспечила тебе увеличенный бонус! Единство силу даёт, товарищ!")
 
             bonus_amount = int(self.DAILY_BONUS * total_multiplier)
 
             bonus_message = ""
             if bonus_messages:
                 if len(bonus_messages) > 1:
-                    bonus_message = f"🔥 СТАК БОНУСОВ! {' + '.join(bonus_messages)}"
+                    bonus_message = f"СТАК БОНУСОВ! {' + '.join(bonus_messages)}"
                 else:
                     bonus_message = bonus_messages[0]
 
@@ -352,9 +350,6 @@ class EconomyService:
     def can_join_battle(self, channel_name: str, user_name: str) -> bool:
         user_balance = self.get_user_balance(channel_name, user_name)
         return user_balance.balance >= self.BATTLE_ENTRY_FEE
-
-    def process_battle_entry(self, channel_name: str, user_name: str) -> Optional[UserBalance]:
-        return self.subtract_balance(channel_name, user_name, self.BATTLE_ENTRY_FEE, TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
 
     def process_battle_win(self, channel_name: str, winner: str, loser: str) -> UserBalance:
         return self.add_balance(channel_name, winner, self.BATTLE_WINNER_PRIZE, TransactionType.BATTLE_WIN, f"Победа в битве против {loser}")
