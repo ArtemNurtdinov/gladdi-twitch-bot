@@ -7,13 +7,10 @@ from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory, TransactionType
 from features.economy.model.daily_bonus import DailyBonusResult
 from features.equipment.model.user_equipment_item import UserEquipmentItem
-from features.betting.model.rarity_level import RarityLevel
 from features.economy.model.user_stats import UserStats
-from features.economy.model.bet_result import BetResult
-from features.betting.model.emoji_config import EmojiConfig
 from features.economy.model.transfer_result import TransferResult
 from features.economy.model.shop_items import ShopItems, ShopItemType, DailyBonusMultiplierEffect, TimeoutProtectionEffect, TimeoutReductionEffect, \
-    RollCooldownOverrideEffect, JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect
+    RollCooldownOverrideEffect
 from features.equipment.db.user_equipment import UserEquipment
 from features.stream.stream_service import StreamService
 
@@ -37,10 +34,11 @@ class EconomyService:
     def __init__(self, stream_service: StreamService):
         self.stream_service = stream_service
 
-    def process_user_message_activity(self, channel_name: str, user_name: str) -> Optional[UserBalance]:
+    def process_user_message_activity(self, channel_name: str, user_name: str):
         db = SessionLocal()
         try:
-            user_balance = self.get_user_balance(channel_name, user_name)
+            normalized_user_name = user_name.lower()
+            user_balance = self.get_user_balance(channel_name, normalized_user_name)
             user_balance = db.merge(user_balance)
 
             user_balance.message_count += 1
@@ -53,21 +51,23 @@ class EconomyService:
                 user_balance.balance += self.ACTIVITY_REWARD
                 user_balance.total_earned += self.ACTIVITY_REWARD
 
-                self._create_transaction(db, channel_name, user_name, TransactionType.MESSAGE_REWARD, self.ACTIVITY_REWARD, balance_before, user_balance.balance,
-                                         "Награда за активность в чате")
-
+                transaction = TransactionHistory(
+                    channel_name=channel_name,
+                    user_name=normalized_user_name,
+                    transaction_type=TransactionType.MESSAGE_REWARD,
+                    amount=self.ACTIVITY_REWARD,
+                    balance_before=balance_before,
+                    balance_after=user_balance.balance,
+                    description="Награда за активность в чате",
+                )
+                db.add(transaction)
                 db.commit()
-                logger.info(f"Пользователь {user_name} получил {self.ACTIVITY_REWARD} монет за активность. Новый баланс: {user_balance.balance}")
-
-                db.refresh(user_balance)
-                return user_balance
             else:
                 db.commit()
                 return None
-
         except Exception as e:
             db.rollback()
-            logger.error(f"Ошибка при обработке активности пользователя {user_name}: {e}")
+            logger.error(f"Ошибка при обработке активности пользователя {normalized_user_name}: {e}")
             return None
         finally:
             db.close()
@@ -85,25 +85,25 @@ class EconomyService:
         db = SessionLocal()
         try:
             normalized_user_name = user_name.lower()
-
-            user_balance = (
-                db.query(UserBalance)
-                .filter_by(channel_name=channel_name, user_name=normalized_user_name)
-                .first()
-            )
+            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=normalized_user_name).first()
 
             if not user_balance:
                 user_balance = UserBalance(channel_name=channel_name, user_name=normalized_user_name, balance=self.STARTING_BALANCE)
                 db.add(user_balance)
 
-                self._create_transaction(db, channel_name, normalized_user_name, TransactionType.ADMIN_ADJUST, self.STARTING_BALANCE, 0, self.STARTING_BALANCE,
-                                         "Создание нового аккаунта")
-
+                transaction = TransactionHistory(
+                    channel_name=channel_name,
+                    user_name=normalized_user_name,
+                    transaction_type=TransactionType.ADMIN_ADJUST,
+                    amount=self.STARTING_BALANCE,
+                    balance_before=0,
+                    balance_after=self.STARTING_BALANCE,
+                    description="Создание нового аккаунта",
+                )
+                db.add(transaction)
                 db.commit()
-                logger.info(f"Создан новый пользователь {normalized_user_name} с балансом {self.STARTING_BALANCE}")
 
             db.refresh(user_balance)
-
             return user_balance
         finally:
             db.close()
@@ -121,11 +121,18 @@ class EconomyService:
             user_balance.total_earned = (user_balance.total_earned or 0) + max(0, amount)
             user_balance.updated_at = datetime.utcnow()
 
-            self._create_transaction(db, channel_name, normalized_user_name, transaction_type, amount, balance_before, user_balance.balance, description)
+            transaction = TransactionHistory(
+                channel_name=channel_name,
+                user_name=normalized_user_name,
+                transaction_type=transaction_type,
+                amount=amount,
+                balance_before=balance_before,
+                balance_after=user_balance.balance,
+                description=description,
+            )
+            db.add(transaction)
 
             db.commit()
-            logger.info(f"Пользователю {normalized_user_name} добавлено {amount} монет. Новый баланс: {user_balance.balance}")
-
             db.refresh(user_balance)
             return user_balance
         finally:
@@ -149,13 +156,21 @@ class EconomyService:
             user_balance.total_spent = (user_balance.total_spent or 0) + amount
             user_balance.updated_at = datetime.utcnow()
 
-            self._create_transaction(db, channel_name, normalized_user_name, transaction_type, -amount, balance_before, user_balance.balance, description)
+            transaction = TransactionHistory(
+                channel_name=channel_name,
+                user_name=normalized_user_name,
+                transaction_type=transaction_type,
+                amount=-amount,
+                balance_before=balance_before,
+                balance_after=user_balance.balance,
+                description=description,
+            )
+            db.add(transaction)
 
             db.commit()
             logger.info(f"У пользователя {normalized_user_name} списано {amount} монет. Новый баланс: {user_balance.balance}")
 
             db.refresh(user_balance)
-
             return user_balance
         finally:
             db.close()
@@ -175,11 +190,7 @@ class EconomyService:
             normalized_sender_name = sender_name.lower()
             normalized_receiver_name = receiver_name.lower()
 
-            user_balance = (
-                db.query(UserBalance)
-                .filter_by(channel_name=channel_name, user_name=normalized_receiver_name)
-                .first()
-            )
+            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=normalized_receiver_name).first()
 
             if user_balance is None:
                 return TransferResult.failure_result(f"Пользователь @{receiver_name} не найден в системе!", amount)
@@ -204,17 +215,31 @@ class EconomyService:
             receiver_balance.total_earned += amount
             receiver_balance.updated_at = datetime.utcnow()
 
-            self._create_transaction(db, channel_name, normalized_sender_name, TransactionType.TRANSFER_SENT, -amount, sender_balance_before, sender_balance.balance,
-                                     f"Перевод {amount} монет пользователю {normalized_receiver_name}")
+            transaction = TransactionHistory(
+                channel_name=channel_name,
+                user_name=normalized_sender_name,
+                transaction_type=TransactionType.TRANSFER_SENT,
+                amount=-amount,
+                balance_before=sender_balance_before,
+                balance_after=sender_balance.balance,
+                description=f"Перевод {amount} монет пользователю {normalized_receiver_name}",
+            )
+            db.add(transaction)
 
-            self._create_transaction(db, channel_name, normalized_receiver_name, TransactionType.TRANSFER_RECEIVED, amount, receiver_balance_before, receiver_balance.balance,
-                                     f"Получен перевод {amount} монет от {normalized_sender_name}")
+            transaction2 = TransactionHistory(
+                channel_name=channel_name,
+                user_name=normalized_receiver_name,
+                transaction_type=TransactionType.TRANSFER_RECEIVED,
+                amount=amount,
+                balance_before=receiver_balance_before,
+                balance_after=receiver_balance.balance,
+                description=f"Получен перевод {amount} монет от {normalized_sender_name}",
+            )
+            db.add(transaction2)
+
             db.commit()
 
-            logger.info(f"Перевод выполнен: {normalized_sender_name} -> {normalized_receiver_name}")
-
-            return TransferResult.success_result(amount=amount, sender_balance=sender_balance.balance, receiver_balance=receiver_balance.balance,
-                                                 sender_name=sender_name, receiver_name=receiver_name)
+            return TransferResult.success_result(amount, sender_balance.balance, receiver_balance.balance, sender_name, receiver_name)
 
         except Exception as e:
             db.rollback()
@@ -300,8 +325,17 @@ class EconomyService:
             user_balance.updated_at = datetime.utcnow()
 
             transaction_description = "Бонус" + (f" (усилен {special_items})" if special_items else "")
-            self._create_transaction(db, channel_name, normalized_user_name, TransactionType.DAILY_BONUS, bonus_amount, balance_before, user_balance.balance,
-                                     transaction_description)
+
+            transaction = TransactionHistory(
+                channel_name=channel_name,
+                user_name=normalized_user_name,
+                transaction_type=TransactionType.DAILY_BONUS,
+                amount=bonus_amount,
+                balance_before=balance_before,
+                balance_after=user_balance.balance,
+                description=transaction_description,
+            )
+            db.add(transaction)
 
             db.commit()
             logger.info(f"Пользователь {normalized_user_name} получил бонус {bonus_amount}")
@@ -329,26 +363,26 @@ class EconomyService:
         db = SessionLocal()
         try:
             normalized_user_name = user_name.lower()
-
-            user_balance = (
-                db.query(UserBalance)
-                .filter_by(channel_name=channel_name, user_name=normalized_user_name)
-                .first()
-            )
+            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=normalized_user_name).first()
 
             if not user_balance:
                 user_balance = UserBalance(channel_name=channel_name, user_name=normalized_user_name, balance=self.STARTING_BALANCE)
                 db.add(user_balance)
-                self._create_transaction(db, channel_name, normalized_user_name, TransactionType.ADMIN_ADJUST, self.STARTING_BALANCE, 0, self.STARTING_BALANCE,
-                                         "Создание нового аккаунта")
+                transaction = TransactionHistory(
+                    channel_name=channel_name,
+                    user_name=normalized_user_name,
+                    transaction_type=TransactionType.ADMIN_ADJUST,
+                    amount=self.STARTING_BALANCE,
+                    balance_before=0,
+                    balance_after=self.STARTING_BALANCE,
+                    description="Создание нового аккаунта",
+                )
+                db.add(transaction)
+
                 db.commit()
                 logger.info(f"Создан новый пользователь {normalized_user_name} с балансом {self.STARTING_BALANCE}")
 
-            transactions = (
-                db.query(TransactionHistory)
-                .filter_by(channel_name=channel_name, user_name=normalized_user_name)
-                .all()
-            )
+            transactions = db.query(TransactionHistory).filter_by(channel_name=channel_name, user_name=normalized_user_name).all()
 
             transaction_counts = {}
             for transaction_type in TransactionType:
@@ -369,64 +403,34 @@ class EconomyService:
         finally:
             db.close()
 
-    def get_top_users(self, channel_name: str, limit: int = 10) -> list:
+    def get_top_users(self, channel_name: str, limit: int) -> list:
         db = SessionLocal()
         try:
-            top_users = (
-                db.query(UserBalance)
-                .filter_by(channel_name=channel_name, is_active=True)
-                .order_by(UserBalance.balance.desc())
-                .limit(limit)
-                .all()
-            )
+            top_users = db.query(UserBalance).filter_by(channel_name=channel_name, is_active=True).order_by(UserBalance.balance.desc()).limit(limit).all()
 
             return [
                 {
                     "user_name": user.user_name,
-                    "balance": user.balance,
-                    "total_earned": user.total_earned,
-                    "total_spent": user.total_spent
+                    "balance": user.balance
                 }
                 for user in top_users
             ]
         finally:
             db.close()
 
-    def get_bottom_users(self, channel_name: str, limit: int = 10) -> list:
+    def get_bottom_users(self, channel_name: str, limit: int) -> list:
         db = SessionLocal()
         try:
-            bottom_users = (
-                db.query(UserBalance)
-                .filter_by(channel_name=channel_name, is_active=True)
-                .order_by(UserBalance.balance.asc())
-                .limit(limit)
-                .all()
-            )
-
+            bottom_users = db.query(UserBalance).filter_by(channel_name=channel_name, is_active=True).order_by(UserBalance.balance.asc()).limit(limit).all()
             return [
                 {
                     "user_name": user.user_name,
-                    "balance": user.balance,
-                    "total_earned": user.total_earned,
-                    "total_spent": user.total_spent
+                    "balance": user.balance
                 }
                 for user in bottom_users
             ]
         finally:
             db.close()
-
-    def _create_transaction(self, db: Session, channel_name: str, user_name: str, transaction_type: TransactionType, amount: int, balance_before: int, balance_after: int,
-                            description: str = None):
-        transaction = TransactionHistory(
-            channel_name=channel_name,
-            user_name=user_name,
-            transaction_type=transaction_type,
-            amount=amount,
-            balance_before=balance_before,
-            balance_after=balance_after,
-            description=description,
-        )
-        db.add(transaction)
 
     def purchase_item(self, channel_name: str, user_name: str, item_name: str) -> dict:
         try:
@@ -469,8 +473,16 @@ class EconomyService:
             user_balance.total_spent += item.price
             user_balance.updated_at = datetime.utcnow()
 
-            self._create_transaction(db, channel_name, normalized_user_name, TransactionType.SHOP_PURCHASE, -item.price, balance_before, user_balance.balance,
-                                     f"Покупка '{item.name}'")
+            transaction = TransactionHistory(
+                channel_name=channel_name,
+                user_name=normalized_user_name,
+                transaction_type=TransactionType.SHOP_PURCHASE,
+                amount=-item.price,
+                balance_before=balance_before,
+                balance_after=user_balance.balance,
+                description=f"Покупка '{item.name}'",
+            )
+            db.add(transaction)
 
             equipment = UserEquipment(
                 channel_name=channel_name,
@@ -486,7 +498,6 @@ class EconomyService:
             return {
                 "success": True,
                 "item": item,
-                "new_balance": user_balance.balance,
                 "expires_at": equipment.expires_at
             }
 

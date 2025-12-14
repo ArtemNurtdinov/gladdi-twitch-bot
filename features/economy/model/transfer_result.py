@@ -20,20 +20,6 @@ class TransferResult:
     def failure_result(cls, message: str, amount: int = 0) -> 'TransferResult':
         return cls(success=False, amount=amount, message=message)
     
-    def get_success_message(self) -> str:
-        if not self.success:
-            return ""
-        
-        return (f"💸 @{self.sender_name} перевел {self.amount} монет пользователю @{self.receiver_name}! "
-                f"Баланс отправителя: {self.sender_balance} монет, "
-                f"баланс получателя: {self.receiver_balance} монет.")
-    
-    def get_error_message(self, sender_name: str) -> str:
-        if self.success:
-            return ""
-        
-        return f"❌ @{sender_name}, {self.message}"
-    
     def __str__(self) -> str:
         if not self.success:
             return f"TransferResult(success=False, message='{self.message}')"

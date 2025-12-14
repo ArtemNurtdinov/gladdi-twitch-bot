@@ -122,7 +122,6 @@ class TwitchService:
 
         try:
             normalized_user = user.lower()
-
             msg = ChatMessageLog(channel_name=channel_name, user_name=normalized_user, content=content, created_at=datetime.utcnow())
             db.add(msg)
             db.commit()

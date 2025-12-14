@@ -20,7 +20,7 @@ class ViewerTimeService:
     ACTIVITY_TIMEOUT_MINUTES = 5
     CHECK_INTERVAL_SECONDS = 60
 
-    def update_activity(self, stream_id: int, channel_name: str, user_name: str) -> None:
+    def update_viewer_session(self, stream_id: int, channel_name: str, user_name: str) -> None:
         db = SessionLocal()
         try:
             normalized_user_name = user_name.lower()
@@ -52,9 +52,6 @@ class ViewerTimeService:
             db.close()
 
     def update_viewers(self, active_stream_id: int, channel_name: str, chatters: List[str]):
-        if not chatters:
-            return
-
         db = SessionLocal()
         try:
             current_time = datetime.utcnow()

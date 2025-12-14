@@ -171,31 +171,20 @@ class Bot(commands.Bot):
         content = message.content
         channel_name = message.channel.name
 
-        logger.debug(f"Получено сообщение от {nickname} в канале {channel_name}: {content}")
-
         self.twitch_repository.log_chat_message(channel_name, nickname, content)
+        self.economy_service.process_user_message_activity(channel_name, nickname)
+        logger.info(f"Награда за активность: {nickname} получил {self.economy_service.ACTIVITY_REWARD} монет")
 
-        try:
-            reward_result = self.economy_service.process_user_message_activity(channel_name, nickname)
-            if reward_result:
-                logger.info(f"Награда за активность: {nickname} получил {self.economy_service.ACTIVITY_REWARD} монет")
-        except Exception as e:
-            logger.error(f"Ошибка при обработке активности пользователя {nickname}: {e}")
-
-        try:
-            active_stream = self.stream_service.get_active_stream(channel_name)
-            if active_stream:
-                self.viewer_service.update_activity(active_stream.id, channel_name, nickname)
-        except Exception as e:
-            logger.error(f"Ошибка при обновлении времени просмотра для {nickname}: {e}")
+        active_stream = self.stream_service.get_active_stream(channel_name)
+        if active_stream:
+            self.viewer_service.update_viewer_session(active_stream.id, channel_name, nickname)
 
         if message.content.startswith(self._prefix):
-            logger.debug(f"Обработка команды: {message.content}")
             await self.handle_commands(message)
             return
 
         intent = self.ai_repository.extract_intent_from_text(message.content)
-        logger.debug(f"Определён интент: {intent}")
+        logger.info(f"Определён интент: {intent}")
 
         prompt = None
 
@@ -622,11 +611,13 @@ class Bot(commands.Bot):
         recipient = recipient.lstrip('@')
 
         transfer_result = self.economy_service.transfer_money(channel_name, sender_name, recipient, transfer_amount)
+        logger.info(f"Перевод выполнен: {sender_name} -> {recipient}")
 
         if transfer_result.success:
-            result = transfer_result.get_success_message()
+            result = (f"@{transfer_result.sender_name} перевел {transfer_result.amount} монет пользователю @{transfer_result.receiver_name}! "
+                      f"Баланс отправителя: {transfer_result.sender_balance} монет, баланс получателя: {transfer_result.receiver_balance} монет.")
         else:
-            result = transfer_result.get_error_message(sender_name)
+            result = f"@{transfer_result.sender_name}, {transfer_result.message}"
 
         self.twitch_repository.log_chat_message(channel_name, self.nick, result)
         await ctx.send(result)
@@ -674,10 +665,10 @@ class Bot(commands.Bot):
         if purchase_result["success"]:
             item = purchase_result["item"]
             expires_date = purchase_result["expires_at"].strftime("%d.%m.%Y")
-            result = f"🎉 @{user_name} купил {item.emoji} '{item.name}' за {item.price} монет! "
-            result += f"Действует до {expires_date}. Баланс: {purchase_result['new_balance']} монет."
+            result = f"@{user_name} купил {item.emoji} '{item.name}' за {item.price} монет! "
+            result += f"Действует до {expires_date}."
         else:
-            result = f"❌ @{user_name}, {purchase_result['message']}"
+            result = f"@{user_name}, {purchase_result['message']}"
 
         self.twitch_repository.log_chat_message(channel_name, self.nick, result)
         await ctx.send(result)
@@ -692,9 +683,9 @@ class Bot(commands.Bot):
         equipment = self.equipment_service.get_user_equipment(channel_name, user_name)
 
         if not equipment:
-            result = f"📦 @{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"
+            result = f"@{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"
         else:
-            result = f"⚔️ Экипировка @{user_name}:\n"
+            result = f"⚔Экипировка @{user_name}:\n"
 
             for item in equipment:
                 expires_date = item.expires_at.strftime("%d.%m.%Y")
@@ -713,15 +704,14 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда {self._COMMAND_TOP}")
 
-        top_users = self.economy_service.get_top_users(channel_name, limit=5)
+        top_users = self.economy_service.get_top_users(channel_name, limit=7)
 
         if not top_users:
             result = "Нет данных для отображения топа."
         else:
-            result = "👑 ТОП БОГАЧЕЙ:\n"
+            result = "ТОП БОГАЧЕЙ:\n"
             for i, user in enumerate(top_users, 1):
-                medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
-                result += f"{medal} {user['user_name']}: {user['balance']} монет. "
+                result += f"{i}. {user['user_name']}: {user['balance']} монет."
 
         self.twitch_repository.log_chat_message(channel_name, self.nick, result)
 
@@ -743,8 +733,7 @@ class Bot(commands.Bot):
         else:
             result = "💸 ТОП БОМЖЕЙ:\n"
             for i, user in enumerate(bottom_users, 1):
-                emoji = "🗑️" if i == 1 else "📦" if i == 2 else "🥫" if i == 3 else f"{i}."
-                result += f"{emoji} {user['user_name']}: {user['balance']} монет. "
+                result += f"{i}. {user['user_name']}: {user['balance']} монет."
 
         self.twitch_repository.log_chat_message(channel_name, self.nick, result)
 
