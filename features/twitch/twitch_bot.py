@@ -881,7 +881,9 @@ class Bot(commands.Bot):
         if not choice:
             await ctx.send(f"@{user_name}, укажите ваш выбор: камень / ножницы / бумага")
             return
-        success, message = self.minigame_service.join_rps(channel_name, user_name, choice)
+
+        message = self.minigame_service.join_rps(channel_name, user_name, choice)
+
         await ctx.send(message)
         self.twitch_repository.log_chat_message(channel_name, self.nick, message)
 
@@ -1251,7 +1253,7 @@ class Bot(commands.Bot):
                         data = json.loads(response)
                         word = str(data.get("word", "")).strip()
                         hint = str(data.get("hint", "")).strip()
-                        final_word = word.lower()
+                        final_word = word.strip().lower()
 
                         game = self.minigame_service.start_word_guess_game(channel_name, final_word, hint)
                         self.twitch_repository.add_used_word(channel_name, final_word)
