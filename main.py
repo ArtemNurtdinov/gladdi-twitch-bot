@@ -38,7 +38,7 @@ app.add_middleware(
 
 app.include_router(auth_routes.router, prefix="/api/v1", tags=["Authentication"])
 app.include_router(auth_routes.admin_router, prefix="/api/v1", tags=["Administration"])
-app.include_router(chat_routes.router, prefix="/api/v1", tags=["Chat"])
+app.include_router(chat_routes.router, prefix="/api/v1/messages", tags=["Chat"])
 app.include_router(bot_routes.router, prefix="/api/v1", tags=["Twitch Bot"])
 app.include_router(joke_routes.router, prefix="/api/v1", tags=["Jokes"])
 app.include_router(stream_routes.router, prefix="/api/v1", tags=["Streams"])

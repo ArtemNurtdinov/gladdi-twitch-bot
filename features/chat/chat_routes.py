@@ -1,23 +1,26 @@
+from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
-from typing import List
-from features.chat.chat_schemas import TopChatUser
+from features.chat.chat_schemas import TopChatUsersResponse
 from features.chat.chat_service import ChatService
 
 router = APIRouter()
 chat_service = ChatService()
 
+
 @router.get(
     "/top-users",
-    response_model=List[TopChatUser],
+    response_model=TopChatUsersResponse,
     summary="Топ активных пользователей",
     description="Получить список самых активных пользователей"
 )
 async def get_top_users(
-    channel_name: str,
-    days: int = Query(30, ge=1, le=365, description="Количество дней для анализа"),
-    limit: int = Query(10, ge=1, le=100, description="Максимальное количество пользователей в результате")
-) -> List[TopChatUser]:
+    limit: int = Query(10, ge=1, le=100, description="Максимальное количество пользователей в результате"),
+    date_from: datetime | None = Query(None, description="Начало периода (UTC)"),
+    date_to: datetime | None = Query(None, description="Конец периода (UTC)"),
+) -> TopChatUsersResponse:
+    if date_from > date_to:
+        raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
     try:
-        return chat_service.get_top_chat_users(channel_name, days, limit)
+        return chat_service.get_top_chat_users(limit, date_from, date_to)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка получения топ пользователей: {str(e)}")
