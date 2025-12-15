@@ -1,6 +1,10 @@
 from sqlalchemy import text
 from db.base import engine
 from features.ai.db.ai_message import AIMessage
+from features.auth.auth_schemas import UserCreate
+from features.auth.auth_service import AuthService
+from features.auth.db.access_token import AccessToken
+from features.auth.db.user import User, UserRole
 from features.battle.db.battle_history import BattleHistory
 from features.betting.db.bet_history import BetHistory
 from features.chat.db.chat_message import ChatMessage
@@ -9,7 +13,7 @@ from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory
 from features.equipment.db.user_equipment import UserEquipment
 from features.stream.db.stream import Stream
-from features.stream.db.stream_viewer_session import StreamViewerSession
+from features.viewer.db.viewer_session import StreamViewerSession
 
 
 def test_connection():
@@ -44,6 +48,8 @@ def create_tables():
             Stream.__table__.create(bind=connection, checkfirst=True)
             StreamViewerSession.__table__.create(bind=connection, checkfirst=True)
             WordHistory.__table__.create(bind=connection, checkfirst=True)
+            User.__table__.create(bind=connection, checkfirst=True)
+            AccessToken.__table__.create(bind=connection, checkfirst=True)
         print("Таблицы успешно созданы!")
 
         with engine.connect() as connection:
@@ -55,6 +61,45 @@ def create_tables():
         print(f"Ошибка при создании таблиц: {e}")
 
 
+def create_admin():
+    try:
+        auth_service = AuthService()
+        existing_user = auth_service.get_user_by_email("artem.nefrit@gmail.com")
+        if existing_user:
+            print(f"   Пользователь с email 'artem.nefrit@gmail.com' уже существует!")
+            print(f"   ID: {existing_user.id}")
+            print(f"   Роль: {existing_user.role.value}")
+            return existing_user
+
+        user_data = UserCreate(
+            email="artem.nefrit@gmail.com",
+            first_name="Артем",
+            last_name="Нуртдинов",
+            password="12345",
+            role=UserRole.ADMIN,
+            is_active=True
+        )
+
+        user = auth_service.create_user_from_admin(user_data)
+
+        print("    Администратор успешно создан!")
+        print(f"   ID: {user.id}")
+        print(f"   Email: {user.email}")
+        print(f"   Имя: {user.first_name} {user.last_name}")
+        print(f"   Роль: {user.role.value}")
+        print(f"   Активен: {user.is_active}")
+        print(f"   Создан: {user.created_at}")
+
+        return user
+
+    except Exception as e:
+        print(f"Ошибка создания администратора: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 if __name__ == "__main__":
     test_connection()
     create_tables()
+    create_admin()

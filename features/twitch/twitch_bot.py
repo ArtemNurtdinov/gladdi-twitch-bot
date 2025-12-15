@@ -27,7 +27,7 @@ from features.joke.settings_manager import SettingsManager
 from features.economy.economy_service import EconomyService
 from features.minigame.minigame_service import MinigameService
 from features.stream.stream_service import StreamService
-from features.stream.viewer_time_service import ViewerTimeService
+from features.viewer.viewer_session_service import ViewerTimeService
 from features.stream.model.stream_statistics import StreamStatistics
 from features.betting.model.rarity_level import RarityLevel
 from features.betting.model.emoji_config import EmojiConfig
@@ -190,13 +190,13 @@ class Bot(commands.Bot):
     async def event_message(self, message):
         if not message.author:
             return
-
         nickname = message.author.display_name
         content = message.content
         channel_name = message.channel.name
+        normalized_user_name = nickname.lower()
 
         self.chat_service.save_chat_message(channel_name, nickname, content)
-        self.economy_service.process_user_message_activity(channel_name, nickname)
+        self.economy_service.process_user_message_activity(channel_name, normalized_user_name)
         logger.info(f"Награда за активность: {nickname} получил {self.economy_service.ACTIVITY_REWARD} монет")
 
         active_stream = self.stream_service.get_active_stream(channel_name)
@@ -1011,7 +1011,6 @@ class Bot(commands.Bot):
         return messages
 
     async def _post_message_in_twitch_chat(self, message: str, ctx):
-        logger.debug(f"Отправка сообщения в чат: {message}")
         messages = self.split_text(message)
 
         for msg in messages:

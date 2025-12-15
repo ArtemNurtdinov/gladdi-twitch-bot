@@ -32,9 +32,8 @@ class EconomyService:
 
     def process_user_message_activity(self, channel_name: str, user_name: str):
         db = SessionLocal()
-        normalized_user_name = user_name.lower()
         try:
-            user_balance = self.get_user_balance(channel_name, normalized_user_name)
+            user_balance = self.get_user_balance(channel_name, user_name)
             user_balance = db.merge(user_balance)
 
             user_balance.message_count += 1
@@ -49,7 +48,7 @@ class EconomyService:
 
                 transaction = TransactionHistory(
                     channel_name=channel_name,
-                    user_name=normalized_user_name,
+                    user_name=user_name,
                     transaction_type=TransactionType.MESSAGE_REWARD,
                     amount=self.ACTIVITY_REWARD,
                     balance_before=balance_before,
@@ -63,7 +62,7 @@ class EconomyService:
                 return None
         except Exception as e:
             db.rollback()
-            logger.error(f"Ошибка при обработке активности пользователя {normalized_user_name}: {e}")
+            logger.error(f"Ошибка при обработке активности пользователя {user_name}: {e}")
             return None
         finally:
             db.close()

@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime
 from db.base import SessionLocal
 from features.stream.db.stream import Stream
+from features.stream.stream_schemas import StreamListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -94,5 +95,32 @@ class StreamService:
         except Exception as e:
             logger.error(f"Ошибка при обновлении concurrent viewers: {e}")
             db.rollback()
+        finally:
+            db.close()
+
+    def get_streams(self, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None, skip: int = 0, limit: int = 20) -> StreamListResponse:
+        db = SessionLocal()
+        try:
+            query = db.query(Stream)
+            if date_from:
+                query = query.filter(Stream.started_at >= date_from)
+            if date_to:
+                query = query.filter(Stream.started_at <= date_to)
+            total = query.count()
+            streams = query.order_by(Stream.started_at.desc()).offset(skip).limit(limit).all()
+            return StreamListResponse(items=streams, total=total)
+        except Exception as e:
+            logger.error(f"Ошибка при получении списка стримов: {e}")
+            raise
+        finally:
+            db.close()
+
+    def get_stream_by_id(self, stream_id: int) -> Optional[Stream]:
+        db = SessionLocal()
+        try:
+            return db.query(Stream).filter_by(id=stream_id).first()
+        except Exception as e:
+            logger.error(f"Ошибка при получении стрима {stream_id}: {e}")
+            return None
         finally:
             db.close()

@@ -3,7 +3,7 @@ from typing import List
 from datetime import datetime, timedelta
 
 from db.base import SessionLocal
-from features.stream.db.stream_viewer_session import StreamViewerSession
+from features.viewer.db.viewer_session import StreamViewerSession
 
 logger = logging.getLogger(__name__)
 

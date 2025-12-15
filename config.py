@@ -6,6 +6,13 @@ load_dotenv()
 
 
 @dataclass
+class ApplicationConfig:
+    auth_secret: str = os.getenv("ACCESS_SECRET_KEY")
+    auth_secret_algorithm: str = os.getenv("ACCESS_SECRET_ALGORITHM", "")
+    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 30))
+
+
+@dataclass
 class TelegramConfig:
     bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     group_id: int = int(os.getenv("TELEGRAM_GROUP_ID", "0"))
@@ -50,6 +57,7 @@ class IntentDetectorConfig:
 
 @dataclass
 class Config:
+    application: ApplicationConfig
     telegram: TelegramConfig
     twitch: TwitchConfig
     dashboard: DashboardConfig
@@ -61,6 +69,7 @@ class Config:
 
 def load_config() -> Config:
     return Config(
+        application=ApplicationConfig(),
         telegram=TelegramConfig(),
         twitch=TwitchConfig(),
         dashboard=DashboardConfig(),
