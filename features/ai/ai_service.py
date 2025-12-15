@@ -2,7 +2,7 @@ from config import config
 from db.base import SessionLocal
 import requests
 from features.ai.intent import Intent
-from sqlalchemy import func, case
+from sqlalchemy import case
 from features.ai.message import AIMessage, Role
 from features.ai.db.ai_message import AIMessage as AIDbMessage
 
@@ -29,7 +29,7 @@ class AIService:
         else:
             raise Exception(f"Ошибка запроса: {response.status_code} - {response.text}")
 
-    def extract_intent_from_text(self, text: str) -> Intent:
+    def _extract_intent_from_text(self, text: str) -> Intent:
         api_url = f"{self._INTENT_DETECTOR_API_DOMAIN}/extract-intent"
         payload = {"message": text}
 
@@ -46,6 +46,42 @@ class AIService:
             return Intent.OTHER
         else:
             raise Exception(f"Ошибка запроса: {response.status_code} - {response.text}")
+
+    def _validate_intent_via_llm(self, detected_intent: Intent, text: str) -> Intent:
+        intent_descriptions = {
+            "games_history": "вопросы о прошедших играх, их истории, результатах и т.п.",
+            "jackbox": "вопросы о Jackbox, просьбы поиграть, обсуждение этой игры",
+            "skuf_femboy": "вопросы и обсуждения, кто и на сколько процентов скуф или фембой",
+            "dankar_cut": "вопросы и обсуждения, связанные с нарезками Dankar",
+            "hello": "приветствия, пожелания доброго дня и т.п.",
+            "other": "всё, что не подходит ни под один из вышеперечисленных интентов"
+        }
+
+        intent_values = [intent.value for intent in Intent]
+        intent_list_str = ", ".join(f"{intent}: {intent_descriptions[intent]}" for intent in intent_values)
+
+        prompt = (
+            "Ты — классификатор пользовательских сообщений по intent.\n"
+            "Вот список возможных intent с их описаниями:\n"
+            f"{intent_list_str}\n"
+            f"Текст сообщения: \"{text}\"\n"
+            f"Система ранее определила intent как: {detected_intent.value}.\n"
+            "Если intent определён верно, просто напиши его (одно слово, без пояснений). "
+            "Если определён неверно — напиши правильный intent (одно слово, без пояснений)."
+        )
+        ai_response = self.generate_ai_response([AIMessage(Role.USER, prompt)])
+        ai_response = ai_response.strip().lower()
+        for intent in Intent:
+            if ai_response == intent.value:
+                return intent
+        return detected_intent
+
+    def get_intent_from_text(self, text: str) -> Intent:
+        detected_intent = self._extract_intent_from_text(text)
+        if detected_intent == Intent.HELLO or detected_intent == Intent.DANKAR_CUT or detected_intent == Intent.JACKBOX:
+            return self._validate_intent_via_llm(detected_intent, text)
+        else:
+            return detected_intent
 
     def get_jackbox_prompt(self, source: str, nickname: str, message: str) -> str:
         return (f"Сообщение от пользователя {source} с никнеймом {nickname}: {message}."

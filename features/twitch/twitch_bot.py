@@ -207,7 +207,7 @@ class Bot(commands.Bot):
             await self.handle_commands(message)
             return
 
-        intent = self.ai_service.extract_intent_from_text(message.content)
+        intent = self.ai_service.get_intent_from_text(message.content)
         logger.info(f"Определён интент: {intent}")
 
         prompt = None
@@ -279,7 +279,7 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда от пользователя {nickname}")
 
-        intent = self.ai_service.extract_intent_from_text(question)
+        intent = self.ai_service.get_intent_from_text(question)
         logger.info(f"Определён интент: {intent}")
 
         if intent == Intent.JACKBOX:
