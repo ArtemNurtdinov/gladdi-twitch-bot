@@ -30,7 +30,6 @@ class JokeService:
         try:
             success = self.settings_manager.set_jokes_enabled(True)
             if success:
-                logger.info("Анекдоты включены через API")
                 return JokesResponse(success=True, message="Анекдоты включены")
             else:
                 logger.warning("Не удалось включить анекдоты - ошибка сохранения")

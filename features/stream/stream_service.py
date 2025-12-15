@@ -40,6 +40,7 @@ class StreamService:
             stream.ended_at = finish_time
             stream.is_active = False
             stream.updated_at = datetime.utcnow()
+            db.commit()
         except Exception as e:
             db.rollback()
             logger.error(f"Ошибка при завершении стрима: {e}")

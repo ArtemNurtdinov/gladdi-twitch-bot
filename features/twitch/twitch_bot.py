@@ -1115,7 +1115,7 @@ class Bot(commands.Bot):
                     self.minigame_service.reset_stream_state(channel_name)
                     logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
-                    chat_messages = self.chat_service.get_chat_messages(channel_name, active_stream.started_at)
+                    chat_messages = self.chat_service.get_chat_messages(channel_name, active_stream.started_at, finish_time)
                     total_messages = len(chat_messages)
                     unique_users = len(set(msg.user_name for msg in chat_messages))
 
