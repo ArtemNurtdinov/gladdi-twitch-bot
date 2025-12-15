@@ -18,7 +18,6 @@ from features.battle.model.user_battle_stats import UserBattleStats
 from features.betting.betting_schemas import UserBetStats
 from features.betting.betting_service import BettingService
 from features.equipment.equipment_service import EquipmentService
-from features.minigame.word.word_game_service import WordGameService
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.chat.db.chat_message import ChatMessage
@@ -95,7 +94,6 @@ class Bot(commands.Bot):
         self.minigame_service = MinigameService(self.economy_service)
         self.viewer_service = ViewerTimeService()
         self.betting_service = BettingService(self.economy_service)
-        self.word_game_service = WordGameService()
         self.battle_service = BattleService()
 
         self._restore_stream_context()
@@ -1300,7 +1298,7 @@ class Bot(commands.Bot):
                     choice = random.choice(["number", "word", "rps"])
 
                     if choice == "word":
-                        used_words = self.word_game_service.get_used_words(channel_name, limit=50)
+                        used_words = self.minigame_service.get_used_words(channel_name, limit=50)
                         last_messages = self.chat_service.get_last_chat_messages(channel_name, limit=50)
 
                         if used_words:
@@ -1330,7 +1328,7 @@ class Bot(commands.Bot):
                         final_word = word.strip().lower()
 
                         game = self.minigame_service.start_word_guess_game(channel_name, final_word, hint)
-                        self.word_game_service.add_used_word(channel_name, final_word)
+                        self.minigame_service.add_used_word(channel_name, final_word)
 
                         masked = game.get_masked_word()
                         game_message = (

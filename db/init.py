@@ -4,7 +4,7 @@ from features.ai.db.ai_message import AIMessage
 from features.battle.db.battle_history import BattleHistory
 from features.betting.db.bet_history import BetHistory
 from features.chat.db.chat_message import ChatMessage
-from features.minigame.word.db.word_history import WordHistory
+from features.minigame.db.word_history import WordHistory
 from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory
 from features.equipment.db.user_equipment import UserEquipment
