@@ -1,9 +1,13 @@
 import logging
 from typing import Optional
 from datetime import datetime
+
+from sqlalchemy import desc
+from sqlalchemy.orm import selectinload
 from db.base import SessionLocal
 from features.stream.db.stream import Stream
 from features.stream.stream_schemas import StreamListResponse
+from features.viewer.db.viewer_session import StreamViewerSession
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +122,13 @@ class StreamService:
     def get_stream_by_id(self, stream_id: int) -> Optional[Stream]:
         db = SessionLocal()
         try:
-            return db.query(Stream).filter_by(id=stream_id).first()
+            stream = db.query(Stream).filter(Stream.id == stream_id).first()
+            if not stream:
+                return None
+
+            sessions = db.query(StreamViewerSession).filter(StreamViewerSession.stream_id == stream_id).order_by(desc(StreamViewerSession.last_activity)).all()
+            stream.viewer_sessions = sessions
+            return stream
         except Exception as e:
             logger.error(f"Ошибка при получении стрима {stream_id}: {e}")
             return None

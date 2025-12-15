@@ -2,6 +2,24 @@ from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 
 
+class StreamViewerSessionResponse(BaseModel):
+    id: int = Field(..., description="Идентификатор сессии")
+    stream_id: int = Field(..., description="Идентификатор стрима")
+    channel_name: str = Field(..., description="Название канала")
+    user_name: str = Field(..., description="Имя пользователя")
+    session_start: datetime | None = Field(None, description="Время начала текущей сессии")
+    session_end: datetime | None = Field(None, description="Время завершения текущей сессии")
+    total_minutes: int = Field(..., description="Накопленное время просмотра в минутах")
+    last_activity: datetime | None = Field(None, description="Время последней активности")
+    is_watching: bool = Field(..., description="Флаг активности просмотра")
+    rewards_claimed: str = Field(..., description="Идентификаторы полученных наград через запятую")
+    last_reward_claimed: datetime | None = Field(None, description="Время получения последней награды")
+    created_at: datetime = Field(..., description="Дата создания записи")
+    updated_at: datetime = Field(..., description="Дата последнего обновления записи")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class StreamResponse(BaseModel):
     id: int = Field(..., description="Идентификатор стрима")
     channel_name: str = Field(..., description="Название канала")
@@ -18,6 +36,12 @@ class StreamResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class StreamDetailResponse(StreamResponse):
+    viewer_sessions: list[StreamViewerSessionResponse] = Field(default_factory=list, description="Список сессий зрителей для стрима")
+
+
 class StreamListResponse(BaseModel):
     items: list[StreamResponse] = Field(..., description="Список стримов")
     total: int = Field(..., description="Общее количество стримов в выборке")
+ 
+

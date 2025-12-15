@@ -1,6 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
-from features.stream.stream_schemas import StreamListResponse, StreamResponse
+from features.stream.stream_schemas import StreamListResponse, StreamDetailResponse
 from features.stream.stream_service import StreamService
 
 router = APIRouter()
@@ -31,12 +31,12 @@ async def get_streams(
 
 @router.get(
     "/streams/{stream_id}",
-    response_model=StreamResponse,
+    response_model=StreamDetailResponse,
     summary="Детали стрима",
     description="Получить детальную информацию о стриме",
 )
-async def get_stream_detail(stream_id: int) -> StreamResponse:
+async def get_stream_detail(stream_id: int) -> StreamDetailResponse:
     stream = stream_service.get_stream_by_id(stream_id)
     if not stream:
         raise HTTPException(status_code=404, detail="Стрим не найден")
-    return StreamResponse.model_validate(stream)
+    return StreamDetailResponse.model_validate(stream)
