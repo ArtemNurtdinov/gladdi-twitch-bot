@@ -1,9 +1,10 @@
 from sqlalchemy import text
 from db.base import engine
+from features.ai.db.ai_message import AIMessage
 from features.battle.db.battle_history import BattleHistory
 from features.betting.db.bet_history import BetHistory
+from features.chat.db.chat_message import ChatMessage
 from features.minigame.word.db.word_history import WordHistory
-from features.stream.db.stream_messages import TwitchMessage, ChatMessageLog
 from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory
 from features.equipment.db.user_equipment import UserEquipment
@@ -33,8 +34,8 @@ def test_connection():
 def create_tables():
     try:
         with engine.begin() as connection:
-            TwitchMessage.__table__.create(bind=connection, checkfirst=True)
-            ChatMessageLog.__table__.create(bind=connection, checkfirst=True)
+            AIMessage.__table__.create(bind=connection, checkfirst=True)
+            ChatMessage.__table__.create(bind=connection, checkfirst=True)
             BattleHistory.__table__.create(bind=connection, checkfirst=True)
             BetHistory.__table__.create(bind=connection, checkfirst=True)
             UserBalance.__table__.create(bind=connection, checkfirst=True)

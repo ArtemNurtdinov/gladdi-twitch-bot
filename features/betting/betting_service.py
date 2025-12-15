@@ -178,18 +178,9 @@ class BettingService:
         finally:
             db.close()
 
-    def get_user_bet_stats(self, user_name: str, channel_name: str) -> UserBetStats:
+    def get_user_bets(self, channel_name: str, user_name: str) -> list[BetHistory]:
         db = SessionLocal()
         try:
-            bets = db.query(BetHistory).filter(BetHistory.user_name == user_name).filter(BetHistory.channel_name == channel_name).all()
-
-            if not bets:
-                return UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)
-
-            total_bets = len(bets)
-            jackpots = sum(1 for bet in bets if bet.result_type == "jackpot")
-            jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
-
-            return UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
+            return db.query(BetHistory).filter(BetHistory.user_name == user_name).filter(BetHistory.channel_name == channel_name).all()
         finally:
             db.close()

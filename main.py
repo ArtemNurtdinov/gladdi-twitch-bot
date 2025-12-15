@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from config import config
 from features.joke import joke_routes
-from features.twitch import chat_routes
+from features.chat import chat_routes
 from features.twitch.bot import bot_routes
 
 logging.basicConfig(

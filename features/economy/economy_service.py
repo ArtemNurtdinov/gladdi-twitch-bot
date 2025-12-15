@@ -6,7 +6,6 @@ from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory, TransactionType
 from features.economy.model.daily_bonus import DailyBonusResult
 from features.equipment.model.user_equipment_item import UserEquipmentItem
-from features.economy.model.user_stats import UserStats
 from features.economy.model.transfer_result import TransferResult
 from features.economy.model.shop_items import ShopItemType, DailyBonusMultiplierEffect
 from features.stream.stream_service import StreamService
@@ -338,49 +337,6 @@ class EconomyService:
             db.rollback()
             logger.error(f"Ошибка при получении стримового бонуса пользователем {user_name}: {e}")
             return DailyBonusResult(success=False, failure_reason="error")
-        finally:
-            db.close()
-
-    def get_user_stats(self, channel_name: str, user_name: str) -> UserStats:
-        db = SessionLocal()
-        try:
-            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=channel_name).first()
-
-            if not user_balance:
-                user_balance = UserBalance(channel_name=channel_name, user_name=channel_name, balance=self.STARTING_BALANCE)
-                db.add(user_balance)
-                transaction = TransactionHistory(
-                    channel_name=channel_name,
-                    user_name=channel_name,
-                    transaction_type=TransactionType.ADMIN_ADJUST,
-                    amount=self.STARTING_BALANCE,
-                    balance_before=0,
-                    balance_after=self.STARTING_BALANCE,
-                    description="Создание нового аккаунта",
-                )
-                db.add(transaction)
-
-                db.commit()
-                logger.info(f"Создан новый пользователь {channel_name} с балансом {self.STARTING_BALANCE}")
-
-            transactions = db.query(TransactionHistory).filter_by(channel_name=channel_name, user_name=channel_name).all()
-
-            transaction_counts = {}
-            for transaction_type in TransactionType:
-                count = sum(1 for t in transactions if t.transaction_type == transaction_type)
-                if count > 0:
-                    transaction_counts[transaction_type.value] = count
-
-            return UserStats(
-                balance=user_balance.balance,
-                total_earned=user_balance.total_earned,
-                total_spent=user_balance.total_spent,
-                net_profit=user_balance.total_earned - user_balance.total_spent,
-                last_daily_claim=user_balance.last_daily_claim,
-                can_claim_daily=self.can_claim_daily_bonus(channel_name, user_name),
-                created_at=user_balance.created_at,
-                transaction_counts=transaction_counts
-            )
         finally:
             db.close()
 

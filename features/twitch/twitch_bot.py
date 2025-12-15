@@ -9,18 +9,21 @@ from datetime import datetime, timedelta
 import telegram
 from config import config
 from db.base import SessionLocal
+from collections import Counter
 from features.ai.ai_service import AIService
 from features.ai.intent import Intent
 from features.ai.message import AIMessage, Role
 from features.battle.battle_service import BattleService
+from features.battle.model.user_battle_stats import UserBattleStats
+from features.betting.betting_schemas import UserBetStats
 from features.betting.betting_service import BettingService
 from features.equipment.equipment_service import EquipmentService
 from features.minigame.word.word_game_service import WordGameService
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
-from features.stream.db.stream_messages import ChatMessageLog
+from features.chat.db.chat_message import ChatMessage
 from features.economy.db.transaction_history import TransactionType
-from features.twitch.chat_service import ChatService
+from features.chat.chat_service import ChatService
 from features.joke.settings_manager import SettingsManager
 from features.economy.economy_service import EconomyService
 from features.minigame.minigame_service import MinigameService
@@ -76,7 +79,7 @@ class Bot(commands.Bot):
     _GROUP_ID = config.telegram.group_id
     _SOURCE_TWITCH = "twitch"
 
-    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService, chat_service: ChatService, ai_repository: AIService):
+    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService, chat_service: ChatService, ai_service: AIService):
         self._prefix = '!'
         self.initial_channels = ['artemnefrit']
         super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
@@ -84,7 +87,7 @@ class Bot(commands.Bot):
         self.twitch_auth = twitch_auth
         self.twitch_api_service = twitch_api_service
         self.chat_service = chat_service
-        self.ai_repository = ai_repository
+        self.ai_service = ai_service
         self.settings_manager = SettingsManager()
         self.stream_service = StreamService()
         self.equipment_service = EquipmentService()
@@ -206,17 +209,17 @@ class Bot(commands.Bot):
             await self.handle_commands(message)
             return
 
-        intent = self.ai_repository.extract_intent_from_text(message.content)
+        intent = self.ai_service.extract_intent_from_text(message.content)
         logger.info(f"Определён интент: {intent}")
 
         prompt = None
 
         if intent == Intent.JACKBOX:
-            prompt = self.ai_repository.get_jackbox_prompt(self._SOURCE_TWITCH, nickname, content)
+            prompt = self.ai_service.get_jackbox_prompt(self._SOURCE_TWITCH, nickname, content)
         elif intent == Intent.DANKAR_CUT:
-            prompt = self.ai_repository.get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, content)
+            prompt = self.ai_service.get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, content)
         elif intent == Intent.HELLO:
-            prompt = self.ai_repository.get_hello_prompt(self._SOURCE_TWITCH, nickname, content)
+            prompt = self.ai_service.get_hello_prompt(self._SOURCE_TWITCH, nickname, content)
 
         if prompt is not None:
             result = self.generate_response_in_chat(prompt, channel_name)
@@ -260,7 +263,7 @@ class Bot(commands.Bot):
             logger.info(f"Пользователь {user_name} подписан на {days} дней, {hours} часов, {minutes} минут")
             prompt = f"@{user_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и {minutes} минут. Сообщи ему об этом как-нибудь оригинально."
             result = self.generate_response_in_chat(prompt, channel_name)
-            self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+            self.ai_service.save_conversation_to_db(channel_name, prompt, result)
             self.chat_service.save_chat_message(channel_name, self.nick, result)
             await ctx.send(result)
         else:
@@ -278,22 +281,22 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда от пользователя {nickname}")
 
-        intent = self.ai_repository.extract_intent_from_text(question)
+        intent = self.ai_service.extract_intent_from_text(question)
         logger.info(f"Определён интент: {intent}")
 
         if intent == Intent.JACKBOX:
-            prompt = self.ai_repository.get_jackbox_prompt(self._SOURCE_TWITCH, nickname, question)
+            prompt = self.ai_service.get_jackbox_prompt(self._SOURCE_TWITCH, nickname, question)
         elif intent == Intent.SKUF_FEMBOY:
-            prompt = self.ai_repository.get_skuf_femboy_prompt(self._SOURCE_TWITCH, nickname, question)
+            prompt = self.ai_service.get_skuf_femboy_prompt(self._SOURCE_TWITCH, nickname, question)
         elif intent == Intent.DANKAR_CUT:
-            prompt = self.ai_repository.get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, question)
+            prompt = self.ai_service.get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, question)
         elif intent == Intent.HELLO:
-            prompt = self.ai_repository.get_hello_prompt(self._SOURCE_TWITCH, nickname, question)
+            prompt = self.ai_service.get_hello_prompt(self._SOURCE_TWITCH, nickname, question)
         else:
-            prompt = self.ai_repository.get_default_prompt(self._SOURCE_TWITCH, nickname, question)
+            prompt = self.ai_service.get_default_prompt(self._SOURCE_TWITCH, nickname, question)
 
         result = self.generate_response_in_chat(prompt, channel_name)
-        self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+        self.ai_service.save_conversation_to_db(channel_name, prompt, result)
         self.chat_service.save_chat_message(channel_name, self.nick, result)
         logger.info(f"Отправлен ответ пользователю {nickname}")
         await self._post_message_in_twitch_chat(result, ctx)
@@ -379,7 +382,7 @@ class Bot(commands.Bot):
 
         winner_amount = self.economy_service.BATTLE_WINNER_PRIZE
         self.economy_service.add_balance(channel_name, winner, winner_amount, TransactionType.BATTLE_WIN, f"Победа в битве против {loser}")
-        self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+        self.ai_service.save_conversation_to_db(channel_name, prompt, result)
         self.chat_service.save_chat_message(channel_name, self.nick, result)
         self.battle_service.save_battle_history(channel_name, opponent, challenger, winner, result)
 
@@ -828,15 +831,31 @@ class Bot(commands.Bot):
 
         normalized_user_name = user_name.lower()
 
-        stats = self.economy_service.get_user_stats(normalized_user_name, user_name)
-        bet_stats = self.betting_service.get_user_bet_stats(normalized_user_name, channel_name)
-        battle_stats = self.battle_service.get_user_battle_stats(user_name, channel_name)
+        balance = self.economy_service.get_user_balance(channel_name, normalized_user_name)
+        bets = self.betting_service.get_user_bets(channel_name, normalized_user_name)
+
+        if not bets:
+            bet_stats = UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)
+        else:
+            total_bets = len(bets)
+            jackpots = sum(1 for bet in bets if bet.result_type == "jackpot")
+            jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
+
+            bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
+
+        battles = self.battle_service.get_user_battles(channel_name, user_name)
+
+        if not battles:
+            battle_stats = UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
+        else:
+            total_battles = len(battles)
+            wins = sum(1 for battle in battles if battle.winner == user_name)
+            losses = total_battles - wins
+            win_rate = (wins / total_battles) * 100 if total_battles > 0 else 0.0
+            battle_stats = UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
 
         result = f"📊 Статистика @{user_name}: "
-        result += f"💰 Баланс: {stats.balance} монет."
-        result += f"📈 Всего заработано: {stats.total_earned} монет. "
-        result += f"📉 Всего потрачено: {stats.total_spent} монет. "
-        result += f"💹 Чистая прибыль: {stats.net_profit} монет. "
+        result += f"💰 Баланс: {balance.balance} монет."
 
         if bet_stats.total_bets > 0:
             result += f"\n🎰 Ставки: {bet_stats.total_bets} | "
@@ -1024,7 +1043,7 @@ class Bot(commands.Bot):
                 stream_info = await self.twitch_api_service.get_stream_info(broadcaster_id)
                 prompt = f"Придумай анекдот, связанной с категорией трансляции: {stream_info.game_name}."
                 result = self.generate_response_in_chat(prompt, channel_name)
-                self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+                self.ai_service.save_conversation_to_db(channel_name, prompt, result)
                 self.chat_service.save_chat_message(channel_name, self.nick, result)
                 channel = self.get_channel(channel_name)
                 await channel.send(result)
@@ -1099,7 +1118,26 @@ class Bot(commands.Bot):
                     self.minigame_service.reset_stream_state(channel_name)
                     logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
-                    stats = self.chat_service.get_stream_statistics(channel_name, active_stream.started_at)
+                    chat_messages = self.chat_service.get_chat_messages(channel_name, active_stream.started_at)
+                    total_messages = len(chat_messages)
+                    unique_users = len(set(msg.user_name for msg in chat_messages))
+
+                    user_counts = Counter(msg.user_name for msg in chat_messages)
+                    if user_counts:
+                        top_user = user_counts.most_common(1)[0][0]
+                    else:
+                        top_user = None
+
+                    battles = self.battle_service.get_battles(channel_name, active_stream.started_at)
+
+                    total_battles = len(battles)
+                    if battles:
+                        winner_counts = Counter(b.winner for b in battles)
+                        top_winner = winner_counts.most_common(1)[0][0]
+                    else:
+                        top_winner = None
+
+                    stats = StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
 
                     try:
                         await self.stream_summarize(stats, channel_name, active_stream.started_at, finish_time)
@@ -1121,7 +1159,7 @@ class Bot(commands.Bot):
         result = self.generate_response_in_chat(prompt, channel_name)
         try:
             await self.telegram_bot.send_message(chat_id=self._GROUP_ID, text=result)
-            self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+            self.ai_service.save_conversation_to_db(channel_name, prompt, result)
             logger.info(f"Анонс стрима отправлен в Telegram: {result}")
         except Exception as e:
             logger.error(f"Ошибка отправки анонса в Telegram: {e}")
@@ -1171,7 +1209,7 @@ class Bot(commands.Bot):
         prompt += f"\n\nНа основе предоставленной информации подведи краткий итог трансляции"
         result = self.generate_response_in_chat(prompt, channel_name)
 
-        self.chat_service.save_conversation_to_db(channel_name, prompt, result)
+        self.ai_service.save_conversation_to_db(channel_name, prompt, result)
 
         self.current_stream_summaries = []
         self.last_chat_summary_time = None
@@ -1207,10 +1245,10 @@ class Bot(commands.Bot):
             try:
                 since = datetime.utcnow() - timedelta(minutes=20)
                 messages = (
-                    db.query(ChatMessageLog)
-                    .filter(ChatMessageLog.channel_name == channel_name)
-                    .filter(ChatMessageLog.created_at >= since)
-                    .order_by(ChatMessageLog.created_at.asc())
+                    db.query(ChatMessage)
+                    .filter(ChatMessage.channel_name == channel_name)
+                    .filter(ChatMessage.created_at >= since)
+                    .order_by(ChatMessage.created_at.asc())
                     .all()
                 )
                 if not messages:
@@ -1282,9 +1320,9 @@ class Bot(commands.Bot):
 
                         system_prompt = self.SYSTEM_PROMPT_FOR_GROUP
                         ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
-                        response = self.ai_repository.generate_ai_response(ai_messages)
+                        response = self.ai_service.generate_ai_response(ai_messages)
 
-                        self.chat_service.save_conversation_to_db(channel_name, prompt, response)
+                        self.ai_service.save_conversation_to_db(channel_name, prompt, response)
 
                         data = json.loads(response)
                         word = str(data.get("word", "")).strip()
@@ -1405,7 +1443,7 @@ class Bot(commands.Bot):
             logger.error(f"Ошибка при восстановлении состояния стрима: {e}")
 
     def generate_response_in_chat(self, prompt: str, channel_name: str) -> str:
-        messages = self.chat_service.get_last_ai_messages(channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
+        messages = self.ai_service.get_last_ai_messages(channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
         messages.append(AIMessage(Role.USER, prompt))
-        assistant_message = self.ai_repository.generate_ai_response(messages)
+        assistant_message = self.ai_service.generate_ai_response(messages)
         return assistant_message

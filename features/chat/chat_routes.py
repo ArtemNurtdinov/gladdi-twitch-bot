@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import List
-from features.twitch.chat_schemas import TopChatUser
-from features.twitch.chat_service import ChatService
+from features.chat.chat_schemas import TopChatUser
+from features.chat.chat_service import ChatService
 
 router = APIRouter()
 chat_service = ChatService()

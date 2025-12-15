@@ -55,9 +55,10 @@ docker run --env-file .env -p 8003:8003 gladdi-twitch-bot
 - `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` — получите
   на [twitch developers](https://dev.twitch.tv/docs/authentication/register-app)
 - `TWITCH_REDIRECT_URL` — callback Twitch OAuth (по умолчанию `http://localhost:8003/api/v1/bot/callback`)
-- `TWITCH_CHANNEL` — канал, где работает бот
+- `TWITCH_CHANNEL` — ваш Twitch канал, к которому подключится бот
 - `DASHBOARD_PORT` — порт API (по умолчанию 8003)
 - `TELEGRAM_BOT_TOKEN` — токен телеграм бота (анонсы стрима)
+- `TELEGRAM_GROUP_ID` — группа для анонсов стрима
 - `DATABASE_URL` — урл базы данных (PostgreSQL)
 - `LLMBOX_DOMAIN` — домен LLMBox (см. https://github.com/ArtemNurtdinov/llmbox)
 - `INTENT_DETECTOR_DOMAIN` — домен GLaDDi Intent detector (см. https://github.com/ArtemNurtdinov/gladdi-intent-detector)
@@ -67,15 +68,23 @@ docker run --env-file .env -p 8003:8003 gladdi-twitch-bot
 ```env
 TWITCH_CLIENT_ID=...
 TWITCH_CLIENT_SECRET=...
+TWITCH_REDIRECT_URL=http://localhost:8003/api/v1/bot/callback
 TWITCH_CHANNEL=your_channel
+
+TELEGRAM_BOT_TOKEN=123456789:AAAbbbCccDddEeeFffGggHhhIiiJjjKkkL
+TELEGRAM_GROUP_ID=-1009876543210
+
 DATABASE_URL=postgresql://user:pass@host:5432/dbname
+
+LLMBOX_DOMAIN=http://llmbox:8000
+INTENT_DETECTOR_DOMAIN=http://gladdi-intent-detector:8000
 ```
 
 ## Структура
 
-- `main.py` — точка входа: поднимает FastAPI и Twitch‑бота.
-- `features/` — модули бота (аналитика, игры, экономика, Twitch API и др.).
-- `config.py` — чтение переменных окружения, базовая валидация.
+- `main.py` — точка входа.
+- `features/` — модули бота (чат, аналитика, игры, экономика, интеграции и тд.).
+- `config.py` — чтение переменных окружения.
 - `Dockerfile` — контейнеризация.
 
 

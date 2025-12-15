@@ -1,3 +1,7 @@
+from datetime import datetime
+
+from sqlalchemy import and_, or_
+
 from db.base import SessionLocal
 from features.battle.db.battle_history import BattleHistory
 from features.battle.model.user_battle_stats import UserBattleStats
@@ -17,23 +21,24 @@ class BattleService:
         finally:
             db.close()
 
-    def get_user_battle_stats(self, user_name: str, channel_name: str) -> UserBattleStats:
+    def get_user_battles(self, channel_name: str, user_name: str) -> list[BattleHistory]:
         db = SessionLocal()
         try:
-            battles = (
-                db.query(BattleHistory)
-                .filter(((BattleHistory.opponent_1 == user_name) | (BattleHistory.opponent_2 == user_name)) & (BattleHistory.channel_name == channel_name))
-                .all()
-            )
+            return db.query(BattleHistory).filter(
+                and_(
+                    or_(
+                        BattleHistory.opponent_1 == user_name,
+                        BattleHistory.opponent_2 == user_name
+                    ),
+                    BattleHistory.channel_name == channel_name
+                )
+            ).all()
+        finally:
+            db.close()
 
-            if not battles:
-                return UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
-
-            total_battles = len(battles)
-            wins = sum(1 for battle in battles if battle.winner == user_name)
-            losses = total_battles - wins
-            win_rate = (wins / total_battles) * 100 if total_battles > 0 else 0.0
-
-            return UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
+    def get_battles(self, channel_name: str, from_time: datetime) -> list[BattleHistory]:
+        db = SessionLocal()
+        try:
+            return db.query(BattleHistory).filter(BattleHistory.channel_name == channel_name).filter(BattleHistory.created_at >= from_time).all()
         finally:
             db.close()
