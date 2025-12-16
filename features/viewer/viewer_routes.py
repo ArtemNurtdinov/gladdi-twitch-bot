@@ -18,19 +18,18 @@ viewer_time_service = ViewerTimeService()
     summary="Список сессий зрителя",
     description="Получить все сессии просмотра конкретного пользователя на канале",
 )
-async def get_viewer_sessions(channel_name: str, user_name: str) -> ViewerSessionsResponse:
+async def get_viewer_sessions(
+    channel_name: str,
+    user_name: str
+) -> ViewerSessionsResponse:
     try:
         sessions_db = viewer_time_service.get_user_sessions(channel_name, user_name)
 
         sessions: list[ViewerSessionWithStreamResponse] = []
         for session in sessions_db:
             base = ViewerSessionResponse.model_validate(session).model_dump()
-
-            stream_info = None
-            if session.stream:
-                stream_info = ViewerSessionStreamInfo.model_validate(session.stream)
-
-            sessions.append(ViewerSessionWithStreamResponse(**base, stream=stream_info,))
+            stream_info = ViewerSessionStreamInfo.model_validate(session.stream)
+            sessions.append(ViewerSessionWithStreamResponse(**base, stream=stream_info))
         return ViewerSessionsResponse(sessions=sessions)
     except HTTPException:
         raise
