@@ -7,6 +7,7 @@ from features.auth import auth_routes
 from features.joke import joke_routes
 from features.chat import chat_routes
 from features.stream import stream_routes
+from features.viewer import viewer_routes
 from features.twitch.bot import bot_routes
 
 logging.basicConfig(
@@ -42,6 +43,7 @@ app.include_router(chat_routes.router, prefix="/api/v1/messages", tags=["Chat"])
 app.include_router(bot_routes.router, prefix="/api/v1", tags=["Twitch Bot"])
 app.include_router(joke_routes.router, prefix="/api/v1", tags=["Jokes"])
 app.include_router(stream_routes.router, prefix="/api/v1", tags=["Streams"])
+app.include_router(viewer_routes.router, prefix="/api/v1", tags=["Viewers"])
 
 
 @app.get("/", tags=["Health"])

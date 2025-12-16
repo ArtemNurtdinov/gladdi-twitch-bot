@@ -2,6 +2,9 @@ import logging
 from typing import List
 from datetime import datetime, timedelta
 
+from sqlalchemy import desc
+from sqlalchemy.orm import joinedload
+
 from db.base import SessionLocal
 from features.viewer.db.viewer_session import StreamViewerSession
 
@@ -118,6 +121,19 @@ class ViewerTimeService:
         db = SessionLocal()
         try:
             return db.query(StreamViewerSession).filter_by(stream_id=stream_id).all()
+        finally:
+            db.close()
+
+    def get_user_sessions(self, channel_name: str, user_name: str) -> List[StreamViewerSession]:
+        db = SessionLocal()
+        try:
+            return (
+                db.query(StreamViewerSession)
+                .options(joinedload(StreamViewerSession.stream))
+                .filter_by(channel_name=channel_name, user_name=user_name)
+                .order_by(desc(StreamViewerSession.session_start))
+                .all()
+            )
         finally:
             db.close()
 

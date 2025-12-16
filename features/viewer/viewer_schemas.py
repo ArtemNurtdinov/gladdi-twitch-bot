@@ -1,8 +1,9 @@
 from datetime import datetime
+
 from pydantic import BaseModel, Field, ConfigDict
 
 
-class StreamViewerSessionResponse(BaseModel):
+class ViewerSessionResponse(BaseModel):
     id: int = Field(..., description="Идентификатор сессии")
     stream_id: int = Field(..., description="Идентификатор стрима")
     channel_name: str = Field(..., description="Название канала")
@@ -20,28 +21,20 @@ class StreamViewerSessionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class StreamResponse(BaseModel):
+class ViewerSessionStreamInfo(BaseModel):
     id: int = Field(..., description="Идентификатор стрима")
-    channel_name: str = Field(..., description="Название канала")
-    started_at: datetime = Field(..., description="Дата и время начала стрима")
-    ended_at: datetime | None = Field(None, description="Дата и время окончания стрима")
-    game_name: str | None = Field(None, description="Название игры")
     title: str | None = Field(None, description="Заголовок стрима")
-    total_viewers: int = Field(..., description="Общее количество зрителей")
-    max_concurrent_viewers: int = Field(..., description="Пиковое количество зрителей")
-    is_active: bool = Field(..., description="Флаг активности стрима")
-    created_at: datetime = Field(..., description="Дата создания записи")
-    updated_at: datetime = Field(..., description="Дата последнего обновления записи")
+    game_name: str | None = Field(None, description="Название игры")
+    started_at: datetime = Field(..., description="Время начала стрима")
+    ended_at: datetime | None = Field(None, description="Время завершения стрима")
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class StreamDetailResponse(StreamResponse):
-    viewer_sessions: list[StreamViewerSessionResponse] = Field(default_factory=list, description="Список сессий зрителей для стрима")
+class ViewerSessionWithStreamResponse(ViewerSessionResponse):
+    stream: ViewerSessionStreamInfo | None = Field(None, description="Информация о стриме")
 
 
-class StreamListResponse(BaseModel):
-    items: list[StreamResponse] = Field(..., description="Список стримов")
-    total: int = Field(..., description="Общее количество стримов в выборке")
-
+class ViewerSessionsResponse(BaseModel):
+    sessions: list[ViewerSessionWithStreamResponse] = Field(..., description="Список пользовательских сессий")
 
