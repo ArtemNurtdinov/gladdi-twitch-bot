@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Integer, BigInteger, Boolean
 from datetime import datetime
 
-from db.base import Base
+from core.db import Base
 
 
 class UserBalance(Base):

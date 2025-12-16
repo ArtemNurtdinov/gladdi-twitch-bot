@@ -1,5 +1,8 @@
 from datetime import datetime
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
+from sqlalchemy.orm import Session
+
+from core.db import get_db
 from features.chat.chat_schemas import TopChatUsersResponse
 from features.chat.chat_service import ChatService
 
@@ -17,10 +20,8 @@ async def get_top_users(
     limit: int = Query(10, ge=1, le=100, description="Максимальное количество пользователей в результате"),
     date_from: datetime | None = Query(None, description="Начало периода (UTC)"),
     date_to: datetime | None = Query(None, description="Конец периода (UTC)"),
+    db: Session = Depends(get_db)
 ) -> TopChatUsersResponse:
-    if date_from > date_to:
+    if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
-    try:
-        return chat_service.get_top_chat_users(limit, date_from, date_to)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения топ пользователей: {str(e)}")
+    return chat_service.get_top_chat_users(db, limit, date_from, date_to)

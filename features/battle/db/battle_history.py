@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Integer
 from datetime import datetime
 
-from db.base import Base
+from core.db import Base
 
 class BattleHistory(Base):
     __tablename__ = 'battle_history'

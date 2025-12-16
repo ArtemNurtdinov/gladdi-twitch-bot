@@ -8,7 +8,7 @@ from twitchio.ext import commands
 from datetime import datetime, timedelta
 import telegram
 from config import config
-from db.base import SessionLocal
+from core.db import SessionLocal
 from collections import Counter
 from features.ai.ai_service import AIService
 from features.ai.intent import Intent

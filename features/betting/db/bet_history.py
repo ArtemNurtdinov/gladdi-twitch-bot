@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Integer, Enum
 from datetime import datetime
 
-from db.base import Base
+from core.db import Base
 from features.betting.model.rarity_level import RarityLevel
 
 

@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 import uuid
-from db.base import Base
+from core.db import Base
 
 
 class AccessToken(Base):

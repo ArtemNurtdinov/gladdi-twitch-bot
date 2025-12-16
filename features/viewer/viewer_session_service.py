@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import desc
 from sqlalchemy.orm import joinedload
 
-from db.base import SessionLocal
+from core.db import SessionLocal
 from features.viewer.db.viewer_session import StreamViewerSession
 
 logger = logging.getLogger(__name__)

@@ -1,5 +1,4 @@
-from db.base import SessionLocal
-from features.betting.betting_schemas import UserBetStats
+from core.db import SessionLocal
 from features.betting.db.bet_history import BetHistory
 from features.betting.model.emoji_config import EmojiConfig
 from features.betting.model.rarity_level import RarityLevel

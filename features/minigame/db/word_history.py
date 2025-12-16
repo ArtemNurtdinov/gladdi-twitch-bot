@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime
 
-from db.base import Base
+from core.db import Base
 
 
 class WordHistory(Base):

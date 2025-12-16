@@ -3,8 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 from sqlalchemy import desc
-from sqlalchemy.orm import selectinload
-from db.base import SessionLocal
+from core.db import SessionLocal
 from features.stream.db.stream import Stream
 from features.stream.stream_schemas import StreamListResponse
 from features.viewer.db.viewer_session import StreamViewerSession

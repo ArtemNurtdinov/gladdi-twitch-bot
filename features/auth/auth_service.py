@@ -5,7 +5,7 @@ from config import config
 import bcrypt
 from datetime import datetime, timedelta
 from sqlalchemy import and_
-from db.base import SessionLocal
+from core.db import SessionLocal
 from features.auth.auth_schemas import UserCreate, UserUpdate
 from features.auth.db.access_token import AccessToken
 from features.auth.db.user import User

@@ -2,9 +2,8 @@ from datetime import datetime
 
 from sqlalchemy import and_, or_
 
-from db.base import SessionLocal
+from core.db import SessionLocal
 from features.battle.db.battle_history import BattleHistory
-from features.battle.model.user_battle_stats import UserBattleStats
 
 
 class BattleService:

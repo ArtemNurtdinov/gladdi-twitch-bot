@@ -3,7 +3,7 @@ import uuid
 import enum
 from sqlalchemy import Column, String, Enum, Boolean, DateTime
 from datetime import datetime
-from db.base import Base
+from core.db import Base
 
 
 class UserRole(enum.Enum):

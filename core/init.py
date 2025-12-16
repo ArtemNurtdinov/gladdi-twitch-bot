@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from db.base import engine
+from core.db import engine
 from features.ai.db.ai_message import AIMessage
 from features.auth.auth_schemas import UserCreate
 from features.auth.auth_service import AuthService

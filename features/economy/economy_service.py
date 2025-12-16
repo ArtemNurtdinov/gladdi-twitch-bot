@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
-from db.base import SessionLocal
+from core.db import SessionLocal
 from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory, TransactionType
 from features.economy.model.daily_bonus import DailyBonusResult

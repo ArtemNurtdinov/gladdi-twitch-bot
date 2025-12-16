@@ -1,5 +1,5 @@
 from config import config
-from db.base import SessionLocal
+from core.db import SessionLocal
 import requests
 from features.ai.intent import Intent
 from sqlalchemy import case

@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, DateTime, Integer, Boolean, ForeignKey, T
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
-from db.base import Base
+from core.db import Base
 
 
 class StreamViewerSession(Base):
