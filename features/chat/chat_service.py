@@ -62,16 +62,16 @@ class ChatService:
     def get_top_chat_users(self, limit: int, date_from: Optional[datetime], date_to: Optional[datetime]) -> TopChatUsersResponse:
         db = SessionLocal()
         try:
-            query = db.query(ChatMessage.user_name, func.count(ChatMessage.id).label('message_count'))
+            query = db.query(ChatMessage.channel_name, ChatMessage.user_name, func.count(ChatMessage.id).label('message_count'))
 
             if date_from:
                 query = query.filter(ChatMessage.created_at >= date_from)
             if date_to:
                 query = query.filter(ChatMessage.created_at <= date_to)
 
-            query = query.group_by(ChatMessage.user_name).order_by(func.count(ChatMessage.id).desc()).limit(limit)
+            query = query.group_by(ChatMessage.channel_name, ChatMessage.user_name).order_by(func.count(ChatMessage.id).desc()).limit(limit)
             user_stats = query.all()
-            users = [TopChatUser(username=stat.user_name, message_count=stat.message_count) for stat in user_stats]
+            users = [TopChatUser(channel_name=stat.channel_name, username=stat.user_name, message_count=stat.message_count) for stat in user_stats]
             return TopChatUsersResponse(top_users=users)
         finally:
             db.close()
