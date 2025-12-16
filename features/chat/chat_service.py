@@ -22,13 +22,6 @@ class ChatService:
         finally:
             db.close()
 
-    def get_chat_messages(self, channel_name: str, from_time: datetime):
-        db = SessionLocal()
-        try:
-            return db.query(ChatMessage).filter(ChatMessage.channel_name == channel_name).filter(ChatMessage.created_at >= from_time).all()
-        finally:
-            db.close()
-
     def get_chat_messages(self, channel_name: str, from_time, to_time) -> list[ChatMessage]:
         db = SessionLocal()
         try:

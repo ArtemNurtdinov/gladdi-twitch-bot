@@ -67,8 +67,47 @@ class Config:
     intent_detector: IntentDetectorConfig
 
 
+def validate_config(config: Config) -> list[str]:
+    errors: list[str] = []
+
+    if not config.application.auth_secret:
+        errors.append("Не установлен ACCESS_SECRET_KEY")
+
+    if not config.application.auth_secret_algorithm:
+        errors.append("Не установлен ACCESS_SECRET_ALGORITHM")
+
+    if not config.telegram.bot_token:
+        errors.append("Не установлен TELEGRAM_BOT_TOKEN")
+
+    if not config.telegram.group_id:
+        errors.append("Не установлен TELEGRAM_GROUP_ID")
+
+    if not config.twitch.client_id:
+        errors.append("Не установлен TWITCH_CLIENT_ID")
+
+    if not config.twitch.client_secret:
+        errors.append("Не установлен TWITCH_CLIENT_SECRET")
+
+    if not config.twitch.redirect_url:
+        errors.append("Не установлен TWITCH_REDIRECT_URL")
+
+    if not config.twitch.channel_name:
+        errors.append("Не установлен TWITCH_CHANNEL")
+
+    if not config.database.url:
+        errors.append("Не установлен DATABASE_URL")
+
+    if not config.llmbox.host:
+        errors.append("Не установлен LLMBOX_DOMAIN")
+
+    if not config.intent_detector.host:
+        errors.append("Не установлен INTENT_DETECTOR_DOMAIN")
+
+    return errors
+
+
 def load_config() -> Config:
-    return Config(
+    cfg = Config(
         application=ApplicationConfig(),
         telegram=TelegramConfig(),
         twitch=TwitchConfig(),
@@ -79,26 +118,11 @@ def load_config() -> Config:
         intent_detector=IntentDetectorConfig()
     )
 
-
-def validate_config(config: Config) -> bool:
-    errors = []
-
-    if not config.telegram.bot_token:
-        errors.append("❌ Не установлен TELEGRAM_BOT_TOKEN")
-
-    if not config.twitch.client_id:
-        errors.append("❌ Не установлен TWITCH_CLIENT_ID")
-
-    if not config.twitch.client_secret:
-        errors.append("❌ Не установлен TWITCH_CLIENT_SECRET")
-
+    errors = validate_config(cfg)
     if errors:
-        print("Ошибки конфигурации:")
-        for error in errors:
-            print(error)
-        return False
+        raise RuntimeError("Ошибки конфигурации:\n" + "\n".join(errors))
 
-    return True
+    return cfg
 
 
 config = load_config()

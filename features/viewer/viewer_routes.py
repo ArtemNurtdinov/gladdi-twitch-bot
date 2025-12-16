@@ -1,11 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from features.viewer.viewer_schemas import (
-    ViewerSessionsResponse,
-    ViewerSessionResponse,
-    ViewerSessionStreamInfo,
-    ViewerSessionWithStreamResponse,
-)
+from features.viewer.viewer_schemas import ViewerSessionsResponse, ViewerSessionResponse, ViewerSessionStreamInfo, ViewerSessionWithStreamResponse
 from features.viewer.viewer_session_service import ViewerTimeService
 
 router = APIRouter()
