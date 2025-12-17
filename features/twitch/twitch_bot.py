@@ -19,6 +19,7 @@ from features.battle.model.user_battle_stats import UserBattleStats
 from features.betting.betting_schemas import UserBetStats
 from features.betting.betting_service import BettingService
 from features.equipment.equipment_service import EquipmentService
+from features.stream.model.active_stream import ActiveStream
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.chat.db.chat_message import ChatMessage
@@ -200,10 +201,8 @@ class Bot(commands.Bot):
             self.chat_service.save_chat_message(db, channel_name, normalized_user_name, content)
             self.economy_service.process_user_message_activity(db, channel_name, normalized_user_name)
             active_stream = self.stream_service.get_active_stream(db, channel_name)
-        logger.info(f"Награда за активность: {nickname} получил {self.economy_service.ACTIVITY_REWARD} монет")
-
-        if active_stream:
-            with SessionLocal.begin() as db:
+            logger.info(f"Награда за активность: {nickname} получил {self.economy_service.ACTIVITY_REWARD} монет")
+            if active_stream:
                 self.viewer_service.update_viewer_session(db, active_stream.id, channel_name, nickname.lower())
 
         if message.content.startswith(self._prefix):
@@ -314,11 +313,13 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда {self._COMMAND_FIGHT} от пользователя {challenger}")
 
-        with SessionLocal.begin() as db:
-            user_balance = self.economy_service.get_user_balance(db, channel_name, challenger)
         fee = self.economy_service.BATTLE_ENTRY_FEE
 
-        if user_balance.balance < fee:
+        with SessionLocal.begin() as db:
+            user_balance = self.economy_service.get_user_balance(db, channel_name, challenger)
+            balance_value = user_balance.balance
+
+        if balance_value < fee:
             result = f"@{challenger}, недостаточно монет для участия в битве! Необходимо: {self.economy_service.BATTLE_ENTRY_FEE} монет."
             with SessionLocal.begin() as db:
                 self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -328,15 +329,17 @@ class Bot(commands.Bot):
         if not self.battle_waiting_user:
             with SessionLocal.begin() as db:
                 user_balance = self.economy_service.subtract_balance(db, channel_name, challenger, fee, TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
-            if not user_balance:
-                result = f"@{challenger}, произошла ошибка при списании взноса за битву."
-                with SessionLocal.begin() as db:
-                    self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
-                await ctx.send(result)
+                if not user_balance:
+                    error_result = f"@{challenger}, произошла ошибка при списании взноса за битву."
+                    self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), error_result)
+
+            if error_result:
+                await ctx.send(error_result)
                 return
 
             self.battle_waiting_user = challenger
-            result = f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {self.economy_service.BATTLE_ENTRY_FEE} монет. Используй {self._prefix}{self._COMMAND_FIGHT}, чтобы принять вызов. Баланс {challenger}: {user_balance.balance} монет."
+            result = (f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {self.economy_service.BATTLE_ENTRY_FEE} монет. Используй {self._prefix}{self._COMMAND_FIGHT}, "
+                      f"чтобы принять вызов.")
             logger.info(f"{challenger} ищет оппонента для битвы")
             with SessionLocal.begin() as db:
                 self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -365,22 +368,20 @@ class Bot(commands.Bot):
 
         logger.info(f"Начинается битва между {opponent} и {challenger}")
 
-        with db_session() as db:
-            opponent_equipment = self.equipment_service.get_user_equipment(db, channel_name, opponent.lower())
-            challenger_equipment = self.equipment_service.get_user_equipment(db, channel_name, challenger.lower())
-
         prompt = (
             f"На арене сражаются два героя: {opponent} и {challenger}."
             "\nСимулируй юмористическую и эпичную битву между ними, с абсурдом и неожиданными поворотами."
         )
 
-        if opponent_equipment:
-            equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in opponent_equipment]
-            prompt += f"\nВооружение {opponent}: {', '.join(equipment_details)}."
-
-        if challenger_equipment:
-            equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in challenger_equipment]
-            prompt += f"\nВооружение {challenger}: {', '.join(equipment_details)}."
+        with db_session() as db:
+            opponent_equipment = self.equipment_service.get_user_equipment(db, channel_name, opponent.lower())
+            challenger_equipment = self.equipment_service.get_user_equipment(db, channel_name, challenger.lower())
+            if opponent_equipment:
+                equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in opponent_equipment]
+                prompt += f"\nВооружение {opponent}: {', '.join(equipment_details)}."
+            if challenger_equipment:
+                equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in challenger_equipment]
+                prompt += f"\nВооружение {challenger}: {', '.join(equipment_details)}."
 
         winner = random.choice([opponent, challenger])
         loser = challenger if winner == opponent else opponent
@@ -465,7 +466,7 @@ class Bot(commands.Bot):
         current_time = datetime.now()
         with db_session() as db:
             equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
-        cooldown_seconds = self.equipment_service.calculate_roll_cooldown_seconds(self._ROLL_COOLDOWN_SECONDS, equipment)
+            cooldown_seconds = self.equipment_service.calculate_roll_cooldown_seconds(self._ROLL_COOLDOWN_SECONDS, equipment)
 
         if nickname in self.roll_cooldowns:
             time_since_last = (current_time - self.roll_cooldowns[nickname]).total_seconds()
@@ -598,7 +599,7 @@ class Bot(commands.Bot):
 
         with SessionLocal.begin() as db:
             user_balance = self.economy_service.get_user_balance(db, channel_name, user_name)
-        result = f"💰 @{user_name}, твой баланс: {user_balance.balance} монет"
+            result = f"💰 @{user_name}, твой баланс: {user_balance.balance} монет"
 
         normalized_user_name = user_name.lower()
         with SessionLocal.begin() as db:
@@ -619,21 +620,20 @@ class Bot(commands.Bot):
         with SessionLocal.begin() as db:
             user_equipment = self.equipment_service.get_user_equipment(db, channel_name, user_name.lower())
             bonus_result = self.economy_service.claim_daily_bonus(db, channel_name, user_name.lower(), user_equipment)
-
-        if bonus_result.success:
-            if bonus_result.bonus_message:
-                result = f"🎁 @{user_name} получил бонус {bonus_result.bonus_amount} монет! Баланс: {bonus_result.user_balance.balance} монет. {bonus_result.bonus_message}"
+            if bonus_result.success:
+                if bonus_result.bonus_message:
+                    result = f"🎁 @{user_name} получил бонус {bonus_result.bonus_amount} монет! Баланс: {bonus_result.user_balance.balance} монет. {bonus_result.bonus_message}"
+                else:
+                    result = f"🎁 @{user_name} получил бонус {bonus_result.bonus_amount} монет! Баланс: {bonus_result.user_balance.balance} монет"
             else:
-                result = f"🎁 @{user_name} получил бонус {bonus_result.bonus_amount} монет! Баланс: {bonus_result.user_balance.balance} монет"
-        else:
-            if bonus_result.failure_reason == "no_stream":
-                result = f"🚫 @{user_name}, бонус доступен только во время стрима!"
-            elif bonus_result.failure_reason == "already_claimed":
-                result = f"⏰ @{user_name}, бонус уже получен на этом стриме!"
-            elif bonus_result.failure_reason == "error":
-                result = f"❌ @{user_name}, произошла ошибка при получении бонуса. Попробуй позже!"
-            else:
-                result = f"❌ @{user_name}, бонус недоступен!"
+                if bonus_result.failure_reason == "no_stream":
+                    result = f"🚫 @{user_name}, бонус доступен только во время стрима!"
+                elif bonus_result.failure_reason == "already_claimed":
+                    result = f"⏰ @{user_name}, бонус уже получен на этом стриме!"
+                elif bonus_result.failure_reason == "error":
+                    result = f"❌ @{user_name}, произошла ошибка при получении бонуса. Попробуй позже!"
+                else:
+                    result = f"❌ @{user_name}, бонус недоступен!"
 
         with SessionLocal.begin() as db:
             self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -755,8 +755,10 @@ class Bot(commands.Bot):
 
         with SessionLocal.begin() as db:
             user_balance = self.economy_service.get_user_balance(db, channel_name, normalized_user_name)
-        if user_balance.balance < item.price:
-            result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
+            balance_value = user_balance.balance
+
+        if balance_value < item.price:
+            result = f"Недостаточно монет! Нужно {item.price}, у вас {balance_value}"
             with SessionLocal.begin() as db:
                 self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
             await ctx.send(result)
@@ -782,15 +784,14 @@ class Bot(commands.Bot):
 
         with db_session() as db:
             equipment = self.equipment_service.get_user_equipment(db, channel_name, normalized_user_name)
+            if not equipment:
+                result = f"@{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"
+            else:
+                result = f"Экипировка @{user_name}:\n"
 
-        if not equipment:
-            result = f"@{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"
-        else:
-            result = f"Экипировка @{user_name}:\n"
-
-            for item in equipment:
-                expires_date = item.expires_at.strftime("%d.%m.%Y")
-                result += f"{item.shop_item.emoji} {item.shop_item.name} до {expires_date}\n"
+                for item in equipment:
+                    expires_date = item.expires_at.strftime("%d.%m.%Y")
+                    result += f"{item.shop_item.emoji} {item.shop_item.name} до {expires_date}\n"
 
         with SessionLocal.begin() as db:
             self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -809,12 +810,12 @@ class Bot(commands.Bot):
         with db_session() as db:
             top_users = self.economy_service.get_top_users(db, channel_name, limit=7)
 
-        if not top_users:
-            result = "Нет данных для отображения топа."
-        else:
-            result = "ТОП БОГАЧЕЙ:\n"
-            for i, user in enumerate(top_users, 1):
-                result += f"{i}. {user['user_name']}: {user['balance']} монет."
+            if not top_users:
+                result = "Нет данных для отображения топа."
+            else:
+                result = "ТОП БОГАЧЕЙ:\n"
+                for i, user in enumerate(top_users, 1):
+                    result += f"{i}. {user['user_name']}: {user['balance']} монет."
 
         with SessionLocal.begin() as db:
             self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -833,12 +834,12 @@ class Bot(commands.Bot):
         with db_session() as db:
             bottom_users = self.economy_service.get_bottom_users(db, channel_name, limit=10)
 
-        if not bottom_users:
-            result = "Нет данных для отображения бомжей."
-        else:
-            result = "💸 ТОП БОМЖЕЙ:\n"
-            for i, user in enumerate(bottom_users, 1):
-                result += f"{i}. {user['user_name']}: {user['balance']} монет."
+            if not bottom_users:
+                result = "Нет данных для отображения бомжей."
+            else:
+                result = "💸 ТОП БОМЖЕЙ:\n"
+                for i, user in enumerate(bottom_users, 1):
+                    result += f"{i}. {user['user_name']}: {user['balance']} монет."
 
         with SessionLocal.begin() as db:
             self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -888,31 +889,31 @@ class Bot(commands.Bot):
 
         with SessionLocal.begin() as db:
             balance = self.economy_service.get_user_balance(db, channel_name, normalized_user_name)
+            balance_value = balance.balance
             bets = self.betting_service.get_user_bets(db, channel_name, normalized_user_name)
 
-        if not bets:
-            bet_stats = UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)
-        else:
-            total_bets = len(bets)
-            jackpots = sum(1 for bet in bets if bet.result_type == "jackpot")
-            jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
+            if not bets:
+                bet_stats = UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)
+            else:
+                total_bets = len(bets)
+                jackpots = sum(1 for bet in bets if bet.result_type == "jackpot")
+                jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
 
-            bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
+                bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
 
         with db_session() as db:
             battles = self.battle_service.get_user_battles(db, channel_name, user_name)
-
-        if not battles:
-            battle_stats = UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
-        else:
-            total_battles = len(battles)
-            wins = sum(1 for battle in battles if battle.winner == user_name)
-            losses = total_battles - wins
-            win_rate = (wins / total_battles) * 100 if total_battles > 0 else 0.0
-            battle_stats = UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
+            if not battles:
+                battle_stats = UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
+            else:
+                total_battles = len(battles)
+                wins = sum(1 for battle in battles if battle.winner == user_name)
+                losses = total_battles - wins
+                win_rate = (wins / total_battles) * 100 if total_battles > 0 else 0.0
+                battle_stats = UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
 
         result = f"📊 Статистика @{user_name}: "
-        result += f"💰 Баланс: {balance.balance} монет."
+        result += f"💰 Баланс: {balance_value} монет."
 
         if bet_stats.total_bets > 0:
             result += f"\n🎰 Ставки: {bet_stats.total_bets} | "
@@ -1153,6 +1154,10 @@ class Bot(commands.Bot):
 
                 with db_session() as db:
                     active_stream = self.stream_service.get_active_stream(db, channel_name)
+                    if active_stream:
+                        active = ActiveStream(active_stream.id, active_stream.started_at, active_stream.game_name, active_stream.title, active_stream.max_concurrent_viewers)
+                    else:
+                        active = None
 
                 stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
 
@@ -1167,7 +1172,7 @@ class Bot(commands.Bot):
                     game_name = stream_status.stream_data.game_name
                     title = stream_status.stream_data.title
 
-                if stream_status.is_online and active_stream is None:
+                if stream_status.is_online and active is None:
                     logger.info(f"Стрим начался: {game_name} - {title}")
 
                     try:
@@ -1180,51 +1185,49 @@ class Bot(commands.Bot):
                     except Exception as e:
                         logger.error(f"Ошибка при создании стрима: {e}")
 
-                elif not stream_status.is_online and active_stream is not None:
+                elif not stream_status.is_online and active is not None:
                     logger.info("Стрим завершён")
                     finish_time = datetime.utcnow()
 
                     with SessionLocal.begin() as db:
-                        self.stream_service.end_stream(db, active_stream.id, finish_time)
-                        self.viewer_service.finish_stream_sessions(db, active_stream.id)
-                        total_viewers = self.viewer_service.get_unique_viewers_count(db, active_stream.id)
-                        self.stream_service.update_stream_total_viewers(db, active_stream.id, total_viewers)
+                        self.stream_service.end_stream(db, active.id, finish_time)
+                        self.viewer_service.finish_stream_sessions(db, active.id)
+                        total_viewers = self.viewer_service.get_unique_viewers_count(db, active.id)
+                        self.stream_service.update_stream_total_viewers(db, active.id, total_viewers)
                         self.minigame_service.reset_stream_state(db, channel_name)
-                        logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
+                        logger.info(f"Стрим завершен в БД: ID {active.id}")
 
                     with db_session() as db:
-                        chat_messages = self.chat_service.get_chat_messages(db, channel_name, active_stream.started_at, finish_time)
+                        chat_messages = self.chat_service.get_chat_messages(db, channel_name, active.started_at, finish_time)
+                        total_messages = len(chat_messages)
+                        unique_users = len(set(msg.user_name for msg in chat_messages))
+                        user_counts = Counter(msg.user_name for msg in chat_messages)
 
-                    total_messages = len(chat_messages)
-                    unique_users = len(set(msg.user_name for msg in chat_messages))
-
-                    user_counts = Counter(msg.user_name for msg in chat_messages)
                     if user_counts:
                         top_user = user_counts.most_common(1)[0][0]
                     else:
                         top_user = None
 
                     with db_session() as db:
-                        battles = self.battle_service.get_battles(db, channel_name, active_stream.started_at)
+                        battles = self.battle_service.get_battles(db, channel_name, active.started_at)
+                        total_battles = len(battles)
+                        if battles:
+                            winner_counts = Counter(b.winner for b in battles)
+                            top_winner = winner_counts.most_common(1)[0][0]
+                        else:
+                            top_winner = None
 
-                    total_battles = len(battles)
-                    if battles:
-                        winner_counts = Counter(b.winner for b in battles)
-                        top_winner = winner_counts.most_common(1)[0][0]
-                    else:
-                        top_winner = None
-
-                    stats = StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
+                        stats = StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
 
                     try:
-                        await self.stream_summarize(stats, channel_name, active_stream.started_at, finish_time)
+                        await self.stream_summarize(stats, channel_name, active.started_at, finish_time)
                     except Exception as e:
                         logger.error(f"Ошибка при вызове stream_summarize: {e}")
 
-                elif stream_status.is_online and active_stream:
-                    if active_stream.game_name != game_name or active_stream.title != title:
+                elif stream_status.is_online and active:
+                    if active.game_name != game_name or active.title != title:
                         with SessionLocal.begin() as db:
-                            self.stream_service.update_stream_metadata(db, active_stream.id, game_name, title)
+                            self.stream_service.update_stream_metadata(db, active.id, game_name, title)
                         logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
             except Exception as e:
@@ -1251,15 +1254,14 @@ class Bot(commands.Bot):
 
         with db_session() as db:
             last_messages = self.chat_service.get_chat_messages(db, channel_name, self.last_chat_summary_time, stream_end_dt)
-
-        if last_messages:
-            chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
-            prompt = (
-                f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-                f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
-            )
-            result = self.generate_response_in_chat(prompt, channel_name)
-            self.current_stream_summaries.append(result)
+            if last_messages:
+                chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
+                prompt = (
+                    f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
+                    f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
+                )
+                result = self.generate_response_in_chat(prompt, channel_name)
+                self.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
         hours, remainder = divmod(int(duration.total_seconds()), 3600)
@@ -1277,7 +1279,7 @@ class Bot(commands.Bot):
             with SessionLocal.begin() as db:
                 user_balance = self.economy_service.add_balance(db, channel_name, top_user, reward_amount, TransactionType.SPECIAL_EVENT,
                                                                 "Награда за самую высокую активность в стриме")
-            stream_stat_message += f"{top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
+                stream_stat_message += f"{top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
 
         logger.info(f"Статистика стрима: {stream_stat_message}")
 
@@ -1369,12 +1371,17 @@ class Bot(commands.Bot):
 
                 with db_session() as db:
                     active_stream = self.stream_service.get_active_stream(db, channel_name)
-                if not active_stream:
+                    if active_stream:
+                        active = ActiveStream(active_stream.id, active_stream.started_at, active_stream.game_name, active_stream.title, active_stream.max_concurrent_viewers)
+                    else:
+                        active = None
+
+                if not active:
                     await asyncio.sleep(60)
                     continue
 
                 if channel_name not in self.minigame_service.stream_start_time:
-                    self.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
+                    self.minigame_service.set_stream_start_time(channel_name, active.started_at)
 
                 if not self.minigame_service.should_start_new_game(channel_name):
                     await asyncio.sleep(60)
@@ -1393,13 +1400,11 @@ class Bot(commands.Bot):
                     with db_session() as db:
                         used_words = self.minigame_service.get_used_words(db, channel_name, limit=50)
                         last_messages = self.chat_service.get_last_chat_messages(db, channel_name, limit=50)
-
-                    if used_words:
-                        avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words)))
-                    else:
-                        avoid_clause = ""
-
-                    chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
+                        chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
+                        if used_words:
+                            avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words)))
+                        else:
+                            avoid_clause = ""
 
                     prompt = (
                         "Проанализируй последние сообщения из чата и выбери одно подходящее русское существительное (ОДНО слово),"
@@ -1485,30 +1490,34 @@ class Bot(commands.Bot):
                 channel_name = self.initial_channels[0]
                 with db_session() as db:
                     active_stream = self.stream_service.get_active_stream(db, channel_name)
+                    if active_stream:
+                        active = ActiveStream(active_stream.id, active_stream.started_at, active_stream.game_name, active_stream.title, active_stream.max_concurrent_viewers)
+                    else:
+                        active = None
 
-                if not active_stream:
+                if not active:
                     await asyncio.sleep(self.viewer_service.CHECK_INTERVAL_SECONDS)
                     continue
 
                 with SessionLocal.begin() as db:
-                    self.viewer_service.check_inactive_viewers(db, active_stream.id)
+                    self.viewer_service.check_inactive_viewers(db, active.id)
 
                 broadcaster_id = await self._get_user_id_cached(channel_name)
                 moderator_id = await self._get_user_id_cached(self.nick)
                 chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
                 if chatters:
                     with SessionLocal.begin() as db:
-                        self.viewer_service.update_viewers(db, active_stream.id, channel_name, chatters)
+                        self.viewer_service.update_viewers(db, active.id, channel_name, chatters)
 
                 with db_session() as db:
-                    viewers_count = self.viewer_service.get_stream_watchers_count(db, active_stream.id)
+                    viewers_count = self.viewer_service.get_stream_watchers_count(db, active.id)
 
-                if viewers_count > active_stream.max_concurrent_viewers:
+                if viewers_count > active.max_concurrent_viewers:
                     with SessionLocal.begin() as db:
-                        self.stream_service.update_max_concurrent_viewers_count(db, active_stream.id, viewers_count)
+                        self.stream_service.update_max_concurrent_viewers_count(db, active.id, viewers_count)
 
                 with SessionLocal.begin() as db:
-                    viewer_sessions = self.viewer_service.get_stream_viewer_sessions(db, active_stream.id)
+                    viewer_sessions = self.viewer_service.get_stream_viewer_sessions(db, active.id)
                     for session in viewer_sessions:
                         available_rewards = self.viewer_service.get_available_rewards(session)
                         for minutes_threshold, reward_amount in available_rewards:
@@ -1536,18 +1545,24 @@ class Bot(commands.Bot):
             channel_name = self.initial_channels[0]
             with db_session() as db:
                 active_stream = self.stream_service.get_active_stream(db, channel_name)
+                if active_stream:
+                    active = ActiveStream(active_stream.id, active_stream.started_at, active_stream.game_name, active_stream.title, active_stream.max_concurrent_viewers)
+                else:
+                    active = None
 
-            if active_stream:
-                self.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
-                logger.info(f"Найден активный стрим ID {active_stream.id}")
+            if active:
+                self.minigame_service.set_stream_start_time(channel_name, active.started_at)
+                logger.info(f"Найден активный стрим ID {active.id}")
             else:
                 logger.info("Активных стримов не найдено")
         except Exception as e:
             logger.error(f"Ошибка при восстановлении состояния стрима: {e}")
 
     def generate_response_in_chat(self, prompt: str, channel_name: str) -> str:
+        messages = []
         with db_session() as db:
-            messages = self.ai_service.get_last_ai_messages(db, channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
-        messages.append(AIMessage(Role.USER, prompt))
+            last_messages = self.ai_service.get_last_ai_messages(db, channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
+            messages.append(last_messages)
+            messages.append(AIMessage(Role.USER, prompt))
         assistant_message = self.ai_service.generate_ai_response(messages)
         return assistant_message

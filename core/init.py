@@ -66,11 +66,11 @@ def create_admin():
         auth_service = AuthService()
         with db_session() as db:
             existing_user = auth_service.get_user_by_email(db, "artem.nefrit@gmail.com")
-        if existing_user:
-            print(f"   Пользователь с email 'artem.nefrit@gmail.com' уже существует!")
-            print(f"   ID: {existing_user.id}")
-            print(f"   Роль: {existing_user.role.value}")
-            return existing_user
+            if existing_user:
+                print(f"   Пользователь с email 'artem.nefrit@gmail.com' уже существует!")
+                print(f"   ID: {existing_user.id}")
+                print(f"   Роль: {existing_user.role.value}")
+                return
 
         user_data = UserCreate(
             email="artem.nefrit@gmail.com",
@@ -84,22 +84,18 @@ def create_admin():
         with SessionLocal.begin() as db:
             user = auth_service.create_user_from_admin(db, user_data)
             db.refresh(user)
-
-        print("    Администратор успешно создан!")
-        print(f"   ID: {user.id}")
-        print(f"   Email: {user.email}")
-        print(f"   Имя: {user.first_name} {user.last_name}")
-        print(f"   Роль: {user.role.value}")
-        print(f"   Активен: {user.is_active}")
-        print(f"   Создан: {user.created_at}")
-
-        return user
+            print("    Администратор успешно создан!")
+            print(f"   ID: {user.id}")
+            print(f"   Email: {user.email}")
+            print(f"   Имя: {user.first_name} {user.last_name}")
+            print(f"   Роль: {user.role.value}")
+            print(f"   Активен: {user.is_active}")
+            print(f"   Создан: {user.created_at}")
 
     except Exception as e:
         print(f"Ошибка создания администратора: {e}")
         import traceback
         traceback.print_exc()
-        return None
 
 
 if __name__ == "__main__":
