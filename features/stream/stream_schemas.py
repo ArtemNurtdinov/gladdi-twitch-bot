@@ -43,3 +43,5 @@ class StreamDetailResponse(StreamResponse):
 class StreamListResponse(BaseModel):
     items: list[StreamResponse] = Field(..., description="Список стримов")
     total: int = Field(..., description="Общее количество стримов в выборке")
+
+

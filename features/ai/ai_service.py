@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Session
+
 from config import config
 from core.db import SessionLocal
 import requests
@@ -111,40 +113,26 @@ class AIService:
     def get_default_prompt(self, source: str, nickname: str, message: str) -> str:
         return f"Ответь пользователю {source} с никнеймом {nickname} на его сообщение: {message}."
 
-    def get_last_ai_messages(self, channel_name: str, system_prompt: str) -> list[AIMessage]:
-        db = SessionLocal()
-        try:
-            role_order = case((AIDbMessage.role == Role.USER, 2), (AIDbMessage.role == Role.ASSISTANT, 1), else_=3)
+    def get_last_ai_messages(self, db: Session, channel_name: str, system_prompt: str) -> list[AIMessage]:
+        role_order = case((AIDbMessage.role == Role.USER, 2), (AIDbMessage.role == Role.ASSISTANT, 1), else_=3)
 
-            messages = (
-                db.query(AIDbMessage)
-                .filter_by(channel_name=channel_name)
-                .filter(AIDbMessage.role != Role.SYSTEM)
-                .order_by(AIDbMessage.created_at.desc(), role_order)
-                .limit(50)
-                .all()
-            )
-            messages.reverse()
-            ai_messages = [AIMessage(Role.SYSTEM, system_prompt)]
+        messages = (
+            db.query(AIDbMessage)
+            .filter_by(channel_name=channel_name)
+            .filter(AIDbMessage.role != Role.SYSTEM)
+            .order_by(AIDbMessage.created_at.desc(), role_order)
+            .limit(50)
+            .all()
+        )
+        messages.reverse()
+        ai_messages = [AIMessage(Role.SYSTEM, system_prompt)]
 
-            for message in messages:
-                ai_messages.append(AIMessage(message.role, message.content))
-            return ai_messages
-        finally:
-            db.close()
+        for message in messages:
+            ai_messages.append(AIMessage(message.role, message.content))
+        return ai_messages
 
-    def save_conversation_to_db(self, channel_name: str, prompt: str, response: str):
-        db = SessionLocal()
-
-        try:
-            user_message = AIDbMessage(channel_name=channel_name, role=Role.USER, content=prompt)
-            ai_message = AIDbMessage(channel_name=channel_name, role=Role.ASSISTANT, content=response)
-
-            db.add(user_message)
-            db.add(ai_message)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            raise Exception(f"Ошибка при сохранении сообщения: {e}")
-        finally:
-            db.close()
+    def save_conversation_to_db(self, db: Session, channel_name: str, prompt: str, response: str):
+        user_message = AIDbMessage(channel_name=channel_name, role=Role.USER, content=prompt)
+        ai_message = AIDbMessage(channel_name=channel_name, role=Role.ASSISTANT, content=response)
+        db.add(user_message)
+        db.add(ai_message)

@@ -1,5 +1,8 @@
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
+from sqlalchemy.orm import Session
+
+from core.db import get_db
 from features.stream.stream_schemas import StreamListResponse, StreamDetailResponse
 from features.stream.stream_service import StreamService
 
@@ -18,11 +21,12 @@ async def get_streams(
     limit: int = Query(20, ge=1, le=100, description="Количество записей в ответе"),
     date_from: datetime | None = Query(None, description="Начало диапазона даты начала стрима (UTC)"),
     date_to: datetime | None = Query(None, description="Конец диапазона даты начала стрима (UTC)"),
+    db: Session = Depends(get_db)
 ) -> StreamListResponse:
     if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
     try:
-        return stream_service.get_streams(date_from=date_from, date_to=date_to, skip=skip, limit=limit)
+        return stream_service.get_streams(db, skip, limit, date_from, date_to)
     except HTTPException:
         raise
     except Exception as e:
@@ -35,8 +39,11 @@ async def get_streams(
     summary="Детали стрима",
     description="Получить детальную информацию о стриме",
 )
-async def get_stream_detail(stream_id: int) -> StreamDetailResponse:
-    stream = stream_service.get_stream_by_id(stream_id)
+async def get_stream_detail(
+    stream_id: int,
+    db: Session = Depends(get_db)
+) -> StreamDetailResponse:
+    stream = stream_service.get_stream_by_id(db, stream_id)
     if not stream:
         raise HTTPException(status_code=404, detail="Стрим не найден")
     return StreamDetailResponse.model_validate(stream)

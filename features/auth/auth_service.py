@@ -1,11 +1,13 @@
 import logging
 import uuid
 from typing import Optional, List, Dict, Any
+
+from sqlalchemy.orm import Session
+
 from config import config
 import bcrypt
 from datetime import datetime, timedelta
 from sqlalchemy import and_
-from core.db import SessionLocal
 from features.auth.auth_schemas import UserCreate, UserUpdate
 from features.auth.db.access_token import AccessToken
 from features.auth.db.user import User
@@ -46,9 +48,7 @@ class AuthService:
         token = jwt.encode(payload, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return token
 
-    def validate_access_token(self, token: str) -> Optional[User]:
-        db = SessionLocal()
-
+    def validate_access_token(self, db: Session, token: str) -> Optional[User]:
         current_time = datetime.utcnow()
 
         try:
@@ -85,7 +85,6 @@ class AuthService:
                 logger.info(f"Пользователь не найден или неактивен")
 
             return user
-
         except jose_exceptions.ExpiredSignatureError as e:
             logger.info(f"JWT ExpiredSignatureError: {e}")
             return None
@@ -97,97 +96,57 @@ class AuthService:
             import traceback
             traceback.print_exc()
             return None
-        finally:
-            db.close()
 
-    def create_user_from_admin(self, user_data: UserCreate) -> User:
-        db = SessionLocal()
-        try:
-            hashed_password = None
-            if user_data.password:
-                hashed_password = self.hash_password(user_data.password)
+    def create_user_from_admin(self, db: Session, user_data: UserCreate) -> User:
+        hashed_password = None
+        if user_data.password:
+            hashed_password = self.hash_password(user_data.password)
 
-            db_user = User(
-                email=user_data.email,
-                first_name=user_data.first_name,
-                last_name=user_data.last_name,
-                hashed_password=hashed_password,
-                role=user_data.role,
-                is_active=user_data.is_active
-            )
-            db.add(db_user)
-            db.commit()
-            db.refresh(db_user)
-            return db_user
-        finally:
-            db.close()
+        db_user = User(
+            email=user_data.email,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name,
+            hashed_password=hashed_password,
+            role=user_data.role,
+            is_active=user_data.is_active
+        )
+        db.add(db_user)
+        return db_user
 
-    def get_user_by_email(self, email: str) -> Optional[User]:
-        db = SessionLocal()
-        try:
-            return db.query(User).filter(User.email == email).first()
-        finally:
-            db.close()
+    def get_user_by_email(self, db: Session, email: str) -> Optional[User]:
+        return db.query(User).filter(User.email == email).first()
 
-    def get_user_by_id(self, user_id: uuid.UUID) -> Optional[User]:
-        db = SessionLocal()
-        try:
-            return db.query(User).filter(User.id == user_id).first()
-        finally:
-            db.close()
+    def get_user_by_id(self, db: Session, user_id: uuid.UUID) -> Optional[User]:
+        return db.query(User).filter(User.id == user_id).first()
 
-    def get_users(self, skip: int = 0, limit: int = 100) -> List[User]:
-        db = SessionLocal()
-        try:
-            return db.query(User).offset(skip).limit(limit).all()
-        finally:
-            db.close()
+    def get_users(self, db: Session, skip: int = 0, limit: int = 100) -> List[User]:
+        return db.query(User).offset(skip).limit(limit).all()
 
-    def update_user(self, user_id: uuid.UUID, user_data: UserUpdate) -> Optional[User]:
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.id == user_id).first()
-            if not user:
-                return None
+    def update_user(self, db: Session, user_id: uuid.UUID, user_data: UserUpdate) -> Optional[User]:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return None
 
-            update_data = user_data.dict(exclude_unset=True)
-            if 'password' in update_data and update_data['password']:
-                update_data['hashed_password'] = self.hash_password(update_data.pop('password'))
+        update_data = user_data.dict(exclude_unset=True)
+        if 'password' in update_data and update_data['password']:
+            update_data['hashed_password'] = self.hash_password(update_data.pop('password'))
 
-            for field, value in update_data.items():
-                setattr(user, field, value)
+        for field, value in update_data.items():
+            setattr(user, field, value)
 
-            user.updated_at = datetime.utcnow()
-            db.commit()
-            db.refresh(user)
-            return user
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Error updating user {user_id}: {e}")
-            import traceback
-            traceback.print_exc()
-            raise e
-        finally:
-            db.close()
+        user.updated_at = datetime.utcnow()
+        return user
 
-    def delete_user(self, user_id: uuid.UUID) -> bool:
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.id == user_id).first()
-            if not user:
-                return False
+    def delete_user(self, db: Session, user_id: uuid.UUID) -> bool:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return False
 
-            db.delete(user)
-            db.commit()
-            return True
-        except Exception as e:
-            db.rollback()
-            raise e
-        finally:
-            db.close()
+        db.delete(user)
+        return True
 
-    def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        user = self.get_user_by_email(email)
+    def authenticate_user(self, db: Session, email: str, password: str) -> Optional[User]:
+        user = self.get_user_by_email(db, email)
         if not user:
             return None
         if not user.hashed_password or not self.verify_password(password, user.hashed_password):
@@ -196,25 +155,15 @@ class AuthService:
             return None
         return user
 
-    def create_token(self, user: User) -> AccessToken:
-        db = SessionLocal()
-        try:
-            token_str = self.generate_access_token(user)
-            expires_at_utc = datetime.utcnow() + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
+    def create_token(self, db: Session, user: User) -> AccessToken:
+        token_str = self.generate_access_token(user)
+        expires_at_utc = datetime.utcnow() + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-            access_token = AccessToken(user_id=user.id, token=token_str, expires_at=expires_at_utc)
-            db.add(access_token)
-            db.commit()
-            db.refresh(access_token)
+        access_token = AccessToken(user_id=user.id, token=token_str, expires_at=expires_at_utc)
+        db.add(access_token)
 
-            logger.info(f"Токен сохранен с ID: {access_token.id}")
-            return access_token
-        except Exception as e:
-            db.rollback()
-            logger.info(f"Error creating token for user {user.id}: {e}")
-            raise e
-        finally:
-            db.close()
+        logger.info(f"Токен сохранен с ID: {access_token.id}")
+        return access_token
 
     def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
         try:
@@ -223,49 +172,24 @@ class AuthService:
         except JWTError:
             return None
 
-    def get_tokens(self, skip: int = 0, limit: int = 100) -> List[AccessToken]:
-        db = SessionLocal()
-        try:
-            return db.query(AccessToken).offset(skip).limit(limit).all()
-        finally:
-            db.close()
+    def get_tokens(self, db: Session, skip: int = 0, limit: int = 100) -> List[AccessToken]:
+        return db.query(AccessToken).offset(skip).limit(limit).all()
 
-    def get_token_by_id(self, token_id: uuid.UUID) -> Optional[AccessToken]:
-        db = SessionLocal()
-        try:
-            return db.query(AccessToken).filter(AccessToken.id == token_id).first()
-        finally:
-            db.close()
+    def get_token_by_id(self, db: Session, token_id: uuid.UUID) -> Optional[AccessToken]:
+        return db.query(AccessToken).filter(AccessToken.id == token_id).first()
 
-    def deactivate_token(self, token_id: uuid.UUID) -> bool:
-        db = SessionLocal()
-        try:
-            token = db.query(AccessToken).filter(AccessToken.id == token_id).first()
-            if not token:
-                return False
+    def deactivate_token(self, db: Session, token_id: uuid.UUID) -> bool:
+        token = db.query(AccessToken).filter(AccessToken.id == token_id).first()
+        if not token:
+            return False
 
-            token.is_active = False
-            db.commit()
-            return True
-        finally:
-            db.close()
+        token.is_active = False
+        return True
 
-    def delete_token(self, token_id: uuid.UUID) -> bool:
-        db = SessionLocal()
-        try:
-            token = db.query(AccessToken).filter(AccessToken.id == token_id).first()
-            if not token:
-                return False
+    def delete_token(self, db: Session, token_id: uuid.UUID) -> bool:
+        token = db.query(AccessToken).filter(AccessToken.id == token_id).first()
+        if not token:
+            return False
 
-            db.delete(token)
-            db.commit()
-            return True
-        finally:
-            db.close()
-
-    def get_all_users(self, skip: int = 0, limit: int = 100) -> List[User]:
-        db = SessionLocal()
-        try:
-            return db.query(User).offset(skip).limit(limit).all()
-        finally:
-            db.close()
+        db.delete(token)
+        return True

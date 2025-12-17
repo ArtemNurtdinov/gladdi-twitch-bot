@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 
+from core.db import get_db
 from features.viewer.viewer_schemas import ViewerSessionsResponse, ViewerSessionResponse, ViewerSessionStreamInfo, ViewerSessionWithStreamResponse
 from features.viewer.viewer_session_service import ViewerTimeService
 
@@ -15,10 +17,11 @@ viewer_time_service = ViewerTimeService()
 )
 async def get_viewer_sessions(
     channel_name: str,
-    user_name: str
+    user_name: str,
+    db: Session = Depends(get_db)
 ) -> ViewerSessionsResponse:
     try:
-        sessions_db = viewer_time_service.get_user_sessions(channel_name, user_name)
+        sessions_db = viewer_time_service.get_user_sessions(db, channel_name, user_name)
 
         sessions: list[ViewerSessionWithStreamResponse] = []
         for session in sessions_db:

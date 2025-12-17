@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime, timedelta
-from core.db import SessionLocal
+
+from sqlalchemy.orm import Session
+
 from features.equipment.db.user_equipment import UserEquipment
 from features.equipment.model.user_equipment_item import UserEquipmentItem
 from features.economy.model.shop_items import ShopItems, TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect, RollCooldownOverrideEffect
@@ -10,29 +12,15 @@ logger = logging.getLogger(__name__)
 
 class EquipmentService:
 
-    def get_user_equipment(self, channel_name: str, user_name: str) -> list[UserEquipmentItem]:
-        db = SessionLocal()
-        try:
-            normalized_user_name = user_name.lower()
+    def get_user_equipment(self, db: Session, channel_name: str, user_name: str) -> list[UserEquipmentItem]:
+        equipment = db.query(UserEquipment).filter_by(channel_name=channel_name, user_name=user_name).filter(UserEquipment.expires_at > datetime.utcnow()).all()
 
-            equipment = (
-                db.query(UserEquipment)
-                .filter_by(channel_name=channel_name, user_name=normalized_user_name)
-                .filter(UserEquipment.expires_at > datetime.utcnow())
-                .all()
-            )
+        result = []
+        for item in equipment:
+            shop_item = ShopItems.get_item(item.item_type)
+            result.append(UserEquipmentItem(item_type=item.item_type, shop_item=shop_item, expires_at=item.expires_at))
 
-            result = []
-            for item in equipment:
-                shop_item = ShopItems.get_item(item.item_type)
-                result.append(UserEquipmentItem(item_type=item.item_type, shop_item=shop_item, expires_at=item.expires_at))
-
-            return result
-        except Exception as e:
-            logger.error(f"Ошибка при получении экипировки пользователя {user_name}: {e}")
-            return []
-        finally:
-            db.close()
+        return result
 
     def calculate_timeout_with_equipment(self, user_name: str, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
         if base_timeout_seconds <= 0:
@@ -95,28 +83,16 @@ class EquipmentService:
                     min_cooldown = min(min_cooldown, effect.cooldown_seconds)
         return min_cooldown
 
-    def equipment_exists(self, channel_name: str, user_name: str, item_type: ShopItemType) -> bool:
-        db = SessionLocal()
-        try:
-            existing_item = (
-                db.query(UserEquipment)
-                .filter_by(channel_name=channel_name, user_name=user_name, item_type=item_type)
-                .filter(UserEquipment.expires_at > datetime.utcnow())
-                .first()
-            )
-            return existing_item is not None
-        finally:
-            db.close()
+    def equipment_exists(self, db: Session, channel_name: str, user_name: str, item_type: ShopItemType) -> bool:
+        existing_item = (
+            db.query(UserEquipment)
+            .filter_by(channel_name=channel_name, user_name=user_name, item_type=item_type)
+            .filter(UserEquipment.expires_at > datetime.utcnow())
+            .first()
+        )
+        return existing_item is not None
 
-    def add_equipment_to_user(self, channel_name: str, user_name: str, item_type: ShopItemType):
-        db = SessionLocal()
-        try:
-            expires_at = datetime.utcnow() + timedelta(days=30)
-            equipment = UserEquipment(channel_name=channel_name, user_name=user_name, item_type=item_type, expires_at=expires_at)
-            db.add(equipment)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Ошибка при вызове add_equipment_to_user: {e}")
-        finally:
-            db.close()
+    def add_equipment_to_user(self, db: Session, channel_name: str, user_name: str, item_type: ShopItemType):
+        expires_at = datetime.utcnow() + timedelta(days=30)
+        equipment = UserEquipment(channel_name=channel_name, user_name=user_name, item_type=item_type, expires_at=expires_at)
+        db.add(equipment)

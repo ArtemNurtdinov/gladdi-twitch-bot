@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from core.db import engine
+from core.db import engine, db_session, SessionLocal
 from features.ai.db.ai_message import AIMessage
 from features.auth.auth_schemas import UserCreate
 from features.auth.auth_service import AuthService
@@ -64,7 +64,8 @@ def create_tables():
 def create_admin():
     try:
         auth_service = AuthService()
-        existing_user = auth_service.get_user_by_email("artem.nefrit@gmail.com")
+        with db_session() as db:
+            existing_user = auth_service.get_user_by_email(db, "artem.nefrit@gmail.com")
         if existing_user:
             print(f"   Пользователь с email 'artem.nefrit@gmail.com' уже существует!")
             print(f"   ID: {existing_user.id}")
@@ -80,7 +81,9 @@ def create_admin():
             is_active=True
         )
 
-        user = auth_service.create_user_from_admin(user_data)
+        with SessionLocal.begin() as db:
+            user = auth_service.create_user_from_admin(db, user_data)
+            db.refresh(user)
 
         print("    Администратор успешно создан!")
         print(f"   ID: {user.id}")

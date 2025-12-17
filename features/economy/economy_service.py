@@ -1,6 +1,9 @@
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
+
+from sqlalchemy.orm import Session
+
 from core.db import SessionLocal
 from features.economy.db.user_balance import UserBalance
 from features.economy.db.transaction_history import TransactionHistory, TransactionType
@@ -30,43 +33,6 @@ class EconomyService:
     def __init__(self, stream_service: StreamService):
         self.stream_service = stream_service
 
-    def process_user_message_activity(self, channel_name: str, user_name: str):
-        db = SessionLocal()
-        try:
-            user_balance = self.get_user_balance(channel_name, user_name)
-            user_balance = db.merge(user_balance)
-
-            user_balance.message_count += 1
-            user_balance.updated_at = datetime.utcnow()
-
-            if self._should_grant_activity_reward(user_balance):
-                user_balance.last_activity_reward = datetime.utcnow()
-
-                balance_before = user_balance.balance
-                user_balance.balance += self.ACTIVITY_REWARD
-                user_balance.total_earned += self.ACTIVITY_REWARD
-
-                transaction = TransactionHistory(
-                    channel_name=channel_name,
-                    user_name=user_name,
-                    transaction_type=TransactionType.MESSAGE_REWARD,
-                    amount=self.ACTIVITY_REWARD,
-                    balance_before=balance_before,
-                    balance_after=user_balance.balance,
-                    description="Награда за активность в чате",
-                )
-                db.add(transaction)
-                db.commit()
-            else:
-                db.commit()
-                return None
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Ошибка при обработке активности пользователя {user_name}: {e}")
-            return None
-        finally:
-            db.close()
-
     def _should_grant_activity_reward(self, user_balance: UserBalance) -> bool:
         if user_balance.last_activity_reward is not None:
             time_since_last = datetime.utcnow() - user_balance.last_activity_reward
@@ -75,101 +41,113 @@ class EconomyService:
 
         return True
 
-    def get_user_balance(self, channel_name: str, user_name: str) -> UserBalance:
-        db = SessionLocal()
-        try:
-            normalized_user_name = user_name.lower()
-            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=normalized_user_name).first()
+    def process_user_message_activity(self, db: Session, channel_name: str, user_name: str):
+        user_balance = self.get_user_balance(db, channel_name, user_name)
 
-            if not user_balance:
-                user_balance = UserBalance(channel_name=channel_name, user_name=normalized_user_name, balance=self.STARTING_BALANCE)
-                db.add(user_balance)
+        user_balance.message_count += 1
+        user_balance.updated_at = datetime.utcnow()
 
-                transaction = TransactionHistory(
-                    channel_name=channel_name,
-                    user_name=normalized_user_name,
-                    transaction_type=TransactionType.ADMIN_ADJUST,
-                    amount=self.STARTING_BALANCE,
-                    balance_before=0,
-                    balance_after=self.STARTING_BALANCE,
-                    description="Создание нового аккаунта",
-                )
-                db.add(transaction)
-                db.commit()
+        if not self._should_grant_activity_reward(user_balance):
+            return None
 
-            db.refresh(user_balance)
-            return user_balance
-        finally:
-            db.close()
+        user_balance.last_activity_reward = datetime.utcnow()
 
-    def add_balance(self, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> UserBalance:
-        db = SessionLocal()
-        try:
-            normalized_user_name = user_name.lower()
+        balance_before = user_balance.balance
+        user_balance.balance += self.ACTIVITY_REWARD
+        user_balance.total_earned += self.ACTIVITY_REWARD
 
-            user_balance = self.get_user_balance(channel_name, user_name)
-            user_balance = db.merge(user_balance)
+        transaction = TransactionHistory(
+            channel_name=channel_name,
+            user_name=user_name,
+            transaction_type=TransactionType.MESSAGE_REWARD,
+            amount=self.ACTIVITY_REWARD,
+            balance_before=balance_before,
+            balance_after=user_balance.balance,
+            description="Награда за активность в чате",
+        )
+        db.add(transaction)
 
-            balance_before = user_balance.balance or 0
-            user_balance.balance = (user_balance.balance or 0) + amount
-            user_balance.total_earned = (user_balance.total_earned or 0) + max(0, amount)
-            user_balance.updated_at = datetime.utcnow()
+    def get_user_balance(self, db: Session, channel_name: str, user_name: str) -> UserBalance:
+        normalized_user_name = user_name.lower()
+        user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=normalized_user_name).first()
+
+        if not user_balance:
+            user_balance = UserBalance(channel_name=channel_name, user_name=normalized_user_name, balance=self.STARTING_BALANCE)
+            db.add(user_balance)
 
             transaction = TransactionHistory(
                 channel_name=channel_name,
                 user_name=normalized_user_name,
-                transaction_type=transaction_type,
-                amount=amount,
-                balance_before=balance_before,
-                balance_after=user_balance.balance,
-                description=description,
+                transaction_type=TransactionType.ADMIN_ADJUST,
+                amount=self.STARTING_BALANCE,
+                balance_before=0,
+                balance_after=self.STARTING_BALANCE,
+                description="Создание нового аккаунта",
             )
             db.add(transaction)
-
-            db.commit()
+            db.flush()
             db.refresh(user_balance)
-            return user_balance
-        finally:
-            db.close()
 
-    def subtract_balance(self, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> Optional[UserBalance]:
-        db = SessionLocal()
-        try:
-            normalized_user_name = user_name.lower()
+        return user_balance
 
-            user_balance = self.get_user_balance(channel_name, user_name)
-            user_balance = db.merge(user_balance)
+    def add_balance(self, db: Session, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> UserBalance:
+        normalized_user_name = user_name.lower()
 
-            current_balance = user_balance.balance or 0
-            if current_balance < amount:
-                logger.warning(f"Недостаточно средств у {normalized_user_name}: {current_balance} < {amount}")
-                return None
+        user_balance = self.get_user_balance(db, channel_name, user_name)
+        user_balance = db.merge(user_balance)
 
-            balance_before = current_balance
-            user_balance.balance = current_balance - amount
-            user_balance.total_spent = (user_balance.total_spent or 0) + amount
-            user_balance.updated_at = datetime.utcnow()
+        balance_before = user_balance.balance or 0
+        user_balance.balance = (user_balance.balance or 0) + amount
+        user_balance.total_earned = (user_balance.total_earned or 0) + max(0, amount)
+        user_balance.updated_at = datetime.utcnow()
 
-            transaction = TransactionHistory(
-                channel_name=channel_name,
-                user_name=normalized_user_name,
-                transaction_type=transaction_type,
-                amount=-amount,
-                balance_before=balance_before,
-                balance_after=user_balance.balance,
-                description=description,
-            )
-            db.add(transaction)
+        transaction = TransactionHistory(
+            channel_name=channel_name,
+            user_name=normalized_user_name,
+            transaction_type=transaction_type,
+            amount=amount,
+            balance_before=balance_before,
+            balance_after=user_balance.balance,
+            description=description,
+        )
+        db.add(transaction)
+        db.flush()
+        db.refresh(user_balance)
+        return user_balance
 
-            db.commit()
-            logger.info(f"У пользователя {normalized_user_name} списано {amount} монет. Новый баланс: {user_balance.balance}")
+    def subtract_balance(self, db: Session, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> Optional[UserBalance]:
+        normalized_user_name = user_name.lower()
 
-            db.refresh(user_balance)
-            return user_balance
-        finally:
-            db.close()
+        user_balance = self.get_user_balance(db, channel_name, user_name)
 
-    def transfer_money(self, channel_name: str, sender_name: str, receiver_name: str, amount: int) -> TransferResult:
+        current_balance = user_balance.balance or 0
+        if current_balance < amount:
+            logger.warning(f"Недостаточно средств у {normalized_user_name}: {current_balance} < {amount}")
+            return None
+
+        balance_before = current_balance
+        user_balance.balance = current_balance - amount
+        user_balance.total_spent = (user_balance.total_spent or 0) + amount
+        user_balance.updated_at = datetime.utcnow()
+
+        transaction = TransactionHistory(
+            channel_name=channel_name,
+            user_name=normalized_user_name,
+            transaction_type=transaction_type,
+            amount=-amount,
+            balance_before=balance_before,
+            balance_after=user_balance.balance,
+            description=description,
+        )
+        db.add(transaction)
+
+        db.flush()
+        logger.info(f"У пользователя {normalized_user_name} списано {amount} монет. Новый баланс: {user_balance.balance}")
+
+        db.refresh(user_balance)
+        return user_balance
+
+    def transfer_money(self, db: Session, channel_name: str, sender_name: str, receiver_name: str, amount: int) -> TransferResult:
         if amount < self.MIN_TRANSFER_AMOUNT:
             return TransferResult.failure_result(f"Минимальная сумма перевода: {self.MIN_TRANSFER_AMOUNT} монет")
 
@@ -179,191 +157,144 @@ class EconomyService:
         if sender_name == receiver_name:
             return TransferResult.failure_result("Нельзя переводить деньги самому себе!")
 
-        db = SessionLocal()
-        try:
-            user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=receiver_name).first()
+        user_balance = db.query(UserBalance).filter_by(channel_name=channel_name, user_name=receiver_name).first()
 
-            if user_balance is None:
-                return TransferResult.failure_result(f"Пользователь @{receiver_name} не найден в системе!")
+        if user_balance is None:
+            return TransferResult.failure_result(f"Пользователь @{receiver_name} не найден в системе!")
 
-            sender_balance = self.get_user_balance(channel_name, sender_name)
-            receiver_balance = self.get_user_balance(channel_name, receiver_name)
+        sender_balance = self.get_user_balance(db, channel_name, sender_name)
+        receiver_balance = self.get_user_balance(db, channel_name, receiver_name)
 
-            sender_balance = db.merge(sender_balance)
-            receiver_balance = db.merge(receiver_balance)
+        if sender_balance.balance < amount:
+            return TransferResult.failure_result(f"Недостаточно средств! У вас {sender_balance.balance} монет, нужно {amount}")
 
-            if sender_balance.balance < amount:
-                return TransferResult.failure_result(f"Недостаточно средств! У вас {sender_balance.balance} монет, нужно {amount}")
+        sender_balance_before = sender_balance.balance
+        receiver_balance_before = receiver_balance.balance
 
-            sender_balance_before = sender_balance.balance
-            receiver_balance_before = receiver_balance.balance
+        sender_balance.balance -= amount
+        sender_balance.total_spent += amount
+        sender_balance.updated_at = datetime.utcnow()
 
-            sender_balance.balance -= amount
-            sender_balance.total_spent += amount
-            sender_balance.updated_at = datetime.utcnow()
+        receiver_balance.balance += amount
+        receiver_balance.total_earned += amount
+        receiver_balance.updated_at = datetime.utcnow()
 
-            receiver_balance.balance += amount
-            receiver_balance.total_earned += amount
-            receiver_balance.updated_at = datetime.utcnow()
+        transaction = TransactionHistory(
+            channel_name=channel_name,
+            user_name=sender_name,
+            transaction_type=TransactionType.TRANSFER_SENT,
+            amount=-amount,
+            balance_before=sender_balance_before,
+            balance_after=sender_balance.balance,
+            description=f"Перевод {amount} монет пользователю {receiver_name}",
+        )
+        db.add(transaction)
 
-            transaction = TransactionHistory(
-                channel_name=channel_name,
-                user_name=sender_name,
-                transaction_type=TransactionType.TRANSFER_SENT,
-                amount=-amount,
-                balance_before=sender_balance_before,
-                balance_after=sender_balance.balance,
-                description=f"Перевод {amount} монет пользователю {receiver_name}",
-            )
-            db.add(transaction)
+        transaction2 = TransactionHistory(
+            channel_name=channel_name,
+            user_name=receiver_name,
+            transaction_type=TransactionType.TRANSFER_RECEIVED,
+            amount=amount,
+            balance_before=receiver_balance_before,
+            balance_after=receiver_balance.balance,
+            description=f"Получен перевод {amount} монет от {sender_name}",
+        )
+        db.add(transaction2)
+        return TransferResult.success_result()
 
-            transaction2 = TransactionHistory(
-                channel_name=channel_name,
-                user_name=receiver_name,
-                transaction_type=TransactionType.TRANSFER_RECEIVED,
-                amount=amount,
-                balance_before=receiver_balance_before,
-                balance_after=receiver_balance.balance,
-                description=f"Получен перевод {amount} монет от {sender_name}",
-            )
-            db.add(transaction2)
+    def can_claim_daily_bonus(self, db: Session, channel_name: str, user_name: str) -> bool:
+        active_stream = self.stream_service.get_active_stream(db, channel_name)
+        if not active_stream:
+            return False
 
-            db.commit()
+        user_balance = self.get_user_balance(db, channel_name, user_name)
 
-            return TransferResult.success_result()
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Ошибка при переводе денег от {sender_name} к {receiver_name}: {e}")
-            return TransferResult.failure_result("Произошла ошибка при выполнении перевода")
-        finally:
-            db.close()
+        if user_balance.last_bonus_stream_id is None:
+            return True
 
-    def can_claim_daily_bonus(self, channel_name: str, user_name: str) -> bool:
-        db = SessionLocal()
-        try:
-            active_stream = self.stream_service.get_active_stream(channel_name)
-            if not active_stream:
-                return False
+        return user_balance.last_bonus_stream_id != active_stream.id
 
-            normalized_user_name = user_name.lower()
+    def claim_daily_bonus(self, db: Session, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None) -> DailyBonusResult:
+        active_stream = self.stream_service.get_active_stream(db, channel_name)
+        if not active_stream:
+            return DailyBonusResult(success=False, failure_reason="no_stream")
 
-            user_balance = (
-                db.query(UserBalance)
-                .filter_by(channel_name=channel_name, user_name=normalized_user_name)
-                .first()
-            )
+        user_balance = self.get_user_balance(db, channel_name, user_name)
 
-            if not user_balance:
-                return True
+        if user_balance.last_bonus_stream_id == active_stream.id:
+            return DailyBonusResult(success=False, failure_reason="already_claimed")
 
-            if user_balance.last_bonus_stream_id is None:
-                return True
+        equipment = user_equipment or []
+        total_multiplier = 1.0
+        bonus_messages = []
+        special_items = []
 
-            return user_balance.last_bonus_stream_id != active_stream.id
-        finally:
-            db.close()
+        for item in equipment:
+            for effect in item.shop_item.effects:
+                if isinstance(effect, DailyBonusMultiplierEffect):
+                    special_items.append(item.shop_item.name)
+                    total_multiplier *= effect.multiplier
 
-    def claim_daily_bonus(self, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None) -> DailyBonusResult:
-        normalized_user_name = user_name.lower()
+                    if item.item_type == ShopItemType.FREEZER_DUMPLINGS:
+                        bonus_messages.append("Нашелся счастливый пельмень, который увеличил бонус!")
+                    elif item.item_type == ShopItemType.OCTOPUSES:
+                        bonus_messages.append("Осьминоги принесли сокровища со дна и увеличили бонус!")
+                    elif item.item_type == ShopItemType.MAEL_EXPEDITION:
+                        bonus_messages.append("Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет \"Алиииинаааа аииииии\"...")
+                    elif item.item_type == ShopItemType.COMMUNIST_PARTY:
+                        bonus_messages.append("Партия коммунистов обеспечила тебе увеличенный бонус! Единство силу даёт, товарищ!")
 
-        db = SessionLocal()
-        try:
-            active_stream = self.stream_service.get_active_stream(channel_name)
-            if not active_stream:
-                return DailyBonusResult(success=False, failure_reason="no_stream")
+        bonus_amount = int(self.DAILY_BONUS * total_multiplier)
 
-            user_balance = self.get_user_balance(channel_name, user_name)
-            user_balance = db.merge(user_balance)
+        bonus_message = ""
+        if bonus_messages:
+            if len(bonus_messages) > 1:
+                bonus_message = f"СТАК БОНУСОВ! {' + '.join(bonus_messages)}"
+            else:
+                bonus_message = bonus_messages[0]
 
-            if user_balance.last_bonus_stream_id == active_stream.id:
-                return DailyBonusResult(success=False, failure_reason="already_claimed")
+        balance_before = user_balance.balance
+        user_balance.balance += bonus_amount
+        user_balance.total_earned += bonus_amount
+        user_balance.last_daily_claim = datetime.utcnow()
+        user_balance.last_bonus_stream_id = active_stream.id
+        user_balance.updated_at = datetime.utcnow()
 
-            equipment = user_equipment or []
-            total_multiplier = 1.0
-            bonus_messages = []
-            special_items = []
+        transaction_description = "Бонус" + (f" (усилен {special_items})" if special_items else "")
 
-            for item in equipment:
-                for effect in item.shop_item.effects:
-                    if isinstance(effect, DailyBonusMultiplierEffect):
-                        special_items.append(item.shop_item.name)
-                        total_multiplier *= effect.multiplier
+        transaction = TransactionHistory(
+            channel_name=channel_name,
+            user_name=user_name,
+            transaction_type=TransactionType.DAILY_BONUS,
+            amount=bonus_amount,
+            balance_before=balance_before,
+            balance_after=user_balance.balance,
+            description=transaction_description,
+        )
+        db.add(transaction)
 
-                        if item.item_type == ShopItemType.FREEZER_DUMPLINGS:
-                            bonus_messages.append("Нашелся счастливый пельмень, который увеличил бонус!")
-                        elif item.item_type == ShopItemType.OCTOPUSES:
-                            bonus_messages.append("Осьминоги принесли сокровища со дна и увеличили бонус!")
-                        elif item.item_type == ShopItemType.MAEL_EXPEDITION:
-                            bonus_messages.append("Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет \"Алиииинаааа аииииии\"...")
-                        elif item.item_type == ShopItemType.COMMUNIST_PARTY:
-                            bonus_messages.append("Партия коммунистов обеспечила тебе увеличенный бонус! Единство силу даёт, товарищ!")
+        db.flush()
+        logger.info(f"Пользователь {user_name} получил бонус {bonus_amount}")
 
-            bonus_amount = int(self.DAILY_BONUS * total_multiplier)
+        db.refresh(user_balance)
+        return DailyBonusResult(success=True, user_balance=user_balance, bonus_amount=bonus_amount, bonus_message=bonus_message)
 
-            bonus_message = ""
-            if bonus_messages:
-                if len(bonus_messages) > 1:
-                    bonus_message = f"СТАК БОНУСОВ! {' + '.join(bonus_messages)}"
-                else:
-                    bonus_message = bonus_messages[0]
+    def get_top_users(self, db: Session, channel_name: str, limit: int) -> list:
+        top_users = db.query(UserBalance).filter_by(channel_name=channel_name, is_active=True).order_by(UserBalance.balance.desc()).limit(limit).all()
+        return [
+            {
+                "user_name": user.user_name,
+                "balance": user.balance
+            }
+            for user in top_users
+        ]
 
-            balance_before = user_balance.balance
-            user_balance.balance += bonus_amount
-            user_balance.total_earned += bonus_amount
-            user_balance.last_daily_claim = datetime.utcnow()
-            user_balance.last_bonus_stream_id = active_stream.id
-            user_balance.updated_at = datetime.utcnow()
-
-            transaction_description = "Бонус" + (f" (усилен {special_items})" if special_items else "")
-
-            transaction = TransactionHistory(
-                channel_name=channel_name,
-                user_name=normalized_user_name,
-                transaction_type=TransactionType.DAILY_BONUS,
-                amount=bonus_amount,
-                balance_before=balance_before,
-                balance_after=user_balance.balance,
-                description=transaction_description,
-            )
-            db.add(transaction)
-
-            db.commit()
-            logger.info(f"Пользователь {normalized_user_name} получил бонус {bonus_amount}")
-
-            db.refresh(user_balance)
-            return DailyBonusResult(success=True, user_balance=user_balance, bonus_amount=bonus_amount, bonus_message=bonus_message)
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Ошибка при получении стримового бонуса пользователем {user_name}: {e}")
-            return DailyBonusResult(success=False, failure_reason="error")
-        finally:
-            db.close()
-
-    def get_top_users(self, channel_name: str, limit: int) -> list:
-        db = SessionLocal()
-        try:
-            top_users = db.query(UserBalance).filter_by(channel_name=channel_name, is_active=True).order_by(UserBalance.balance.desc()).limit(limit).all()
-
-            return [
-                {
-                    "user_name": user.user_name,
-                    "balance": user.balance
-                }
-                for user in top_users
-            ]
-        finally:
-            db.close()
-
-    def get_bottom_users(self, channel_name: str, limit: int) -> list:
-        db = SessionLocal()
-        try:
-            bottom_users = db.query(UserBalance).filter_by(channel_name=channel_name, is_active=True).order_by(UserBalance.balance.asc()).limit(limit).all()
-            return [
-                {
-                    "user_name": user.user_name,
-                    "balance": user.balance
-                }
-                for user in bottom_users
-            ]
-        finally:
-            db.close()
+    def get_bottom_users(self, db: Session, channel_name: str, limit: int) -> list:
+        bottom_users = db.query(UserBalance).filter_by(channel_name=channel_name, is_active=True).order_by(UserBalance.balance.asc()).limit(limit).all()
+        return [
+            {
+                "user_name": user.user_name,
+                "balance": user.balance
+            }
+            for user in bottom_users
+        ]
