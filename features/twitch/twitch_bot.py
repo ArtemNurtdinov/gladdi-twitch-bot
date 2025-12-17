@@ -1562,7 +1562,7 @@ class Bot(commands.Bot):
         messages = []
         with db_session() as db:
             last_messages = self.ai_service.get_last_ai_messages(db, channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
-            messages.append(last_messages)
+            messages.extend(last_messages)
             messages.append(AIMessage(Role.USER, prompt))
         assistant_message = self.ai_service.generate_ai_response(messages)
         return assistant_message
