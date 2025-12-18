@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
 
 from core.db import get_db
-from features.stream.stream_schemas import StreamListResponse, StreamDetailResponse
+from features.stream.data.stream_schemas import StreamListResponse, StreamDetailResponse, StreamResponse
 from features.stream.stream_service import StreamService
-from features.stream.stream_repository import StreamRepositoryImpl
+from features.stream.data.stream_repository import StreamRepositoryImpl
 
 router = APIRouter()
 stream_service = StreamService(StreamRepositoryImpl())
@@ -28,7 +28,11 @@ async def get_streams(
     if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
     try:
-        return stream_service.get_streams(db, skip, limit, date_from, date_to)
+        items, total = stream_service.get_streams(db, skip, limit, date_from, date_to)
+        return StreamListResponse(
+            items=[StreamResponse.model_validate(asdict(item)) for item in items],
+            total=total,
+        )
     except HTTPException:
         raise
     except Exception as e:

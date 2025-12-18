@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from features.stream.domain.models import StreamInfo, StreamDetail
 from features.stream.domain.repo import StreamRepository
-from features.stream.stream_schemas import StreamListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +38,8 @@ class StreamService:
     def update_max_concurrent_viewers_count(self, db: Session, active_stream_id: int, viewers_count: int):
         self._repo.update_max_concurrent_viewers_count(db, active_stream_id, viewers_count)
 
-    def get_streams(self, db: Session, skip: int, limit: int, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None) -> StreamListResponse:
-        streams, total = self._repo.list_streams(db, skip, limit, date_from, date_to)
-        return StreamListResponse(items=streams, total=total)
+    def get_streams(self, db: Session, skip: int, limit: int, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None) -> tuple[list[StreamInfo], int]:
+        return self._repo.list_streams(db, skip, limit, date_from, date_to)
 
     def get_stream_detail(self, db: Session, stream_id: int) -> Optional[StreamDetail]:
         result = self._repo.get_stream_with_sessions(db, stream_id)

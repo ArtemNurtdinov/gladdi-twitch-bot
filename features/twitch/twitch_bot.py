@@ -29,7 +29,7 @@ from features.joke.settings_manager import SettingsManager
 from features.economy.economy_service import EconomyService
 from features.minigame.minigame_service import MinigameService
 from features.stream.stream_service import StreamService
-from features.stream.stream_repository import StreamRepositoryImpl
+from features.stream.data.stream_repository import StreamRepositoryImpl
 from features.viewer.viewer_session_service import ViewerTimeService
 from features.betting.model.rarity_level import RarityLevel
 from features.betting.model.emoji_config import EmojiConfig

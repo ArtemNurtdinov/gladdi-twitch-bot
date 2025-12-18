@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from features.stream.db.stream import Stream
+from features.stream.data.db.stream import Stream
 from features.stream.domain.models import StreamInfo, StreamViewerSessionInfo
 from features.stream.domain.repo import StreamRepository
 from features.viewer.db.viewer_session import StreamViewerSession
