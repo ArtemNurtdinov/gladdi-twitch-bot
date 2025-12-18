@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
 
 from core.db import get_db
-from features.stream.stream_schemas import StreamListResponse, StreamDetailResponse, StreamViewerSessionResponse
+from features.stream.stream_schemas import StreamListResponse, StreamDetailResponse
 from features.stream.stream_service import StreamService
 from features.stream.stream_repository import StreamRepositoryImpl
 

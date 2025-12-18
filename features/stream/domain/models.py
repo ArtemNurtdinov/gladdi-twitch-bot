@@ -42,3 +42,9 @@ class StreamViewerSessionInfo:
     last_reward_claimed: Optional[datetime]
     created_at: datetime
     updated_at: datetime
+
+
+@dataclass
+class StreamDetail:
+    stream: StreamInfo
+    sessions: list[StreamViewerSessionInfo]

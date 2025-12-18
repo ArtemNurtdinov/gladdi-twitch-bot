@@ -4,9 +4,8 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from features.stream.domain.models import StreamInfo, StreamViewerSessionInfo
+from features.stream.domain.models import StreamInfo, StreamDetail
 from features.stream.domain.repo import StreamRepository
-from features.stream.domain.dto import StreamDetail
 from features.stream.stream_schemas import StreamListResponse
 
 logger = logging.getLogger(__name__)
