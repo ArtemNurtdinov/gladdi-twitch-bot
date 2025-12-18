@@ -1,7 +1,5 @@
 from typing import Protocol, Generic, TypeVar, Optional
-from datetime import datetime
 
-from features.economy.db.transaction_history import TransactionType
 from features.economy.domain.models import UserBalanceInfo, TransactionData, BalanceBrief
 
 DB = TypeVar("DB")

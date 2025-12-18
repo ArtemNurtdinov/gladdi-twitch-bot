@@ -4,13 +4,18 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from features.economy.db.transaction_history import TransactionType
-from features.economy.domain.models import UserBalanceInfo, TransactionData, BalanceBrief
+from features.economy.data.db.transaction_history import TransactionType
+from features.economy.domain.models import (
+    UserBalanceInfo,
+    TransactionData,
+    BalanceBrief,
+    TransferResult,
+    DailyBonusResult,
+    ShopItemType,
+    DailyBonusMultiplierEffect,
+)
 from features.economy.domain.repo import EconomyRepository
-from features.economy.model.daily_bonus import DailyBonusResult
 from features.equipment.model.user_equipment_item import UserEquipmentItem
-from features.economy.model.transfer_result import TransferResult
-from features.economy.model.shop_items import ShopItemType, DailyBonusMultiplierEffect
 
 logger = logging.getLogger(__name__)
 

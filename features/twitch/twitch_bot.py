@@ -16,14 +16,15 @@ from features.ai.intent import Intent
 from features.ai.message import AIMessage, Role
 from features.battle.battle_service import BattleService
 from features.battle.model.user_battle_stats import UserBattleStats
-from features.betting.betting_schemas import UserBetStats
+from features.betting.data.betting_schemas import UserBetStats
 from features.betting.betting_service import BettingService
+from features.betting.domain.models import EmojiConfig, RarityLevel
 from features.equipment.equipment_service import EquipmentService
 from features.stream.domain.models import StreamStatistics
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.chat.data.db.chat_message import ChatMessage
-from features.economy.db.transaction_history import TransactionType
+from features.economy.data.db.transaction_history import TransactionType
 from features.chat.chat_service import ChatService
 from features.joke.settings_manager import SettingsManager
 from features.economy.economy_service import EconomyService
@@ -32,9 +33,7 @@ from features.minigame.minigame_service import MinigameService
 from features.stream.stream_service import StreamService
 from features.stream.data.stream_repository import StreamRepositoryImpl
 from features.viewer.viewer_session_service import ViewerTimeService
-from features.betting.model.rarity_level import RarityLevel
-from features.betting.model.emoji_config import EmojiConfig
-from features.economy.model.shop_items import ShopItems
+from features.economy.domain.models import ShopItems
 
 logger = logging.getLogger(__name__)
 

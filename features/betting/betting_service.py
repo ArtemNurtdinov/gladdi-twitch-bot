@@ -1,12 +1,10 @@
 from sqlalchemy.orm import Session
 
-from features.betting.db.bet_history import BetHistory
-from features.betting.model.emoji_config import EmojiConfig
-from features.betting.model.rarity_level import RarityLevel
-from features.economy.db.transaction_history import TransactionType
+from features.betting.data.db.bet_history import BetHistory
+from features.betting.domain.models import BetResult, EmojiConfig, RarityLevel
+from features.economy.data.db.transaction_history import TransactionType
 from features.economy.economy_service import EconomyService
-from features.economy.model.bet_result import BetResult
-from features.economy.model.shop_items import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect
+from features.economy.domain.models import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect
 from features.equipment.model.user_equipment_item import UserEquipmentItem
 
 

@@ -3,8 +3,8 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from features.economy.db.user_balance import UserBalance
-from features.economy.db.transaction_history import TransactionHistory, TransactionType
+from features.economy.data.db.user_balance import UserBalance
+from features.economy.data.db.transaction_history import TransactionHistory
 from features.economy.domain.models import UserBalanceInfo, TransactionData, BalanceBrief
 from features.economy.domain.repo import EconomyRepository
 

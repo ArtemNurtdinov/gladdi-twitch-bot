@@ -6,11 +6,11 @@ from features.auth.auth_service import AuthService
 from features.auth.db.access_token import AccessToken
 from features.auth.db.user import User, UserRole
 from features.battle.db.battle_history import BattleHistory
-from features.betting.db.bet_history import BetHistory
+from features.betting.data.db.bet_history import BetHistory
 from features.chat.data.db.chat_message import ChatMessage
 from features.minigame.db.word_history import WordHistory
-from features.economy.db.user_balance import UserBalance
-from features.economy.db.transaction_history import TransactionHistory
+from features.economy.data.db.user_balance import UserBalance
+from features.economy.data.db.transaction_history import TransactionHistory
 from features.equipment.db.user_equipment import UserEquipment
 from features.stream.data.db.stream import Stream
 from features.viewer.db.viewer_session import StreamViewerSession

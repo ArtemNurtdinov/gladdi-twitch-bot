@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from features.equipment.db.user_equipment import UserEquipment
 from features.equipment.model.user_equipment_item import UserEquipmentItem
-from features.economy.model.shop_items import ShopItems, TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect, RollCooldownOverrideEffect
+from features.economy.domain.models import ShopItems, TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect, RollCooldownOverrideEffect
 
 logger = logging.getLogger(__name__)
 
