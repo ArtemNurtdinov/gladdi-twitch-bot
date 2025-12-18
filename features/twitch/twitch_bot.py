@@ -27,6 +27,7 @@ from features.economy.db.transaction_history import TransactionType
 from features.chat.chat_service import ChatService
 from features.joke.settings_manager import SettingsManager
 from features.economy.economy_service import EconomyService
+from features.economy.data.economy_repository import EconomyRepositoryImpl
 from features.minigame.minigame_service import MinigameService
 from features.stream.stream_service import StreamService
 from features.stream.data.stream_repository import StreamRepositoryImpl
@@ -92,7 +93,7 @@ class Bot(commands.Bot):
         self.settings_manager = SettingsManager()
         self.stream_service = StreamService(StreamRepositoryImpl())
         self.equipment_service = EquipmentService()
-        self.economy_service = EconomyService()
+        self.economy_service = EconomyService(EconomyRepositoryImpl())
         self.minigame_service = MinigameService(self.economy_service)
         self.viewer_service = ViewerTimeService()
         self.betting_service = BettingService(self.economy_service)
@@ -317,9 +318,8 @@ class Bot(commands.Bot):
 
         with SessionLocal.begin() as db:
             user_balance = self.economy_service.get_user_balance(db, channel_name, challenger)
-            balance_value = user_balance.balance
 
-        if balance_value < fee:
+        if user_balance.balance < fee:
             result = f"@{challenger}, недостаточно монет для участия в битве! Необходимо: {self.economy_service.BATTLE_ENTRY_FEE} монет."
             with SessionLocal.begin() as db:
                 self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -599,7 +599,8 @@ class Bot(commands.Bot):
 
         with SessionLocal.begin() as db:
             user_balance = self.economy_service.get_user_balance(db, channel_name, user_name)
-            result = f"💰 @{user_name}, твой баланс: {user_balance.balance} монет"
+
+        result = f"💰 @{user_name}, твой баланс: {user_balance.balance} монет"
 
         with SessionLocal.begin() as db:
             self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -754,10 +755,9 @@ class Bot(commands.Bot):
 
         with SessionLocal.begin() as db:
             user_balance = self.economy_service.get_user_balance(db, channel_name, normalized_user_name)
-            balance_value = user_balance.balance
 
-        if balance_value < item.price:
-            result = f"Недостаточно монет! Нужно {item.price}, у вас {balance_value}"
+        if user_balance.balance < item.price:
+            result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
             with SessionLocal.begin() as db:
                 self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
             await ctx.send(result)
@@ -809,12 +809,12 @@ class Bot(commands.Bot):
         with db_session() as db:
             top_users = self.economy_service.get_top_users(db, channel_name, limit=7)
 
-            if not top_users:
-                result = "Нет данных для отображения топа."
-            else:
-                result = "ТОП БОГАЧЕЙ:\n"
-                for i, user in enumerate(top_users, 1):
-                    result += f"{i}. {user['user_name']}: {user['balance']} монет."
+        if not top_users:
+            result = "Нет данных для отображения топа."
+        else:
+            result = "ТОП БОГАЧЕЙ:\n"
+            for i, user in enumerate(top_users, 1):
+                result += f"{i}. {user.user_name}: {user.balance} монет."
 
         with SessionLocal.begin() as db:
             self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -838,7 +838,7 @@ class Bot(commands.Bot):
             else:
                 result = "💸 ТОП БОМЖЕЙ:\n"
                 for i, user in enumerate(bottom_users, 1):
-                    result += f"{i}. {user['user_name']}: {user['balance']} монет."
+                    result += f"{i}. {user.user_name}: {user.balance} монет."
 
         with SessionLocal.begin() as db:
             self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -888,7 +888,6 @@ class Bot(commands.Bot):
 
         with SessionLocal.begin() as db:
             balance = self.economy_service.get_user_balance(db, channel_name, normalized_user_name)
-            balance_value = balance.balance
             bets = self.betting_service.get_user_bets(db, channel_name, normalized_user_name)
 
             if not bets:
@@ -912,7 +911,7 @@ class Bot(commands.Bot):
                 battle_stats = UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
 
         result = f"📊 Статистика @{user_name}: "
-        result += f"💰 Баланс: {balance_value} монет."
+        result += f"💰 Баланс: {balance.balance} монет."
 
         if bet_stats.total_bets > 0:
             result += f"\n🎰 Ставки: {bet_stats.total_bets} | "
