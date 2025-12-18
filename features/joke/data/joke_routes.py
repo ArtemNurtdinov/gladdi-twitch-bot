@@ -1,14 +1,28 @@
 from fastapi import APIRouter, HTTPException
-from features.joke.joke_schemas import JokesStatus, JokesResponse, JokesIntervalResponse, JokesIntervalRequest
+from features.joke.data.joke_schemas import JokesStatus, JokesResponse, JokesIntervalResponse, JokesIntervalRequest, NextJoke, JokeInterval
 from features.joke.joke_service import JokeService
-from features.joke.settings_manager import SettingsManager
+from features.joke.settings_repository import FileJokeSettingsRepository
 
 router = APIRouter()
 
 
 def get_joke_service() -> JokeService:
-    settings_manager = SettingsManager()
-    return JokeService(settings_manager)
+    settings_repo = FileJokeSettingsRepository()
+    return JokeService(settings_repo)
+
+
+def _to_next_joke_model(dto_next) -> NextJoke | None:
+    if dto_next is None:
+        return None
+    return NextJoke(next_joke_time=dto_next.next_joke_time, minutes_until_next=dto_next.minutes_until_next)
+
+
+def _to_interval_model(dto_interval) -> JokeInterval:
+    return JokeInterval(
+        min_minutes=dto_interval.min_minutes,
+        max_minutes=dto_interval.max_minutes,
+        description=dto_interval.description,
+    )
 
 
 @router.get(
@@ -20,7 +34,13 @@ def get_joke_service() -> JokeService:
 async def get_jokes_status() -> JokesStatus:
     try:
         joke_service = get_joke_service()
-        return joke_service.get_jokes_status()
+        dto = joke_service.get_jokes_status()
+        return JokesStatus(
+            enabled=dto.enabled,
+            message=dto.message,
+            interval=_to_interval_model(dto.interval),
+            next_joke=_to_next_joke_model(dto.next_joke),
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка получения статуса анекдотов: {str(e)}")
 
@@ -34,7 +54,8 @@ async def get_jokes_status() -> JokesStatus:
 async def enable_jokes() -> JokesResponse:
     try:
         joke_service = get_joke_service()
-        return joke_service.enable_jokes()
+        dto = joke_service.enable_jokes()
+        return JokesResponse(success=dto.success, message=dto.message)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка включения анекдотов: {str(e)}")
 
@@ -48,7 +69,8 @@ async def enable_jokes() -> JokesResponse:
 async def disable_jokes() -> JokesResponse:
     try:
         joke_service = get_joke_service()
-        return joke_service.disable_jokes()
+        dto = joke_service.disable_jokes()
+        return JokesResponse(success=dto.success, message=dto.message)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка отключения анекдотов: {str(e)}")
 
@@ -61,10 +83,16 @@ async def disable_jokes() -> JokesResponse:
 )
 async def set_jokes_interval(request: JokesIntervalRequest) -> JokesIntervalResponse:
     try:
-        if request.min_minutes > request.max_minutes:
-            raise HTTPException(status_code=400, detail=f"Минимальный интервал ({request.min_minutes}) не может быть больше максимального ({request.max_minutes})")
-
         joke_service = get_joke_service()
-        return joke_service.set_jokes_interval(request.min_minutes, request.max_minutes)
+        dto = joke_service.set_jokes_interval(request.min_minutes, request.max_minutes)
+        return JokesIntervalResponse(
+            success=dto.success,
+            min_minutes=dto.min_minutes,
+            max_minutes=dto.max_minutes,
+            description=dto.description,
+            next_joke=_to_next_joke_model(dto.next_joke),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка установки интервала анекдотов: {str(e)}")

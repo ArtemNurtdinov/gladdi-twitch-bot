@@ -26,7 +26,8 @@ from features.twitch.auth import TwitchAuth
 from features.chat.data.db.chat_message import ChatMessage
 from features.economy.data.db.transaction_history import TransactionType
 from features.chat.chat_service import ChatService
-from features.joke.settings_manager import SettingsManager
+from features.joke.settings_repository import FileJokeSettingsRepository
+from features.joke.joke_service import JokeService
 from features.economy.economy_service import EconomyService
 from features.economy.data.economy_repository import EconomyRepositoryImpl
 from features.minigame.minigame_service import MinigameService
@@ -89,7 +90,7 @@ class Bot(commands.Bot):
         self.twitch_api_service = twitch_api_service
         self.chat_service = chat_service
         self.ai_service = ai_service
-        self.settings_manager = SettingsManager()
+        self.joke_service = JokeService(FileJokeSettingsRepository())
         self.stream_service = StreamService(StreamRepositoryImpl())
         self.equipment_service = EquipmentService()
         self.economy_service = EconomyService(EconomyRepositoryImpl())
@@ -1092,7 +1093,7 @@ class Bot(commands.Bot):
         while True:
             await asyncio.sleep(30)
 
-            if not self.settings_manager.should_generate_jokes():
+            if not self.joke_service.should_generate_jokes():
                 continue
 
             try:
@@ -1116,7 +1117,7 @@ class Bot(commands.Bot):
                 channel = self.get_channel(channel_name)
                 await channel.send(result)
                 logger.info(f"Анекдот сгенерирован: {result}")
-                self.settings_manager.mark_joke_generated()
+                self.joke_service.mark_joke_generated()
             except Exception as e:
                 logger.error(f"Ошибка при генерации анекдота: {e}")
                 await asyncio.sleep(60)

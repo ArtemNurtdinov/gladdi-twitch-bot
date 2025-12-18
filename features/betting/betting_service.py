@@ -5,7 +5,7 @@ from features.betting.domain.models import BetResult, EmojiConfig, RarityLevel
 from features.economy.data.db.transaction_history import TransactionType
 from features.economy.economy_service import EconomyService
 from features.economy.domain.models import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect
-from features.equipment.model.user_equipment_item import UserEquipmentItem
+from features.equipment.domain.models import UserEquipmentItem
 
 
 class BettingService:

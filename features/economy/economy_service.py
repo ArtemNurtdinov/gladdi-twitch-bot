@@ -15,7 +15,7 @@ from features.economy.domain.models import (
     DailyBonusMultiplierEffect,
 )
 from features.economy.domain.repo import EconomyRepository
-from features.equipment.model.user_equipment_item import UserEquipmentItem
+from features.equipment.domain.models import UserEquipmentItem
 
 logger = logging.getLogger(__name__)
 

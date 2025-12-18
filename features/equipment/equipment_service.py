@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from features.equipment.db.user_equipment import UserEquipment
-from features.equipment.model.user_equipment_item import UserEquipmentItem
+from features.equipment.data.db.user_equipment import UserEquipment
 from features.economy.domain.models import ShopItems, TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect, RollCooldownOverrideEffect
+from features.equipment.domain.models import UserEquipmentItem
 
 logger = logging.getLogger(__name__)
 

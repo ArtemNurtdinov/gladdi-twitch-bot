@@ -3,8 +3,8 @@ from typing import Optional
 
 
 class NextJoke(BaseModel):
-    next_joke_time: str = Field(..., description="Время следующего анекдота")
-    minutes_until_next: int = Field(..., description="Осталось времени до следующего анекдота")
+    next_joke_time: Optional[str] = Field(None, description="Время следующего анекдота")
+    minutes_until_next: Optional[int] = Field(None, description="Осталось времени до следующего анекдота")
 
 
 class JokeInterval(BaseModel):
