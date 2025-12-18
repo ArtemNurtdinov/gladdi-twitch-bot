@@ -1,16 +1,14 @@
 from datetime import datetime
-from typing import Generic, Optional, Protocol, Sequence, Tuple, TypeVar
+from typing import Generic, Optional, Protocol, TypeVar
 
-from features.stream.db.stream import Stream
-from features.stream.domain.models import StreamInfo
-from features.viewer.db.viewer_session import StreamViewerSession
+from features.stream.domain.models import StreamInfo, StreamViewerSessionInfo
 
 DB = TypeVar("DB")
 
 
 class StreamRepository(Protocol, Generic[DB]):
 
-    def create_stream(self, db: DB, channel_name: str, started_at: datetime, game_name: str | None, title: str | None) -> None:
+    def start_new_stream(self, db: DB, channel_name: str, started_at: datetime, game_name: str | None, title: str | None) -> None:
         ...
 
     def get_active_stream(self, db: DB, channel_name: str) -> Optional[StreamInfo]:
@@ -28,9 +26,9 @@ class StreamRepository(Protocol, Generic[DB]):
     def update_max_concurrent_viewers_count(self, db: DB, active_stream_id: int, viewers_count: int) -> None:
         ...
 
-    def list_streams(self, db: DB, skip: int, limit: int, date_from: Optional[datetime], date_to: Optional[datetime]) -> Tuple[Sequence[Stream], int]:
+    def list_streams(self, db: DB, skip: int, limit: int, date_from: Optional[datetime], date_to: Optional[datetime]) -> tuple[list[StreamInfo], int]:
         ...
 
-    def get_stream_with_sessions(self, db: DB, stream_id: int) -> Optional[Tuple[Stream, Sequence[StreamViewerSession]]]:
+    def get_stream_with_sessions(self, db: DB, stream_id: int) -> Optional[tuple[StreamInfo, list[StreamViewerSessionInfo]]]:
         ...
 

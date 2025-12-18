@@ -1,9 +1,10 @@
 from datetime import datetime
+from dataclasses import asdict
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
 
 from core.db import get_db
-from features.stream.stream_schemas import StreamListResponse, StreamDetailResponse
+from features.stream.stream_schemas import StreamListResponse, StreamDetailResponse, StreamViewerSessionResponse
 from features.stream.stream_service import StreamService
 from features.stream.stream_repository import StreamRepositoryImpl
 
@@ -44,7 +45,12 @@ async def get_stream_detail(
     stream_id: int,
     db: Session = Depends(get_db)
 ) -> StreamDetailResponse:
-    stream = stream_service.get_stream_by_id(db, stream_id)
-    if not stream:
+    dto = stream_service.get_stream_detail(db, stream_id)
+    if not dto:
         raise HTTPException(status_code=404, detail="Стрим не найден")
-    return StreamDetailResponse.model_validate(stream)
+
+    payload = {
+        **asdict(dto.stream),
+        "viewer_sessions": [asdict(s) for s in dto.sessions],
+    }
+    return StreamDetailResponse(**payload)

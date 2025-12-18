@@ -23,3 +23,22 @@ class StreamInfo:
     is_active: bool
     max_concurrent_viewers: Optional[int]
     total_viewers: Optional[int]
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass
+class StreamViewerSessionInfo:
+    id: int
+    stream_id: int
+    channel_name: str
+    user_name: str
+    session_start: Optional[datetime]
+    session_end: Optional[datetime]
+    total_minutes: int
+    last_activity: Optional[datetime]
+    is_watching: bool
+    rewards_claimed: str
+    last_reward_claimed: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime

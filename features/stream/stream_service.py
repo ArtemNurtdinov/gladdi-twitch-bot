@@ -4,10 +4,10 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from features.stream.domain.models import StreamInfo
+from features.stream.domain.models import StreamInfo, StreamViewerSessionInfo
 from features.stream.domain.repo import StreamRepository
+from features.stream.domain.dto import StreamDetail
 from features.stream.stream_schemas import StreamListResponse
-from features.stream.db.stream import Stream
 
 logger = logging.getLogger(__name__)
 
@@ -17,13 +17,13 @@ class StreamService:
     def __init__(self, repo: StreamRepository[Session]):
         self._repo = repo
 
-    def create_stream(self, db: Session, channel_name: str, started_at: datetime, game_name: str | None = None, title: str | None = None) -> None:
+    def start_new_stream(self, db: Session, channel_name: str, started_at: datetime, game_name: str | None = None, title: str | None = None) -> None:
         active_stream = self._repo.get_active_stream(db, channel_name)
         if active_stream:
             logger.warning(f"Попытка начать стрим, но активный стрим уже существует: {active_stream.id}")
             return
 
-        self._repo.create_stream(db, channel_name, started_at, game_name, title)
+        self._repo.start_new_stream(db, channel_name, started_at, game_name, title)
 
     def end_stream(self, db: Session, active_stream_id: int, finish_time: datetime):
         self._repo.end_stream(db, active_stream_id, finish_time)
@@ -44,10 +44,9 @@ class StreamService:
         streams, total = self._repo.list_streams(db, skip, limit, date_from, date_to)
         return StreamListResponse(items=streams, total=total)
 
-    def get_stream_by_id(self, db: Session, stream_id: int) -> Optional[Stream]:
+    def get_stream_detail(self, db: Session, stream_id: int) -> Optional[StreamDetail]:
         result = self._repo.get_stream_with_sessions(db, stream_id)
         if not result:
             return None
-        stream, sessions = result
-        stream.viewer_sessions = sessions
-        return stream
+        stream_info, sessions = result
+        return StreamDetail(stream=stream_info, sessions=sessions)

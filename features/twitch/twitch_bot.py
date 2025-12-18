@@ -1173,7 +1173,7 @@ class Bot(commands.Bot):
                     try:
                         started_at = datetime.utcnow()
                         with SessionLocal.begin() as db:
-                            self.stream_service.create_stream(db, channel_name, started_at, game_name, title)
+                            self.stream_service.start_new_stream(db, channel_name, started_at, game_name, title)
                         self.minigame_service.set_stream_start_time(channel_name, started_at)
                         await self.stream_announcement(game_name, title, channel_name)
                         self.current_stream_summaries = []
