@@ -9,3 +9,9 @@ class ChatMessage:
     content: str
     created_at: datetime
 
+
+@dataclass
+class TopChatUserInfo:
+    channel_name: str
+    username: str
+    message_count: int

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from features.chat.domain.models import ChatMessage
 from features.chat.domain.repo import ChatRepository
-from features.chat.db.chat_message import ChatMessage as ChatMessageORM
+from features.chat.data.db.chat_message import ChatMessage as ChatMessageORM
 
 
 class ChatRepositoryImpl(ChatRepository[Session]):

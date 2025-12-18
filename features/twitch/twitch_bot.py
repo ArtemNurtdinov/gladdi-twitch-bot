@@ -22,7 +22,7 @@ from features.equipment.equipment_service import EquipmentService
 from features.stream.domain.models import StreamStatistics
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
-from features.chat.db.chat_message import ChatMessage
+from features.chat.data.db.chat_message import ChatMessage
 from features.economy.db.transaction_history import TransactionType
 from features.chat.chat_service import ChatService
 from features.joke.settings_manager import SettingsManager
@@ -1390,11 +1390,12 @@ class Bot(commands.Bot):
                     with db_session() as db:
                         used_words = self.minigame_service.get_used_words(db, channel_name, limit=50)
                         last_messages = self.chat_service.get_last_chat_messages(db, channel_name, limit=50)
-                        chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
-                        if used_words:
-                            avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words)))
-                        else:
-                            avoid_clause = ""
+
+                    chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
+                    if used_words:
+                        avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words)))
+                    else:
+                        avoid_clause = ""
 
                     prompt = (
                         "Проанализируй последние сообщения из чата и выбери одно подходящее русское существительное (ОДНО слово),"

@@ -1,9 +1,8 @@
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session
-from features.chat.domain.models import ChatMessage as DomainChatMessage
+from features.chat.domain.models import ChatMessage as DomainChatMessage, TopChatUserInfo
 from features.chat.domain.repo import ChatRepository
-from features.chat.chat_schemas import TopChatUser, TopChatUsersResponse
 
 
 class ChatService:
@@ -20,7 +19,6 @@ class ChatService:
     def get_last_chat_messages(self, db: Session, channel_name: str, limit: int) -> list[DomainChatMessage]:
         return list(self._repo.list_last(db, channel_name, limit))
 
-    def get_top_chat_users(self, db: Session, limit: int, date_from: Optional[datetime], date_to: Optional[datetime]) -> TopChatUsersResponse:
+    def get_top_chat_users(self, db: Session, limit: int, date_from: Optional[datetime], date_to: Optional[datetime]) -> list[TopChatUserInfo]:
         stats = self._repo.top_chat_users(db, limit, date_from, date_to)
-        users = [TopChatUser(channel_name=channel, username=user, message_count=count) for channel, user, count in stats]
-        return TopChatUsersResponse(top_users=users)
+        return [TopChatUserInfo(channel_name=channel, username=user, message_count=count) for channel, user, count in stats]

@@ -9,7 +9,7 @@ from features.twitch.auth import TwitchAuth
 from features.twitch.bot.bot_schemas import BotActionResult, BotStatus, BotStatusEnum
 from features.twitch.twitch_bot import Bot as TwitchBot
 from features.chat.chat_service import ChatService
-from features.chat.chat_repository import ChatRepositoryImpl
+from features.chat.data.chat_repository import ChatRepositoryImpl
 
 logger = logging.getLogger(__name__)
 

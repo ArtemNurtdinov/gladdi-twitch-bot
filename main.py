@@ -5,7 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 from config import config
 from features.auth import auth_routes
 from features.joke import joke_routes
-from features.chat import chat_routes
+from features.chat.data import chat_routes
 from features.stream.data import stream_routes
 from features.viewer import viewer_routes
 from features.twitch.bot import bot_routes

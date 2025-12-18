@@ -3,9 +3,10 @@ from fastapi import APIRouter, Query, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from core.db import get_db
-from features.chat.chat_schemas import TopChatUsersResponse
+from dataclasses import asdict
+from features.chat.data.chat_schemas import TopChatUsersResponse, TopChatUser
 from features.chat.chat_service import ChatService
-from features.chat.chat_repository import ChatRepositoryImpl
+from features.chat.data.chat_repository import ChatRepositoryImpl
 
 router = APIRouter()
 chat_service = ChatService(ChatRepositoryImpl())
@@ -25,4 +26,5 @@ async def get_top_users(
 ) -> TopChatUsersResponse:
     if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
-    return chat_service.get_top_chat_users(db, limit, date_from, date_to)
+    users = chat_service.get_top_chat_users(db, limit, date_from, date_to)
+    return TopChatUsersResponse(top_users=[TopChatUser(**asdict(user)) for user in users])
