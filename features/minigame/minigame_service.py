@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from core.db import SessionLocal
 from features.minigame.db.word_history import WordHistory
 from features.minigame.models import GuessNumberGame, WordGuessGame, RPSGame, RPS_CHOICES
 from features.economy.economy_service import EconomyService
