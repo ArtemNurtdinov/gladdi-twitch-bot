@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 from core.db import get_db
 from features.chat.chat_schemas import TopChatUsersResponse
 from features.chat.chat_service import ChatService
+from features.chat.chat_repository import ChatRepositoryImpl
 
 router = APIRouter()
-chat_service = ChatService()
+chat_service = ChatService(ChatRepositoryImpl())
 
 
 @router.get(

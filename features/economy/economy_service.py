@@ -11,7 +11,6 @@ from features.economy.model.daily_bonus import DailyBonusResult
 from features.equipment.model.user_equipment_item import UserEquipmentItem
 from features.economy.model.transfer_result import TransferResult
 from features.economy.model.shop_items import ShopItemType, DailyBonusMultiplierEffect
-from features.stream.stream_service import StreamService
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +28,6 @@ class EconomyService:
 
     BATTLE_ENTRY_FEE = 500
     BATTLE_WINNER_PRIZE = 1000
-
-    def __init__(self, stream_service: StreamService):
-        self.stream_service = stream_service
 
     def _should_grant_activity_reward(self, user_balance: UserBalance) -> bool:
         if user_balance.last_activity_reward is not None:
@@ -202,26 +198,10 @@ class EconomyService:
         db.add(transaction2)
         return TransferResult.success_result()
 
-    def can_claim_daily_bonus(self, db: Session, channel_name: str, user_name: str) -> bool:
-        active_stream = self.stream_service.get_active_stream(db, channel_name)
-        if not active_stream:
-            return False
-
+    def claim_daily_bonus(self, db: Session, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None) -> DailyBonusResult:
         user_balance = self.get_user_balance(db, channel_name, user_name)
 
-        if user_balance.last_bonus_stream_id is None:
-            return True
-
-        return user_balance.last_bonus_stream_id != active_stream.id
-
-    def claim_daily_bonus(self, db: Session, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None) -> DailyBonusResult:
-        active_stream = self.stream_service.get_active_stream(db, channel_name)
-        if not active_stream:
-            return DailyBonusResult(success=False, failure_reason="no_stream")
-
-        user_balance = self.get_user_balance(db, channel_name, user_name)
-
-        if user_balance.last_bonus_stream_id == active_stream.id:
+        if user_balance.last_bonus_stream_id == active_stream_id:
             return DailyBonusResult(success=False, failure_reason="already_claimed")
 
         equipment = user_equipment or []
@@ -257,7 +237,7 @@ class EconomyService:
         user_balance.balance += bonus_amount
         user_balance.total_earned += bonus_amount
         user_balance.last_daily_claim = datetime.utcnow()
-        user_balance.last_bonus_stream_id = active_stream.id
+        user_balance.last_bonus_stream_id = active_stream_id
         user_balance.updated_at = datetime.utcnow()
 
         transaction_description = "Бонус" + (f" (усилен {special_items})" if special_items else "")

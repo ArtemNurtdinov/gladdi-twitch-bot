@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 from core.db import get_db
 from features.stream.stream_schemas import StreamListResponse, StreamDetailResponse
 from features.stream.stream_service import StreamService
+from features.stream.stream_repository import StreamRepositoryImpl
 
 router = APIRouter()
-stream_service = StreamService()
+stream_service = StreamService(StreamRepositoryImpl())
 
 
 @router.get(
