@@ -1,3 +1,5 @@
+from collections import Counter
+
 from sqlalchemy.orm import Session
 
 from features.betting.domain.models import BetResult, EmojiConfig, RarityLevel, BetRecord
@@ -44,54 +46,27 @@ class BettingService:
         if result_type == "jackpot":
             return EmojiConfig.get_emoji_rarity(emojis[0])
 
-        elif result_type == "partial":
-            repeated_emoji = None
-            for emoji in emojis:
-                if emojis.count(emoji) == 2:
-                    repeated_emoji = emoji
-                    break
+        rarity_priority = {
+            RarityLevel.COMMON: 1,
+            RarityLevel.UNCOMMON: 2,
+            RarityLevel.RARE: 3,
+            RarityLevel.EPIC: 4,
+            RarityLevel.LEGENDARY: 5,
+            RarityLevel.MYTHICAL: 6
+        }
 
-            if not repeated_emoji:
-                return EmojiConfig.get_emoji_rarity(emojis[0])
-
-            unique_emoji = None
-            for emoji in emojis:
-                if emojis.count(emoji) == 1:
-                    unique_emoji = emoji
-                    break
+        if result_type == "partial":
+            counts = Counter(emojis)
+            repeated_emoji = next((emoji for emoji, count in counts.items() if count == 2), None)
+            unique_emoji = next((emoji for emoji, count in counts.items() if count == 1), None)
 
             repeated_rarity = EmojiConfig.get_emoji_rarity(repeated_emoji)
             unique_rarity = EmojiConfig.get_emoji_rarity(unique_emoji) if unique_emoji else RarityLevel.COMMON
 
-            rarity_priority = {
-                RarityLevel.COMMON: 1,
-                RarityLevel.UNCOMMON: 2,
-                RarityLevel.RARE: 3,
-                RarityLevel.EPIC: 4,
-                RarityLevel.LEGENDARY: 5,
-                RarityLevel.MYTHICAL: 6
-            }
-
-            if rarity_priority[repeated_rarity] >= rarity_priority[unique_rarity]:
-                return repeated_rarity
-            else:
-                return unique_rarity
-
+            return repeated_rarity if rarity_priority[repeated_rarity] >= rarity_priority[unique_rarity] else unique_rarity
         else:
-            max_rarity = RarityLevel.COMMON
-            for emoji in emojis:
-                emoji_rarity = EmojiConfig.get_emoji_rarity(emoji)
-                if emoji_rarity == RarityLevel.MYTHICAL:
-                    max_rarity = RarityLevel.MYTHICAL
-                    break
-                elif emoji_rarity == RarityLevel.LEGENDARY and max_rarity != RarityLevel.MYTHICAL:
-                    max_rarity = RarityLevel.LEGENDARY
-                elif emoji_rarity == RarityLevel.EPIC and max_rarity not in [RarityLevel.MYTHICAL, RarityLevel.LEGENDARY]:
-                    max_rarity = RarityLevel.EPIC
-                elif emoji_rarity == RarityLevel.RARE and max_rarity not in [RarityLevel.MYTHICAL, RarityLevel.LEGENDARY, RarityLevel.EPIC]:
-                    max_rarity = RarityLevel.RARE
-                elif emoji_rarity == RarityLevel.UNCOMMON and max_rarity == RarityLevel.COMMON:
-                    max_rarity = RarityLevel.UNCOMMON
+            rarities = [EmojiConfig.get_emoji_rarity(emoji) for emoji in emojis]
+            max_rarity = max(rarities, key=lambda r: rarity_priority[r])
             return max_rarity
 
     def process_bet_result(
