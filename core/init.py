@@ -9,7 +9,7 @@ from features.auth.domain.models import UserCreateData, UserRole
 from features.battle.data.db.battle_history import BattleHistory
 from features.betting.data.db.bet_history import BetHistory
 from features.chat.data.db.chat_message import ChatMessage
-from features.minigame.db.word_history import WordHistory
+from features.minigame.data.db.word_history import WordHistory
 from features.economy.data.db.user_balance import UserBalance
 from features.economy.data.db.transaction_history import TransactionHistory
 from features.equipment.data.db.user_equipment import UserEquipment

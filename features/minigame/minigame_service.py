@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from features.minigame.db.word_history import WordHistory
 from features.minigame.models import GuessNumberGame, WordGuessGame, RPSGame, RPS_CHOICES
+from features.minigame.domain.repo import WordHistoryRepository
 from features.economy.economy_service import EconomyService
 from features.economy.domain.models import TransactionType
 
@@ -35,8 +35,9 @@ class MinigameService:
     GAME_START_INTERVAL_MIN = 30
     GAME_START_INTERVAL_MAX = 60
 
-    def __init__(self, economy_service: EconomyService):
+    def __init__(self, economy_service: EconomyService, word_history_repo: WordHistoryRepository[Session]):
         self.economy_service = economy_service
+        self.word_history_repo = word_history_repo
         self.active_games: Dict[str, GuessNumberGame] = {}
         self.active_word_games: Dict[str, WordGuessGame] = {}
         self.active_rps_games: Dict[str, RPSGame] = {}
@@ -402,11 +403,7 @@ class MinigameService:
         return message
 
     def get_used_words(self, db: Session, channel_name: str, limit: int) -> list[str]:
-        q = db.query(WordHistory.word).filter(WordHistory.channel_name == channel_name).order_by(WordHistory.created_at.desc())
-        if limit and limit > 0:
-            q = q.limit(limit)
-        rows = q.all()
-        words = [row[0].lower() for row in rows]
+        words = self.word_history_repo.list_recent_words(db, channel_name, limit)
         seen = set()
         unique_in_order = []
         for w in words:
@@ -416,8 +413,4 @@ class MinigameService:
         return unique_in_order
 
     def add_used_word(self, db: Session, channel_name: str, word: str) -> None:
-        normalized = "".join(ch for ch in str(word).lower() if ch.isalpha())
-        if not normalized:
-            return
-        record = WordHistory(channel_name=channel_name, word=normalized)
-        db.add(record)
+        self.word_history_repo.add_word(db, channel_name, word)

@@ -96,7 +96,7 @@ class Bot(commands.Bot):
         self.stream_service = StreamService(StreamRepositoryImpl())
         self.equipment_service = EquipmentService(EquipmentRepositoryImpl())
         self.economy_service = EconomyService(EconomyRepositoryImpl())
-        self.minigame_service = MinigameService(self.economy_service)
+        self.minigame_service = MinigameService(self.economy_service, WordHistoryRepositoryImpl())
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
         self.betting_service = BettingService(self.economy_service, BettingRepositoryImpl())
         self.battle_service = BattleService(BattleRepositoryImpl())
