@@ -4,7 +4,6 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from features.economy.data.db.transaction_history import TransactionType
 from features.economy.domain.models import (
     UserBalanceInfo,
     TransactionData,
@@ -13,6 +12,7 @@ from features.economy.domain.models import (
     DailyBonusResult,
     ShopItemType,
     DailyBonusMultiplierEffect,
+    TransactionType
 )
 from features.economy.domain.repo import EconomyRepository
 from features.equipment.domain.models import UserEquipmentItem

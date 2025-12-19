@@ -25,7 +25,6 @@ from features.stream.domain.models import StreamStatistics
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.chat.data.db.chat_message import ChatMessage
-from features.economy.data.db.transaction_history import TransactionType
 from features.chat.chat_service import ChatService
 from features.joke.settings_repository import FileJokeSettingsRepository
 from features.joke.joke_service import JokeService
@@ -36,7 +35,7 @@ from features.stream.stream_service import StreamService
 from features.stream.data.stream_repository import StreamRepositoryImpl
 from features.viewer.data.viewer_repository import ViewerRepositoryImpl
 from features.viewer.viewer_session_service import ViewerTimeService
-from features.economy.domain.models import ShopItems
+from features.economy.domain.models import ShopItems, TransactionType
 
 logger = logging.getLogger(__name__)
 
