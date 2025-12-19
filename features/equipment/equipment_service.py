@@ -3,24 +3,19 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from features.equipment.data.db.user_equipment import UserEquipment
 from features.economy.domain.models import ShopItems, TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect, RollCooldownOverrideEffect
 from features.equipment.domain.models import UserEquipmentItem
+from features.equipment.domain.repo import EquipmentRepository
 
 logger = logging.getLogger(__name__)
 
 
 class EquipmentService:
+    def __init__(self, repo: EquipmentRepository[Session]):
+        self._repo = repo
 
     def get_user_equipment(self, db: Session, channel_name: str, user_name: str) -> list[UserEquipmentItem]:
-        equipment = db.query(UserEquipment).filter_by(channel_name=channel_name, user_name=user_name).filter(UserEquipment.expires_at > datetime.utcnow()).all()
-
-        result = []
-        for item in equipment:
-            shop_item = ShopItems.get_item(item.item_type)
-            result.append(UserEquipmentItem(item_type=item.item_type, shop_item=shop_item, expires_at=item.expires_at))
-
-        return result
+        return self._repo.list_user_equipment(db, channel_name, user_name)
 
     def calculate_timeout_with_equipment(self, user_name: str, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
         if base_timeout_seconds <= 0:
@@ -84,15 +79,9 @@ class EquipmentService:
         return min_cooldown
 
     def equipment_exists(self, db: Session, channel_name: str, user_name: str, item_type: ShopItemType) -> bool:
-        existing_item = (
-            db.query(UserEquipment)
-            .filter_by(channel_name=channel_name, user_name=user_name, item_type=item_type)
-            .filter(UserEquipment.expires_at > datetime.utcnow())
-            .first()
-        )
-        return existing_item is not None
+        return self._repo.equipment_exists(db, channel_name, user_name, item_type)
 
     def add_equipment_to_user(self, db: Session, channel_name: str, user_name: str, item_type: ShopItemType):
         expires_at = datetime.utcnow() + timedelta(days=30)
-        equipment = UserEquipment(channel_name=channel_name, user_name=user_name, item_type=item_type, expires_at=expires_at)
-        db.add(equipment)
+        item = UserEquipmentItem(item_type=item_type, shop_item=ShopItems.get_item(item_type), expires_at=expires_at)
+        self._repo.add_equipment(db, channel_name, user_name, item)

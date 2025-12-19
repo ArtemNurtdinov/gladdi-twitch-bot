@@ -20,6 +20,7 @@ from features.betting.data.betting_schemas import UserBetStats
 from features.betting.data.betting_repository import BettingRepositoryImpl
 from features.betting.betting_service import BettingService
 from features.betting.domain.models import EmojiConfig
+from features.equipment.data.equipment_repository import EquipmentRepositoryImpl
 from features.equipment.equipment_service import EquipmentService
 from features.stream.domain.models import StreamStatistics
 from features.twitch.api.twitch_api_service import TwitchApiService
@@ -93,7 +94,7 @@ class Bot(commands.Bot):
         self.ai_service = ai_service
         self.joke_service = JokeService(FileJokeSettingsRepository())
         self.stream_service = StreamService(StreamRepositoryImpl())
-        self.equipment_service = EquipmentService()
+        self.equipment_service = EquipmentService(EquipmentRepositoryImpl())
         self.economy_service = EconomyService(EconomyRepositoryImpl())
         self.minigame_service = MinigameService(self.economy_service)
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
