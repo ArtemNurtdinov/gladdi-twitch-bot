@@ -14,3 +14,5 @@ class JokeSettingsRepository(Protocol):
 
 
 
+
+

@@ -24,3 +24,5 @@ class BattleRepository(Protocol, Generic[DB]):
     def get_battles(self, db: DB, channel_name: str, from_time: datetime) -> list[BattleRecord]:
         ...
 
+
+

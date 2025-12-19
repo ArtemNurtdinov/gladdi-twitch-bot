@@ -32,3 +32,5 @@ class UserBattleStats:
             f"wins={self.wins}, win_rate={self.win_rate:.1f}%)"
         )
 
+
+

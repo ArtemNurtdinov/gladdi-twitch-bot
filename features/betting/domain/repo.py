@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Generic, Protocol, TypeVar
 
 from features.betting.domain.models import BetRecord, RarityLevel
@@ -20,4 +19,6 @@ class BettingRepository(Protocol, Generic[DB]):
 
     def get_user_bets(self, db: DB, channel_name: str, user_name: str) -> list[BetRecord]:
         ...
+
+
 

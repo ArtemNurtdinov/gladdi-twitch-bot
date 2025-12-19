@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from core.db import engine, db_session, SessionLocal
-from features.ai.db.ai_message import AIMessage
+from features.ai.data.db.ai_message import AIMessage
 from features.auth.auth_schemas import UserCreate
 from features.auth.auth_service import AuthService
 from features.auth.db.access_token import AccessToken

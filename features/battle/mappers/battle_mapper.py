@@ -18,3 +18,5 @@ def map_battle_history(row: Optional[BattleHistory]) -> Optional[BattleRecord]:
         created_at=row.created_at,
     )
 
+
+

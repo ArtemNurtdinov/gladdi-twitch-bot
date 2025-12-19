@@ -50,3 +50,5 @@ class BattleRepositoryImpl(BattleRepository[Session]):
         )
         return [map_battle_history(row) for row in rows]
 
+
+

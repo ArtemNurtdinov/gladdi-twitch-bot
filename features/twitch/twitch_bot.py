@@ -12,8 +12,7 @@ from collections import Counter
 
 from core.db import db_session, SessionLocal
 from features.ai.ai_service import AIService
-from features.ai.intent import Intent
-from features.ai.message import AIMessage, Role
+from features.ai.domain.models import Intent, AIMessage, Role
 from features.battle.battle_service import BattleService
 from features.battle.data.battle_repository import BattleRepositoryImpl
 from features.battle.domain.models import UserBattleStats
@@ -1546,7 +1545,7 @@ class Bot(commands.Bot):
     def generate_response_in_chat(self, prompt: str, channel_name: str) -> str:
         messages = []
         with db_session() as db:
-            last_messages = self.ai_service.get_last_ai_messages(db, channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
+            last_messages = self.ai_service.get_last_messages(db, channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
             messages.extend(last_messages)
             messages.append(AIMessage(Role.USER, prompt))
         assistant_message = self.ai_service.generate_ai_response(messages)

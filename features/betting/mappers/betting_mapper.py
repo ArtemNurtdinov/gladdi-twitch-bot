@@ -17,3 +17,4 @@ def map_bet_history(row: Optional[BetHistory]) -> Optional[BetRecord]:
         rarity_level=row.rarity_level,
         created_at=row.created_at,
     )
+

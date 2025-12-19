@@ -16,3 +16,5 @@ class BattleHistory(Base):
     result_text = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+
+

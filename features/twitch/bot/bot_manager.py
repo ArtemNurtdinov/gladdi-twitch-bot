@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from features.ai.ai_service import AIService
+from features.ai.data.ai_repository import AIRepositoryImpl
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.twitch.bot.bot_schemas import BotActionResult, BotStatus, BotStatusEnum
@@ -69,7 +70,7 @@ class BotManager:
             auth = TwitchAuth(access_token=access_token, refresh_token=refresh_token)
             self._ensure_credentials(auth)
 
-            ai_service = AIService()
+            ai_service = AIService(AIRepositoryImpl())
             chat_service = ChatService(ChatRepositoryImpl())
             twitch_api_service = TwitchApiService(auth)
 

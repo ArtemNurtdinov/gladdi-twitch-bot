@@ -34,3 +34,5 @@ class BettingRepositoryImpl(BettingRepository[Session]):
         )
         return [map_bet_history(row) for row in rows]
 
+
+
