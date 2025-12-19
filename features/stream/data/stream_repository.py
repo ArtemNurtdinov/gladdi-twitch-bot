@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from features.stream.data.db.stream import Stream
 from features.stream.domain.models import StreamInfo, StreamViewerSessionInfo
 from features.stream.domain.repo import StreamRepository
-from features.viewer.db.viewer_session import StreamViewerSession
+from features.stream.mappers.stream_mapper import map_stream_row
+from features.viewer.data.db.viewer_session import StreamViewerSession
 
 
 class StreamRepositoryImpl(StreamRepository[Session]):
@@ -18,21 +19,7 @@ class StreamRepositoryImpl(StreamRepository[Session]):
 
     def get_active_stream(self, db: Session, channel_name: str) -> Optional[StreamInfo]:
         row = db.query(Stream).filter_by(channel_name=channel_name, is_active=True).first()
-        if not row:
-            return None
-        return StreamInfo(
-            id=row.id,
-            channel_name=row.channel_name,
-            started_at=row.started_at,
-            ended_at=row.ended_at,
-            game_name=row.game_name,
-            title=row.title,
-            is_active=row.is_active,
-            max_concurrent_viewers=row.max_concurrent_viewers,
-            total_viewers=row.total_viewers,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
-        )
+        return map_stream_row(row)
 
     def end_stream(self, db: Session, active_stream_id: int, finish_time: datetime) -> None:
         stream = db.query(Stream).filter_by(id=active_stream_id).first()
@@ -74,22 +61,7 @@ class StreamRepositoryImpl(StreamRepository[Session]):
             query = query.filter(Stream.started_at <= date_to)
         total = query.count()
         streams = query.order_by(Stream.started_at.desc()).offset(skip).limit(limit).all()
-        items = [
-            StreamInfo(
-                id=row.id,
-                channel_name=row.channel_name,
-                started_at=row.started_at,
-                ended_at=row.ended_at,
-                game_name=row.game_name,
-                title=row.title,
-                is_active=row.is_active,
-                max_concurrent_viewers=row.max_concurrent_viewers,
-                total_viewers=row.total_viewers,
-                created_at=row.created_at,
-                updated_at=row.updated_at,
-            )
-            for row in streams
-        ]
+        items = [map_stream_row(row) for row in streams]
         return items, total
 
     def get_stream_with_sessions(self, db: Session, stream_id: int) -> Optional[tuple[StreamInfo, list[StreamViewerSessionInfo]]]:
@@ -103,19 +75,7 @@ class StreamRepositoryImpl(StreamRepository[Session]):
             .all()
         )
         return (
-            StreamInfo(
-                id=stream.id,
-                channel_name=stream.channel_name,
-                started_at=stream.started_at,
-                ended_at=stream.ended_at,
-                game_name=stream.game_name,
-                title=stream.title,
-                is_active=stream.is_active,
-                max_concurrent_viewers=stream.max_concurrent_viewers,
-                total_viewers=stream.total_viewers,
-                created_at=stream.created_at,
-                updated_at=stream.updated_at,
-            ),
+            map_stream_row(stream),
             [
                 StreamViewerSessionInfo(
                     id=s.id,

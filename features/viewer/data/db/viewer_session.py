@@ -32,8 +32,3 @@ class StreamViewerSession(Base):
 
     def __repr__(self):
         return f"<StreamViewerSession(stream_id={self.stream_id}, user='{self.user_name}', minutes={self.total_minutes})>"
-    
-    def get_claimed_rewards_list(self) -> list:
-        if not self.rewards_claimed:
-            return []
-        return [int(x) for x in self.rewards_claimed.split(',') if x.strip()]

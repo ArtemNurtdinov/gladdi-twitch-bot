@@ -13,7 +13,7 @@ from features.economy.data.db.user_balance import UserBalance
 from features.economy.data.db.transaction_history import TransactionHistory
 from features.equipment.data.db.user_equipment import UserEquipment
 from features.stream.data.db.stream import Stream
-from features.viewer.db.viewer_session import StreamViewerSession
+from features.viewer.data.db.viewer_session import StreamViewerSession
 
 
 def test_connection():

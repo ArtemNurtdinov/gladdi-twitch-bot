@@ -33,6 +33,7 @@ from features.economy.data.economy_repository import EconomyRepositoryImpl
 from features.minigame.minigame_service import MinigameService
 from features.stream.stream_service import StreamService
 from features.stream.data.stream_repository import StreamRepositoryImpl
+from features.viewer.data.viewer_repository import ViewerRepositoryImpl
 from features.viewer.viewer_session_service import ViewerTimeService
 from features.economy.domain.models import ShopItems
 
@@ -95,7 +96,7 @@ class Bot(commands.Bot):
         self.equipment_service = EquipmentService()
         self.economy_service = EconomyService(EconomyRepositoryImpl())
         self.minigame_service = MinigameService(self.economy_service)
-        self.viewer_service = ViewerTimeService()
+        self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
         self.betting_service = BettingService(self.economy_service)
         self.battle_service = BattleService()
 
@@ -204,7 +205,7 @@ class Bot(commands.Bot):
             active_stream = self.stream_service.get_active_stream(db, channel_name)
             logger.info(f"Награда за активность: {nickname} получил {self.economy_service.ACTIVITY_REWARD} монет")
             if active_stream:
-                self.viewer_service.update_viewer_session(db, active_stream.id, channel_name, nickname.lower())
+                self.viewer_service.update_viewer_session(db, active_stream.id, channel_name, nickname.lower(), datetime.utcnow())
 
         if message.content.startswith(self._prefix):
             await self.handle_commands(message)
@@ -328,7 +329,8 @@ class Bot(commands.Bot):
 
         if not self.battle_waiting_user:
             with SessionLocal.begin() as db:
-                user_balance = self.economy_service.subtract_balance(db, channel_name, challenger, fee, TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
+                user_balance = self.economy_service.subtract_balance(db, channel_name, challenger, fee,
+                                                                     TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
                 if not user_balance:
                     error_result = f"@{challenger}, произошла ошибка при списании взноса за битву."
                     self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), error_result)
@@ -338,8 +340,9 @@ class Bot(commands.Bot):
                 return
 
             self.battle_waiting_user = challenger
-            result = (f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {self.economy_service.BATTLE_ENTRY_FEE} монет. Используй {self._prefix}{self._COMMAND_FIGHT}, "
-                      f"чтобы принять вызов.")
+            result = (
+                f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {self.economy_service.BATTLE_ENTRY_FEE} монет. Используй {self._prefix}{self._COMMAND_FIGHT}, "
+                f"чтобы принять вызов.")
             logger.info(f"{challenger} ищет оппонента для битвы")
             with SessionLocal.begin() as db:
                 self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
@@ -355,7 +358,8 @@ class Bot(commands.Bot):
             return
 
         with SessionLocal.begin() as db:
-            challenger_balance = self.economy_service.subtract_balance(db, channel_name, challenger, fee, TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
+            challenger_balance = self.economy_service.subtract_balance(db, channel_name, challenger, fee,
+                                                                       TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
         if not challenger_balance:
             result = f"@{challenger}, произошла ошибка при списании взноса за битву."
             with SessionLocal.begin() as db:
@@ -398,7 +402,8 @@ class Bot(commands.Bot):
 
         winner_amount = self.economy_service.BATTLE_WINNER_PRIZE
         with SessionLocal.begin() as db:
-            self.economy_service.add_balance(db, channel_name, winner, winner_amount, TransactionType.BATTLE_WIN, f"Победа в битве против {loser}")
+            self.economy_service.add_balance(db, channel_name, winner, winner_amount, TransactionType.BATTLE_WIN,
+                                             f"Победа в битве против {loser}")
             self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
             self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
             self.battle_service.save_battle_history(db, channel_name, opponent, challenger, winner, result)
@@ -454,8 +459,9 @@ class Bot(commands.Bot):
             try:
                 bet_amount = int(amount)
             except ValueError:
-                result = (f"@{nickname}, неверная сумма ставки! Используй: {self._prefix}{self._COMMAND_ROLL} [сумма] (например: {self._prefix}{self._COMMAND_ROLL} 100). "
-                          f"Диапазон: {self.betting_service.MIN_BET_AMOUNT}-{self.betting_service.MAX_BET_AMOUNT} монет.")
+                result = (
+                    f"@{nickname}, неверная сумма ставки! Используй: {self._prefix}{self._COMMAND_ROLL} [сумма] (например: {self._prefix}{self._COMMAND_ROLL} 100). "
+                    f"Диапазон: {self.betting_service.MIN_BET_AMOUNT}-{self.betting_service.MAX_BET_AMOUNT} монет.")
                 with SessionLocal.begin() as db:
                     self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
                 await ctx.send(result)
@@ -495,7 +501,8 @@ class Bot(commands.Bot):
 
         if has_dino_dance:
             logger.warning(f"🦕 МИФИЧЕСКИЙ СМАЙЛИК! DinoDance выпал {dino_dance_count} раз(а) у {nickname}!")
-            logger.info(f"СТАТИСТИКА DINO: пользователь={nickname}, канал={channel_name}, результат={slot_result_string}, время={datetime.now()}")
+            logger.info(
+                f"СТАТИСТИКА DINO: пользователь={nickname}, канал={channel_name}, результат={slot_result_string}, время={datetime.now()}")
 
         unique_results = set(slot_results)
 
@@ -508,7 +515,8 @@ class Bot(commands.Bot):
 
         with SessionLocal.begin() as db:
             equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
-            bet_result = self.betting_service.process_bet_result_with_amount(db, channel_name, nickname, db_result_type, slot_result_string, bet_amount, equipment)
+            bet_result = self.betting_service.process_bet_result_with_amount(db, channel_name, nickname, db_result_type, slot_result_string,
+                                                                             bet_amount, equipment)
 
         if not bet_result.success:
             result = bet_result.message
@@ -545,7 +553,8 @@ class Bot(commands.Bot):
 
             with db_session() as db:
                 equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
-            final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(nickname, base_timeout_duration, equipment)
+            final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(nickname, base_timeout_duration,
+                                                                                                        equipment)
 
             if final_timeout == 0:
                 if bet_result.is_consolation_prize():
@@ -679,7 +688,8 @@ class Bot(commands.Bot):
         normalized_receiver_name = recipient.lower()
 
         with SessionLocal.begin() as db:
-            transfer_result = self.economy_service.transfer_money(db, channel_name, normalized_sender_name, normalized_receiver_name, transfer_amount)
+            transfer_result = self.economy_service.transfer_money(db, channel_name, normalized_sender_name, normalized_receiver_name,
+                                                                  transfer_amount)
         logger.info(f"Перевод выполнен: {sender_name} -> {recipient}")
 
         if transfer_result.success:
@@ -764,7 +774,8 @@ class Bot(commands.Bot):
             return
 
         with SessionLocal.begin() as db:
-            self.economy_service.subtract_balance(db, channel_name, normalized_user_name, item.price, TransactionType.SHOP_PURCHASE, f"Покупка '{item.name}'")
+            self.economy_service.subtract_balance(db, channel_name, normalized_user_name, item.price, TransactionType.SHOP_PURCHASE,
+                                                  f"Покупка '{item.name}'")
             self.equipment_service.add_equipment_to_user(db, channel_name, normalized_user_name, item_type)
 
         result = f"@{user_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
@@ -1185,7 +1196,7 @@ class Bot(commands.Bot):
 
                     with SessionLocal.begin() as db:
                         self.stream_service.end_stream(db, active_stream.id, finish_time)
-                        self.viewer_service.finish_stream_sessions(db, active_stream.id)
+                        self.viewer_service.finish_stream_sessions(db, active_stream.id, datetime.utcnow())
                         total_viewers = self.viewer_service.get_unique_viewers_count(db, active_stream.id)
                         self.stream_service.update_stream_total_viewers(db, active_stream.id, total_viewers)
                         self.minigame_service.reset_stream_state(db, channel_name)
@@ -1486,14 +1497,14 @@ class Bot(commands.Bot):
                     continue
 
                 with SessionLocal.begin() as db:
-                    self.viewer_service.check_inactive_viewers(db, active_stream.id)
+                    self.viewer_service.check_inactive_viewers(db, active_stream.id, datetime.utcnow())
 
                 broadcaster_id = await self._get_user_id_cached(channel_name)
                 moderator_id = await self._get_user_id_cached(self.nick)
                 chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
                 if chatters:
                     with SessionLocal.begin() as db:
-                        self.viewer_service.update_viewers(db, active_stream.id, channel_name, chatters)
+                        self.viewer_service.update_viewers(db, active_stream.id, channel_name, chatters, datetime.utcnow())
 
                 with db_session() as db:
                     viewers_count = self.viewer_service.get_stream_watchers_count(db, active_stream.id)
@@ -1508,14 +1519,12 @@ class Bot(commands.Bot):
                         available_rewards = self.viewer_service.get_available_rewards(session)
                         for minutes_threshold, reward_amount in available_rewards:
                             claimed_list = session.get_claimed_rewards_list()
-                            if minutes_threshold not in claimed_list:
-                                claimed_list.append(minutes_threshold)
-                                session.rewards_claimed = ','.join(map(str, sorted(claimed_list)))
-                                session.last_reward_claimed = datetime.utcnow()
-
-                            session.updated_at = datetime.utcnow()
+                            claimed_list.append(minutes_threshold)
+                            rewards = ','.join(map(str, sorted(claimed_list)))
+                            self.viewer_service.update_session_rewards(db, session.id, rewards, datetime.utcnow())
+                            self.economy_service.add_balance(db, channel_name, session.user_name, reward_amount,
+                                                             TransactionType.VIEWER_TIME_REWARD, description)
                             description = f"Награда за {minutes_threshold} минут просмотра стрима"
-                            self.economy_service.add_balance(db, channel_name, session.user_name, reward_amount, TransactionType.VIEWER_TIME_REWARD, description)
 
             except Exception as e:
                 logger.error(f"Ошибка в check_viewer_time_periodically: {e}")

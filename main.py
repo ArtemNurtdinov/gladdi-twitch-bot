@@ -7,7 +7,7 @@ from features.auth import auth_routes
 from features.joke.data import joke_routes
 from features.chat.data import chat_routes
 from features.stream.data import stream_routes
-from features.viewer import viewer_routes
+from features.viewer.data import viewer_routes
 from features.twitch.bot import bot_routes
 
 logging.basicConfig(

@@ -11,3 +11,5 @@ class JokeSettingsRepository(Protocol):
     def save(self, settings: BotSettings) -> BotSettings:
         ...
 
+
+
