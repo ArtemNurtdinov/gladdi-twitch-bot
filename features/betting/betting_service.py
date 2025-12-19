@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from features.betting.data.db.bet_history import BetHistory
-from features.betting.domain.models import BetResult, EmojiConfig, RarityLevel
+from features.betting.domain.models import BetResult, EmojiConfig, RarityLevel, BetRecord
+from features.betting.domain.repo import BettingRepository
 from features.economy.data.db.transaction_history import TransactionType
 from features.economy.economy_service import EconomyService
 from features.economy.domain.models import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect
@@ -34,8 +34,9 @@ class BettingService:
         RarityLevel.COMMON: 0
     }
 
-    def __init__(self, economy_service: EconomyService):
+    def __init__(self, economy_service: EconomyService, repo: BettingRepository[Session]):
         self.economy_service = economy_service
+        self._repo = repo
 
     def _determine_correct_rarity(self, slot_result: str, result_type: str) -> RarityLevel:
         emojis = EmojiConfig.parse_slot_result(slot_result)
@@ -93,17 +94,27 @@ class BettingService:
                     max_rarity = RarityLevel.UNCOMMON
             return max_rarity
 
-    def process_bet_result_with_amount(self, db: Session, channel_name: str, user_name: str, result_type: str, slot_result: str, bet_amount: int,
-                                       equipment: list[UserEquipmentItem]) -> BetResult:
+    def process_bet_result(
+        self,
+        db: Session,
+        channel_name: str,
+        user_name: str,
+        result_type: str,
+        slot_result: str,
+        bet_amount: int,
+        equipment: list[UserEquipmentItem]
+    ) -> BetResult:
         if bet_amount < self.MIN_BET_AMOUNT:
-            return BetResult.failure_result(f"Минимальная сумма ставки: {self.MIN_BET_AMOUNT} монет. Указано: {bet_amount} монет.", bet_amount)
+            return BetResult.failure_result(f"Минимальная сумма ставки: {self.MIN_BET_AMOUNT} монет. Указано: {bet_amount} монет.",
+                                            bet_amount)
 
         if bet_amount > self.MAX_BET_AMOUNT:
-            return BetResult.failure_result(f"Максимальная сумма ставки: {self.MAX_BET_AMOUNT} монет. Указано: {bet_amount} монет.", bet_amount)
+            return BetResult.failure_result(f"Максимальная сумма ставки: {self.MAX_BET_AMOUNT} монет. Указано: {bet_amount} монет.",
+                                            bet_amount)
 
         rarity_level = self._determine_correct_rarity(slot_result, result_type)
-        user_balance = self.economy_service.subtract_balance(db, channel_name, user_name, bet_amount, TransactionType.BET_LOSS, f"Ставка в слот-машине: {slot_result}")
-
+        user_balance = self.economy_service.subtract_balance(db, channel_name, user_name, bet_amount, TransactionType.BET_LOSS,
+                                                             f"Ставка в слот-машине: {slot_result}")
         if not user_balance:
             return BetResult.failure_result(f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет.", bet_amount)
 
@@ -158,12 +169,9 @@ class BettingService:
             description = f"Выигрыш в слот-машине: {slot_result}" if result_type != "miss" else f"Консольный приз: {slot_result}"
             user_balance = self.economy_service.add_balance(db, channel_name, user_name, payout, transaction_type, description)
 
+        self._repo.save_bet_history(db, channel_name, user_name, slot_result, result_type, rarity_level)
+
         return BetResult.success_result(bet_amount, payout, user_balance.balance, result_type, rarity_level, timeout_seconds)
 
-    def save_bet_history(self, db: Session, channel_name: str, user_name: str, slot_result: str, result_type: str, rarity_level: RarityLevel):
-        normalized_user_name = user_name.lower()
-        bet = BetHistory(channel_name=channel_name, user_name=normalized_user_name, slot_result=slot_result, result_type=result_type, rarity_level=rarity_level)
-        db.add(bet)
-
-    def get_user_bets(self, db: Session, channel_name: str, user_name: str) -> list[BetHistory]:
-        return db.query(BetHistory).filter(BetHistory.user_name == user_name).filter(BetHistory.channel_name == channel_name).all()
+    def get_user_bets(self, db: Session, channel_name: str, user_name: str) -> list[BetRecord]:
+        return self._repo.get_user_bets(db, channel_name, user_name)

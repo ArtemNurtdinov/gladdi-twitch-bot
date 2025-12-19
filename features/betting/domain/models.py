@@ -1,6 +1,18 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
+from datetime import datetime
+
+
+@dataclass
+class BetRecord:
+    id: int
+    channel_name: str
+    user_name: str
+    slot_result: str
+    result_type: str
+    rarity_level: "RarityLevel"
+    created_at: datetime
 
 
 class RarityLevel(Enum):

@@ -15,7 +15,7 @@ class BattleRepository(Protocol, Generic[DB]):
         opponent_2: str,
         winner: str,
         result_text: str,
-    ) -> None:
+    ):
         ...
 
     def get_user_battles(self, db: DB, channel_name: str, user_name: str) -> list[BattleRecord]:

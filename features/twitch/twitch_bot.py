@@ -18,8 +18,9 @@ from features.battle.battle_service import BattleService
 from features.battle.data.battle_repository import BattleRepositoryImpl
 from features.battle.domain.models import UserBattleStats
 from features.betting.data.betting_schemas import UserBetStats
+from features.betting.data.betting_repository import BettingRepositoryImpl
 from features.betting.betting_service import BettingService
-from features.betting.domain.models import EmojiConfig, RarityLevel
+from features.betting.domain.models import EmojiConfig
 from features.equipment.equipment_service import EquipmentService
 from features.stream.domain.models import StreamStatistics
 from features.twitch.api.twitch_api_service import TwitchApiService
@@ -99,7 +100,7 @@ class Bot(commands.Bot):
         self.economy_service = EconomyService(EconomyRepositoryImpl())
         self.minigame_service = MinigameService(self.economy_service)
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
-        self.betting_service = BettingService(self.economy_service)
+        self.betting_service = BettingService(self.economy_service, BettingRepositoryImpl())
         self.battle_service = BattleService(BattleRepositoryImpl())
 
         self._restore_stream_context()
@@ -498,27 +499,26 @@ class Bot(commands.Bot):
 
         logger.info(f"Результат слот-машины для {nickname}: {slot_result_string}")
 
-        has_dino_dance = 'DinoDance' in slot_results
-        dino_dance_count = slot_results.count('DinoDance')
-
-        if has_dino_dance:
-            logger.warning(f"🦕 МИФИЧЕСКИЙ СМАЙЛИК! DinoDance выпал {dino_dance_count} раз(а) у {nickname}!")
-            logger.info(
-                f"СТАТИСТИКА DINO: пользователь={nickname}, канал={channel_name}, результат={slot_result_string}, время={datetime.now()}")
-
         unique_results = set(slot_results)
 
         if len(unique_results) == 1:
-            db_result_type = "jackpot"
+            result_type = "jackpot"
         elif len(unique_results) == 2:
-            db_result_type = "partial"
+            result_type = "partial"
         else:
-            db_result_type = "miss"
+            result_type = "miss"
 
         with SessionLocal.begin() as db:
             equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
-            bet_result = self.betting_service.process_bet_result_with_amount(db, channel_name, nickname, db_result_type, slot_result_string,
-                                                                             bet_amount, equipment)
+            bet_result = self.betting_service.process_bet_result(
+                db=db,
+                channel_name=channel_name,
+                user_name=nickname.lower(),
+                result_type=result_type,
+                slot_result=slot_result_string,
+                bet_amount=bet_amount,
+                equipment=equipment
+            )
 
         if not bet_result.success:
             result = bet_result.message
@@ -526,14 +526,6 @@ class Bot(commands.Bot):
                 self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
-
-        try:
-            rarity_enum = RarityLevel(bet_result.rarity)
-            with SessionLocal.begin() as db:
-                self.betting_service.save_bet_history(db, channel_name, nickname, slot_result_string, db_result_type, rarity_enum)
-            logger.info(f"Результат ставки сохранён в БД для {nickname}: {slot_result_string}, редкость: {bet_result.rarity}")
-        except Exception as e:
-            logger.error(f"Ошибка сохранения результата ставки в БД: {e}")
 
         economic_info = f" {bet_result.get_result_emoji()} Баланс: {bet_result.balance} монет"
         profit_display = bet_result.get_profit_display()
@@ -903,14 +895,14 @@ class Bot(commands.Bot):
             balance = self.economy_service.get_user_balance(db, channel_name, normalized_user_name)
             bets = self.betting_service.get_user_bets(db, channel_name, normalized_user_name)
 
-            if not bets:
-                bet_stats = UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)
-            else:
-                total_bets = len(bets)
-                jackpots = sum(1 for bet in bets if bet.result_type == "jackpot")
-                jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
+        if not bets:
+            bet_stats = UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)
+        else:
+            total_bets = len(bets)
+            jackpots = sum(1 for bet in bets if bet.result_type == "jackpot")
+            jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
 
-                bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
+            bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
 
         with db_session() as db:
             battles = self.battle_service.get_user_battles(db, channel_name, user_name)
