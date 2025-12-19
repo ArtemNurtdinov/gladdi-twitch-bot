@@ -22,3 +22,6 @@ class ChatService:
     def get_top_chat_users(self, db: Session, limit: int, date_from: Optional[datetime], date_to: Optional[datetime]) -> list[TopChatUserInfo]:
         stats = self._repo.top_chat_users(db, limit, date_from, date_to)
         return [TopChatUserInfo(channel_name=channel, username=user, message_count=count) for channel, user, count in stats]
+
+    def get_last_chat_messages_since(self, db: Session, channel_name: str, since: datetime) -> list[DomainChatMessage]:
+        return self._repo.get_last_chat_messages_since(db, channel_name, since)

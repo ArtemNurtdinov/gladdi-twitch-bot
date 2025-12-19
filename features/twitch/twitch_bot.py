@@ -24,7 +24,6 @@ from features.equipment.equipment_service import EquipmentService
 from features.stream.domain.models import StreamStatistics
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
-from features.chat.data.db.chat_message import ChatMessage
 from features.chat.chat_service import ChatService
 from features.joke.settings_repository import FileJokeSettingsRepository
 from features.joke.joke_service import JokeService
@@ -1322,22 +1321,18 @@ class Bot(commands.Bot):
                 logger.error(f"Ошибка при проверке статуса стрима в summarize_chat_periodically: {e}")
                 continue
 
-            db = SessionLocal()
+            since = datetime.utcnow() - timedelta(minutes=20)
+            with db_session() as db:
+                messages = self.chat_service.get_last_chat_messages_since(db, channel_name, since)
+
+            if not messages:
+                logger.debug("Нет сообщений для анализа")
+                continue
+
+            chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in messages)
+            prompt = (f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
+                      f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}")
             try:
-                since = datetime.utcnow() - timedelta(minutes=20)
-                messages = (
-                    db.query(ChatMessage)
-                    .filter(ChatMessage.channel_name == channel_name)
-                    .filter(ChatMessage.created_at >= since)
-                    .order_by(ChatMessage.created_at.asc())
-                    .all()
-                )
-                if not messages:
-                    logger.debug("Нет сообщений для анализа")
-                    continue
-                chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in messages)
-                prompt = (f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-                          f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}")
                 result = self.generate_response_in_chat(prompt, channel_name)
                 self.current_stream_summaries.append(result)
                 self.last_chat_summary_time = datetime.utcnow()

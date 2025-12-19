@@ -19,3 +19,6 @@ class ChatRepository(Protocol, Generic[DB]):
 
     def top_chat_users(self, db: DB, limit: int, date_from: datetime | None, date_to: datetime | None) -> Sequence[Tuple[str, str, int]]:
         ...
+
+    def get_last_chat_messages_since(self, db: DB, channel_name: str, since: datetime) -> list[ChatMessage]:
+        ...
