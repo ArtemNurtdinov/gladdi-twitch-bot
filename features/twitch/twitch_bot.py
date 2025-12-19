@@ -81,6 +81,7 @@ class Bot(commands.Bot):
     _ROLL_COOLDOWN_SECONDS = 60
     _GROUP_ID = config.telegram.group_id
     _SOURCE_TWITCH = "twitch"
+    _CHECK_VIEWERS_INTERVAL_SECONDS = 60
 
     def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService, chat_service: ChatService, ai_service: AIService):
         self._prefix = '!'
@@ -1485,7 +1486,7 @@ class Bot(commands.Bot):
             try:
                 if not self.initial_channels:
                     logger.warning("Список каналов пуст в check_viewer_time_periodically")
-                    await asyncio.sleep(self.viewer_service.CHECK_INTERVAL_SECONDS)
+                    await asyncio.sleep(self._CHECK_VIEWERS_INTERVAL_SECONDS)
                     continue
 
                 channel_name = self.initial_channels[0]
@@ -1493,7 +1494,7 @@ class Bot(commands.Bot):
                     active_stream = self.stream_service.get_active_stream(db, channel_name)
 
                 if not active_stream:
-                    await asyncio.sleep(self.viewer_service.CHECK_INTERVAL_SECONDS)
+                    await asyncio.sleep(self._CHECK_VIEWERS_INTERVAL_SECONDS)
                     continue
 
                 with SessionLocal.begin() as db:
@@ -1529,7 +1530,7 @@ class Bot(commands.Bot):
             except Exception as e:
                 logger.error(f"Ошибка в check_viewer_time_periodically: {e}")
 
-            await asyncio.sleep(self.viewer_service.CHECK_INTERVAL_SECONDS)
+            await asyncio.sleep(self._CHECK_VIEWERS_INTERVAL_SECONDS)
 
     def _restore_stream_context(self):
         try:

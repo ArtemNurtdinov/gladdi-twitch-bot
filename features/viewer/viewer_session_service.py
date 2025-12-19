@@ -4,7 +4,6 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from features.viewer.data.db.viewer_session import StreamViewerSession
 from features.viewer.domain.models import ViewerSession
 from features.viewer.domain.repo import ViewerRepository
 
@@ -20,7 +19,6 @@ class ViewerTimeService:
         150: 250,
         180: 350
     }
-    CHECK_INTERVAL_SECONDS = 60
 
     def __init__(self, repo: ViewerRepository[Session]):
         self._repo = repo
@@ -95,5 +93,3 @@ class ViewerTimeService:
 
     def update_session_rewards(self, db: Session, session_id: int, rewards: str, current_time: datetime):
         self._repo.update_session_rewards(db, session_id, rewards, current_time)
-
-
