@@ -917,15 +917,13 @@ class Bot(commands.Bot):
             battle_stats = UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
 
         result = f"📊 Статистика @{user_name}: "
-        result += f"💰 Баланс: {balance.balance} монет."
+        result += f" 💰 Баланс: {balance.balance} монет."
 
         if bet_stats.total_bets > 0:
-            result += f"\n🎰 Ставки: {bet_stats.total_bets} | "
-            result += f"Джекпоты: {bet_stats.jackpots} ({bet_stats.jackpot_rate:.1f}%). "
+            result += f" 🎰 Ставки: {bet_stats.total_bets} | Джекпоты: {bet_stats.jackpots} ({bet_stats.jackpot_rate:.1f}%). "
 
         if battle_stats.has_battles():
-            result += f"⚔️ Битвы: {battle_stats.total_battles} | "
-            result += f"Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%). "
+            result += f" ⚔️ Битвы: {battle_stats.total_battles} | Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%). "
 
         with SessionLocal.begin() as db:
             self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
