@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 
 from features.betting.domain.models import BetResult, EmojiConfig, RarityLevel, BetRecord
 from features.betting.domain.repo import BettingRepository
-from features.economy.data.db.transaction_history import TransactionType
 from features.economy.economy_service import EconomyService
-from features.economy.domain.models import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect
+from features.economy.domain.models import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect, \
+    TransactionType
 from features.equipment.domain.models import UserEquipmentItem
 
 

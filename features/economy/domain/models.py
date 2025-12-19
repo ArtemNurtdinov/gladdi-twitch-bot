@@ -4,7 +4,21 @@ from typing import Optional, Dict
 from enum import Enum
 from abc import ABC
 
-from features.economy.data.db.transaction_history import TransactionType
+
+class TransactionType(Enum):
+    DAILY_BONUS = "DAILY_BONUS"
+    BET_WIN = "BET_WIN"
+    BET_LOSS = "BET_LOSS"
+    BATTLE_WIN = "BATTLE_WIN"
+    BATTLE_PARTICIPATION = "BATTLE_PARTICIPATION"
+    ADMIN_ADJUST = "ADMIN_ADJUST"
+    MESSAGE_REWARD = "MESSAGE_REWARD"
+    SPECIAL_EVENT = "SPECIAL_EVENT"
+    TRANSFER_SENT = "TRANSFER_SENT"
+    TRANSFER_RECEIVED = "TRANSFER_RECEIVED"
+    SHOP_PURCHASE = "SHOP_PURCHASE"
+    MINIGAME_WIN = "MINIGAME_WIN"
+    VIEWER_TIME_REWARD = "VIEWER_TIME_REWARD"
 
 
 @dataclass
