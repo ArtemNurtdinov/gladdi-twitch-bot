@@ -15,7 +15,8 @@ from features.ai.ai_service import AIService
 from features.ai.intent import Intent
 from features.ai.message import AIMessage, Role
 from features.battle.battle_service import BattleService
-from features.battle.model.user_battle_stats import UserBattleStats
+from features.battle.data.battle_repository import BattleRepositoryImpl
+from features.battle.domain.models import UserBattleStats
 from features.betting.data.betting_schemas import UserBetStats
 from features.betting.betting_service import BettingService
 from features.betting.domain.models import EmojiConfig, RarityLevel
@@ -99,7 +100,7 @@ class Bot(commands.Bot):
         self.minigame_service = MinigameService(self.economy_service)
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
         self.betting_service = BettingService(self.economy_service)
-        self.battle_service = BattleService()
+        self.battle_service = BattleService(BattleRepositoryImpl())
 
         self._restore_stream_context()
 
@@ -913,14 +914,15 @@ class Bot(commands.Bot):
 
         with db_session() as db:
             battles = self.battle_service.get_user_battles(db, channel_name, user_name)
-            if not battles:
-                battle_stats = UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
-            else:
-                total_battles = len(battles)
-                wins = sum(1 for battle in battles if battle.winner == user_name)
-                losses = total_battles - wins
-                win_rate = (wins / total_battles) * 100 if total_battles > 0 else 0.0
-                battle_stats = UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
+
+        if not battles:
+            battle_stats = UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
+        else:
+            total_battles = len(battles)
+            wins = sum(1 for battle in battles if battle.winner == user_name)
+            losses = total_battles - wins
+            win_rate = (wins / total_battles) * 100 if total_battles > 0 else 0.0
+            battle_stats = UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
 
         result = f"📊 Статистика @{user_name}: "
         result += f"💰 Баланс: {balance.balance} монет."
@@ -1216,13 +1218,14 @@ class Bot(commands.Bot):
 
                     with db_session() as db:
                         battles = self.battle_service.get_battles(db, channel_name, active_stream.started_at)
-                        total_battles = len(battles)
-                        if battles:
-                            winner_counts = Counter(b.winner for b in battles)
-                            top_winner = winner_counts.most_common(1)[0][0]
-                        else:
-                            top_winner = None
-                        stats = StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
+
+                    total_battles = len(battles)
+                    if battles:
+                        winner_counts = Counter(b.winner for b in battles)
+                        top_winner = winner_counts.most_common(1)[0][0]
+                    else:
+                        top_winner = None
+                    stats = StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
 
                     try:
                         await self.stream_summarize(stats, channel_name, active_stream.started_at, finish_time)

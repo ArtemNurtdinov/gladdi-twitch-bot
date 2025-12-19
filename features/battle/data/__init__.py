@@ -1,0 +1,2 @@
+# Battle data package
+

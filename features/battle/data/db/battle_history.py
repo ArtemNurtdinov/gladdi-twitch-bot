@@ -1,10 +1,12 @@
-from sqlalchemy import Column, String, DateTime, Integer
 from datetime import datetime
+
+from sqlalchemy import Column, DateTime, Integer, String
 
 from core.db import Base
 
+
 class BattleHistory(Base):
-    __tablename__ = 'battle_history'
+    __tablename__ = "battle_history"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     channel_name = Column(String, nullable=False)
@@ -13,3 +15,4 @@ class BattleHistory(Base):
     winner = Column(String, nullable=False)
     result_text = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+

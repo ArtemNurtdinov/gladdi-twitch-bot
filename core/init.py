@@ -5,7 +5,7 @@ from features.auth.auth_schemas import UserCreate
 from features.auth.auth_service import AuthService
 from features.auth.db.access_token import AccessToken
 from features.auth.db.user import User, UserRole
-from features.battle.db.battle_history import BattleHistory
+from features.battle.data.db.battle_history import BattleHistory
 from features.betting.data.db.bet_history import BetHistory
 from features.chat.data.db.chat_message import ChatMessage
 from features.minigame.db.word_history import WordHistory
