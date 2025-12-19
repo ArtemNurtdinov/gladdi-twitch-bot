@@ -10,7 +10,7 @@ from core.db import get_db
 from features.auth.auth_schemas import UserResponse, UserCreate, UserUpdate, TokenResponse, UserLogin, LoginResponse
 from features.auth.auth_service import AuthService
 from features.auth.dependencies import get_current_user, get_auth_service, get_admin_user
-from features.auth.db.user import User
+from features.auth.domain.models import User, UserCreateData, UserUpdateData
 
 router = APIRouter(prefix="/auth")
 admin_router = APIRouter(prefix="/admin")
@@ -31,8 +31,15 @@ async def create_user(
     if not user_data.password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пароль обязателен")
 
-    user = auth_service.create_user_from_admin(db, user_data)
-    db.refresh(user)
+    domain_input = UserCreateData(
+        email=user_data.email,
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        password=user_data.password,
+        role=user_data.role,
+        is_active=user_data.is_active,
+    )
+    user = auth_service.create_user_from_admin(db, domain_input)
     return UserResponse.model_validate(user)
 
 
@@ -81,10 +88,17 @@ async def update_user(
         if existing_user and existing_user.id != user_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь с таким email уже существует")
 
-    user = auth_service.update_user(db, user_id, user_data)
+    domain_update = UserUpdateData(
+        email=user_data.email,
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        password=user_data.password,
+        role=user_data.role,
+        is_active=user_data.is_active,
+    )
+    user = auth_service.update_user(db, user_id, domain_update)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
-    db.refresh(user)
     return UserResponse.model_validate(user)
 
 
@@ -168,7 +182,6 @@ async def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль", headers={"WWW-Authenticate": "Bearer"})
 
     access_token = auth_service.create_token(db, user)
-    db.refresh(access_token)
     user_response = UserResponse.model_validate(user)
 
     return LoginResponse(access_token=access_token.token, created_at=access_token.created_at, expires_at=access_token.expires_at, user=user_response)

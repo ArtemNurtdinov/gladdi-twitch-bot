@@ -1,10 +1,11 @@
 from sqlalchemy import text
 from core.db import engine, db_session, SessionLocal
 from features.ai.data.db.ai_message import AIMessage
-from features.auth.auth_schemas import UserCreate
 from features.auth.auth_service import AuthService
-from features.auth.db.access_token import AccessToken
-from features.auth.db.user import User, UserRole
+from features.auth.data.auth_repository import AuthRepositoryImpl
+from features.auth.data.db.access_token import AccessToken
+from features.auth.data.db.user import User
+from features.auth.domain.models import UserCreateData, UserRole
 from features.battle.data.db.battle_history import BattleHistory
 from features.betting.data.db.bet_history import BetHistory
 from features.chat.data.db.chat_message import ChatMessage
@@ -63,7 +64,7 @@ def create_tables():
 
 def create_admin():
     try:
-        auth_service = AuthService()
+        auth_service = AuthService(AuthRepositoryImpl())
         with db_session() as db:
             existing_user = auth_service.get_user_by_email(db, "artem.nefrit@gmail.com")
             if existing_user:
@@ -72,7 +73,7 @@ def create_admin():
                 print(f"   Роль: {existing_user.role.value}")
                 return
 
-        user_data = UserCreate(
+        user_data = UserCreateData(
             email="artem.nefrit@gmail.com",
             first_name="Артем",
             last_name="Нуртдинов",
@@ -83,7 +84,6 @@ def create_admin():
 
         with SessionLocal.begin() as db:
             user = auth_service.create_user_from_admin(db, user_data)
-            db.refresh(user)
             print("    Администратор успешно создан!")
             print(f"   ID: {user.id}")
             print(f"   Email: {user.email}")

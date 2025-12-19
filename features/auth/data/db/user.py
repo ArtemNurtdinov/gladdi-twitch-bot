@@ -1,14 +1,9 @@
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-import enum
 from sqlalchemy import Column, String, Enum, Boolean, DateTime
 from datetime import datetime
 from core.db import Base
-
-
-class UserRole(enum.Enum):
-    ADMIN = "admin"
-    USER = "user"
+from features.auth.domain.models import UserRole
 
 
 class User(Base):

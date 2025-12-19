@@ -6,20 +6,21 @@ from sqlalchemy.orm import Session
 
 from core.db import get_db
 from features.auth.auth_service import AuthService
-from features.auth.db.user import User, UserRole
+from features.auth.data.auth_repository import AuthRepositoryImpl
+from features.auth.domain.models import User, UserRole
 
 security = HTTPBearer()
 security_optional = HTTPBearer(auto_error=False)
 
 
 def get_auth_service() -> AuthService:
-    return AuthService()
+    return AuthService(AuthRepositoryImpl())
 
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> User:
     user = auth_service.validate_access_token(db, credentials.credentials)
     if not user:
@@ -36,7 +37,7 @@ def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
 def get_optional_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> Optional[User]:
     if credentials is None:
         return None
