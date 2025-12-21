@@ -27,6 +27,7 @@ from app.stream.domain.models import StreamStatistics
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.presentation.auth import TwitchAuth
 from app.chat.domain.chat_service import ChatService
+from app.chat.data.chat_repository import ChatRepositoryImpl
 from app.joke.data.settings_repository import FileJokeSettingsRepository
 from app.joke.domain.joke_service import JokeService
 from app.economy.domain.economy_service import EconomyService
@@ -84,14 +85,13 @@ class Bot(commands.Bot):
     _SOURCE_TWITCH = "twitch"
     _CHECK_VIEWERS_INTERVAL_SECONDS = 60
 
-    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService, chat_service: ChatService, ai_service: AIService):
+    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService, ai_service: AIService):
         self._prefix = '!'
         self.initial_channels = ['artemnefrit']
         super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
 
         self.twitch_auth = twitch_auth
         self.twitch_api_service = twitch_api_service
-        self.chat_service = chat_service
         self.ai_service = ai_service
         self.joke_service = JokeService(FileJokeSettingsRepository())
         self.stream_service = StreamService(StreamRepositoryImpl())
@@ -117,6 +117,9 @@ class Bot(commands.Bot):
         self.telegram_bot = telegram.Bot(token=config.telegram.bot_token, request=request)
 
         logger.info("Twitch бот инициализирован успешно")
+
+    def _chat_service(self, db):
+        return ChatService(ChatRepositoryImpl(db))
 
     async def _get_user_id_cached(self, login: str) -> str | None:
         now = datetime.utcnow()
@@ -202,7 +205,7 @@ class Bot(commands.Bot):
         normalized_user_name = nickname.lower()
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, normalized_user_name, content)
+            self._chat_service(db).save_chat_message(channel_name, normalized_user_name, content)
             self.economy_service.process_user_message_activity(db, channel_name, normalized_user_name)
             active_stream = self.stream_service.get_active_stream(db, channel_name)
             logger.info(f"Награда за активность: {nickname} получил {self.economy_service.ACTIVITY_REWARD} монет")
@@ -229,7 +232,7 @@ class Bot(commands.Bot):
             result = self.generate_response_in_chat(prompt, channel_name)
             await self._post_message_in_twitch_chat(result, message.channel)
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             logger.info(f"Отправлен ответ на сообщение от {nickname}")
 
     @commands.command(name=_COMMAND_FOLLOWAGE)
@@ -249,7 +252,7 @@ class Bot(commands.Bot):
             logger.error(f"Не удалось получить ID канала {channel_name}")
             result = f'@{user_name}, произошла ошибка при получении информации о канале {channel_name}.'
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -271,13 +274,13 @@ class Bot(commands.Bot):
             result = self.generate_response_in_chat(prompt, channel_name)
             with SessionLocal.begin() as db:
                 self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
         else:
             result = f'@{user_name}, вы не отслеживаете канал {channel_name}.'
             logger.info(f"Пользователь {user_name} не подписан на канал {channel_name}")
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
 
     @commands.command(name=_COMMAND_GLADDI)
@@ -306,7 +309,7 @@ class Bot(commands.Bot):
         result = self.generate_response_in_chat(prompt, channel_name)
         with SessionLocal.begin() as db:
             self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
         logger.info(f"Отправлен ответ пользователю {nickname}")
         await self._post_message_in_twitch_chat(result, ctx)
 
@@ -325,7 +328,7 @@ class Bot(commands.Bot):
         if user_balance.balance < fee:
             result = f"@{challenger}, недостаточно монет для участия в битве! Необходимо: {self.economy_service.BATTLE_ENTRY_FEE} монет."
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -335,7 +338,7 @@ class Bot(commands.Bot):
                                                                      TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
                 if not user_balance:
                     error_result = f"@{challenger}, произошла ошибка при списании взноса за битву."
-                    self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), error_result)
+                    self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), error_result)
 
             if error_result:
                 await ctx.send(error_result)
@@ -347,7 +350,7 @@ class Bot(commands.Bot):
                 f"чтобы принять вызов.")
             logger.info(f"{challenger} ищет оппонента для битвы")
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -355,7 +358,7 @@ class Bot(commands.Bot):
             result = f"@{challenger}, ты не можешь сражаться сам с собой. Подожди достойного противника."
             logger.warning(f"{challenger} пытается сражаться сам с собой")
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -365,7 +368,7 @@ class Bot(commands.Bot):
         if not challenger_balance:
             result = f"@{challenger}, произошла ошибка при списании взноса за битву."
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -407,7 +410,7 @@ class Bot(commands.Bot):
             self.economy_service.add_balance(db, channel_name, winner, winner_amount, TransactionType.BATTLE_WIN,
                                              f"Победа в битве против {loser}")
             self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             self.battle_service.save_battle_history(db, channel_name, opponent, challenger, winner, result)
 
         messages = self.split_text(result)
@@ -422,7 +425,7 @@ class Bot(commands.Bot):
         await ctx.send(winner_message)
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), winner_message)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), winner_message)
         await asyncio.sleep(1)
 
         base_battle_timeout = 120
@@ -434,7 +437,7 @@ class Bot(commands.Bot):
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
             await ctx.send(no_timeout_message)
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), no_timeout_message)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), no_timeout_message)
         else:
             timeout_minutes = final_timeout // 60
             timeout_seconds_remainder = final_timeout % 60
@@ -465,7 +468,7 @@ class Bot(commands.Bot):
                     f"@{nickname}, неверная сумма ставки! Используй: {self._prefix}{self._COMMAND_ROLL} [сумма] (например: {self._prefix}{self._COMMAND_ROLL} 100). "
                     f"Диапазон: {self.betting_service.MIN_BET_AMOUNT}-{self.betting_service.MAX_BET_AMOUNT} монет.")
                 with SessionLocal.begin() as db:
-                    self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                    self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
                 await ctx.send(result)
                 return
 
@@ -483,7 +486,7 @@ class Bot(commands.Bot):
                 result = f"@{nickname}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
                 logger.info(f"Пользователь {nickname} попытался использовать команду в кулдауне. Осталось: {remaining_time:.0f} сек")
                 with SessionLocal.begin() as db:
-                    self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                    self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
                 await ctx.send(result)
                 return
 
@@ -522,7 +525,7 @@ class Bot(commands.Bot):
         if not bet_result.success:
             result = bet_result.message
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -534,7 +537,7 @@ class Bot(commands.Bot):
         final_result = f"{slot_result_string} {economic_info}"
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), final_result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), final_result)
 
         messages = self.split_text(final_result)
         for msg in messages:
@@ -556,7 +559,7 @@ class Bot(commands.Bot):
                     no_timeout_message = f"🛡️ @{nickname}, спасен от таймаута! {protection_message}"
 
                 with SessionLocal.begin() as db:
-                    self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), no_timeout_message)
+                    self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), no_timeout_message)
 
                 messages = self.split_text(no_timeout_message)
                 for msg in messages:
@@ -588,7 +591,7 @@ class Bot(commands.Bot):
                 await ctx.send(msg)
                 await asyncio.sleep(0.3)
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), no_timeout_message)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), no_timeout_message)
 
         self._cleanup_old_cooldowns()
 
@@ -605,7 +608,7 @@ class Bot(commands.Bot):
         result = f"💰 @{user_name}, твой баланс: {user_balance.balance} монет"
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
         await ctx.send(result)
 
     @commands.command(name=_COMMAND_BONUS)
@@ -638,7 +641,7 @@ class Bot(commands.Bot):
                         result = f"❌ @{user_name}, бонус недоступен!"
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -655,7 +658,7 @@ class Bot(commands.Bot):
         if not recipient or not amount:
             result = f"@{sender_name}, используй: {self._prefix}{self._COMMAND_TRANSFER} [никнейм] [сумма]. Например: {self._prefix}{self._COMMAND_TRANSFER} @ArtemNeFRiT 100"
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -664,14 +667,14 @@ class Bot(commands.Bot):
         except ValueError:
             result = f"@{sender_name}, неверная сумма! Укажи число. Например: {self._prefix}{self._COMMAND_TRANSFER} {recipient} 100"
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
         if transfer_amount <= 0:
             result = f"@{sender_name}, сумма должна быть больше 0!"
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -691,7 +694,7 @@ class Bot(commands.Bot):
             result = f"@{sender_name}, {transfer_result.message}"
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
         await ctx.send(result)
 
     @commands.command(name=_COMMAND_SHOP)
@@ -713,7 +716,7 @@ class Bot(commands.Bot):
         result += f"Используй: {self._prefix}{self._COMMAND_BUY} [название предмета]. Пример: {self._prefix}{self._COMMAND_BUY} стул. Все предметы действуют 30 дней!"
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -730,7 +733,7 @@ class Bot(commands.Bot):
         if not item_name:
             result = f"@{user_name}, укажи название предмета! Используй: {self._prefix}{self._COMMAND_BUY} [название]. Пример: {self._prefix}{self._COMMAND_BUY} стул"
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -739,7 +742,7 @@ class Bot(commands.Bot):
         except ValueError as e:
             result = str(e)
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -752,7 +755,7 @@ class Bot(commands.Bot):
         if equipment_exists:
             result = f"У вас уже есть {item.name}"
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -762,7 +765,7 @@ class Bot(commands.Bot):
         if user_balance.balance < item.price:
             result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -774,7 +777,7 @@ class Bot(commands.Bot):
         result = f"@{user_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
         await ctx.send(result)
 
     @commands.command(name=_COMMAND_EQUIPMENT)
@@ -797,7 +800,7 @@ class Bot(commands.Bot):
                     result += f"{item.shop_item.emoji} {item.shop_item.name} до {expires_date}\n"
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -821,7 +824,7 @@ class Bot(commands.Bot):
                 result += f"{i}. {user.user_name}: {user.balance} монет."
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -845,7 +848,7 @@ class Bot(commands.Bot):
                     result += f"{i}. {user.user_name}: {user.balance} монет."
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -874,7 +877,7 @@ class Bot(commands.Bot):
         )
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), help_text)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), help_text)
 
         messages = self.split_text(help_text)
         for msg in messages:
@@ -925,7 +928,7 @@ class Bot(commands.Bot):
             result += f" ⚔️ Битвы: {battle_stats.total_battles} | Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%). "
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
 
         messages = self.split_text(result)
         for msg in messages:
@@ -946,7 +949,7 @@ class Bot(commands.Bot):
                 result = f"@{user_name}, сейчас нет активной игры 'угадай число'. Используй: {self._prefix}{self._COMMAND_GUESS} [число]"
 
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -955,7 +958,7 @@ class Bot(commands.Bot):
         except ValueError:
             result = f"@{user_name}, укажи правильное число! Например: {self._prefix}{self._COMMAND_GUESS} 42"
             with SessionLocal.begin() as db:
-                self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
             await ctx.send(result)
             return
 
@@ -963,7 +966,7 @@ class Bot(commands.Bot):
             success, message = self.minigame_service.process_guess(db, channel_name, user_name, guess)
 
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), message)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), message)
         await ctx.send(message)
 
     @commands.command(name=_COMMAND_GUESS_LETTER)
@@ -975,7 +978,7 @@ class Bot(commands.Bot):
             if status:
                 await ctx.send(status)
                 with SessionLocal.begin() as db:
-                    self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), status)
+                    self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), status)
             else:
                 await ctx.send(f"@{user_name}, сейчас нет активной игры 'поле чудес' — дождитесь автоматического запуска.")
             return
@@ -983,7 +986,7 @@ class Bot(commands.Bot):
             success, message = self.minigame_service.process_letter(db, channel_name, user_name, letter)
         await ctx.send(message)
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), message)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), message)
 
     @commands.command(name=_COMMAND_GUESS_WORD)
     async def guess_word(self, ctx, *, word: str = None):
@@ -994,7 +997,7 @@ class Bot(commands.Bot):
             if status:
                 await ctx.send(status)
                 with SessionLocal.begin() as db:
-                    self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), status)
+                    self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), status)
             else:
                 await ctx.send(f"@{user_name}, сейчас нет активной игры 'поле чудес' — дождитесь автоматического запуска.")
             return
@@ -1002,7 +1005,7 @@ class Bot(commands.Bot):
             success, message = self.minigame_service.process_word(db, channel_name, user_name, word)
         await ctx.send(message)
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), message)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), message)
 
     @commands.command(name=_COMMAND_RPS)
     async def join_rps(self, ctx, choice: str = None):
@@ -1017,7 +1020,7 @@ class Bot(commands.Bot):
 
         await ctx.send(message)
         with SessionLocal.begin() as db:
-            self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), message)
+            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), message)
 
     def _cleanup_old_cooldowns(self):
         current_time = datetime.now()
@@ -1116,7 +1119,7 @@ class Bot(commands.Bot):
                 result = self.generate_response_in_chat(prompt, channel_name)
                 with SessionLocal.begin() as db:
                     self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
-                    self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), result)
+                    self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), result)
                 channel = self.get_channel(channel_name)
                 await channel.send(result)
                 logger.info(f"Анекдот сгенерирован: {result}")
@@ -1195,7 +1198,7 @@ class Bot(commands.Bot):
                         logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
                     with db_session() as db:
-                        chat_messages = self.chat_service.get_chat_messages(db, channel_name, active_stream.started_at, finish_time)
+                        chat_messages = self._chat_service(db).get_chat_messages(channel_name, active_stream.started_at, finish_time)
                         total_messages = len(chat_messages)
                         unique_users = len(set(msg.user_name for msg in chat_messages))
                         user_counts = Counter(msg.user_name for msg in chat_messages)
@@ -1250,7 +1253,7 @@ class Bot(commands.Bot):
             self.last_chat_summary_time = stream_start_dt
 
         with db_session() as db:
-            last_messages = self.chat_service.get_chat_messages(db, channel_name, self.last_chat_summary_time, stream_end_dt)
+            last_messages = self._chat_service(db).get_chat_messages(channel_name, self.last_chat_summary_time, stream_end_dt)
             if last_messages:
                 chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
                 prompt = (
@@ -1325,7 +1328,7 @@ class Bot(commands.Bot):
 
             since = datetime.utcnow() - timedelta(minutes=20)
             with db_session() as db:
-                messages = self.chat_service.get_last_chat_messages_since(db, channel_name, since)
+                messages = self._chat_service(db).get_last_chat_messages_since(channel_name, since)
 
             if not messages:
                 logger.debug("Нет сообщений для анализа")
@@ -1360,7 +1363,7 @@ class Bot(commands.Bot):
                 for channel, timeout_message in expired_games.items():
                     await self.get_channel(channel).send(timeout_message)
                     with SessionLocal.begin() as db:
-                        self.chat_service.save_chat_message(db, channel, self.nick.lower(), timeout_message)
+                        self._chat_service(db).save_chat_message(channel, self.nick.lower(), timeout_message)
 
                 with db_session() as db:
                     active_stream = self.stream_service.get_active_stream(db, channel_name)
@@ -1388,7 +1391,7 @@ class Bot(commands.Bot):
                 if choice == "word":
                     with db_session() as db:
                         used_words = self.minigame_service.get_used_words(db, channel_name, limit=50)
-                        last_messages = self.chat_service.get_last_chat_messages(db, channel_name, limit=50)
+                        last_messages = self._chat_service(db).get_last_chat_messages(channel_name, limit=50)
 
                     chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
                     if used_words:
@@ -1432,8 +1435,8 @@ class Bot(commands.Bot):
                     for msg in messages:
                         await self.get_channel(channel_name).send(msg)
                         await asyncio.sleep(0.3)
-                    with SessionLocal.begin() as db:
-                        self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), game_message)
+                        with SessionLocal.begin() as db:
+                            self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), game_message)
                 if choice == "number":
                     game = self.minigame_service.start_guess_number_game(channel_name)
                     game_message = (f"🎯 НОВАЯ МИНИ-ИГРА! Угадай число от {game.min_number} до {game.max_number}! "
@@ -1446,7 +1449,7 @@ class Bot(commands.Bot):
                         await self.get_channel(channel_name).send(msg)
                         await asyncio.sleep(0.3)
                     with SessionLocal.begin() as db:
-                        self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), game_message)
+                        self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), game_message)
                 if choice == "rps":
                     self.minigame_service.start_rps_game(channel_name)
                     game_message = (
@@ -1461,7 +1464,7 @@ class Bot(commands.Bot):
                         await self.get_channel(channel_name).send(msg)
                         await asyncio.sleep(0.3)
                     with SessionLocal.begin() as db:
-                        self.chat_service.save_chat_message(db, channel_name, self.nick.lower(), game_message)
+                        self._chat_service(db).save_chat_message(channel_name, self.nick.lower(), game_message)
 
             except Exception as e:
                 logger.error(f"Ошибка в check_minigames_periodically: {e}")

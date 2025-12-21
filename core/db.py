@@ -24,6 +24,27 @@ def get_db():
         db.close()
 
 
+def get_db_rw():
+    db = SessionLocal()
+    try:
+        yield db
+        db.commit()
+    except:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+def get_db_ro():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.rollback()
+        db.close()
+
+
 @contextmanager
 def db_session():
     db = SessionLocal()
