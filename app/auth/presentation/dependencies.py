@@ -5,9 +5,9 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from core.db import get_db
-from features.auth.auth_service import AuthService
-from features.auth.data.auth_repository import AuthRepositoryImpl
-from features.auth.domain.models import User, UserRole
+from app.auth.domain.auth_service import AuthService
+from app.auth.data.auth_repository import AuthRepositoryImpl
+from app.auth.domain.models import User, UserRole
 
 security = HTTPBearer()
 security_optional = HTTPBearer(auto_error=False)

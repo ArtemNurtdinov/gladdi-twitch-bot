@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 import requests
-from config import config
-from features.ai.domain.models import AIMessage, Intent, Role
-from features.ai.domain.repo import AIRepository
-from features.ai.data.db.ai_message import AIMessage as AIDbMessage
+from core.config import config
+from app.ai.domain.models import AIMessage, Intent, Role
+from app.ai.domain.repo import AIRepository
+from app.ai.data.db.ai_message import AIMessage as AIDbMessage
 from sqlalchemy import case
 
 

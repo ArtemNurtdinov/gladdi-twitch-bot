@@ -1,7 +1,7 @@
 import requests
 import logging
 from fastapi import APIRouter, HTTPException
-from config import config
+from core.config import config
 from features.twitch.bot.bot_manager import BotManager
 from features.twitch.bot.bot_schemas import AuthStartResponse, BotActionResult, BotStatus
 from urllib.parse import urlencode

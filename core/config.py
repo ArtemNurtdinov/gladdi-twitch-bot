@@ -41,7 +41,7 @@ class DatabaseConfig:
 @dataclass
 class LoggingConfig:
     level: str = os.getenv("LOG_LEVEL", "INFO")
-    file: str = os.getenv("LOG_FILE", "gladdi-twitch-bot.log")
+    file: str = os.getenv("LOG_FILE", "../gladdi-twitch-bot.log")
     format: str = os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 

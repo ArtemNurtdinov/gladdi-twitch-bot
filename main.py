@@ -2,10 +2,10 @@ import logging
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from config import config
-from features.auth import auth_routes
+from core.config import config
+from app.auth.presentation import auth_routes
 from features.joke.data import joke_routes
-from features.chat.data import chat_routes
+from app.chat.presentation import chat_routes
 from features.stream.data import stream_routes
 from features.viewer.data import viewer_routes
 from features.twitch.bot import bot_routes

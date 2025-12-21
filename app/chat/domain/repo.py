@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Protocol, Sequence, Tuple, TypeVar, Generic
 
-from features.chat.domain.models import ChatMessage
+from app.chat.domain.models import ChatMessage
 
 DB = TypeVar("DB")
 

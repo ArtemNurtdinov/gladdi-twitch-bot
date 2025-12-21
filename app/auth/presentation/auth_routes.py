@@ -7,10 +7,10 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from core.db import get_db
-from features.auth.auth_schemas import UserResponse, UserCreate, UserUpdate, TokenResponse, UserLogin, LoginResponse
-from features.auth.auth_service import AuthService
-from features.auth.dependencies import get_current_user, get_auth_service, get_admin_user
-from features.auth.domain.models import User, UserCreateData, UserUpdateData
+from app.auth.presentation.auth_schemas import UserResponse, UserCreate, UserUpdate, TokenResponse, UserLogin, LoginResponse
+from app.auth.domain.auth_service import AuthService
+from app.auth.presentation.dependencies import get_current_user, get_auth_service, get_admin_user
+from app.auth.domain.models import User, UserCreateData, UserUpdateData
 
 router = APIRouter(prefix="/auth")
 admin_router = APIRouter(prefix="/admin")

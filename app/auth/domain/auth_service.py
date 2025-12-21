@@ -10,14 +10,14 @@ from jose import JWTError, jwt
 from jose import exceptions as jose_exceptions
 from sqlalchemy.orm import Session
 
-from config import config
-from features.auth.domain.models import (
+from core.config import config
+from app.auth.domain.models import (
     User,
     AccessToken,
     UserCreateData,
     UserUpdateData,
 )
-from features.auth.domain.repo import AuthRepository
+from app.auth.domain.repo import AuthRepository
 
 logger = logging.getLogger(__name__)
 

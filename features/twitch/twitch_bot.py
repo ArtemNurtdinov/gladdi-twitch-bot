@@ -7,12 +7,12 @@ from telegram.request import HTTPXRequest
 from twitchio.ext import commands
 from datetime import datetime, timedelta
 import telegram
-from config import config
+from core.config import config
 from collections import Counter
 
 from core.db import db_session, SessionLocal
-from features.ai.ai_service import AIService
-from features.ai.domain.models import Intent, AIMessage, Role
+from app.ai.domain.ai_service import AIService
+from app.ai.domain.models import Intent, AIMessage, Role
 from features.battle.battle_service import BattleService
 from features.battle.data.battle_repository import BattleRepositoryImpl
 from features.battle.domain.models import UserBattleStats
@@ -22,10 +22,11 @@ from features.betting.betting_service import BettingService
 from features.betting.domain.models import EmojiConfig
 from features.equipment.data.equipment_repository import EquipmentRepositoryImpl
 from features.equipment.equipment_service import EquipmentService
+from features.minigame.data.word_history_repository import WordHistoryRepositoryImpl
 from features.stream.domain.models import StreamStatistics
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
-from features.chat.chat_service import ChatService
+from app.chat.domain.chat_service import ChatService
 from features.joke.settings_repository import FileJokeSettingsRepository
 from features.joke.joke_service import JokeService
 from features.economy.economy_service import EconomyService

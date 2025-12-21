@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from features.ai.domain.models import Intent, AIMessage
-from features.ai.domain.repo import AIRepository
+from app.ai.domain.models import Intent, AIMessage
+from app.ai.domain.repo import AIRepository
 
 
 class AIService:

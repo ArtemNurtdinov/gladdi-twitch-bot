@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import Column, String, Enum, Boolean, DateTime
 from datetime import datetime
 from core.db import Base
-from features.auth.domain.models import UserRole
+from app.auth.domain.models import UserRole
 
 
 class User(Base):

@@ -1,6 +1,6 @@
 from typing import Generic, Protocol, TypeVar
 
-from features.ai.domain.models import AIMessage, Intent
+from app.ai.domain.models import AIMessage, Intent
 
 DB = TypeVar("DB")
 

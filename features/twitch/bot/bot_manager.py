@@ -3,14 +3,14 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from features.ai.ai_service import AIService
-from features.ai.data.ai_repository import AIRepositoryImpl
+from app.ai.domain.ai_service import AIService
+from app.ai.data.ai_repository import AIRepositoryImpl
 from features.twitch.api.twitch_api_service import TwitchApiService
 from features.twitch.auth import TwitchAuth
 from features.twitch.bot.bot_schemas import BotActionResult, BotStatus, BotStatusEnum
 from features.twitch.twitch_bot import Bot as TwitchBot
-from features.chat.chat_service import ChatService
-from features.chat.data.chat_repository import ChatRepositoryImpl
+from app.chat.domain.chat_service import ChatService
+from app.chat.data.chat_repository import ChatRepositoryImpl
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from config import config
+from core.config import config
 
 logger = logging.getLogger(__name__)
 

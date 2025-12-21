@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 
 from core.db import get_db
 from dataclasses import asdict
-from features.chat.data.chat_schemas import TopChatUsersResponse, TopChatUser
-from features.chat.chat_service import ChatService
-from features.chat.data.chat_repository import ChatRepositoryImpl
+from app.chat.presentation.chat_schemas import TopChatUsersResponse, TopChatUser
+from app.chat.domain.chat_service import ChatService
+from app.chat.data.chat_repository import ChatRepositoryImpl
 
 router = APIRouter()
 chat_service = ChatService(ChatRepositoryImpl())

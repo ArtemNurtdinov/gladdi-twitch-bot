@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session
-from features.chat.domain.models import ChatMessage as DomainChatMessage, TopChatUserInfo
-from features.chat.domain.repo import ChatRepository
+from app.chat.domain.models import ChatMessage as DomainChatMessage, TopChatUserInfo
+from app.chat.domain.repo import ChatRepository
 
 
 class ChatService:

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Generic, Protocol, TypeVar, Optional, List
 from uuid import UUID
 
-from features.auth.domain.models import User, AccessToken, UserCreateData, UserUpdateData
+from app.auth.domain.models import User, AccessToken, UserCreateData, UserUpdateData
 
 DB = TypeVar("DB")
 

@@ -4,9 +4,9 @@ from typing import Sequence, Tuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from features.chat.domain.models import ChatMessage
-from features.chat.domain.repo import ChatRepository
-from features.chat.data.db.chat_message import ChatMessage as ChatMessageORM
+from app.chat.domain.models import ChatMessage
+from app.chat.domain.repo import ChatRepository
+from app.chat.data.db.chat_message import ChatMessage as ChatMessageORM
 
 
 class ChatRepositoryImpl(ChatRepository[Session]):

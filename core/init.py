@@ -1,14 +1,14 @@
 from sqlalchemy import text
 from core.db import engine, db_session, SessionLocal
-from features.ai.data.db.ai_message import AIMessage
-from features.auth.auth_service import AuthService
-from features.auth.data.auth_repository import AuthRepositoryImpl
-from features.auth.data.db.access_token import AccessToken
-from features.auth.data.db.user import User
-from features.auth.domain.models import UserCreateData, UserRole
+from app.ai.data.db.ai_message import AIMessage
+from app.auth.domain.auth_service import AuthService
+from app.auth.data.auth_repository import AuthRepositoryImpl
+from app.auth.data.db.access_token import AccessToken
+from app.auth.data.db.user import User
+from app.auth.domain.models import UserCreateData, UserRole
 from features.battle.data.db.battle_history import BattleHistory
 from features.betting.data.db.bet_history import BetHistory
-from features.chat.data.db.chat_message import ChatMessage
+from app.chat.data.db.chat_message import ChatMessage
 from features.minigame.data.db.word_history import WordHistory
 from features.economy.data.db.user_balance import UserBalance
 from features.economy.data.db.transaction_history import TransactionHistory
