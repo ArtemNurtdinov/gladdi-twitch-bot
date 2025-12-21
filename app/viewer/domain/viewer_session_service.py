@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from features.viewer.domain.models import ViewerSession
-from features.viewer.domain.repo import ViewerRepository
+from app.viewer.domain.models import ViewerSession
+from app.viewer.domain.repo import ViewerRepository
 
 logger = logging.getLogger(__name__)
 

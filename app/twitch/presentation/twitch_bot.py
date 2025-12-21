@@ -24,8 +24,8 @@ from app.equipment.data.equipment_repository import EquipmentRepositoryImpl
 from app.equipment.domain.equipment_service import EquipmentService
 from app.minigame.data.db.word_history_repository import WordHistoryRepositoryImpl
 from app.stream.domain.models import StreamStatistics
-from features.twitch.api.twitch_api_service import TwitchApiService
-from features.twitch.auth import TwitchAuth
+from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.twitch.presentation.auth import TwitchAuth
 from app.chat.domain.chat_service import ChatService
 from app.joke.data.settings_repository import FileJokeSettingsRepository
 from app.joke.domain.joke_service import JokeService
@@ -34,8 +34,8 @@ from app.economy.data.economy_repository import EconomyRepositoryImpl
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.domain.stream_service import StreamService
 from app.stream.data.stream_repository import StreamRepositoryImpl
-from features.viewer.data.viewer_repository import ViewerRepositoryImpl
-from features.viewer.viewer_session_service import ViewerTimeService
+from app.viewer.data.viewer_repository import ViewerRepositoryImpl
+from app.viewer.domain.viewer_session_service import ViewerTimeService
 from app.economy.domain.models import ShopItems, TransactionType
 
 logger = logging.getLogger(__name__)

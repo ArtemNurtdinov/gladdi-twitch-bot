@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from core.db import get_db
-from features.viewer.data.viewer_repository import ViewerRepositoryImpl
-from features.viewer.data.viewer_schemas import ViewerSessionsResponse, ViewerSessionResponse, ViewerSessionStreamInfo, ViewerSessionWithStreamResponse
-from features.viewer.viewer_session_service import ViewerTimeService
+from app.viewer.data.viewer_repository import ViewerRepositoryImpl
+from app.viewer.presentation.viewer_schemas import ViewerSessionsResponse, ViewerSessionResponse, ViewerSessionStreamInfo, ViewerSessionWithStreamResponse
+from app.viewer.domain.viewer_session_service import ViewerTimeService
 
 router = APIRouter()
 viewer_time_service = ViewerTimeService(ViewerRepositoryImpl())

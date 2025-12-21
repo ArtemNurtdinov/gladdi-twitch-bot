@@ -1,9 +1,10 @@
 import requests
 import logging
 from fastapi import APIRouter, HTTPException
+
+from app.twitch.presentation.bot_manager import BotManager
 from core.config import config
-from features.twitch.bot.bot_manager import BotManager
-from features.twitch.bot.bot_schemas import AuthStartResponse, BotActionResult, BotStatus
+from app.twitch.presentation.twitch_schemas import AuthStartResponse, BotActionResult, BotStatus
 from urllib.parse import urlencode
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"

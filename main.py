@@ -7,8 +7,8 @@ from app.auth.presentation import auth_routes
 from app.joke.presentation import joke_routes
 from app.chat.presentation import chat_routes
 from app.stream.presentation import stream_routes
-from features.viewer.data import viewer_routes
-from features.twitch.bot import bot_routes
+from app.viewer.presentation import viewer_routes
+from app.twitch.presentation import twitch_routes
 
 logging.basicConfig(
     level=getattr(logging, config.logging.level.upper(), logging.INFO),
@@ -40,7 +40,7 @@ app.add_middleware(
 app.include_router(auth_routes.router, prefix="/api/v1", tags=["Authentication"])
 app.include_router(auth_routes.admin_router, prefix="/api/v1", tags=["Administration"])
 app.include_router(chat_routes.router, prefix="/api/v1/messages", tags=["Chat"])
-app.include_router(bot_routes.router, prefix="/api/v1", tags=["Twitch Bot"])
+app.include_router(twitch_routes.router, prefix="/api/v1", tags=["Twitch Bot"])
 app.include_router(joke_routes.router, prefix="/api/v1", tags=["Jokes"])
 app.include_router(stream_routes.router, prefix="/api/v1", tags=["Streams"])
 app.include_router(viewer_routes.router, prefix="/api/v1", tags=["Viewers"])

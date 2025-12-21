@@ -14,7 +14,7 @@ from app.economy.data.db.user_balance import UserBalance
 from app.economy.data.db.transaction_history import TransactionHistory
 from app.equipment.data.db.user_equipment import UserEquipment
 from app.stream.data.db.stream import Stream
-from features.viewer.data.db.viewer_session import StreamViewerSession
+from app.viewer.data.db.viewer_session import StreamViewerSession
 
 
 def test_connection():

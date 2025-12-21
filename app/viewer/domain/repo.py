@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Generic, Optional, Protocol, TypeVar
 
-from features.viewer.domain.models import ViewerSession
+from app.viewer.domain.models import ViewerSession
 
 DB = TypeVar("DB")
 

@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.stream.application.mappers.stream_mapper import map_stream_row
 
-from features.viewer.data.db.viewer_session import StreamViewerSession
-from features.viewer.domain.models import ViewerSession
-from features.viewer.domain.repo import ViewerRepository
+from app.viewer.data.db.viewer_session import StreamViewerSession
+from app.viewer.domain.models import ViewerSession
+from app.viewer.domain.repo import ViewerRepository
 
 
 class ViewerRepositoryImpl(ViewerRepository[Session]):

@@ -5,10 +5,10 @@ from typing import Optional
 
 from app.ai.domain.ai_service import AIService
 from app.ai.data.ai_repository import AIRepositoryImpl
-from features.twitch.api.twitch_api_service import TwitchApiService
-from features.twitch.auth import TwitchAuth
-from features.twitch.bot.bot_schemas import BotActionResult, BotStatus, BotStatusEnum
-from features.twitch.twitch_bot import Bot as TwitchBot
+from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.twitch.presentation.auth import TwitchAuth
+from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
+from app.twitch.presentation.twitch_bot import Bot as TwitchBot
 from app.chat.domain.chat_service import ChatService
 from app.chat.data.chat_repository import ChatRepositoryImpl
 

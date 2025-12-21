@@ -1,12 +1,12 @@
 import logging
 import httpx
 from typing import Optional, Dict, Any, List
-from features.twitch.auth import TwitchAuth
-from features.twitch.api.model.stream_info import StreamInfo
-from features.twitch.api.model.user_info import UserInfo
-from features.twitch.api.model.follow_info import FollowInfo
-from features.twitch.api.model.stream_status import StreamStatus, StreamData
-from features.twitch.api.model.channel_info import ChannelInfo
+from app.twitch.presentation.auth import TwitchAuth
+from app.twitch.infrastructure.model.stream_info import StreamInfo
+from app.twitch.infrastructure.model.user_info import UserInfo
+from app.twitch.infrastructure.model.follow_info import FollowInfo
+from app.twitch.infrastructure.model.stream_status import StreamStatus, StreamData
+from app.twitch.infrastructure.model.channel_info import ChannelInfo
 
 logger = logging.getLogger(__name__)
 
