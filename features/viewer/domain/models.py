@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from features.stream.domain.models import StreamInfo
+from app.stream.domain.models import StreamInfo
 
 
 @dataclass

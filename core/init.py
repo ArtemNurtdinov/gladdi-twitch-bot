@@ -9,11 +9,11 @@ from app.auth.domain.models import UserCreateData, UserRole
 from app.battle.data.db.battle_history import BattleHistory
 from app.betting.data.db.bet_history import BetHistory
 from app.chat.data.db.chat_message import ChatMessage
-from features.minigame.data.db.word_history import WordHistory
+from app.minigame.data.db.word_history import WordHistory
 from app.economy.data.db.user_balance import UserBalance
 from app.economy.data.db.transaction_history import TransactionHistory
-from features.equipment.data.db.user_equipment import UserEquipment
-from features.stream.data.db.stream import Stream
+from app.equipment.data.db.user_equipment import UserEquipment
+from app.stream.data.db.stream import Stream
 from features.viewer.data.db.viewer_session import StreamViewerSession
 
 

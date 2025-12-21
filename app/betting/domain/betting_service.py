@@ -7,7 +7,7 @@ from app.betting.domain.repo import BettingRepository
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect, \
     TransactionType
-from features.equipment.domain.models import UserEquipmentItem
+from app.equipment.domain.models import UserEquipmentItem
 
 
 class BettingService:
