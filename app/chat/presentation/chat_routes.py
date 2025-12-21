@@ -2,30 +2,12 @@ from datetime import datetime
 from dataclasses import asdict
 
 from fastapi import APIRouter, Query, HTTPException, Depends
-from sqlalchemy.orm import Session
 
-from core.db import get_db_ro, get_db_rw
 from app.chat.presentation.chat_schemas import TopChatUsersResponse, TopChatUser
 from app.chat.domain.chat_service import ChatService
-from app.chat.data.chat_repository import ChatRepositoryImpl
+from app.chat.bootstrap import get_chat_service_ro, get_chat_service_rw
 
 router = APIRouter()
-
-
-def get_chat_repo_ro(db: Session = Depends(get_db_ro)) -> ChatRepositoryImpl:
-    return ChatRepositoryImpl(db)
-
-
-def get_chat_repo_rw(db: Session = Depends(get_db_rw)) -> ChatRepositoryImpl:
-    return ChatRepositoryImpl(db)
-
-
-def get_chat_service_ro(repo: ChatRepositoryImpl = Depends(get_chat_repo_ro)) -> ChatService:
-    return ChatService(repo)
-
-
-def get_chat_service_rw(repo: ChatRepositoryImpl = Depends(get_chat_repo_rw)) -> ChatService:
-    return ChatService(repo)
 
 
 @router.get(
