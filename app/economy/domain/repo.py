@@ -1,6 +1,6 @@
 from typing import Protocol, Generic, TypeVar, Optional
 
-from features.economy.domain.models import UserBalanceInfo, TransactionData, BalanceBrief
+from app.economy.domain.models import UserBalanceInfo, TransactionData, BalanceBrief
 
 DB = TypeVar("DB")
 

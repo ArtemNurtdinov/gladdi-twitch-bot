@@ -7,11 +7,11 @@ from app.auth.data.db.access_token import AccessToken
 from app.auth.data.db.user import User
 from app.auth.domain.models import UserCreateData, UserRole
 from app.battle.data.db.battle_history import BattleHistory
-from features.betting.data.db.bet_history import BetHistory
+from app.betting.data.db.bet_history import BetHistory
 from app.chat.data.db.chat_message import ChatMessage
 from features.minigame.data.db.word_history import WordHistory
-from features.economy.data.db.user_balance import UserBalance
-from features.economy.data.db.transaction_history import TransactionHistory
+from app.economy.data.db.user_balance import UserBalance
+from app.economy.data.db.transaction_history import TransactionHistory
 from features.equipment.data.db.user_equipment import UserEquipment
 from features.stream.data.db.stream import Stream
 from features.viewer.data.db.viewer_session import StreamViewerSession

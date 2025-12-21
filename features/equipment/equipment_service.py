@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from features.economy.domain.models import ShopItems, TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect, RollCooldownOverrideEffect
+from app.economy.domain.models import ShopItems, TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect, RollCooldownOverrideEffect
 from features.equipment.domain.models import UserEquipmentItem
 from features.equipment.domain.repo import EquipmentRepository
 

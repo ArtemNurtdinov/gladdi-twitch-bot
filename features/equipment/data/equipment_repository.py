@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from features.equipment.domain.models import UserEquipmentItem
 from features.equipment.domain.repo import EquipmentRepository
 from features.equipment.data.db.user_equipment import UserEquipment as OrmUserEquipment
-from features.economy.domain.models import ShopItems, ShopItemType
+from app.economy.domain.models import ShopItems, ShopItemType
 
 
 def _to_domain_item(row: OrmUserEquipment) -> UserEquipmentItem:

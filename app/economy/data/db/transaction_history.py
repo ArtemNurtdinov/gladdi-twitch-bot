@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Integer, BigInteger, Enum
 from datetime import datetime
 from core.db import Base
-from features.economy.domain.models import TransactionType
+from app.economy.domain.models import TransactionType
 
 
 class TransactionHistory(Base):

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from features.economy.domain.models import ShopItemType, ShopItem
+from app.economy.domain.models import ShopItemType, ShopItem
 from datetime import datetime
 
 

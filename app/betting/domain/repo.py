@@ -1,6 +1,6 @@
 from typing import Generic, Protocol, TypeVar
 
-from features.betting.domain.models import BetRecord, RarityLevel
+from app.betting.domain.models import BetRecord, RarityLevel
 
 DB = TypeVar("DB")
 

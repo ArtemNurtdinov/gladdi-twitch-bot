@@ -16,10 +16,10 @@ from app.ai.domain.models import Intent, AIMessage, Role
 from app.battle.domain.battle_service import BattleService
 from app.battle.data.battle_repository import BattleRepositoryImpl
 from app.battle.domain.models import UserBattleStats
-from features.betting.data.betting_schemas import UserBetStats
-from features.betting.data.betting_repository import BettingRepositoryImpl
-from features.betting.betting_service import BettingService
-from features.betting.domain.models import EmojiConfig
+from app.betting.presentation.betting_schemas import UserBetStats
+from app.betting.data.betting_repository import BettingRepositoryImpl
+from app.betting.domain.betting_service import BettingService
+from app.betting.domain.models import EmojiConfig
 from features.equipment.data.equipment_repository import EquipmentRepositoryImpl
 from features.equipment.equipment_service import EquipmentService
 from features.minigame.data.word_history_repository import WordHistoryRepositoryImpl
@@ -29,14 +29,14 @@ from features.twitch.auth import TwitchAuth
 from app.chat.domain.chat_service import ChatService
 from features.joke.settings_repository import FileJokeSettingsRepository
 from features.joke.joke_service import JokeService
-from features.economy.economy_service import EconomyService
-from features.economy.data.economy_repository import EconomyRepositoryImpl
+from app.economy.domain.economy_service import EconomyService
+from app.economy.data.economy_repository import EconomyRepositoryImpl
 from features.minigame.minigame_service import MinigameService
 from features.stream.stream_service import StreamService
 from features.stream.data.stream_repository import StreamRepositoryImpl
 from features.viewer.data.viewer_repository import ViewerRepositoryImpl
 from features.viewer.viewer_session_service import ViewerTimeService
-from features.economy.domain.models import ShopItems, TransactionType
+from app.economy.domain.models import ShopItems, TransactionType
 
 logger = logging.getLogger(__name__)
 

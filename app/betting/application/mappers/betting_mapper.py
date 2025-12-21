@@ -1,7 +1,7 @@
 from typing import Optional
 
-from features.betting.data.db.bet_history import BetHistory
-from features.betting.domain.models import BetRecord
+from app.betting.data.db.bet_history import BetHistory
+from app.betting.domain.models import BetRecord
 
 
 def map_bet_history(row: Optional[BetHistory]) -> Optional[BetRecord]:

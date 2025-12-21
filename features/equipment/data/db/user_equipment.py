@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, DateTime, Integer, Enum
 from datetime import datetime
 
 from core.db import Base
-from features.economy.domain.models import ShopItemType
+from app.economy.domain.models import ShopItemType
 
 
 class UserEquipment(Base):

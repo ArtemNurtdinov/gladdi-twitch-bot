@@ -1,4 +1,0 @@
-# Betting mappers package
-
-
-

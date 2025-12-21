@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 
 from features.minigame.models import GuessNumberGame, WordGuessGame, RPSGame, RPS_CHOICES
 from features.minigame.domain.repo import WordHistoryRepository
-from features.economy.economy_service import EconomyService
-from features.economy.domain.models import TransactionType
+from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.models import TransactionType
 
 logger = logging.getLogger(__name__)
 

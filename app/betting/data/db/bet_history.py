@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, DateTime, Integer, Enum
 from datetime import datetime
 
 from core.db import Base
-from features.betting.domain.models import RarityLevel
+from app.betting.domain.models import RarityLevel
 
 
 class BetHistory(Base):

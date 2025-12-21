@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 
-from features.betting.data.db.bet_history import BetHistory
-from features.betting.domain.models import BetRecord, RarityLevel
-from features.betting.domain.repo import BettingRepository
-from features.betting.mappers.betting_mapper import map_bet_history
+from app.betting.data.db.bet_history import BetHistory
+from app.betting.domain.models import BetRecord, RarityLevel
+from app.betting.domain.repo import BettingRepository
+from app.betting.application.mappers.betting_mapper import map_bet_history
 
 
 class BettingRepositoryImpl(BettingRepository[Session]):

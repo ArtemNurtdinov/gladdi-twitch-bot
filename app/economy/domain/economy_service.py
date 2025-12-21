@@ -4,7 +4,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from features.economy.domain.models import (
+from app.economy.domain.models import (
     UserBalanceInfo,
     TransactionData,
     BalanceBrief,
@@ -14,7 +14,7 @@ from features.economy.domain.models import (
     DailyBonusMultiplierEffect,
     TransactionType
 )
-from features.economy.domain.repo import EconomyRepository
+from app.economy.domain.repo import EconomyRepository
 from features.equipment.domain.models import UserEquipmentItem
 
 logger = logging.getLogger(__name__)

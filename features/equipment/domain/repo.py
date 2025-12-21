@@ -1,7 +1,7 @@
-from typing import Protocol, Generic, TypeVar, List
+from typing import Protocol, Generic, TypeVar
 
 from features.equipment.domain.models import UserEquipmentItem
-from features.economy.domain.models import ShopItemType
+from app.economy.domain.models import ShopItemType
 
 DB = TypeVar("DB")
 

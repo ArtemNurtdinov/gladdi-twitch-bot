@@ -2,10 +2,10 @@ from collections import Counter
 
 from sqlalchemy.orm import Session
 
-from features.betting.domain.models import BetResult, EmojiConfig, RarityLevel, BetRecord
-from features.betting.domain.repo import BettingRepository
-from features.economy.economy_service import EconomyService
-from features.economy.domain.models import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect, \
+from app.betting.domain.models import BetResult, EmojiConfig, RarityLevel, BetRecord
+from app.betting.domain.repo import BettingRepository
+from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.models import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect, \
     TransactionType
 from features.equipment.domain.models import UserEquipmentItem
 
