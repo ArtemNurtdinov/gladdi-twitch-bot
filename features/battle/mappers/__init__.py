@@ -1,4 +1,0 @@
-# Battle mappers package
-
-
-

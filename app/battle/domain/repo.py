@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Generic, Protocol, TypeVar
 
-from features.battle.domain.models import BattleRecord
+from app.battle.domain.models import BattleRecord
 
 DB = TypeVar("DB")
 

@@ -3,10 +3,10 @@ from datetime import datetime
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
-from features.battle.data.db.battle_history import BattleHistory
-from features.battle.domain.models import BattleRecord
-from features.battle.domain.repo import BattleRepository
-from features.battle.mappers.battle_mapper import map_battle_history
+from app.battle.data.db.battle_history import BattleHistory
+from app.battle.domain.models import BattleRecord
+from app.battle.domain.repo import BattleRepository
+from app.battle.application.mappers.battle_mapper import map_battle_history
 
 
 class BattleRepositoryImpl(BattleRepository[Session]):

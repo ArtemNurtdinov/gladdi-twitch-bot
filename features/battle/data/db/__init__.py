@@ -1,4 +1,0 @@
-# Battle DB models package
-
-
-

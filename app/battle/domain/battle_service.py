@@ -2,8 +2,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from features.battle.domain.models import BattleRecord
-from features.battle.domain.repo import BattleRepository
+from app.battle.domain.models import BattleRecord
+from app.battle.domain.repo import BattleRepository
 
 
 class BattleService:

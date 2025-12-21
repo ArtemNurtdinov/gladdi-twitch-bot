@@ -1,7 +1,7 @@
 from typing import Optional
 
-from features.battle.data.db.battle_history import BattleHistory
-from features.battle.domain.models import BattleRecord
+from app.battle.data.db.battle_history import BattleHistory
+from app.battle.domain.models import BattleRecord
 
 
 def map_battle_history(row: Optional[BattleHistory]) -> Optional[BattleRecord]:

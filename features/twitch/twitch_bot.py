@@ -13,9 +13,9 @@ from collections import Counter
 from core.db import db_session, SessionLocal
 from app.ai.domain.ai_service import AIService
 from app.ai.domain.models import Intent, AIMessage, Role
-from features.battle.battle_service import BattleService
-from features.battle.data.battle_repository import BattleRepositoryImpl
-from features.battle.domain.models import UserBattleStats
+from app.battle.domain.battle_service import BattleService
+from app.battle.data.battle_repository import BattleRepositoryImpl
+from app.battle.domain.models import UserBattleStats
 from features.betting.data.betting_schemas import UserBetStats
 from features.betting.data.betting_repository import BettingRepositoryImpl
 from features.betting.betting_service import BettingService
