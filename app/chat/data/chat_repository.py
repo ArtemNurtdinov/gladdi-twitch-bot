@@ -15,7 +15,14 @@ class ChatRepositoryImpl(ChatRepository):
         self._db = db
 
     def save(self, message: ChatMessage) -> None:
-        self._db.add(ChatMessageORM(channel_name=message.channel_name, user_name=message.user_name, content=message.content, created_at=message.created_at))
+        self._db.add(
+            ChatMessageORM(
+                channel_name=message.channel_name,
+                user_name=message.user_name,
+                content=message.content,
+                created_at=message.created_at
+            )
+        )
 
     def list_between(self, channel_name: str, start: datetime, end: datetime) -> Sequence[ChatMessage]:
         rows = (
@@ -28,15 +35,15 @@ class ChatRepositoryImpl(ChatRepository):
         )
         return [ChatMessage(r.channel_name, r.user_name, r.content, r.created_at) for r in rows]
 
-    def list_last(self, channel_name: str, limit: int) -> Sequence[ChatMessage]:
+    def list_last(self, channel_name: str, limit: int) -> list[ChatMessage]:
         rows = (
             self._db.query(ChatMessageORM)
             .filter(ChatMessageORM.channel_name == channel_name)
             .order_by(ChatMessageORM.created_at.desc())
             .limit(limit)
             .all()
-        )[::-1]
-        return [ChatMessage(r.channel_name, r.user_name, r.content, r.created_at) for r in rows]
+        )
+        return [ChatMessage(r.channel_name, r.user_name, r.content, r.created_at) for r in reversed(rows)]
 
     def top_chat_users(self, limit: int, date_from: datetime | None, date_to: datetime | None) -> Sequence[Tuple[str, str, int]]:
         count_expr = func.count(ChatMessageORM.id).label("message_count")
