@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from core.db import engine, db_session, SessionLocal
+from core.db import engine, db_ro_session, SessionLocal
 from app.ai.data.db.ai_message import AIMessage
 from app.auth.domain.auth_service import AuthService
 from app.auth.data.auth_repository import AuthRepositoryImpl
@@ -65,7 +65,7 @@ def create_tables():
 def create_admin():
     try:
         auth_service = AuthService(AuthRepositoryImpl())
-        with db_session() as db:
+        with db_ro_session() as db:
             existing_user = auth_service.get_user_by_email(db, "artem.nefrit@gmail.com")
             if existing_user:
                 print(f"   Пользователь с email 'artem.nefrit@gmail.com' уже существует!")

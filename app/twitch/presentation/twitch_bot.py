@@ -10,7 +10,7 @@ import telegram
 from core.config import config
 from collections import Counter
 
-from core.db import db_session, SessionLocal
+from core.db import db_ro_session, SessionLocal
 from app.ai.domain.ai_service import AIService
 from app.ai.domain.models import Intent, AIMessage, Role
 from app.battle.domain.battle_service import BattleService
@@ -382,7 +382,7 @@ class Bot(commands.Bot):
             "\nСимулируй юмористическую и эпичную битву между ними, с абсурдом и неожиданными поворотами."
         )
 
-        with db_session() as db:
+        with db_ro_session() as db:
             opponent_equipment = self.equipment_service.get_user_equipment(db, channel_name, opponent.lower())
             challenger_equipment = self.equipment_service.get_user_equipment(db, channel_name, challenger.lower())
             if opponent_equipment:
@@ -429,7 +429,7 @@ class Bot(commands.Bot):
         await asyncio.sleep(1)
 
         base_battle_timeout = 120
-        with db_session() as db:
+        with db_ro_session() as db:
             equipment = self.equipment_service.get_user_equipment(db, channel_name, loser.lower())
         final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(loser, base_battle_timeout, equipment)
 
@@ -475,7 +475,7 @@ class Bot(commands.Bot):
         logger.info(f"Команда {self._COMMAND_ROLL} от пользователя {nickname}, сумма ставки: {bet_amount}")
 
         current_time = datetime.now()
-        with db_session() as db:
+        with db_ro_session() as db:
             equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
             cooldown_seconds = self.equipment_service.calculate_roll_cooldown_seconds(self._ROLL_COOLDOWN_SECONDS, equipment)
 
@@ -547,7 +547,7 @@ class Bot(commands.Bot):
         if bet_result.should_timeout():
             base_timeout_duration = bet_result.get_timeout_duration()
 
-            with db_session() as db:
+            with db_ro_session() as db:
                 equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
             final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(nickname, base_timeout_duration,
                                                                                                         equipment)
@@ -618,7 +618,7 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда {self._COMMAND_BONUS} от пользователя {user_name}")
 
-        with db_session() as db:
+        with db_ro_session() as db:
             active_stream = self.stream_service.get_active_stream(db, channel_name)
 
         if not active_stream:
@@ -749,7 +749,7 @@ class Bot(commands.Bot):
         item = ShopItems.get_item(item_type)
 
         normalized_user_name = user_name.lower()
-        with db_session() as db:
+        with db_ro_session() as db:
             equipment_exists = self.equipment_service.equipment_exists(db, channel_name, normalized_user_name, item_type)
 
         if equipment_exists:
@@ -788,7 +788,7 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда {self._COMMAND_EQUIPMENT} от пользователя {user_name}")
 
-        with db_session() as db:
+        with db_ro_session() as db:
             equipment = self.equipment_service.get_user_equipment(db, channel_name, normalized_user_name)
             if not equipment:
                 result = f"@{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"
@@ -813,7 +813,7 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда {self._COMMAND_TOP}")
 
-        with db_session() as db:
+        with db_ro_session() as db:
             top_users = self.economy_service.get_top_users(db, channel_name, limit=7)
 
         if not top_users:
@@ -837,7 +837,7 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда {self._COMMAND_BOTTOM}")
 
-        with db_session() as db:
+        with db_ro_session() as db:
             bottom_users = self.economy_service.get_bottom_users(db, channel_name, limit=10)
 
             if not bottom_users:
@@ -906,7 +906,7 @@ class Bot(commands.Bot):
 
             bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
 
-        with db_session() as db:
+        with db_ro_session() as db:
             battles = self.battle_service.get_user_battles(db, channel_name, user_name)
 
         if not battles:
@@ -1156,7 +1156,7 @@ class Bot(commands.Bot):
                     await asyncio.sleep(60)
                     continue
 
-                with db_session() as db:
+                with db_ro_session() as db:
                     active_stream = self.stream_service.get_active_stream(db, channel_name)
 
                 stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
@@ -1197,7 +1197,7 @@ class Bot(commands.Bot):
                         self.minigame_service.reset_stream_state(db, channel_name)
                         logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
-                    with db_session() as db:
+                    with db_ro_session() as db:
                         chat_messages = self._chat_service(db).get_chat_messages(channel_name, active_stream.started_at, finish_time)
                         total_messages = len(chat_messages)
                         unique_users = len(set(msg.user_name for msg in chat_messages))
@@ -1208,7 +1208,7 @@ class Bot(commands.Bot):
                     else:
                         top_user = None
 
-                    with db_session() as db:
+                    with db_ro_session() as db:
                         battles = self.battle_service.get_battles(db, channel_name, active_stream.started_at)
 
                     total_battles = len(battles)
@@ -1252,7 +1252,7 @@ class Bot(commands.Bot):
         if self.last_chat_summary_time is None:
             self.last_chat_summary_time = stream_start_dt
 
-        with db_session() as db:
+        with db_ro_session() as db:
             last_messages = self._chat_service(db).get_chat_messages(channel_name, self.last_chat_summary_time, stream_end_dt)
             if last_messages:
                 chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
@@ -1317,7 +1317,7 @@ class Bot(commands.Bot):
                     logger.error(f"Не удалось получить ID канала {channel_name} для анализа чата")
                     continue
 
-                with db_session() as db:
+                with db_ro_session() as db:
                     active_stream = self.stream_service.get_active_stream(db, channel_name)
                 if not active_stream:
                     logger.debug("Стрим не активен, пропускаем анализ чата")
@@ -1327,7 +1327,7 @@ class Bot(commands.Bot):
                 continue
 
             since = datetime.utcnow() - timedelta(minutes=20)
-            with db_session() as db:
+            with db_ro_session() as db:
                 messages = self._chat_service(db).get_last_chat_messages_since(channel_name, since)
 
             if not messages:
@@ -1365,7 +1365,7 @@ class Bot(commands.Bot):
                     with SessionLocal.begin() as db:
                         self._chat_service(db).save_chat_message(channel, self.nick.lower(), timeout_message)
 
-                with db_session() as db:
+                with db_ro_session() as db:
                     active_stream = self.stream_service.get_active_stream(db, channel_name)
 
                 if not active_stream:
@@ -1389,7 +1389,7 @@ class Bot(commands.Bot):
                 choice = random.choice(["number", "word", "rps"])
 
                 if choice == "word":
-                    with db_session() as db:
+                    with db_ro_session() as db:
                         used_words = self.minigame_service.get_used_words(db, channel_name, limit=50)
                         last_messages = self._chat_service(db).get_last_chat_messages(channel_name, limit=50)
 
@@ -1481,7 +1481,7 @@ class Bot(commands.Bot):
                     continue
 
                 channel_name = self.initial_channels[0]
-                with db_session() as db:
+                with db_ro_session() as db:
                     active_stream = self.stream_service.get_active_stream(db, channel_name)
 
                 if not active_stream:
@@ -1498,7 +1498,7 @@ class Bot(commands.Bot):
                     with SessionLocal.begin() as db:
                         self.viewer_service.update_viewers(db, active_stream.id, channel_name, chatters, datetime.utcnow())
 
-                with db_session() as db:
+                with db_ro_session() as db:
                     viewers_count = self.viewer_service.get_stream_watchers_count(db, active_stream.id)
 
                 if viewers_count > active_stream.max_concurrent_viewers:
@@ -1530,7 +1530,7 @@ class Bot(commands.Bot):
                 return
 
             channel_name = self.initial_channels[0]
-            with db_session() as db:
+            with db_ro_session() as db:
                 active_stream = self.stream_service.get_active_stream(db, channel_name)
 
             if active_stream:
@@ -1543,7 +1543,7 @@ class Bot(commands.Bot):
 
     def generate_response_in_chat(self, prompt: str, channel_name: str) -> str:
         messages = []
-        with db_session() as db:
+        with db_ro_session() as db:
             last_messages = self.ai_service.get_last_messages(db, channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
             messages.extend(last_messages)
             messages.append(AIMessage(Role.USER, prompt))

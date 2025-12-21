@@ -41,12 +41,11 @@ def get_db_ro():
     try:
         yield db
     finally:
-        db.rollback()
         db.close()
 
 
 @contextmanager
-def db_session():
+def db_ro_session():
     db = SessionLocal()
     try:
         yield db
