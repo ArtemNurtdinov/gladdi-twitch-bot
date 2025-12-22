@@ -50,6 +50,7 @@ from app.economy.domain.models import ShopItems, TransactionType, JackpotPayoutM
 logger = logging.getLogger(__name__)
 
 
+# noinspection PyDeprecation
 class Bot(commands.Bot):
     SYSTEM_PROMPT_FOR_GROUP = (
         "Ты — GLaDDi, цифровой ассистент нового поколения."
@@ -107,7 +108,6 @@ class Bot(commands.Bot):
         self.twitch_api_service = twitch_api_service
         self.joke_service = JokeService(FileJokeSettingsRepository())
         self.stream_service = StreamService(StreamRepositoryImpl())
-        self.equipment_service = EquipmentService(EquipmentRepositoryImpl())
         self.minigame_service = MinigameService(WordHistoryRepositoryImpl())
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
 
@@ -142,6 +142,9 @@ class Bot(commands.Bot):
 
     def _economy_service(self, db):
         return EconomyService(EconomyRepositoryImpl(db))
+
+    def _equipment_service(self, db):
+        return EquipmentService(EquipmentRepositoryImpl(db))
 
     async def _get_user_id_cached(self, login: str) -> str | None:
         now = datetime.utcnow()
@@ -405,8 +408,8 @@ class Bot(commands.Bot):
         )
 
         with db_ro_session() as db:
-            opponent_equipment = self.equipment_service.get_user_equipment(db, channel_name, opponent.lower())
-            challenger_equipment = self.equipment_service.get_user_equipment(db, channel_name, challenger.lower())
+            opponent_equipment = self._equipment_service(db).get_user_equipment(channel_name, opponent.lower())
+            challenger_equipment = self._equipment_service(db).get_user_equipment(channel_name, challenger.lower())
             if opponent_equipment:
                 equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in opponent_equipment]
                 prompt += f"\nВооружение {opponent}: {', '.join(equipment_details)}."
@@ -452,8 +455,8 @@ class Bot(commands.Bot):
 
         base_battle_timeout = 120
         with db_ro_session() as db:
-            equipment = self.equipment_service.get_user_equipment(db, channel_name, loser.lower())
-        final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(loser, base_battle_timeout, equipment)
+            equipment = self._equipment_service(db).get_user_equipment(channel_name, loser.lower())
+            final_timeout, protection_message = self._equipment_service(db).calculate_timeout_with_equipment(loser, base_battle_timeout, equipment)
 
         if final_timeout == 0:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
@@ -498,8 +501,8 @@ class Bot(commands.Bot):
 
         current_time = datetime.now()
         with db_ro_session() as db:
-            equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
-            cooldown_seconds = self.equipment_service.calculate_roll_cooldown_seconds(self._ROLL_COOLDOWN_SECONDS, equipment)
+            equipment = self._equipment_service(db).get_user_equipment(channel_name, nickname.lower())
+            cooldown_seconds = self._equipment_service(db).calculate_roll_cooldown_seconds(self._ROLL_COOLDOWN_SECONDS, equipment)
 
         if nickname in self.roll_cooldowns:
             time_since_last = (current_time - self.roll_cooldowns[nickname]).total_seconds()
@@ -550,7 +553,7 @@ class Bot(commands.Bot):
 
         with db_ro_session() as db:
             rarity_level = self._betting_service(db).determine_correct_rarity(slot_result_string, result_type)
-            equipment = self.equipment_service.get_user_equipment(db, channel_name, normalized_user_name)
+            equipment = self._equipment_service(db).get_user_equipment(channel_name, normalized_user_name)
 
         with SessionLocal.begin() as db:
             user_balance = self._economy_service(db).subtract_balance(
@@ -641,12 +644,12 @@ class Bot(commands.Bot):
             base_timeout_duration = timeout_seconds if timeout_seconds else 0
 
             with db_ro_session() as db:
-                equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
-            final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(
-                nickname,
-                base_timeout_duration,
-                equipment
-            )
+                equipment = self._equipment_service(db).get_user_equipment(channel_name, nickname.lower())
+                final_timeout, protection_message = self._equipment_service(db).calculate_timeout_with_equipment(
+                    nickname,
+                    base_timeout_duration,
+                    equipment
+                )
 
             if final_timeout == 0:
                 if self.is_consolation_prize(result_type, payout):
@@ -762,7 +765,7 @@ class Bot(commands.Bot):
             result = f"🚫 @{user_name}, бонус доступен только во время стрима!"
         else:
             with SessionLocal.begin() as db:
-                user_equipment = self.equipment_service.get_user_equipment(db, channel_name, user_name.lower())
+                user_equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name.lower())
                 bonus_result = self._economy_service(db).claim_daily_bonus(active_stream.id, channel_name, user_name.lower(),
                                                                            user_equipment)
                 if bonus_result.success:
@@ -888,7 +891,7 @@ class Bot(commands.Bot):
 
         normalized_user_name = user_name.lower()
         with db_ro_session() as db:
-            equipment_exists = self.equipment_service.equipment_exists(db, channel_name, normalized_user_name, item_type)
+            equipment_exists = self._equipment_service(db).equipment_exists(channel_name, normalized_user_name, item_type)
 
         if equipment_exists:
             result = f"У вас уже есть {item.name}"
@@ -910,7 +913,7 @@ class Bot(commands.Bot):
         with SessionLocal.begin() as db:
             self._economy_service(db).subtract_balance(channel_name, normalized_user_name, item.price, TransactionType.SHOP_PURCHASE,
                                                        f"Покупка '{item.name}'")
-            self.equipment_service.add_equipment_to_user(db, channel_name, normalized_user_name, item_type)
+            self._equipment_service(db).add_equipment_to_user(channel_name, normalized_user_name, item_type)
 
         result = f"@{user_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
@@ -927,7 +930,7 @@ class Bot(commands.Bot):
         logger.info(f"Команда {self._COMMAND_EQUIPMENT} от пользователя {user_name}")
 
         with db_ro_session() as db:
-            equipment = self.equipment_service.get_user_equipment(db, channel_name, normalized_user_name)
+            equipment = self._equipment_service(db).get_user_equipment(channel_name, normalized_user_name)
 
         if not equipment:
             result = f"@{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"

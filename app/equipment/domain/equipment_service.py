@@ -1,8 +1,6 @@
 import logging
 from datetime import datetime, timedelta
 
-from sqlalchemy.orm import Session
-
 from app.economy.domain.models import ShopItems, TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect, RollCooldownOverrideEffect
 from app.equipment.domain.models import UserEquipmentItem
 from app.equipment.domain.repo import EquipmentRepository
@@ -11,11 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 class EquipmentService:
-    def __init__(self, repo: EquipmentRepository[Session]):
+
+    def __init__(self, repo: EquipmentRepository):
         self._repo = repo
 
-    def get_user_equipment(self, db: Session, channel_name: str, user_name: str) -> list[UserEquipmentItem]:
-        return self._repo.list_user_equipment(db, channel_name, user_name)
+    def get_user_equipment(self, channel_name: str, user_name: str) -> list[UserEquipmentItem]:
+        return self._repo.list_user_equipment(channel_name, user_name)
 
     def calculate_timeout_with_equipment(self, user_name: str, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
         if base_timeout_seconds <= 0:
@@ -76,10 +75,10 @@ class EquipmentService:
                     min_cooldown = min(min_cooldown, effect.cooldown_seconds)
         return min_cooldown
 
-    def equipment_exists(self, db: Session, channel_name: str, user_name: str, item_type: ShopItemType) -> bool:
-        return self._repo.equipment_exists(db, channel_name, user_name, item_type)
+    def equipment_exists(self, channel_name: str, user_name: str, item_type: ShopItemType) -> bool:
+        return self._repo.equipment_exists(channel_name, user_name, item_type)
 
-    def add_equipment_to_user(self, db: Session, channel_name: str, user_name: str, item_type: ShopItemType):
+    def add_equipment_to_user(self, channel_name: str, user_name: str, item_type: ShopItemType):
         expires_at = datetime.utcnow() + timedelta(days=30)
         item = UserEquipmentItem(item_type=item_type, shop_item=ShopItems.get_item(item_type), expires_at=expires_at)
-        self._repo.add_equipment(db, channel_name, user_name, item)
+        self._repo.add_equipment(channel_name, user_name, item)
