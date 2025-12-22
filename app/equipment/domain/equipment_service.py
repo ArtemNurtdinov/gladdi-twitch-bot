@@ -27,10 +27,8 @@ class EquipmentService:
         for item in equipment:
             for effect in item.shop_item.effects:
                 if isinstance(effect, TimeoutProtectionEffect):
-                    logger.info(f"⚡ ЗАЩИТА ОТ ТАЙМАУТА: {user_name} спасен предметом {item.shop_item.name} (базовый таймаут: {base_timeout_seconds}с)")
-
                     if item.item_type == ShopItemType.MAEL_EXPEDITION:
-                        return 0, "⚔️ Маэль перерисовала судьбу и полностью спасла от таймаута! Фоном играет \"Алиииинаааа аииииии\"..."
+                        return 0, "⚔️ Маэль перерисовала судьбу и спасла от таймаута! Фоном играет \"Алиииинаааа аииииии\"..."
                     elif item.item_type == ShopItemType.COMMUNIST_PARTY:
                         return 0, "☭ Партия коммунистов защитила товарища! Единство спасло от таймаута!"
                     elif item.item_type == ShopItemType.GAMBLER_AMULET:

@@ -1,7 +1,5 @@
 from collections import Counter
 
-from sqlalchemy.orm import Session
-
 from app.betting.domain.models import EmojiConfig, RarityLevel, BetRecord
 from app.betting.domain.repo import BettingRepository
 from app.economy.domain.economy_service import EconomyService
@@ -33,7 +31,7 @@ class BettingService:
         RarityLevel.COMMON: 0
     }
 
-    def __init__(self, economy_service: EconomyService, repo: BettingRepository[Session]):
+    def __init__(self, economy_service: EconomyService, repo: BettingRepository):
         self.economy_service = economy_service
         self._repo = repo
 
@@ -66,8 +64,8 @@ class BettingService:
             max_rarity = max(rarities, key=lambda r: rarity_priority[r])
             return max_rarity
 
-    def save_bet(self, db: Session, channel_name: str, user_name: str, slot_result: str, result_type: str, rarity_level: RarityLevel):
-        self._repo.save_bet_history(db, channel_name, user_name, slot_result, result_type, rarity_level)
+    def save_bet(self, channel_name: str, user_name: str, slot_result: str, result_type: str, rarity_level: RarityLevel):
+        self._repo.save_bet_history(channel_name, user_name, slot_result, result_type, rarity_level)
 
-    def get_user_bets(self, db: Session, channel_name: str, user_name: str) -> list[BetRecord]:
-        return self._repo.get_user_bets(db, channel_name, user_name)
+    def get_user_bets(self, channel_name: str, user_name: str) -> list[BetRecord]:
+        return self._repo.get_user_bets(channel_name, user_name)

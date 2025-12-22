@@ -648,9 +648,9 @@ class Bot(commands.Bot):
 
             if final_timeout == 0:
                 if self.is_consolation_prize(result_type, payout):
-                    no_timeout_message = f"🎁 @{nickname}, спасен от таймаута! {protection_message} Консольный приз: {payout} монет"
+                    no_timeout_message = f"🎁 @{nickname}, {protection_message} Консольный приз: {payout} монет"
                 else:
-                    no_timeout_message = f"🛡️ @{nickname}, спасен от таймаута! {protection_message}"
+                    no_timeout_message = f"🛡️ @{nickname}, {protection_message}"
 
                 with SessionLocal.begin() as db:
                     self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), no_timeout_message, datetime.utcnow())
