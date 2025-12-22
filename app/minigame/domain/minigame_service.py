@@ -54,7 +54,7 @@ class MinigameService:
             self.finish_word_game_timeout(channel_name)
         if channel_name in self.active_rps_games:
             game = self.get_active_rps_game(channel_name)
-            self.finish_rps(game)
+            self.finish_rps(game, channel_name)
 
     def should_start_new_game(self, channel_name: str) -> bool:
         if channel_name in self.active_guess_games or channel_name in self.active_word_games or channel_name in self.active_rps_games:
@@ -222,7 +222,7 @@ class MinigameService:
     def get_active_rps_game(self, channel_name: str) -> RPSGame:
         return self.active_rps_games[channel_name]
 
-    def finish_rps(self, game: RPSGame) -> tuple[str, str, list[str]]:
+    def finish_rps(self, game: RPSGame, channel_name: str) -> tuple[str, str, list[str]]:
         bot_choice = random.choice(RPS_CHOICES)
         counter_map = {
             "камень": "бумага",
@@ -232,6 +232,7 @@ class MinigameService:
         winning_choice = counter_map[bot_choice]
         game.winner_choice = winning_choice
         winners = [user for user, choice in game.user_choices.items() if choice == game.winner_choice]
+        del self.active_rps_games[channel_name]
         return bot_choice, winning_choice, winners
 
     def get_used_words(self, db: Session, channel_name: str, limit: int) -> list[str]:

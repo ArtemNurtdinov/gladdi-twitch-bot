@@ -230,7 +230,6 @@ class Bot(commands.Bot):
             self._chat_use_case(db).save_chat_message(channel_name, normalized_user_name, content, datetime.utcnow())
             self._economy_service(db).process_user_message_activity(channel_name, normalized_user_name)
             active_stream = self.stream_service.get_active_stream(db, channel_name)
-            logger.info(f"Награда за активность: {nickname} получил {EconomyService.ACTIVITY_REWARD} монет")
             if active_stream:
                 self.viewer_service.update_viewer_session(db, active_stream.id, channel_name, nickname.lower(), datetime.utcnow())
 
@@ -1208,7 +1207,6 @@ class Bot(commands.Bot):
             letters_in_word = {ch for ch in game.target_word if ch.isalpha()}
             all_letters_revealed = letters_in_word.issubset(game.guessed_letters)
             if all_letters_revealed:
-                self.minigame_service.finish_word_game_with_winner(game, channel_name, user_name)
                 normalized_user_name = user_name.lower()
 
                 with SessionLocal.begin() as db:
@@ -1304,7 +1302,7 @@ class Bot(commands.Bot):
         game = self.minigame_service.get_active_rps_game(channel_name)
 
         if datetime.utcnow() > game.end_time:
-            bot_choice, winning_choice, winners = self.minigame_service.finish_rps(game)
+            bot_choice, winning_choice, winners = self.minigame_service.finish_rps(game, channel_name)
             if winners:
                 share = max(1, game.bank // len(winners))
                 with SessionLocal.begin() as db:
@@ -1336,7 +1334,7 @@ class Bot(commands.Bot):
             return
 
         normalized_user_name = user_name.lower()
-        if game.user_choices[normalized_user_name]:
+        if game.user_choices and game.user_choices[normalized_user_name]:
             existing = game.user_choices[normalized_user_name]
             message = f"Вы уже выбрали: {existing}. Сменить нельзя в текущей игре"
             with SessionLocal.begin() as db:
@@ -1705,7 +1703,7 @@ class Bot(commands.Bot):
 
                 if rps_game_complete_time:
                     game = self.minigame_service.get_active_rps_game(channel_name)
-                    bot_choice, winning_choice, winners = self.minigame_service.finish_rps(game)
+                    bot_choice, winning_choice, winners = self.minigame_service.finish_rps(game, channel_name)
                     if winners:
                         share = max(1, game.bank // len(winners))
                         with SessionLocal.begin() as db:
@@ -1719,7 +1717,8 @@ class Bot(commands.Bot):
                     with SessionLocal.begin() as db:
                         self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
                     await self.get_channel(channel_name).send(message)
-                    return
+                    await asyncio.sleep(60)
+                    continue
 
                 expired_games = self.minigame_service.check_expired_games()
                 for channel, timeout_message in expired_games.items():
@@ -1809,10 +1808,10 @@ class Bot(commands.Bot):
                 if choice == "rps":
                     self.minigame_service.start_rps_game(channel_name)
                     game_message = (
-                        f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {self.minigame_service.RPS_BASE_BANK} монет + {self.minigame_service.RPS_ENTRY_FEE_PER_USER}"
+                        f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {MinigameService.RPS_BASE_BANK} монет + {MinigameService.RPS_ENTRY_FEE_PER_USER}"
                         f" за каждого участника. "
-                        f"Участвовать: {self._prefix}{self._COMMAND_RPS} <камень/ножницы/бумага> — взнос {self.minigame_service.RPS_ENTRY_FEE_PER_USER} монет. "
-                        f"Время на голосование: {self.minigame_service.RPS_GAME_DURATION_MINUTES} минуты ⏰"
+                        f"Участвовать: {self._prefix}{self._COMMAND_RPS} <камень/ножницы/бумага> — взнос {MinigameService.RPS_ENTRY_FEE_PER_USER} монет. "
+                        f"Время на голосование: {MinigameService.RPS_GAME_DURATION_MINUTES} минуты ⏰"
                     )
                     logger.info(f"Запущена новая игра КНБ в канале {channel_name}")
                     messages = self.split_text(game_message)
@@ -1821,10 +1820,8 @@ class Bot(commands.Bot):
                         await asyncio.sleep(0.3)
                     with SessionLocal.begin() as db:
                         self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), game_message, datetime.utcnow())
-
             except Exception as e:
                 logger.error(f"Ошибка в check_minigames_periodically: {e}")
-
             await asyncio.sleep(60)
 
     async def check_viewer_time_periodically(self):
