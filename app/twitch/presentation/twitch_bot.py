@@ -15,6 +15,8 @@ from app.ai.data.intent_detector_client import IntentDetectorClientImpl
 from app.ai.data.llm_client import LLMClientImpl
 from app.ai.data.message_repository import AIMessageRepositoryImpl
 from app.battle.application.battle_use_case import BattleUseCase
+from app.minigame.domain.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.domain.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.models import RPS_CHOICES
 from core.config import config
 from collections import Counter
@@ -108,7 +110,7 @@ class Bot(commands.Bot):
         self.twitch_api_service = twitch_api_service
         self.joke_service = JokeService(FileJokeSettingsRepository())
         self.stream_service = StreamService(StreamRepositoryImpl())
-        self.minigame_service = MinigameService(WordHistoryRepositoryImpl())
+        self.minigame_service = MinigameService()
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
 
         self._restore_stream_context()
@@ -145,6 +147,12 @@ class Bot(commands.Bot):
 
     def _equipment_service(self, db):
         return EquipmentService(EquipmentRepositoryImpl(db))
+
+    def _get_used_words_use_case(self, db):
+        return GetUsedWordsUseCase(WordHistoryRepositoryImpl(db))
+
+    def _add_used_word_use_case(self, db):
+        return AddUsedWordsUseCase(WordHistoryRepositoryImpl(db))
 
     async def _get_user_id_cached(self, login: str) -> str | None:
         now = datetime.utcnow()
@@ -1747,7 +1755,7 @@ class Bot(commands.Bot):
 
                 if choice == "word":
                     with db_ro_session() as db:
-                        used_words = self.minigame_service.get_used_words(db, channel_name, limit=50)
+                        used_words = self._get_used_words_use_case(db).get_used_words(channel_name, limit=50)
                         last_messages = self._chat_use_case(db).get_last_chat_messages(channel_name, limit=50)
 
                     chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
@@ -1779,7 +1787,7 @@ class Bot(commands.Bot):
 
                     game = self.minigame_service.start_word_guess_game(channel_name, final_word, hint)
                     with SessionLocal.begin() as db:
-                        self.minigame_service.add_used_word(db, channel_name, final_word)
+                        self._add_used_word_use_case(db).add_used_words(channel_name, final_word)
 
                     masked = game.get_masked_word()
                     game_message = (

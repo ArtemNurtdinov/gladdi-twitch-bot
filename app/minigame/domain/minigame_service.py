@@ -3,10 +3,7 @@ import logging
 from typing import Optional, Dict
 from datetime import datetime, timedelta
 
-from sqlalchemy.orm import Session
-
 from app.minigame.domain.models import GuessNumberGame, WordGuessGame, RPSGame, RPS_CHOICES
-from app.minigame.domain.repo import WordHistoryRepository
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +30,7 @@ class MinigameService:
     GAME_START_INTERVAL_MIN = 30
     GAME_START_INTERVAL_MAX = 60
 
-    def __init__(self, word_history_repo: WordHistoryRepository[Session]):
-        self.word_history_repo = word_history_repo
+    def __init__(self):
         self.active_guess_games: Dict[str, GuessNumberGame] = {}
         self.active_word_games: Dict[str, WordGuessGame] = {}
         self.active_rps_games: Dict[str, RPSGame] = {}
@@ -234,16 +230,3 @@ class MinigameService:
         winners = [user for user, choice in game.user_choices.items() if choice == game.winner_choice]
         del self.active_rps_games[channel_name]
         return bot_choice, winning_choice, winners
-
-    def get_used_words(self, db: Session, channel_name: str, limit: int) -> list[str]:
-        words = self.word_history_repo.list_recent_words(db, channel_name, limit)
-        seen = set()
-        unique_in_order = []
-        for w in words:
-            if w not in seen:
-                seen.add(w)
-                unique_in_order.append(w)
-        return unique_in_order
-
-    def add_used_word(self, db: Session, channel_name: str, word: str) -> None:
-        self.word_history_repo.add_word(db, channel_name, word)
