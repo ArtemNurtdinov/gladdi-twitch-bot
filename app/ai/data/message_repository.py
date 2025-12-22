@@ -11,7 +11,6 @@ class AIMessageRepositoryImpl(AIMessageRepository):
         self._db = db
 
     def get_last_messages(self, channel_name: str, system_prompt: str) -> list[AIMessage]:
-        # order system prompt first, then assistant, then user (role order)
         role_order = case((AIDbMessage.role == Role.USER, 2), (AIDbMessage.role == Role.ASSISTANT, 1), else_=3)
 
         messages = (
