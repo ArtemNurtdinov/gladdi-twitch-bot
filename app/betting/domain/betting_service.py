@@ -2,7 +2,6 @@ from collections import Counter
 
 from app.betting.domain.models import EmojiConfig, RarityLevel, BetRecord
 from app.betting.domain.repo import BettingRepository
-from app.economy.domain.economy_service import EconomyService
 
 
 class BettingService:
@@ -31,8 +30,7 @@ class BettingService:
         RarityLevel.COMMON: 0
     }
 
-    def __init__(self, economy_service: EconomyService, repo: BettingRepository):
-        self.economy_service = economy_service
+    def __init__(self, repo: BettingRepository):
         self._repo = repo
 
     def determine_correct_rarity(self, slot_result: str, result_type: str) -> RarityLevel:

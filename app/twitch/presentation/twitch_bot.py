@@ -138,7 +138,7 @@ class Bot(commands.Bot):
         return ConversationService(message_repo)
 
     def _betting_service(self, db):
-        return BettingService(self.economy_service, BettingRepositoryImpl(db))
+        return BettingService(BettingRepositoryImpl(db))
 
     async def _get_user_id_cached(self, login: str) -> str | None:
         now = datetime.utcnow()
