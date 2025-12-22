@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 
 from app.minigame.domain.models import GuessNumberGame, WordGuessGame, RPSGame, RPS_CHOICES
 from app.minigame.domain.repo import WordHistoryRepository
-from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 
 logger = logging.getLogger(__name__)
@@ -35,10 +34,9 @@ class MinigameService:
     GAME_START_INTERVAL_MIN = 30
     GAME_START_INTERVAL_MAX = 60
 
-    def __init__(self, economy_service: EconomyService, word_history_repo: WordHistoryRepository[Session]):
-        self.economy_service = economy_service
+    def __init__(self, word_history_repo: WordHistoryRepository[Session]):
         self.word_history_repo = word_history_repo
-        self.active_games: Dict[str, GuessNumberGame] = {}
+        self.active_guess_games: Dict[str, GuessNumberGame] = {}
         self.active_word_games: Dict[str, WordGuessGame] = {}
         self.active_rps_games: Dict[str, RPSGame] = {}
         self.last_game_time: Dict[str, datetime] = {}
@@ -47,19 +45,20 @@ class MinigameService:
     def set_stream_start_time(self, channel_name: str, start_time: datetime):
         self.stream_start_time[channel_name] = start_time
 
-    def reset_stream_state(self, db: Session, channel_name: str):
+    def reset_stream_state(self, channel_name: str):
         if channel_name in self.stream_start_time:
             del self.stream_start_time[channel_name]
 
-        if channel_name in self.active_games:
-            self._finish_game_timeout(channel_name)
+        if channel_name in self.active_guess_games:
+            self.finish_guess_game_timeout(channel_name)
         if channel_name in self.active_word_games:
             self._finish_word_game_timeout(channel_name)
         if channel_name in self.active_rps_games:
-            self._finish_rps_timeout(db, channel_name)
+            game = self.get_active_rps_game(channel_name)
+            self.finish_rps(game)
 
     def should_start_new_game(self, channel_name: str) -> bool:
-        if channel_name in self.active_games or channel_name in self.active_word_games or channel_name in self.active_rps_games:
+        if channel_name in self.active_guess_games or channel_name in self.active_word_games or channel_name in self.active_rps_games:
             return False
 
         current_time = datetime.utcnow()
@@ -99,80 +98,55 @@ class MinigameService:
             prize_amount=self.GUESS_GAME_PRIZE
         )
 
-        self.active_games[channel_name] = game
+        self.active_guess_games[channel_name] = game
         self.last_game_time[channel_name] = start_time
 
         return game
 
-    def process_guess(self, db: Session, channel_name: str, user_name: str, guess: int) -> tuple[bool, str]:
-        if channel_name not in self.active_games:
-            return False, "Сейчас нет активной игры 'угадай число'"
+    def is_game_active(self, channel_name: str) -> bool:
+        return True if channel_name in self.active_guess_games else False
 
-        game = self.active_games[channel_name]
+    def get_active_game(self, channel_name: str) -> GuessNumberGame:
+        return self.active_guess_games[channel_name]
 
-        if datetime.utcnow() > game.end_time:
-            self._finish_game_timeout(channel_name)
-            return False, f"Время игры истекло! Загаданное число было {game.target_number}"
-
-        if not game.is_active:
-            return False, "Игра уже завершена"
-
-        if not game.min_number <= guess <= game.max_number:
-            return False, f"Число должно быть от {game.min_number} до {game.max_number}"
-
-        if guess == game.target_number:
-            return self._finish_game_with_winner(db, channel_name, user_name, guess)
-        else:
-            if game.prize_amount > 300:
-                game.prize_amount = max(300, game.prize_amount - self.GUESS_PRIZE_DECREASE_PER_ATTEMPT)
-            hint = "больше" if guess < game.target_number else "меньше"
-            return False, f"@{user_name}, не угадал! Загаданное число {hint} {guess}."
-
-    def _finish_game_with_winner(self, db: Session, channel_name: str, winner_name: str, winning_number: int) -> tuple[bool, str]:
-        game = self.active_games[channel_name]
+    def finish_game_with_winner(self, game: GuessNumberGame, channel_name: str, winner_name: str, winning_number: int):
         game.is_active = False
         game.winner = winner_name
         game.winning_time = datetime.utcnow()
+        del self.active_guess_games[channel_name]
 
-        try:
-            description = f"Победа в игре 'угадай число': {winning_number}"
-            winner_balance = self.economy_service.add_balance(db, channel_name, winner_name, game.prize_amount, TransactionType.MINIGAME_WIN, description)
-
-            success_message = f"ПОЗДРАВЛЯЕМ! @{winner_name} угадал число {winning_number} и выиграл {game.prize_amount} монет! Баланс: {winner_balance.balance} монет"
-            logger.info(f"Игра 'угадай число' завершена в канале {channel_name}. Победитель: {winner_name}, число: {winning_number}, приз: {game.prize_amount}")
-
-            del self.active_games[channel_name]
-
-            return True, success_message
-
-        except Exception as e:
-            logger.error(f"Ошибка при начислении приза победителю {winner_name}: {e}")
-            game.is_active = False
-            del self.active_games[channel_name]
-            return False, f"❌ Ошибка при начислении приза. Игра завершена."
-
-    def _finish_game_timeout(self, channel_name: str) -> str:
-        if channel_name not in self.active_games:
+    def finish_guess_game_timeout(self, channel_name: str) -> str:
+        if channel_name not in self.active_guess_games:
             return "Игра не найдена"
 
-        game = self.active_games[channel_name]
+        game = self.active_guess_games[channel_name]
         game.is_active = False
 
         timeout_message = f"Время игры 'угадай число' истекло! Загаданное число было {game.target_number}. Никто не выиграл на этот раз."
 
         logger.info(f"Игра 'угадай число' завершена по таймауту. Число: {game.target_number}")
 
-        del self.active_games[channel_name]
+        del self.active_guess_games[channel_name]
 
         return timeout_message
 
-    def check_expired_games(self, db: Session) -> Dict[str, str]:
+    def check_rps_game_complete_time(self, channel_name: str, current_time: datetime) -> bool:
+        if channel_name not in self.active_rps_games:
+            return False
+
+        game = self.active_rps_games.get(channel_name)
+        if current_time > game.end_time and game.is_active:
+            return True
+
+        return False
+
+    def check_expired_games(self) -> Dict[str, str]:
         expired_messages: Dict[str, str] = {}
 
-        for channel_name in list(self.active_games.keys()):
-            game = self.active_games.get(channel_name)
+        for channel_name in list(self.active_guess_games.keys()):
+            game = self.active_guess_games.get(channel_name)
             if game and datetime.utcnow() > game.end_time and game.is_active:
-                timeout_message = self._finish_game_timeout(channel_name)
+                timeout_message = self.finish_guess_game_timeout(channel_name)
                 expired_messages[channel_name] = timeout_message
 
         for channel_name in list(self.active_word_games.keys()):
@@ -181,35 +155,7 @@ class MinigameService:
                 timeout_message = self._finish_word_game_timeout(channel_name)
                 expired_messages[channel_name] = timeout_message
 
-        for channel_name in list(self.active_rps_games.keys()):
-            game = self.active_rps_games.get(channel_name)
-            if game and datetime.utcnow() > game.end_time and game.is_active:
-                timeout_message = self._finish_rps_timeout(db, channel_name)
-                expired_messages[channel_name] = timeout_message
-
         return expired_messages
-
-    def get_game_status(self, channel_name: str) -> Optional[str]:
-        if channel_name not in self.active_games:
-            return None
-
-        game = self.active_games[channel_name]
-
-        if datetime.utcnow() > game.end_time:
-            return self._finish_game_timeout(channel_name)
-
-        if game.winner:
-            return f"Число {game.target_number} угадал @{game.winner}! Выигрыш: {game.prize_amount} монет"
-        elif not game.is_active:
-            return f"Время истекло! Загаданное число было {game.target_number}"
-        else:
-            return f"Угадайте число от {game.min_number} до {game.max_number}! Приз: {game.prize_amount} монет."
-
-    def force_end_game(self, channel_name: str) -> str:
-        if channel_name not in self.active_games:
-            return "Нет активной игры для завершения"
-
-        return self._finish_game_timeout(channel_name)
 
     def start_word_guess_game(self, channel_name: str, word: str, hint: str) -> WordGuessGame:
         if channel_name in self.active_word_games:
@@ -298,7 +244,8 @@ class MinigameService:
         game.winner = winner_name
         game.winning_time = datetime.utcnow()
         try:
-            winner_balance = self.economy_service.add_balance(db, channel_name, winner_name, game.prize_amount, TransactionType.MINIGAME_WIN, f"Победа в игре 'поле чудес'")
+            winner_balance = self.economy_service.add_balance(db, channel_name, winner_name, game.prize_amount,
+                                                              TransactionType.MINIGAME_WIN, f"Победа в игре 'поле чудес'")
             success_message = (
                 f"ПОЗДРАВЛЯЕМ! @{winner_name} угадал слово '{game.target_word}' и "
                 f"выиграл {game.prize_amount} монет! Баланс: {winner_balance.balance} монет"
@@ -335,43 +282,13 @@ class MinigameService:
         logger.info(f"Запущена игра 'камень-ножницы-бумага' в канале {channel_name}")
         return game
 
-    def join_rps(self, db: Session, channel_name: str, user_name: str, choice: str) -> str:
-        if channel_name not in self.active_rps_games:
-            return "Сейчас нет активной игры 'камень-ножницы-бумага'"
-        game = self.active_rps_games[channel_name]
-        if datetime.utcnow() > game.end_time:
-            self._finish_rps_timeout(db, channel_name)
-            return "Время игры истекло!"
-        if not game.is_active:
-            return "Игра уже завершена"
+    def rps_game_is_active(self, channel_name: str) -> bool:
+        return True if channel_name in self.active_rps_games else False
 
-        normalized_choice = choice.strip().lower()
-        if normalized_choice not in RPS_CHOICES:
-            return "Выберите: камень, ножницы или бумага"
+    def get_active_rps_game(self, channel_name: str) -> RPSGame:
+        return self.active_rps_games[channel_name]
 
-        normalized_user = user_name.lower()
-        if normalized_user in game.user_choices:
-            existing = game.user_choices[normalized_user]
-            return f"Вы уже выбрали: {existing}. Сменить нельзя в текущей игре"
-
-        fee = self.RPS_ENTRY_FEE_PER_USER
-        user_balance = self.economy_service.subtract_balance(db, channel_name, user_name, fee, TransactionType.SPECIAL_EVENT, "Участие в игре 'камень-ножницы-бумага'")
-        if not user_balance:
-            return f"Недостаточно средств! Требуется {fee} монет"
-
-        normalized = user_name.lower()
-        game.bank += fee
-        game.user_choices[normalized] = choice
-
-        return f"Принято: @{user_name} — {normalized_choice}. Участников: {len(game.user_choices)}"
-
-    def finish_rps(self, db: Session, channel_name: str) -> tuple[bool, str]:
-        if channel_name not in self.active_rps_games:
-            return False, "Игра не найдена"
-        game = self.active_rps_games[channel_name]
-        if not game.is_active:
-            return False, "Игра уже завершена"
-
+    def finish_rps(self, game: RPSGame) -> tuple[str, str, list[str]]:
         bot_choice = random.choice(RPS_CHOICES)
         counter_map = {
             "камень": "бумага",
@@ -381,26 +298,7 @@ class MinigameService:
         winning_choice = counter_map[bot_choice]
         game.winner_choice = winning_choice
         winners = [user for user, choice in game.user_choices.items() if choice == game.winner_choice]
-
-        if winners:
-            share = max(1, game.bank // len(winners))
-            for winner in winners:
-                self.economy_service.add_balance(db, channel_name, winner, share, TransactionType.MINIGAME_WIN, f"Победа в КНБ ({winning_choice})")
-            winners_display = ", ".join(f"@{winner}" for winner in winners)
-            message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
-        else:
-            message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
-
-        game.is_active = False
-        del self.active_rps_games[channel_name]
-        logger.info(f"Игра 'камень-ножницы-бумага' завершена в канале {channel_name}: {message}")
-        return True, message
-
-    def _finish_rps_timeout(self, db: Session, channel_name: str) -> str:
-        if channel_name not in self.active_rps_games:
-            return "Игра не найдена"
-        success, message = self.finish_rps(db, channel_name)
-        return message
+        return bot_choice, winning_choice, winners
 
     def get_used_words(self, db: Session, channel_name: str, limit: int) -> list[str]:
         words = self.word_history_repo.list_recent_words(db, channel_name, limit)

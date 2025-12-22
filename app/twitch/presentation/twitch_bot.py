@@ -15,6 +15,7 @@ from app.ai.data.intent_detector_client import IntentDetectorClientImpl
 from app.ai.data.llm_client import LLMClientImpl
 from app.ai.data.message_repository import AIMessageRepositoryImpl
 from app.battle.application.battle_use_case import BattleUseCase
+from app.minigame.domain.models import RPS_CHOICES
 from core.config import config
 from collections import Counter
 
@@ -108,7 +109,7 @@ class Bot(commands.Bot):
         self.stream_service = StreamService(StreamRepositoryImpl())
         self.equipment_service = EquipmentService(EquipmentRepositoryImpl())
         self.economy_service = EconomyService(EconomyRepositoryImpl())
-        self.minigame_service = MinigameService(self.economy_service, WordHistoryRepositoryImpl())
+        self.minigame_service = MinigameService(WordHistoryRepositoryImpl())
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
 
         self._restore_stream_context()
@@ -612,7 +613,8 @@ class Bot(commands.Bot):
             if payout > 0:
                 transaction_type = TransactionType.BET_WIN if result_type != "miss" else TransactionType.BET_WIN
                 description = f"Выигрыш в слот-машине: {slot_result_string}" if result_type != "miss" else f"Консольный приз: {slot_result_string}"
-                user_balance = self.economy_service.add_balance(db, channel_name, normalized_user_name, payout, transaction_type, description)
+                user_balance = self.economy_service.add_balance(db, channel_name, normalized_user_name, payout, transaction_type,
+                                                                description)
             self._betting_service(db).save_bet(channel_name, normalized_user_name, slot_result_string, result_type, rarity_level)
 
         result_emoji = self.get_result_emoji(result_type, payout)
@@ -700,9 +702,6 @@ class Bot(commands.Bot):
 
     def is_partial_match(self, result_type: str) -> bool:
         return result_type == "partial"
-
-    def is_miss(self, result_type: str) -> bool:
-        return result_type == "miss"
 
     def get_result_emoji(self, result_type: str, payout: int) -> str:
         if self.is_consolation_prize(result_type, payout):
@@ -1081,12 +1080,7 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда {self._COMMAND_GUESS} от пользователя {user_name}, число: {number}")
         if not number:
-            game_status = self.minigame_service.get_game_status(channel_name)
-            if game_status:
-                result = game_status
-            else:
-                result = f"@{user_name}, сейчас нет активной игры 'угадай число'. Используй: {self._prefix}{self._COMMAND_GUESS} [число]"
-
+            result = f"@{user_name}, используй: {self._prefix}{self._COMMAND_GUESS} [число]"
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
             await ctx.send(result)
@@ -1101,12 +1095,54 @@ class Bot(commands.Bot):
             await ctx.send(result)
             return
 
-        with SessionLocal.begin() as db:
-            success, message = self.minigame_service.process_guess(db, channel_name, user_name, guess)
+        if not self.minigame_service.is_game_active(channel_name):
+            result = "Сейчас нет активной игры 'угадай число'"
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
+            await ctx.send(result)
+            return
 
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-        await ctx.send(message)
+        game = self.minigame_service.get_active_game(channel_name)
+
+        if datetime.utcnow() > game.end_time:
+            self.minigame_service.finish_guess_game_timeout(channel_name)
+            result = f"Время игры истекло! Загаданное число было {game.target_number}"
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
+            await ctx.send(result)
+            return
+
+        if not game.is_active:
+            result = "Игра уже завершена"
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
+            await ctx.send(result)
+            return
+
+        if not game.min_number <= guess <= game.max_number:
+            result = f"Число должно быть от {game.min_number} до {game.max_number}"
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
+            await ctx.send(result)
+            return
+
+        if guess == game.target_number:
+            self.minigame_service.finish_game_with_winner(game, channel_name, user_name, guess)
+            description = f"Победа в игре 'угадай число': {guess}"
+            message = f"ПОЗДРАВЛЯЕМ! @{user_name} угадал число {guess} и выиграл {game.prize_amount} монет!"
+
+            with SessionLocal.begin() as db:
+                self.economy_service.add_balance(db, channel_name, user_name, game.prize_amount, TransactionType.MINIGAME_WIN, description)
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+            await ctx.send(message)
+        else:
+            if game.prize_amount > 300:
+                game.prize_amount = max(300, game.prize_amount - MinigameService.GUESS_PRIZE_DECREASE_PER_ATTEMPT)
+            hint = "больше" if guess < game.target_number else "меньше"
+            message = f"@{user_name}, не угадал! Загаданное число {hint} {guess}."
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+            await ctx.send(message)
 
     @commands.command(name=_COMMAND_GUESS_LETTER)
     async def guess_letter(self, ctx, letter: str = None):
@@ -1154,12 +1190,76 @@ class Bot(commands.Bot):
             await ctx.send(f"@{user_name}, укажите ваш выбор: камень / ножницы / бумага")
             return
 
-        with SessionLocal.begin() as db:
-            message = self.minigame_service.join_rps(db, channel_name, user_name, choice)
+        rps_game_is_active = self.minigame_service.rps_game_is_active(channel_name)
+        if not rps_game_is_active:
+            message = "Сейчас нет активной игры 'камень-ножницы-бумага'"
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+            await ctx.send(message)
+            return
 
-        await ctx.send(message)
+        game = self.minigame_service.get_active_rps_game(channel_name)
+
+        if datetime.utcnow() > game.end_time:
+            bot_choice, winning_choice, winners = self.minigame_service.finish_rps(game)
+            if winners:
+                share = max(1, game.bank // len(winners))
+                with SessionLocal.begin() as db:
+                    for winner in winners:
+                        self.economy_service.add_balance(db, channel_name, winner, share, TransactionType.MINIGAME_WIN,
+                                                         f"Победа в КНБ ({winning_choice})")
+                winners_display = ", ".join(f"@{winner}" for winner in winners)
+                message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
+            else:
+                message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+            await ctx.send(message)
+            return
+
+        if not game.is_active:
+            message = "Игра уже завершена"
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+            await ctx.send(message)
+            return
+
+        normalized_choice = choice.strip().lower()
+        if normalized_choice not in RPS_CHOICES:
+            message = "Выберите: камень, ножницы или бумага"
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+            await ctx.send(message)
+            return
+
+        normalized_user_name = user_name.lower()
+        if game.user_choices[normalized_user_name]:
+            existing = game.user_choices[normalized_user_name]
+            message = f"Вы уже выбрали: {existing}. Сменить нельзя в текущей игре"
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+            await ctx.send(message)
+            return
+
+        fee = MinigameService.RPS_ENTRY_FEE_PER_USER
+
+        with SessionLocal.begin() as db:
+            user_balance = self.economy_service.subtract_balance(db, channel_name, user_name, fee, TransactionType.SPECIAL_EVENT,
+                                                                 "Участие в игре 'камень-ножницы-бумага'")
+        if not user_balance:
+            message = f"Недостаточно средств! Требуется {fee} монет"
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+            await ctx.send(message)
+            return
+
+        game.bank += fee
+        game.user_choices[normalized_user_name] = choice
+
+        message = f"Принято: @{user_name} — {normalized_choice}"
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+        await ctx.send(message)
 
     def _cleanup_old_cooldowns(self):
         current_time = datetime.now()
@@ -1333,8 +1433,9 @@ class Bot(commands.Bot):
                         self.viewer_service.finish_stream_sessions(db, active_stream.id, finish_time)
                         total_viewers = self.viewer_service.get_unique_viewers_count(db, active_stream.id)
                         self.stream_service.update_stream_total_viewers(db, active_stream.id, total_viewers)
-                        self.minigame_service.reset_stream_state(db, channel_name)
                         logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
+
+                    self.minigame_service.reset_stream_state(channel_name)
 
                     with db_ro_session() as db:
                         chat_messages = self._chat_use_case(db).get_chat_messages(channel_name, active_stream.started_at, finish_time)
@@ -1497,8 +1598,27 @@ class Bot(commands.Bot):
 
                 channel_name = self.initial_channels[0]
 
-                with SessionLocal.begin() as db:
-                    expired_games = self.minigame_service.check_expired_games(db)
+                rps_game_complete_time = self.minigame_service.check_rps_game_complete_time(channel_name, datetime.utcnow())
+
+                if rps_game_complete_time:
+                    game = self.minigame_service.get_active_rps_game(channel_name)
+                    bot_choice, winning_choice, winners = self.minigame_service.finish_rps(game)
+                    if winners:
+                        share = max(1, game.bank // len(winners))
+                        with SessionLocal.begin() as db:
+                            for winner in winners:
+                                self.economy_service.add_balance(db, channel_name, winner, share, TransactionType.MINIGAME_WIN,
+                                                                 f"Победа в КНБ ({winning_choice})")
+                        winners_display = ", ".join(f"@{winner}" for winner in winners)
+                        message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
+                    else:
+                        message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
+                    with SessionLocal.begin() as db:
+                        self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
+                    await self.get_channel(channel_name).send(message)
+                    return
+
+                expired_games = self.minigame_service.check_expired_games()
                 for channel, timeout_message in expired_games.items():
                     await self.get_channel(channel).send(timeout_message)
                     with SessionLocal.begin() as db:
