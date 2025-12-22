@@ -25,7 +25,7 @@ from app.battle.domain.models import UserBattleStats
 from app.betting.presentation.betting_schemas import UserBetStats
 from app.betting.data.betting_repository import BettingRepositoryImpl
 from app.betting.domain.betting_service import BettingService
-from app.betting.domain.models import EmojiConfig
+from app.betting.domain.models import EmojiConfig, RarityLevel
 from app.equipment.data.equipment_repository import EquipmentRepositoryImpl
 from app.equipment.domain.equipment_service import EquipmentService
 from app.minigame.data.db.word_history_repository import WordHistoryRepositoryImpl
@@ -43,7 +43,8 @@ from app.stream.domain.stream_service import StreamService
 from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.viewer_session_service import ViewerTimeService
-from app.economy.domain.models import ShopItems, TransactionType
+from app.economy.domain.models import ShopItems, TransactionType, JackpotPayoutMultiplierEffect, MissPayoutMultiplierEffect, \
+    PartialPayoutMultiplierEffect
 
 logger = logging.getLogger(__name__)
 
@@ -527,29 +528,101 @@ class Bot(commands.Bot):
         else:
             result_type = "miss"
 
-        with SessionLocal.begin() as db:
-            equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
-            bet_result = self.betting_service.process_bet_result(
-                db=db,
-                channel_name=channel_name,
-                user_name=nickname.lower(),
-                result_type=result_type,
-                slot_result=slot_result_string,
-                bet_amount=bet_amount,
-                equipment=equipment
-            )
+        normalized_user_name = nickname.lower()
 
-        if not bet_result.success:
-            result = bet_result.message
+        if bet_amount < BettingService.MIN_BET_AMOUNT:
+            result = f"Минимальная сумма ставки: {BettingService.MIN_BET_AMOUNT} монет."
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
             await ctx.send(result)
             return
 
-        economic_info = f" {bet_result.get_result_emoji()} Баланс: {bet_result.balance} монет"
-        profit_display = bet_result.get_profit_display()
-        if profit_display:
-            economic_info += f" ({profit_display})"
+        if bet_amount > BettingService.MAX_BET_AMOUNT:
+            result = f"Максимальная сумма ставки: {BettingService.MAX_BET_AMOUNT} монет."
+            with SessionLocal.begin() as db:
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
+            await ctx.send(result)
+            return
+
+        rarity_level = self.betting_service.determine_correct_rarity(slot_result_string, result_type)
+
+        with db_ro_session() as db:
+            equipment = self.equipment_service.get_user_equipment(db, channel_name, normalized_user_name)
+
+        with SessionLocal.begin() as db:
+            user_balance = self.economy_service.subtract_balance(
+                db,
+                channel_name,
+                normalized_user_name,
+                bet_amount,
+                TransactionType.BET_LOSS,
+                f"Ставка в слот-машине: {slot_result_string}"
+            )
+            if not user_balance:
+                result = f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет."
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
+                await ctx.send(result)
+                return
+            base_payout = BettingService.RARITY_MULTIPLIERS.get(rarity_level, 0.2) * bet_amount
+            timeout_seconds = None
+            if result_type == "jackpot":
+                payout = base_payout * BettingService.JACKPOT_MULTIPLIER
+            elif result_type == "partial":
+                payout = base_payout * BettingService.PARTIAL_MULTIPLIER
+            else:
+                consolation_prize = BettingService.CONSOLATION_PRIZES.get(rarity_level, 0)
+                if consolation_prize > 0:
+                    payout = max(consolation_prize, bet_amount * 0.1)
+                    if rarity_level in [RarityLevel.MYTHICAL, RarityLevel.LEGENDARY]:
+                        timeout_seconds = 0
+                    elif rarity_level == RarityLevel.EPIC:
+                        timeout_seconds = 60
+                    else:
+                        timeout_seconds = 120
+                else:
+                    payout = 0
+                    timeout_seconds = 180
+
+            if payout > 0:
+                if result_type in ("jackpot", "partial"):
+                    jackpot_multiplier = 1.0
+                    partial_multiplier = 1.0
+                    for item in equipment:
+                        for effect in item.shop_item.effects:
+                            if isinstance(effect, JackpotPayoutMultiplierEffect) and result_type == "jackpot":
+                                jackpot_multiplier *= effect.multiplier
+                            if isinstance(effect, PartialPayoutMultiplierEffect) and result_type == "partial":
+                                partial_multiplier *= effect.multiplier
+                    if result_type == "jackpot" and jackpot_multiplier != 1.0:
+                        payout *= jackpot_multiplier
+                    if result_type == "partial" and partial_multiplier != 1.0:
+                        payout *= partial_multiplier
+                elif result_type == "miss":
+                    miss_multiplier = 1.0
+                    for item in equipment:
+                        for effect in item.shop_item.effects:
+                            if isinstance(effect, MissPayoutMultiplierEffect):
+                                miss_multiplier *= effect.multiplier
+                    if miss_multiplier != 1.0:
+                        payout *= miss_multiplier
+
+            payout = int(payout) if payout > 0 else 0
+
+            if payout > 0:
+                transaction_type = TransactionType.BET_WIN if result_type != "miss" else TransactionType.BET_WIN
+                description = f"Выигрыш в слот-машине: {slot_result_string}" if result_type != "miss" else f"Консольный приз: {slot_result_string}"
+                user_balance = self.economy_service.add_balance(db, channel_name, normalized_user_name, payout, transaction_type, description)
+            self.betting_service.save_bet(db, channel_name, normalized_user_name, slot_result_string, result_type, rarity_level)
+
+        result_emoji = self.get_result_emoji(result_type, payout)
+
+        economic_info = f" {result_emoji} Баланс: {user_balance.balance} монет"
+
+        profit = payout - bet_amount
+
+        profit_display = self.get_profit_display(result_type, payout, profit)
+
+        economic_info += f" ({profit_display})"
 
         final_result = f"{slot_result_string} {economic_info}"
 
@@ -561,17 +634,20 @@ class Bot(commands.Bot):
             await ctx.send(msg)
             await asyncio.sleep(0.3)
 
-        if bet_result.should_timeout():
-            base_timeout_duration = bet_result.get_timeout_duration()
+        if timeout_seconds is not None and timeout_seconds > 0:
+            base_timeout_duration = timeout_seconds if timeout_seconds else 0
 
             with db_ro_session() as db:
                 equipment = self.equipment_service.get_user_equipment(db, channel_name, nickname.lower())
-            final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(nickname, base_timeout_duration,
-                                                                                                        equipment)
+            final_timeout, protection_message = self.equipment_service.calculate_timeout_with_equipment(
+                nickname,
+                base_timeout_duration,
+                equipment
+            )
 
             if final_timeout == 0:
-                if bet_result.is_consolation_prize():
-                    no_timeout_message = f"🎁 @{nickname}, спасен от таймаута! {protection_message} Консольный приз: {bet_result.payout} монет"
+                if self.is_consolation_prize(result_type, payout):
+                    no_timeout_message = f"🎁 @{nickname}, спасен от таймаута! {protection_message} Консольный приз: {payout} монет"
                 else:
                     no_timeout_message = f"🛡️ @{nickname}, спасен от таймаута! {protection_message}"
 
@@ -583,8 +659,8 @@ class Bot(commands.Bot):
                     await ctx.send(msg)
                     await asyncio.sleep(0.3)
             else:
-                if bet_result.is_consolation_prize():
-                    reason = f"Промах с редким эмодзи! Консольный приз: {bet_result.payout} монет. Таймаут: {final_timeout} сек ⏰"
+                if self.is_consolation_prize(result_type, payout):
+                    reason = f"Промах с редким эмодзи! Консольный приз: {payout} монет. Таймаут: {final_timeout} сек ⏰"
                 else:
                     reason = f"Промах в слот-машине! Время на размышления: {final_timeout} сек ⏰"
 
@@ -597,9 +673,9 @@ class Bot(commands.Bot):
                     await asyncio.sleep(0.3)
 
                 await self._timeout_user(ctx, nickname, final_timeout, reason)
-        elif bet_result.is_miss():
-            if bet_result.is_consolation_prize():
-                no_timeout_message = f"🎁 @{nickname}, повезло! Редкий эмодзи спас от таймаута! Консольный приз: {bet_result.payout} монет"
+        elif self.is_miss(result_type):
+            if self.is_consolation_prize(result_type, payout):
+                no_timeout_message = f"🎁 @{nickname}, повезло! Редкий эмодзи спас от таймаута! Консольный приз: {payout} монет"
             else:
                 no_timeout_message = f"✨ @{nickname}, редкий эмодзи спас от таймаута!"
 
@@ -611,6 +687,50 @@ class Bot(commands.Bot):
                 self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), no_timeout_message, datetime.utcnow())
 
         self._cleanup_old_cooldowns()
+
+    def is_miss(self, result_type: str) -> bool:
+        return result_type == "miss"
+
+    def is_consolation_prize(self, result_type: str, payout: int) -> bool:
+        return self.is_miss(result_type) and payout > 0
+
+    def is_jackpot(self, result_type: str) -> bool:
+        return result_type == "jackpot"
+
+    def is_partial_match(self, result_type: str) -> bool:
+        return result_type == "partial"
+
+    def is_miss(self, result_type: str) -> bool:
+        return result_type == "miss"
+
+    def get_result_emoji(self, result_type: str, payout: int) -> str:
+        if self.is_consolation_prize(result_type, payout):
+            return "🎁"
+        elif self.is_jackpot(result_type):
+            return "🎰"
+        elif self.is_partial_match(result_type):
+            return "✨"
+        elif self.is_miss(result_type):
+            return "💥"
+        else:
+            return "💰"
+
+    def get_profit_display(self, result_type: str, payout: int, profit: int) -> str:
+        if self.is_consolation_prize(result_type, payout):
+            net_result = profit
+            if net_result > 0:
+                return f"+{net_result}"
+            elif net_result < 0:
+                return f"{net_result}"
+            else:
+                return "±0"
+        else:
+            if profit > 0:
+                return f"+{profit}"
+            elif profit < 0:
+                return f"{profit}"
+            else:
+                return "±0"
 
     @commands.command(name=_COMMAND_BALANCE)
     async def balance(self, ctx):
