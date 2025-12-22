@@ -34,7 +34,7 @@ class EconomyService:
     BATTLE_ENTRY_FEE = 500
     BATTLE_WINNER_PRIZE = 1000
 
-    def __init__(self, repo: EconomyRepository[Session]):
+    def __init__(self, repo: EconomyRepository):
         self._repo = repo
 
     def _should_grant_activity_reward(self, user_balance: UserBalanceInfo) -> bool:

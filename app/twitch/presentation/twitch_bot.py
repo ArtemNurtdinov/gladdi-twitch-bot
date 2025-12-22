@@ -1741,13 +1741,6 @@ class Bot(commands.Bot):
                     await asyncio.sleep(60)
                     continue
 
-                broadcaster_id = await self._get_user_id_cached(channel_name)
-
-                if not broadcaster_id:
-                    logger.error(f"Не удалось получить ID канала {channel_name} для мини-игр")
-                    await asyncio.sleep(60)
-                    continue
-
                 choice = random.choice(["number", "word", "rps"])
 
                 if choice == "word":
