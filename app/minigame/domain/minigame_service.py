@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 
 from app.minigame.domain.models import GuessNumberGame, WordGuessGame, RPSGame, RPS_CHOICES
 from app.minigame.domain.repo import WordHistoryRepository
-from app.economy.domain.models import TransactionType
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +51,7 @@ class MinigameService:
         if channel_name in self.active_guess_games:
             self.finish_guess_game_timeout(channel_name)
         if channel_name in self.active_word_games:
-            self._finish_word_game_timeout(channel_name)
+            self.finish_word_game_timeout(channel_name)
         if channel_name in self.active_rps_games:
             game = self.get_active_rps_game(channel_name)
             self.finish_rps(game)
@@ -152,7 +151,7 @@ class MinigameService:
         for channel_name in list(self.active_word_games.keys()):
             game = self.active_word_games.get(channel_name)
             if game and datetime.utcnow() > game.end_time and game.is_active:
-                timeout_message = self._finish_word_game_timeout(channel_name)
+                timeout_message = self.finish_word_game_timeout(channel_name)
                 expired_messages[channel_name] = timeout_message
 
         return expired_messages
@@ -169,66 +168,18 @@ class MinigameService:
         logger.info(f"Запущена игра 'поле чудес' в канале {channel_name}. Слово: {word}, подсказка: {hint}")
         return game
 
-    def process_letter(self, db: Session, channel_name: str, user_name: str, letter: str) -> tuple[bool, str]:
-        if channel_name not in self.active_word_games:
-            return False, "Сейчас нет активной игры 'поле чудес'"
+    def is_word_game_active(self, channel_name) -> bool:
+        return True if channel_name in self.active_word_games else False
 
-        game = self.active_word_games[channel_name]
-        if datetime.utcnow() > game.end_time:
-            self._finish_word_game_timeout(channel_name)
-            return False, f"Время игры истекло! Слово было '{game.target_word}'"
-        if not game.is_active:
-            return False, "Игра уже завершена"
-        if not len(letter) == 1 or not letter.isalpha():
-            return False, "Введите одну букву русского алфавита"
-
-        letter_revealed = False
-
-        letter = letter.lower()
-        if letter in game.guessed_letters:
-            letter_revealed = False
-        if letter in game.target_word:
-            game.guessed_letters.add(letter)
-            letter_revealed = True
-
-        masked = game.get_masked_word()
-
-        if letter_revealed:
-            if game.prize_amount > self.WORD_GAME_MIN_PRIZE:
-                game.prize_amount = max(self.WORD_GAME_MIN_PRIZE, game.prize_amount - self.WORD_GAME_LETTER_REWARD_DECREASE)
-
-            letters_in_word = {ch for ch in game.target_word if ch.isalpha()}
-            all_letters_revealed = letters_in_word.issubset(game.guessed_letters)
-
-            if all_letters_revealed:
-                return self._finish_word_game_with_winner(db, channel_name, user_name)
-
-            return False, f"Буква есть! Слово: {masked}."
-        else:
-            return False, f"Такой буквы нет. Слово: {masked}."
-
-    def process_word(self, db: Session, channel_name: str, user_name: str, word: str) -> tuple[bool, str]:
-        if channel_name not in self.active_word_games:
-            return False, "Сейчас нет активной игры 'поле чудес'"
-        game = self.active_word_games[channel_name]
-        if datetime.utcnow() > game.end_time:
-            self._finish_word_game_timeout(channel_name)
-            return False, f"Время игры истекло! Слово было '{game.target_word}'"
-        if not game.is_active:
-            return False, "Игра уже завершена"
-
-        if word.strip().lower() == game.target_word:
-            return self._finish_word_game_with_winner(db, channel_name, user_name)
-        else:
-            masked = game.get_masked_word()
-            return False, f"Неверное слово. Слово: {masked}."
+    def get_active_word_game(self, channel_name: str) -> WordGuessGame:
+        return self.active_word_games[channel_name]
 
     def get_word_game_status(self, channel_name: str) -> Optional[str]:
         if channel_name not in self.active_word_games:
             return None
         game = self.active_word_games[channel_name]
         if datetime.utcnow() > game.end_time:
-            return self._finish_word_game_timeout(channel_name)
+            return self.finish_word_game_timeout(channel_name)
 
         if game.winner:
             return f"Слово '{game.target_word}' угадал @{game.winner}! Выигрыш: {game.prize_amount} монет"
@@ -238,30 +189,13 @@ class MinigameService:
             letters_count = sum(1 for ch in game.target_word if ch.isalpha())
             return f"Угадайте слово из {letters_count} букв! Слово: {game.get_masked_word()}"
 
-    def _finish_word_game_with_winner(self, db: Session, channel_name: str, winner_name: str) -> tuple[bool, str]:
-        game = self.active_word_games[channel_name]
+    def finish_word_game_with_winner(self, game: WordGuessGame, channel_name: str, winner_name: str):
         game.is_active = False
         game.winner = winner_name
         game.winning_time = datetime.utcnow()
-        try:
-            winner_balance = self.economy_service.add_balance(db, channel_name, winner_name, game.prize_amount,
-                                                              TransactionType.MINIGAME_WIN, f"Победа в игре 'поле чудес'")
-            success_message = (
-                f"ПОЗДРАВЛЯЕМ! @{winner_name} угадал слово '{game.target_word}' и "
-                f"выиграл {game.prize_amount} монет! Баланс: {winner_balance.balance} монет"
-            )
-            logger.info(
-                f"Игра 'поле чудес' завершена. Победитель: {winner_name}, слово: {game.target_word}, приз: {game.prize_amount}"
-            )
-            del self.active_word_games[channel_name]
-            return True, success_message
-        except Exception as e:
-            logger.error(f"Ошибка при начислении приза победителю {winner_name}: {e}")
-            game.is_active = False
-            del self.active_word_games[channel_name]
-            return False, "Ошибка при начислении приза. Игра завершена."
+        del self.active_word_games[channel_name]
 
-    def _finish_word_game_timeout(self, channel_name: str) -> str:
+    def finish_word_game_timeout(self, channel_name: str) -> str:
         if channel_name not in self.active_word_games:
             return "Игра не найдена"
         game = self.active_word_games[channel_name]

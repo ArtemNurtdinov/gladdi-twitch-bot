@@ -45,14 +45,14 @@ class EconomyService:
 
         return True
 
-    def process_user_message_activity(self, db: Session, channel_name: str, user_name: str):
-        user_balance = self.get_user_balance(db, channel_name, user_name)
+    def process_user_message_activity(self, channel_name: str, user_name: str):
+        user_balance = self.get_user_balance(channel_name, user_name)
 
         user_balance.message_count += 1
         user_balance.updated_at = datetime.utcnow()
 
         if not self._should_grant_activity_reward(user_balance):
-            self._repo.save_balance(db, user_balance)
+            self._repo.save_balance(user_balance)
             return None
 
         user_balance.last_activity_reward = datetime.utcnow()
@@ -62,9 +62,8 @@ class EconomyService:
         user_balance.total_earned += self.ACTIVITY_REWARD
         user_balance.updated_at = datetime.utcnow()
 
-        self._repo.save_balance(db, user_balance)
+        self._repo.save_balance(user_balance)
         self._repo.add_transaction(
-            db,
             TransactionData(
                 channel_name=channel_name,
                 user_name=user_name,
@@ -77,14 +76,13 @@ class EconomyService:
             ),
         )
 
-    def get_user_balance(self, db: Session, channel_name: str, user_name: str) -> UserBalanceInfo:
+    def get_user_balance(self, channel_name: str, user_name: str) -> UserBalanceInfo:
         normalized_user_name = user_name.lower()
-        user_balance = self._repo.get_balance(db, channel_name, normalized_user_name)
+        user_balance = self._repo.get_balance(channel_name, normalized_user_name)
 
         if not user_balance:
-            user_balance = self._repo.create_balance(db, channel_name, normalized_user_name, self.STARTING_BALANCE)
+            user_balance = self._repo.create_balance(channel_name, normalized_user_name, self.STARTING_BALANCE)
             self._repo.add_transaction(
-                db,
                 TransactionData(
                     channel_name=channel_name,
                     user_name=normalized_user_name,
@@ -99,19 +97,18 @@ class EconomyService:
 
         return user_balance
 
-    def add_balance(self, db: Session, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> UserBalanceInfo:
+    def add_balance(self, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> UserBalanceInfo:
         normalized_user_name = user_name.lower()
 
-        user_balance = self.get_user_balance(db, channel_name, normalized_user_name)
+        user_balance = self.get_user_balance(channel_name, normalized_user_name)
 
         balance_before = user_balance.balance or 0
         user_balance.balance = (user_balance.balance or 0) + amount
         user_balance.total_earned = (user_balance.total_earned or 0) + max(0, amount)
         user_balance.updated_at = datetime.utcnow()
 
-        saved = self._repo.save_balance(db, user_balance)
+        saved = self._repo.save_balance(user_balance)
         self._repo.add_transaction(
-            db,
             TransactionData(
                 channel_name=channel_name,
                 user_name=normalized_user_name,
@@ -125,10 +122,10 @@ class EconomyService:
         )
         return saved
 
-    def subtract_balance(self, db: Session, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> Optional[UserBalanceInfo]:
+    def subtract_balance(self, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> Optional[UserBalanceInfo]:
         normalized_user_name = user_name.lower()
 
-        user_balance = self.get_user_balance(db, channel_name, normalized_user_name)
+        user_balance = self.get_user_balance(channel_name, normalized_user_name)
 
         current_balance = user_balance.balance or 0
         if current_balance < amount:
@@ -140,9 +137,8 @@ class EconomyService:
         user_balance.total_spent = (user_balance.total_spent or 0) + amount
         user_balance.updated_at = datetime.utcnow()
 
-        saved = self._repo.save_balance(db, user_balance)
+        saved = self._repo.save_balance(user_balance)
         self._repo.add_transaction(
-            db,
             TransactionData(
                 channel_name=channel_name,
                 user_name=normalized_user_name,
@@ -159,7 +155,7 @@ class EconomyService:
 
         return saved
 
-    def transfer_money(self, db: Session, channel_name: str, sender_name: str, receiver_name: str, amount: int) -> TransferResult:
+    def transfer_money(self, channel_name: str, sender_name: str, receiver_name: str, amount: int) -> TransferResult:
         if amount < self.MIN_TRANSFER_AMOUNT:
             return TransferResult.failure_result(f"Минимальная сумма перевода: {self.MIN_TRANSFER_AMOUNT} монет")
 
@@ -169,13 +165,13 @@ class EconomyService:
         if sender_name == receiver_name:
             return TransferResult.failure_result("Нельзя переводить деньги самому себе!")
 
-        receiver_balance = self._repo.get_balance(db, channel_name, receiver_name)
+        receiver_balance = self._repo.get_balance(channel_name, receiver_name)
 
         if receiver_balance is None:
             return TransferResult.failure_result(f"Пользователь @{receiver_name} не найден в системе!")
 
-        sender_balance = self.get_user_balance(db, channel_name, sender_name)
-        receiver_balance = self.get_user_balance(db, channel_name, receiver_name)
+        sender_balance = self.get_user_balance(channel_name, sender_name)
+        receiver_balance = self.get_user_balance(channel_name, receiver_name)
 
         if sender_balance.balance < amount:
             return TransferResult.failure_result(f"Недостаточно средств! У вас {sender_balance.balance} монет, нужно {amount}")
@@ -191,11 +187,10 @@ class EconomyService:
         receiver_balance.total_earned += amount
         receiver_balance.updated_at = datetime.utcnow()
 
-        sender_saved = self._repo.save_balance(db, sender_balance)
-        receiver_saved = self._repo.save_balance(db, receiver_balance)
+        sender_saved = self._repo.save_balance(sender_balance)
+        receiver_saved = self._repo.save_balance(receiver_balance)
 
         self._repo.add_transaction(
-            db,
             TransactionData(
                 channel_name=channel_name,
                 user_name=sender_name,
@@ -209,7 +204,6 @@ class EconomyService:
         )
 
         self._repo.add_transaction(
-            db,
             TransactionData(
                 channel_name=channel_name,
                 user_name=receiver_name,
@@ -223,8 +217,8 @@ class EconomyService:
         )
         return TransferResult.success_result()
 
-    def claim_daily_bonus(self, db: Session, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None) -> DailyBonusResult:
-        user_balance = self.get_user_balance(db, channel_name, user_name)
+    def claim_daily_bonus(self, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None) -> DailyBonusResult:
+        user_balance = self.get_user_balance(channel_name, user_name)
 
         if user_balance.last_bonus_stream_id == active_stream_id:
             return DailyBonusResult(success=False, failure_reason="already_claimed")
@@ -267,10 +261,9 @@ class EconomyService:
 
         transaction_description = "Бонус" + (f" (усилен {special_items})" if special_items else "")
 
-        saved = self._repo.save_balance(db, user_balance)
+        saved = self._repo.save_balance(user_balance)
 
         self._repo.add_transaction(
-            db,
             TransactionData(
                 channel_name=channel_name,
                 user_name=user_name,
@@ -287,8 +280,8 @@ class EconomyService:
 
         return DailyBonusResult(success=True, user_balance=saved, bonus_amount=bonus_amount, bonus_message=bonus_message)
 
-    def get_top_users(self, db: Session, channel_name: str, limit: int) -> list[BalanceBrief]:
-        return self._repo.get_top_users(db, channel_name, limit)
+    def get_top_users(self, channel_name: str, limit: int) -> list[BalanceBrief]:
+        return self._repo.get_top_users(channel_name, limit)
 
-    def get_bottom_users(self, db: Session, channel_name: str, limit: int) -> list[BalanceBrief]:
-        return self._repo.get_bottom_users(db, channel_name, limit)
+    def get_bottom_users(self, channel_name: str, limit: int) -> list[BalanceBrief]:
+        return self._repo.get_bottom_users(channel_name, limit)
