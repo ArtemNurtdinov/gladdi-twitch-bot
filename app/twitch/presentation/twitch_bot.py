@@ -362,8 +362,9 @@ class Bot(commands.Bot):
 
             self.battle_waiting_user = challenger
             result = (
-                f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {self.economy_service.BATTLE_ENTRY_FEE} монет. Используй {self._prefix}{self._COMMAND_FIGHT}, "
-                f"чтобы принять вызов.")
+                f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {self.economy_service.BATTLE_ENTRY_FEE} монет. "
+                f"Используй {self._prefix}{self._COMMAND_FIGHT}, чтобы принять вызов."
+            )
             logger.info(f"{challenger} ищет оппонента для битвы")
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
@@ -806,14 +807,15 @@ class Bot(commands.Bot):
 
         with db_ro_session() as db:
             equipment = self.equipment_service.get_user_equipment(db, channel_name, normalized_user_name)
-            if not equipment:
-                result = f"@{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"
-            else:
-                result = f"Экипировка @{user_name}:\n"
 
-                for item in equipment:
-                    expires_date = item.expires_at.strftime("%d.%m.%Y")
-                    result += f"{item.shop_item.emoji} {item.shop_item.name} до {expires_date}\n"
+        if not equipment:
+            result = f"@{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"
+        else:
+            result = f"Экипировка @{user_name}:\n"
+
+            for item in equipment:
+                expires_date = item.expires_at.strftime("%d.%m.%Y")
+                result += f"{item.shop_item.emoji} {item.shop_item.name} до {expires_date}\n"
 
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
