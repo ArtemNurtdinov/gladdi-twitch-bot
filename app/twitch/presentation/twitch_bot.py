@@ -7,13 +7,14 @@ from telegram.request import HTTPXRequest
 from twitchio.ext import commands
 from datetime import datetime, timedelta
 import telegram
+
+from app.battle.application.battle_use_case import BattleUseCase
 from core.config import config
 from collections import Counter
 
 from core.db import db_ro_session, SessionLocal
 from app.ai.domain.ai_service import AIService
 from app.ai.domain.models import Intent, AIMessage, Role
-from app.battle.domain.battle_service import BattleService
 from app.battle.data.battle_repository import BattleRepositoryImpl
 from app.battle.domain.models import UserBattleStats
 from app.betting.presentation.betting_schemas import UserBetStats
@@ -100,7 +101,6 @@ class Bot(commands.Bot):
         self.minigame_service = MinigameService(self.economy_service, WordHistoryRepositoryImpl())
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
         self.betting_service = BettingService(self.economy_service, BettingRepositoryImpl())
-        self.battle_service = BattleService(BattleRepositoryImpl())
 
         self._restore_stream_context()
 
@@ -120,6 +120,9 @@ class Bot(commands.Bot):
 
     def _chat_use_case(self, db):
         return ChatUseCase(ChatRepositoryImpl(db))
+
+    def _battle_use_case(self, db):
+        return BattleUseCase(BattleRepositoryImpl(db))
 
     async def _get_user_id_cached(self, login: str) -> str | None:
         now = datetime.utcnow()
@@ -411,7 +414,7 @@ class Bot(commands.Bot):
                                              f"Победа в битве против {loser}")
             self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
             self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            self.battle_service.save_battle_history(db, channel_name, opponent, challenger, winner, result)
+            self._battle_use_case(db).save_battle_history(channel_name, opponent, challenger, winner, result)
 
         messages = self.split_text(result)
 
@@ -907,7 +910,7 @@ class Bot(commands.Bot):
             bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
 
         with db_ro_session() as db:
-            battles = self.battle_service.get_user_battles(db, channel_name, user_name)
+            battles = self._battle_use_case(db).get_user_battles(channel_name, user_name)
 
         if not battles:
             battle_stats = UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
@@ -1191,7 +1194,7 @@ class Bot(commands.Bot):
 
                     with SessionLocal.begin() as db:
                         self.stream_service.end_stream(db, active_stream.id, finish_time)
-                        self.viewer_service.finish_stream_sessions(db, active_stream.id, datetime.utcnow())
+                        self.viewer_service.finish_stream_sessions(db, active_stream.id, finish_time)
                         total_viewers = self.viewer_service.get_unique_viewers_count(db, active_stream.id)
                         self.stream_service.update_stream_total_viewers(db, active_stream.id, total_viewers)
                         self.minigame_service.reset_stream_state(db, channel_name)
@@ -1209,7 +1212,7 @@ class Bot(commands.Bot):
                         top_user = None
 
                     with db_ro_session() as db:
-                        battles = self.battle_service.get_battles(db, channel_name, active_stream.started_at)
+                        battles = self._battle_use_case(db).get_battles(channel_name, active_stream.started_at)
 
                     total_battles = len(battles)
                     if battles:
