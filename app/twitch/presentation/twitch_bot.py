@@ -110,7 +110,6 @@ class Bot(commands.Bot):
         self.economy_service = EconomyService(EconomyRepositoryImpl())
         self.minigame_service = MinigameService(self.economy_service, WordHistoryRepositoryImpl())
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
-        self.betting_service = BettingService(self.economy_service, BettingRepositoryImpl())
 
         self._restore_stream_context()
 
@@ -137,6 +136,9 @@ class Bot(commands.Bot):
     def _ai_conversation_use_case(self, db):
         message_repo = AIMessageRepositoryImpl(db)
         return ConversationService(message_repo)
+
+    def _betting_service(self, db):
+        return BettingService(self.economy_service, BettingRepositoryImpl(db))
 
     async def _get_user_id_cached(self, login: str) -> str | None:
         now = datetime.utcnow()
@@ -477,14 +479,14 @@ class Bot(commands.Bot):
         channel_name = ctx.channel.name
         nickname = ctx.author.display_name
 
-        bet_amount = self.betting_service.BET_COST
+        bet_amount = BettingService.BET_COST
         if amount:
             try:
                 bet_amount = int(amount)
             except ValueError:
                 result = (
                     f"@{nickname}, неверная сумма ставки! Используй: {self._prefix}{self._COMMAND_ROLL} [сумма] (например: {self._prefix}{self._COMMAND_ROLL} 100). "
-                    f"Диапазон: {self.betting_service.MIN_BET_AMOUNT}-{self.betting_service.MAX_BET_AMOUNT} монет.")
+                    f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{BettingService.MAX_BET_AMOUNT} монет.")
                 with SessionLocal.begin() as db:
                     self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
                 await ctx.send(result)
@@ -544,9 +546,8 @@ class Bot(commands.Bot):
             await ctx.send(result)
             return
 
-        rarity_level = self.betting_service.determine_correct_rarity(slot_result_string, result_type)
-
         with db_ro_session() as db:
+            rarity_level = self._betting_service(db).determine_correct_rarity(slot_result_string, result_type)
             equipment = self.equipment_service.get_user_equipment(db, channel_name, normalized_user_name)
 
         with SessionLocal.begin() as db:
@@ -612,7 +613,7 @@ class Bot(commands.Bot):
                 transaction_type = TransactionType.BET_WIN if result_type != "miss" else TransactionType.BET_WIN
                 description = f"Выигрыш в слот-машине: {slot_result_string}" if result_type != "miss" else f"Консольный приз: {slot_result_string}"
                 user_balance = self.economy_service.add_balance(db, channel_name, normalized_user_name, payout, transaction_type, description)
-            self.betting_service.save_bet(db, channel_name, normalized_user_name, slot_result_string, result_type, rarity_level)
+            self._betting_service(db).save_bet(channel_name, normalized_user_name, slot_result_string, result_type, rarity_level)
 
         result_emoji = self.get_result_emoji(result_type, payout)
 
@@ -1033,7 +1034,7 @@ class Bot(commands.Bot):
 
         with SessionLocal.begin() as db:
             balance = self.economy_service.get_user_balance(db, channel_name, normalized_user_name)
-            bets = self.betting_service.get_user_bets(db, channel_name, normalized_user_name)
+            bets = self._betting_service(db).get_user_bets(channel_name, normalized_user_name)
 
         if not bets:
             bet_stats = UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)

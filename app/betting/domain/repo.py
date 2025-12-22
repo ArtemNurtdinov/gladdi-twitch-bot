@@ -1,14 +1,11 @@
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol
 
 from app.betting.domain.models import BetRecord, RarityLevel
 
-DB = TypeVar("DB")
 
-
-class BettingRepository(Protocol, Generic[DB]):
+class BettingRepository(Protocol):
     def save_bet_history(
         self,
-        db: DB,
         channel_name: str,
         user_name: str,
         slot_result: str,
@@ -17,8 +14,5 @@ class BettingRepository(Protocol, Generic[DB]):
     ):
         ...
 
-    def get_user_bets(self, db: DB, channel_name: str, user_name: str) -> list[BetRecord]:
+    def get_user_bets(self, channel_name: str, user_name: str) -> list[BetRecord]:
         ...
-
-
-
