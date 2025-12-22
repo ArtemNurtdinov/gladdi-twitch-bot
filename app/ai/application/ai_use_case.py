@@ -1,20 +1,23 @@
-from sqlalchemy.orm import Session
-from app.ai.domain.models import Intent, AIMessage
-from app.ai.domain.repo import AIRepository
+from app.ai.domain.intent_detector import IntentDetectorClient
+from app.ai.domain.llm_client import LLMClient
+from app.ai.domain.message_repository import AIMessageRepository
+from app.ai.domain.models import AIMessage, Intent
 
 
-class AIService:
+class AIUseCase:
 
-    def __init__(self, ai_repository: AIRepository[Session]):
-        self._repo = ai_repository
+    def __init__(self, llm_client: LLMClient, intent_detector: IntentDetectorClient, message_repo: AIMessageRepository):
+        self._llm_client = llm_client
+        self._intent_detector = intent_detector
+        self._message_repo = message_repo
 
     def generate_ai_response(self, user_messages: list[AIMessage]) -> str:
-        return self._repo.generate_ai_response(user_messages)
+        return self._llm_client.generate_ai_response(user_messages)
 
     def get_intent_from_text(self, text: str) -> Intent:
-        detected_intent = self._repo.extract_intent_from_text(text)
+        detected_intent = self._intent_detector.extract_intent_from_text(text)
         if detected_intent == Intent.HELLO or detected_intent == Intent.DANKAR_CUT or detected_intent == Intent.JACKBOX:
-            return self._repo.validate_intent_via_llm(detected_intent, text)
+            return self._intent_detector.validate_intent_via_llm(detected_intent, text, self._llm_client)
         else:
             return detected_intent
 
@@ -51,8 +54,8 @@ class AIService:
     def get_default_prompt(self, source: str, nickname: str, message: str) -> str:
         return f"Ответь пользователю {source} с никнеймом {nickname} на его сообщение: {message}."
 
-    def get_last_messages(self, db: Session, channel_name: str, system_prompt: str) -> list[AIMessage]:
-        return self._repo.get_last_messages(db, channel_name, system_prompt)
+    def get_last_messages(self, channel_name: str, system_prompt: str) -> list[AIMessage]:
+        return self._message_repo.get_last_messages(channel_name, system_prompt)
 
-    def save_conversation_to_db(self, db: Session, channel_name: str, user_message: str, ai_message: str):
-        self._repo.add_messages_to_db(db, channel_name, user_message, ai_message)
+    def save_conversation_to_db(self, channel_name: str, user_message: str, ai_message: str):
+        self._message_repo.add_messages_to_db(channel_name, user_message, ai_message)

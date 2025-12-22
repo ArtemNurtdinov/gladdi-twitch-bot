@@ -3,8 +3,6 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from app.ai.domain.ai_service import AIService
-from app.ai.data.ai_repository import AIRepositoryImpl
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.presentation.auth import TwitchAuth
 from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
@@ -68,10 +66,9 @@ class BotManager:
             auth = TwitchAuth(access_token=access_token, refresh_token=refresh_token)
             self._ensure_credentials(auth)
 
-            ai_service = AIService(AIRepositoryImpl())
             twitch_api_service = TwitchApiService(auth)
 
-            self._bot = TwitchBot(auth, twitch_api_service, ai_service)
+            self._bot = TwitchBot(auth, twitch_api_service)
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None

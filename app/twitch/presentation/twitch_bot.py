@@ -8,12 +8,15 @@ from twitchio.ext import commands
 from datetime import datetime, timedelta
 import telegram
 
+from app.ai.application.ai_use_case import AIUseCase
+from app.ai.data.intent_detector_client import IntentDetectorClientImpl
+from app.ai.data.llm_client import LLMClientImpl
+from app.ai.data.message_repository import AIMessageRepositoryImpl
 from app.battle.application.battle_use_case import BattleUseCase
 from core.config import config
 from collections import Counter
 
 from core.db import db_ro_session, SessionLocal
-from app.ai.domain.ai_service import AIService
 from app.ai.domain.models import Intent, AIMessage, Role
 from app.battle.data.battle_repository import BattleRepositoryImpl
 from app.battle.domain.models import UserBattleStats
@@ -86,14 +89,13 @@ class Bot(commands.Bot):
     _SOURCE_TWITCH = "twitch"
     _CHECK_VIEWERS_INTERVAL_SECONDS = 60
 
-    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService, ai_service: AIService):
+    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService):
         self._prefix = '!'
         self.initial_channels = ['artemnefrit']
         super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
 
         self.twitch_auth = twitch_auth
         self.twitch_api_service = twitch_api_service
-        self.ai_service = ai_service
         self.joke_service = JokeService(FileJokeSettingsRepository())
         self.stream_service = StreamService(StreamRepositoryImpl())
         self.equipment_service = EquipmentService(EquipmentRepositoryImpl())
@@ -123,6 +125,12 @@ class Bot(commands.Bot):
 
     def _battle_use_case(self, db):
         return BattleUseCase(BattleRepositoryImpl(db))
+
+    def _ai_use_case(self, db):
+        llm_client = LLMClientImpl()
+        intent_detector = IntentDetectorClientImpl()
+        message_repo = AIMessageRepositoryImpl(db)
+        return AIUseCase(llm_client, intent_detector, message_repo)
 
     async def _get_user_id_cached(self, login: str) -> str | None:
         now = datetime.utcnow()
@@ -219,17 +227,18 @@ class Bot(commands.Bot):
             await self.handle_commands(message)
             return
 
-        intent = self.ai_service.get_intent_from_text(message.content)
-        logger.info(f"Определён интент: {intent}")
+        with db_ro_session() as db:
+            intent = self._ai_use_case(db).get_intent_from_text(message.content)
+            logger.info(f"Определён интент: {intent}")
 
-        prompt = None
+            prompt = None
 
-        if intent == Intent.JACKBOX:
-            prompt = self.ai_service.get_jackbox_prompt(self._SOURCE_TWITCH, nickname, content)
-        elif intent == Intent.DANKAR_CUT:
-            prompt = self.ai_service.get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, content)
-        elif intent == Intent.HELLO:
-            prompt = self.ai_service.get_hello_prompt(self._SOURCE_TWITCH, nickname, content)
+            if intent == Intent.JACKBOX:
+                prompt = self._ai_use_case(db).get_jackbox_prompt(self._SOURCE_TWITCH, nickname, content)
+            elif intent == Intent.DANKAR_CUT:
+                prompt = self._ai_use_case(db).get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, content)
+            elif intent == Intent.HELLO:
+                prompt = self._ai_use_case(db).get_hello_prompt(self._SOURCE_TWITCH, nickname, content)
 
         if prompt is not None:
             result = self.generate_response_in_chat(prompt, channel_name)
@@ -276,7 +285,7 @@ class Bot(commands.Bot):
             prompt = f"@{user_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и {minutes} минут. Сообщи ему об этом как-нибудь оригинально."
             result = self.generate_response_in_chat(prompt, channel_name)
             with SessionLocal.begin() as db:
-                self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
+                self._ai_use_case(db).save_conversation_to_db(channel_name, prompt, result)
                 self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
             await ctx.send(result)
         else:
@@ -295,23 +304,24 @@ class Bot(commands.Bot):
 
         logger.info(f"Команда от пользователя {nickname}")
 
-        intent = self.ai_service.get_intent_from_text(question)
-        logger.info(f"Определён интент: {intent}")
+        with db_ro_session() as db:
+            intent = self._ai_use_case(db).get_intent_from_text(question)
+            logger.info(f"Определён интент: {intent}")
 
-        if intent == Intent.JACKBOX:
-            prompt = self.ai_service.get_jackbox_prompt(self._SOURCE_TWITCH, nickname, question)
-        elif intent == Intent.SKUF_FEMBOY:
-            prompt = self.ai_service.get_skuf_femboy_prompt(self._SOURCE_TWITCH, nickname, question)
-        elif intent == Intent.DANKAR_CUT:
-            prompt = self.ai_service.get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, question)
-        elif intent == Intent.HELLO:
-            prompt = self.ai_service.get_hello_prompt(self._SOURCE_TWITCH, nickname, question)
-        else:
-            prompt = self.ai_service.get_default_prompt(self._SOURCE_TWITCH, nickname, question)
+            if intent == Intent.JACKBOX:
+                prompt = self._ai_use_case(db).get_jackbox_prompt(self._SOURCE_TWITCH, nickname, question)
+            elif intent == Intent.SKUF_FEMBOY:
+                prompt = self._ai_use_case(db).get_skuf_femboy_prompt(self._SOURCE_TWITCH, nickname, question)
+            elif intent == Intent.DANKAR_CUT:
+                prompt = self._ai_use_case(db).get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, question)
+            elif intent == Intent.HELLO:
+                prompt = self._ai_use_case(db).get_hello_prompt(self._SOURCE_TWITCH, nickname, question)
+            else:
+                prompt = self._ai_use_case(db).get_default_prompt(self._SOURCE_TWITCH, nickname, question)
 
         result = self.generate_response_in_chat(prompt, channel_name)
         with SessionLocal.begin() as db:
-            self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
+            self._ai_use_case(db).save_conversation_to_db(channel_name, prompt, result)
             self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
         logger.info(f"Отправлен ответ пользователю {nickname}")
         await self._post_message_in_twitch_chat(result, ctx)
@@ -412,7 +422,7 @@ class Bot(commands.Bot):
         with SessionLocal.begin() as db:
             self.economy_service.add_balance(db, channel_name, winner, winner_amount, TransactionType.BATTLE_WIN,
                                              f"Победа в битве против {loser}")
-            self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
+            self._ai_use_case(db).save_conversation_to_db(channel_name, prompt, result)
             self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
             self._battle_use_case(db).save_battle_history(channel_name, opponent, challenger, winner, result)
 
@@ -1121,7 +1131,7 @@ class Bot(commands.Bot):
                 prompt = f"Придумай анекдот, связанной с категорией трансляции: {stream_info.game_name}."
                 result = self.generate_response_in_chat(prompt, channel_name)
                 with SessionLocal.begin() as db:
-                    self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
+                    self._ai_use_case(db).save_conversation_to_db(channel_name, prompt, result)
                     self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
                 channel = self.get_channel(channel_name)
                 await channel.send(result)
@@ -1244,7 +1254,7 @@ class Bot(commands.Bot):
         try:
             await self.telegram_bot.send_message(chat_id=self._GROUP_ID, text=result)
             with SessionLocal.begin() as db:
-                self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
+                self._ai_use_case(db).save_conversation_to_db(channel_name, prompt, result)
             logger.info(f"Анонс стрима отправлен в Telegram: {result}")
         except Exception as e:
             logger.error(f"Ошибка отправки анонса в Telegram: {e}")
@@ -1296,7 +1306,7 @@ class Bot(commands.Bot):
         result = self.generate_response_in_chat(prompt, channel_name)
 
         with SessionLocal.begin() as db:
-            self.ai_service.save_conversation_to_db(db, channel_name, prompt, result)
+            self._ai_use_case(db).save_conversation_to_db(channel_name, prompt, result)
 
         self.current_stream_summaries = []
         self.last_chat_summary_time = None
@@ -1412,10 +1422,10 @@ class Bot(commands.Bot):
 
                     system_prompt = self.SYSTEM_PROMPT_FOR_GROUP
                     ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
-                    response = self.ai_service.generate_ai_response(ai_messages)
 
                     with SessionLocal.begin() as db:
-                        self.ai_service.save_conversation_to_db(db, channel_name, prompt, response)
+                        response = self._ai_use_case(db).generate_ai_response(ai_messages)
+                        self._ai_use_case(db).save_conversation_to_db(channel_name, prompt, response)
 
                     data = json.loads(response)
                     word = str(data.get("word", "")).strip()
@@ -1547,8 +1557,8 @@ class Bot(commands.Bot):
     def generate_response_in_chat(self, prompt: str, channel_name: str) -> str:
         messages = []
         with db_ro_session() as db:
-            last_messages = self.ai_service.get_last_messages(db, channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
+            last_messages = self._ai_use_case(db).get_last_messages(channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
             messages.extend(last_messages)
             messages.append(AIMessage(Role.USER, prompt))
-        assistant_message = self.ai_service.generate_ai_response(messages)
-        return assistant_message
+            assistant_message = self._ai_use_case(db).generate_ai_response(messages)
+            return assistant_message
