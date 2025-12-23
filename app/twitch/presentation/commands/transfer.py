@@ -16,19 +16,19 @@ class TransferCommandHandler:
         economy_service_factory: Callable[[Session], EconomyService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_name: str,
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self._economy_service = economy_service_factory
         self._chat_use_case = chat_use_case_factory
         self.command_name = command_name
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, sender_display_name: str, ctx, recipient: str | None = None, amount: str | None = None):
         sender_user_name = sender_display_name.lower()
-        bot_nick = self.nick_provider() or ""
+        bot_nick = self.bot_nick_provider().lower()
 
         if not recipient or not amount:
             result = (
@@ -36,7 +36,7 @@ class TransferCommandHandler:
                 f"Например: {self.command_prefix}{self.command_name} @ArtemNeFRiT 100"
             )
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -48,14 +48,14 @@ class TransferCommandHandler:
                 f"Например: {self.command_prefix}{self.command_name} {recipient} 100"
             )
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
         if transfer_amount <= 0:
             result = f"@{sender_display_name}, сумма должна быть больше 0!"
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -74,5 +74,5 @@ class TransferCommandHandler:
             result = f"@{sender_display_name}, {transfer_result.message}"
 
         with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
         await self.post_message_fn(result, ctx)

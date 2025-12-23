@@ -21,7 +21,7 @@ class GuessCommandHandler:
         minigame_service: MinigameService,
         economy_service_factory: Callable[[Session], EconomyService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]]
     ):
         self.command_prefix = command_prefix
@@ -31,11 +31,11 @@ class GuessCommandHandler:
         self.minigame_service = minigame_service
         self._economy_service = economy_service_factory
         self._chat_use_case = chat_use_case_factory
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
     async def handle_guess_number(self, channel_name: str, display_name: str, ctx, number: str | None):
-        bot_nick = (self.nick_provider() or "").lower()
+        bot_nick = self.bot_nick_provider().lower()
         user_name = display_name.lower()
 
         if not number:
@@ -106,7 +106,7 @@ class GuessCommandHandler:
             await self.post_message_fn(message, ctx)
 
     async def handle_guess_letter(self, channel_name: str, display_name: str, ctx, letter: str | None):
-        bot_nick = (self.nick_provider() or "").lower()
+        bot_nick = self.bot_nick_provider().lower()
         user_name = display_name.lower()
 
         if not letter:
@@ -179,7 +179,6 @@ class GuessCommandHandler:
                         TransactionType.MINIGAME_WIN,
                         "Победа в игре 'поле чудес'",
                     )
-
                 message = (
                     f"ПОЗДРАВЛЯЕМ! @{display_name} угадал слово '{game.target_word}' и выиграл "
                     f"{game.prize_amount} монет! Баланс: {winner_balance.balance} монет"
@@ -197,7 +196,7 @@ class GuessCommandHandler:
             await self.post_message_fn(message, ctx)
 
     async def handle_guess_word(self, channel_name: str, display_name: str, ctx, word: str | None):
-        bot_nick = (self.nick_provider() or "").lower()
+        bot_nick = self.bot_nick_provider().lower()
         user_name = display_name.lower()
 
         if not word:

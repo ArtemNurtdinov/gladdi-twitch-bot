@@ -23,7 +23,7 @@ class ShopCommandHandler:
         economy_service_factory: Callable[[Session], EconomyService],
         equipment_service_factory: Callable[[Session], EquipmentService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
@@ -32,11 +32,11 @@ class ShopCommandHandler:
         self._economy_service = economy_service_factory
         self._equipment_service = equipment_service_factory
         self._chat_use_case = chat_use_case_factory
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
     async def handle_shop(self, channel_name: str, ctx):
-        bot_nick = self.nick_provider() or ""
+        bot_nick = self.bot_nick_provider().lower()
 
         all_items = ShopItems.get_all_items()
 
@@ -53,13 +53,13 @@ class ShopCommandHandler:
         )
 
         with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
 
         await self.post_message_fn(result, ctx)
 
     async def handle_buy(self, channel_name: str, display_name: str, ctx, item_name: str | None):
         user_name = display_name.lower()
-        bot_nick = self.nick_provider() or ""
+        bot_nick = self.bot_nick_provider().lower()
 
         if not item_name:
             result = (
@@ -67,7 +67,7 @@ class ShopCommandHandler:
                 f"Пример: {self.command_prefix}{self.command_buy_name} стул"
             )
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -76,7 +76,7 @@ class ShopCommandHandler:
         except ValueError as e:
             result = str(e)
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -88,7 +88,7 @@ class ShopCommandHandler:
         if equipment_exists:
             result = f"У вас уже есть {item.name}"
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -98,7 +98,7 @@ class ShopCommandHandler:
         if user_balance.balance < item.price:
             result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -111,6 +111,5 @@ class ShopCommandHandler:
         result = f"@{display_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
         with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
         await self.post_message_fn(result, ctx)
-

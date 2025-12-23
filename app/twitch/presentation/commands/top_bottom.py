@@ -16,18 +16,18 @@ class TopBottomCommandHandler:
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_top: str,
         command_bottom: str,
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self._economy_service = economy_service_factory
         self._chat_use_case = chat_use_case_factory
         self.command_top = command_top
         self.command_bottom = command_bottom
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
     async def handle_top(self, channel_name: str, ctx):
-        bot_nick = self.nick_provider() or ""
+        bot_nick = self.bot_nick_provider().lower()
 
         with db_ro_session() as db:
             top_users = self._economy_service(db).get_top_users(channel_name, limit=7)
@@ -40,12 +40,12 @@ class TopBottomCommandHandler:
                 result += f"{i}. {user.user_name}: {user.balance} монет."
 
         with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
 
         await self.post_message_fn(result, ctx)
 
     async def handle_bottom(self, channel_name: str, ctx):
-        bot_nick = self.nick_provider() or ""
+        bot_nick = self.bot_nick_provider().lower()
 
         with db_ro_session() as db:
             bottom_users = self._economy_service(db).get_bottom_users(channel_name, limit=10)
@@ -58,8 +58,6 @@ class TopBottomCommandHandler:
                 result += f"{i}. {user.user_name}: {user.balance} монет."
 
         with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
 
         await self.post_message_fn(result, ctx)
-
-

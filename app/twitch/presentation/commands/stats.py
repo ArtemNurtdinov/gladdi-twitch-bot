@@ -21,7 +21,7 @@ class StatsCommandHandler:
         battle_use_case_factory: Callable[[Session], BattleUseCase],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_name: str,
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self._economy_service = economy_service_factory
@@ -29,12 +29,12 @@ class StatsCommandHandler:
         self._battle_use_case = battle_use_case_factory
         self._chat_use_case = chat_use_case_factory
         self.command_name = command_name
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, ctx):
         user_name = display_name.lower()
-        bot_nick = self.nick_provider() or ""
+        bot_nick = self.bot_nick_provider().lower()
 
         with SessionLocal.begin() as db:
             balance = self._economy_service(db).get_user_balance(channel_name, user_name)
@@ -69,6 +69,6 @@ class StatsCommandHandler:
             result += f" ⚔️ Битвы: {battle_stats.total_battles} | Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%)."
 
         with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
 
         await self.post_message_fn(result, ctx)

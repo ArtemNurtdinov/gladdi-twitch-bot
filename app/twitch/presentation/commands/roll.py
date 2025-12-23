@@ -31,7 +31,7 @@ class RollCommandHandler:
         roll_cooldowns: dict,
         cooldown_seconds: int,
         timeout_fn: Callable[[Any, str, int, str], Awaitable[None]],
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
@@ -43,7 +43,7 @@ class RollCommandHandler:
         self.roll_cooldowns = roll_cooldowns
         self.cooldown_seconds = cooldown_seconds
         self.timeout_user = timeout_fn
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
     @staticmethod
@@ -99,9 +99,9 @@ class RollCommandHandler:
                     f"(например: {self.command_prefix}{self.command_name} 100). "
                     f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{BettingService.MAX_BET_AMOUNT} монет."
                 )
-                bot_nick = self.nick_provider() or ""
+                bot_nick = self.bot_nick_provider().lower()
                 with SessionLocal.begin() as db:
-                    self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                    self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
                 await self.post_message_fn(result, ctx)
                 return
 
@@ -115,9 +115,9 @@ class RollCommandHandler:
             if time_since_last < cooldown_seconds:
                 remaining_time = cooldown_seconds - time_since_last
                 result = f"@{display_name}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
-                bot_nick = self.nick_provider() or ""
+                bot_nick = self.bot_nick_provider().lower()
                 with SessionLocal.begin() as db:
-                    self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                    self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
                 await self.post_message_fn(result, ctx)
                 return
 
@@ -140,17 +140,17 @@ class RollCommandHandler:
 
         if bet_amount < BettingService.MIN_BET_AMOUNT:
             result = f"Минимальная сумма ставки: {BettingService.MIN_BET_AMOUNT} монет."
-            bot_nick = self.nick_provider() or ""
+            bot_nick = self.bot_nick_provider().lower()
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
         if bet_amount > BettingService.MAX_BET_AMOUNT:
             result = f"Максимальная сумма ставки: {BettingService.MAX_BET_AMOUNT} монет."
-            bot_nick = self.nick_provider() or ""
+            bot_nick = self.bot_nick_provider().lower()
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -168,8 +168,8 @@ class RollCommandHandler:
             )
             if not user_balance:
                 result = f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет."
-                bot_nick = self.nick_provider() or ""
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                bot_nick = self.bot_nick_provider().lower()
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
                 await self.post_message_fn(result, ctx)
                 return
             base_payout = BettingService.RARITY_MULTIPLIERS.get(rarity_level, 0.2) * bet_amount
@@ -242,8 +242,8 @@ class RollCommandHandler:
         final_result = f"{slot_result_string} {economic_info}"
 
         with SessionLocal.begin() as db:
-            bot_nick = self.nick_provider() or ""
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), final_result, datetime.utcnow())
+            bot_nick = self.bot_nick_provider().lower()
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, final_result, datetime.utcnow())
 
         await self.post_message_fn(final_result, ctx)
 
@@ -264,8 +264,8 @@ class RollCommandHandler:
                     no_timeout_message = f"🛡️ @{display_name}, {protection_message}"
 
                 with SessionLocal.begin() as db:
-                    bot_nick = self.nick_provider() or ""
-                    self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), no_timeout_message, datetime.utcnow())
+                    bot_nick = self.bot_nick_provider().lower()
+                    self._chat_use_case(db).save_chat_message(channel_name, bot_nick, no_timeout_message, datetime.utcnow())
 
                 await self.post_message_fn(no_timeout_message, ctx)
             else:

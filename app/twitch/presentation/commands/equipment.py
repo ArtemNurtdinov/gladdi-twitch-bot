@@ -17,7 +17,7 @@ class EquipmentCommandHandler:
         command_shop: str,
         equipment_service_factory: Callable[[Session], EquipmentService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self._equipment_service = equipment_service_factory
@@ -25,12 +25,12 @@ class EquipmentCommandHandler:
         self.command_name = command_name
         self.command_shop = command_shop
         self.command_prefix = command_prefix
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, ctx):
         user_name = display_name.lower()
-        bot_nick = self.nick_provider() or ""
+        bot_nick = self.bot_nick_provider().lower()
 
         with db_ro_session() as db:
             equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name)
@@ -44,6 +44,6 @@ class EquipmentCommandHandler:
                 result += f"{item.shop_item.emoji} {item.shop_item.name} до {expires_date}\n"
 
         with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
 
         await self.post_message_fn(result, ctx)

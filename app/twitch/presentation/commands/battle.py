@@ -27,7 +27,7 @@ class BattleCommandHandler:
         equipment_service_factory: Callable[[Session], EquipmentService],
         timeout_fn: Callable[[Any, str, int, str], Awaitable[None]],
         generate_response_fn: Callable[[str, str], str],
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
@@ -39,7 +39,7 @@ class BattleCommandHandler:
         self._equipment_service = equipment_service_factory
         self.timeout_user = timeout_fn
         self.generate_response_in_chat = generate_response_fn
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, battle_waiting_user_ref, ctx):
@@ -53,8 +53,8 @@ class BattleCommandHandler:
         if user_balance.balance < fee:
             result = f"@{challenger}, недостаточно монет для участия в битве! Необходимо: {EconomyService.BATTLE_ENTRY_FEE} монет."
             with SessionLocal.begin() as db:
-                bot_nick = self.nick_provider() or ""
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                bot_nick = self.bot_nick_provider().lower()
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -70,8 +70,8 @@ class BattleCommandHandler:
                 )
                 if not user_balance:
                     error_result = f"@{challenger}, произошла ошибка при списании взноса за битву."
-                    bot_nick = self.nick_provider() or ""
-                    self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), error_result, datetime.utcnow())
+                    bot_nick = self.bot_nick_provider().lower()
+                    self._chat_use_case(db).save_chat_message(channel_name, bot_nick, error_result, datetime.utcnow())
 
             if error_result:
                 await self.post_message_fn(error_result, ctx)
@@ -83,16 +83,16 @@ class BattleCommandHandler:
                 f"Используй {self.command_prefix}{self.command_name}, чтобы принять вызов."
             )
             with SessionLocal.begin() as db:
-                bot_nick = self.nick_provider() or ""
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                bot_nick = self.bot_nick_provider().lower()
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
         if battle_waiting_user_ref["value"] == challenger:
             result = f"@{challenger}, ты не можешь сражаться сам с собой. Подожди достойного противника."
             with SessionLocal.begin() as db:
-                bot_nick = self.nick_provider() or ""
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                bot_nick = self.bot_nick_provider().lower()
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -107,8 +107,8 @@ class BattleCommandHandler:
         if not challenger_balance:
             result = f"@{challenger}, произошла ошибка при списании взноса за битву."
             with SessionLocal.begin() as db:
-                bot_nick = self.nick_provider() or ""
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                bot_nick = self.bot_nick_provider().lower()
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -147,8 +147,8 @@ class BattleCommandHandler:
                 channel_name, winner, winner_amount, TransactionType.BATTLE_WIN, f"Победа в битве против {loser}"
             )
             self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
-            bot_nick = self.nick_provider() or ""
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+            bot_nick = self.bot_nick_provider().lower()
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             self._battle_use_case(db).save_battle_history(channel_name, opponent, challenger, winner, result)
 
         await self.post_message_fn(result, ctx)
@@ -157,8 +157,8 @@ class BattleCommandHandler:
         await self.post_message_fn(winner_message, ctx)
 
         with SessionLocal.begin() as db:
-            bot_nick = self.nick_provider() or ""
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), winner_message, datetime.utcnow())
+            bot_nick = self.bot_nick_provider().lower()
+            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, winner_message, datetime.utcnow())
         await asyncio.sleep(1)
 
         base_battle_timeout = 120
@@ -172,7 +172,8 @@ class BattleCommandHandler:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
             await self.post_message_fn(no_timeout_message, ctx)
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick_provider().lower(), no_timeout_message, datetime.utcnow())
+                bot_nick = self.bot_nick_provider().lower()
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, no_timeout_message, datetime.utcnow())
         else:
             timeout_minutes = final_timeout // 60
             timeout_seconds_remainder = final_timeout % 60

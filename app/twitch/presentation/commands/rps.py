@@ -18,18 +18,18 @@ class RpsCommandHandler:
         minigame_service: MinigameService,
         economy_service_factory: Callable[[Session], EconomyService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self.minigame_service = minigame_service
         self._economy_service = economy_service_factory
         self._chat_use_case = chat_use_case_factory
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, ctx, choice: str | None):
         user_name = display_name.lower()
-        bot_nick = (self.nick_provider() or "").lower()
+        bot_nick = self.bot_nick_provider().lower()
 
         if not choice:
             await self.post_message_fn(f"@{display_name}, укажите ваш выбор: камень / ножницы / бумага", ctx)
@@ -120,5 +120,3 @@ class RpsCommandHandler:
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick, message, datetime.utcnow())
         await self.post_message_fn(message, ctx)
-
-

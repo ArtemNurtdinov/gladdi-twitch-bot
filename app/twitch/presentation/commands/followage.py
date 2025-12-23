@@ -16,7 +16,7 @@ class FollowageCommandHandler:
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         ai_conversation_use_case_factory: Callable[[Session], ConversationService],
         command_name: str,
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
         generate_response_fn: Callable[[str, str], str],
         twitch_api_service: TwitchApiService,
         post_message_fn: Callable[[str, Any], Awaitable[None]],
@@ -25,7 +25,7 @@ class FollowageCommandHandler:
         self._chat_use_case = chat_use_case_factory
         self._ai_conversation_use_case = ai_conversation_use_case_factory
         self.command_name = command_name
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
         self.generate_response_in_chat = generate_response_fn
         self.post_message_fn = post_message_fn
 
@@ -39,7 +39,7 @@ class FollowageCommandHandler:
         if not broadcaster_id:
             result = f'@{display_name}, произошла ошибка при получении информации о канале {channel_name}.'
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick_provider().lower(), result, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, self.bot_nick_provider().lower(), result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
             return
 
@@ -63,12 +63,12 @@ class FollowageCommandHandler:
             result = self.generate_response_in_chat(prompt, channel_name)
             with SessionLocal.begin() as db:
                 self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
-                bot_nick = self.nick_provider() or ""
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                bot_nick = self.bot_nick_provider().lower()
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)
         else:
             result = f'@{display_name}, вы не отслеживаете канал {channel_name}.'
             with SessionLocal.begin() as db:
-                bot_nick = self.nick_provider() or ""
-                self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
+                bot_nick = self.bot_nick_provider().lower()
+                self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
             await self.post_message_fn(result, ctx)

@@ -32,7 +32,7 @@ class MinigameOrchestrator:
         command_guess_word: str,
         command_guess: str,
         command_rps: str,
-        nick_provider: Callable[[], str | None],
+        bot_nick_provider: Callable[[], str | None],
         split_text_fn: Callable[[str, int], list[str]],
         send_channel_message: Callable[[str, str], Awaitable[None]],
     ):
@@ -50,13 +50,12 @@ class MinigameOrchestrator:
         self._command_guess_word = command_guess_word
         self._command_guess = command_guess
         self._command_rps = command_rps
-        self._nick_provider = nick_provider
+        self._bot_nick_provider = bot_nick_provider
         self._split_text = split_text_fn
         self._send_channel_message = send_channel_message
 
     def _bot_name_lower(self) -> str:
-        name = self._nick_provider()
-        return name.lower() if name else "bot"
+        return self._bot_nick_provider().lower()
 
     async def run_tick(self, channel_name: str) -> int:
         rps_game_complete_time = self.minigame_service.check_rps_game_complete_time(channel_name, datetime.utcnow())

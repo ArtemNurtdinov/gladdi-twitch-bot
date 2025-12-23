@@ -23,7 +23,7 @@ class AskCommandHandler:
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         generate_response_fn: Callable[[str, str], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
-        nick_provider: Callable[[], str],
+        bot_nick_provider: Callable[[], str],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
@@ -33,7 +33,7 @@ class AskCommandHandler:
         self._chat_use_case = chat_use_case_factory
         self.generate_response_in_chat = generate_response_fn
         self.post_message_fn = post_message_fn
-        self.nick_provider = nick_provider
+        self.bot_nick_provider = bot_nick_provider
 
     async def handle(self, channel_name: str, full_message: str, display_name: str, ctx):
         user_message = full_message[len(f"{self.command_prefix}{self.command_name}"):].strip()
@@ -54,5 +54,5 @@ class AskCommandHandler:
         result = self.generate_response_in_chat(prompt, channel_name)
         with SessionLocal.begin() as db:
             self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick_provider().lower(), result, datetime.utcnow())
+            self._chat_use_case(db).save_chat_message(channel_name, self.bot_nick_provider().lower(), result, datetime.utcnow())
         await self.post_message_fn(result, ctx)

@@ -125,7 +125,7 @@ class Bot(commands.Bot):
             chat_use_case_factory=self._chat_use_case,
             ai_conversation_use_case_factory=self._ai_conversation_use_case,
             command_name=self._COMMAND_FOLLOWAGE,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             generate_response_fn=self.generate_response_in_chat,
             twitch_api_service=self.twitch_api_service,
             post_message_fn=self._post_message_in_twitch_chat
@@ -139,7 +139,7 @@ class Bot(commands.Bot):
             chat_use_case_factory=self._chat_use_case,
             generate_response_fn=self.generate_response_in_chat,
             post_message_fn=self._post_message_in_twitch_chat,
-            nick_provider=lambda: self.nick
+            bot_nick_provider=lambda: self.nick
         )
         self._battle_handler = BattleCommandHandler(
             command_prefix=self._prefix,
@@ -151,7 +151,7 @@ class Bot(commands.Bot):
             equipment_service_factory=self._equipment_service,
             timeout_fn=self._timeout_user,
             generate_response_fn=self.generate_response_in_chat,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._roll_handler = RollCommandHandler(
@@ -164,13 +164,13 @@ class Bot(commands.Bot):
             roll_cooldowns=self.roll_cooldowns,
             cooldown_seconds=self._ROLL_COOLDOWN_SECONDS,
             timeout_fn=self._timeout_user,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._balance_handler = BalanceCommandHandler(
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._bonus_handler = BonusCommandHandler(
@@ -180,7 +180,7 @@ class Bot(commands.Bot):
             equipment_service_factory=self._equipment_service,
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._transfer_handler = TransferCommandHandler(
@@ -188,7 +188,7 @@ class Bot(commands.Bot):
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
             command_name=self._COMMAND_TRANSFER,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._shop_handler = ShopCommandHandler(
@@ -198,7 +198,7 @@ class Bot(commands.Bot):
             economy_service_factory=self._economy_service,
             equipment_service_factory=self._equipment_service,
             chat_use_case_factory=self._chat_use_case,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._equipment_handler = EquipmentCommandHandler(
@@ -207,7 +207,7 @@ class Bot(commands.Bot):
             command_shop=self._COMMAND_SHOP,
             equipment_service_factory=self._equipment_service,
             chat_use_case_factory=self._chat_use_case,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._top_bottom_handler = TopBottomCommandHandler(
@@ -215,7 +215,7 @@ class Bot(commands.Bot):
             chat_use_case_factory=self._chat_use_case,
             command_top=self._COMMAND_TOP,
             command_bottom=self._COMMAND_BOTTOM,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._stats_handler = StatsCommandHandler(
@@ -224,7 +224,7 @@ class Bot(commands.Bot):
             battle_use_case_factory=self._battle_use_case,
             chat_use_case_factory=self._chat_use_case,
             command_name=self._COMMAND_STATS,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         commands_map = {
@@ -246,7 +246,7 @@ class Bot(commands.Bot):
             command_prefix=self._prefix,
             chat_use_case_factory=self._chat_use_case,
             commands_map=commands_map,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn = self._post_message_in_twitch_chat
         )
         self._guess_handler = GuessCommandHandler(
@@ -257,14 +257,14 @@ class Bot(commands.Bot):
             minigame_service=self.minigame_service,
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._rps_handler = RpsCommandHandler(
             minigame_service=self.minigame_service,
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
 
