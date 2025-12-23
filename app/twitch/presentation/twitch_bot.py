@@ -4,11 +4,7 @@ from twitchio.ext import commands
 from datetime import datetime, timedelta
 
 from app.ai.domain.models import Intent, AIMessage, Role
-from app.battle.domain.models import UserBattleStats
-from app.betting.presentation.betting_schemas import UserBetStats
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
-from app.minigame.domain.minigame_service import MinigameService
-from app.minigame.domain.models import RPS_CHOICES
 from app.stream.domain.models import StreamStatistics
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.presentation.commands.ask import AskCommandHandler
