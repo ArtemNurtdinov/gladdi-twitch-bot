@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Any
 
 from app.economy.domain.models import TransactionType
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
@@ -16,16 +16,16 @@ class ViewerTimeJob:
 
     def __init__(
         self,
-        initial_channels: list[str],
-        viewer_service_factory: Callable,
-        stream_service_factory: Callable,
-        economy_service_factory: Callable,
-        user_cache,
+        channel_name: str,
+        viewer_service_factory: Callable[[Any], Any],
+        stream_service_factory: Callable[[Any], Any],
+        economy_service_factory: Callable[[Any], Any],
+        user_cache: Any,
         twitch_api_service: TwitchApiService,
         bot_nick_provider: Callable[[], str],
         check_interval_seconds: int,
     ):
-        self._initial_channels = initial_channels
+        self._channel_name = channel_name
         self._viewer_service_factory = viewer_service_factory
         self._stream_service_factory = stream_service_factory
         self._economy_service_factory = economy_service_factory
@@ -40,14 +40,8 @@ class ViewerTimeJob:
     async def run(self):
         while True:
             try:
-                if not self._initial_channels:
-                    logger.warning("Список каналов пуст в ViewerTimeJob")
-                    await asyncio.sleep(self._interval_seconds)
-                    continue
-
-                channel_name = self._initial_channels[0]
                 with db_ro_session() as db:
-                    active_stream = self._stream_service_factory(db).get_active_stream(channel_name)
+                    active_stream = self._stream_service_factory(db).get_active_stream(self._channel_name)
 
                 if not active_stream:
                     await asyncio.sleep(self._interval_seconds)
@@ -56,13 +50,13 @@ class ViewerTimeJob:
                 with SessionLocal.begin() as db:
                     self._viewer_service_factory(db).check_inactive_viewers(active_stream.id, datetime.utcnow())
 
-                broadcaster_id = await self._user_cache.get_user_id(channel_name)
+                broadcaster_id = await self._user_cache.get_user_id(self._channel_name)
                 moderator_login = self._bot_nick_provider()
                 moderator_id = await self._user_cache.get_user_id(moderator_login)
                 chatters = await self._twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
                 if chatters:
                     with SessionLocal.begin() as db:
-                        self._viewer_service_factory(db).update_viewers(active_stream.id, channel_name, chatters, datetime.utcnow())
+                        self._viewer_service_factory(db).update_viewers(active_stream.id, self._channel_name, chatters, datetime.utcnow())
 
                 with db_ro_session() as db:
                     viewers_count = self._viewer_service_factory(db).get_stream_watchers_count(active_stream.id)
@@ -82,7 +76,7 @@ class ViewerTimeJob:
                             self._viewer_service_factory(db).update_session_rewards(session.id, rewards, datetime.utcnow())
                             description = f"Награда за {minutes_threshold} минут просмотра стрима"
                             self._economy_service_factory(db).add_balance(
-                                channel_name,
+                                self._channel_name,
                                 session.user_name,
                                 reward_amount,
                                 TransactionType.VIEWER_TIME_REWARD,
@@ -96,4 +90,3 @@ class ViewerTimeJob:
                 logger.error(f"Ошибка в ViewerTimeJob: {e}")
 
             await asyncio.sleep(self._interval_seconds)
-

@@ -2,7 +2,7 @@ import asyncio
 import logging
 from collections import Counter
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Any
 
 from app.economy.domain.models import TransactionType
 from app.stream.domain.models import StreamStatistics
@@ -19,24 +19,24 @@ class StreamStatusJob:
 
     def __init__(
         self,
-        initial_channels: list[str],
-        user_cache,
+        channel_name: str,
+        user_cache: Any,
         twitch_api_service: TwitchApiService,
-        stream_service_factory: Callable,
-        start_new_stream_use_case_factory: Callable,
-        viewer_service_factory: Callable,
-        battle_use_case_factory: Callable,
-        economy_service_factory: Callable,
-        chat_use_case_factory: Callable,
-        ai_conversation_use_case_factory: Callable,
-        minigame_service,
-        telegram_bot,
+        stream_service_factory: Callable[[Any], Any],
+        start_new_stream_use_case_factory: Callable[[Any], Any],
+        viewer_service_factory: Callable[[Any], Any],
+        battle_use_case_factory: Callable[[Any], Any],
+        economy_service_factory: Callable[[Any], Any],
+        chat_use_case_factory: Callable[[Any], Any],
+        ai_conversation_use_case_factory: Callable[[Any], Any],
+        minigame_service: Any,
+        telegram_bot: Any,
         group_id: int,
         generate_response_in_chat: Callable[[str, str], str],
         state: ChatSummaryState,
         stream_status_interval_seconds: int,
     ):
-        self._initial_channels = initial_channels
+        self._channel_name = channel_name
         self._user_cache = user_cache
         self._twitch_api_service = twitch_api_service
         self._stream_service_factory = stream_service_factory
@@ -59,22 +59,16 @@ class StreamStatusJob:
     async def run(self):
         while True:
             try:
-                if not self._initial_channels:
-                    logger.warning("Список каналов пуст. Ожидание...")
-                    await asyncio.sleep(self._interval_seconds)
-                    continue
-
-                channel_name = self._initial_channels[0]
-                broadcaster_id = await self._user_cache.get_user_id(channel_name)
+                broadcaster_id = await self._user_cache.get_user_id(self._channel_name)
 
                 if not broadcaster_id:
-                    logger.error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
+                    logger.error(f"Не удалось получить ID канала {self._channel_name}. Пропускаем проверку.")
                     await asyncio.sleep(self._interval_seconds)
                     continue
 
                 stream_status = await self._twitch_api_service.get_stream_status(broadcaster_id)
                 if stream_status is None:
-                    logger.error(f"Не удалось получить статус стрима для канала {channel_name}")
+                    logger.error(f"Не удалось получить статус стрима для канала {self._channel_name}")
                     await asyncio.sleep(self._interval_seconds)
                     continue
 
@@ -84,14 +78,14 @@ class StreamStatusJob:
                 logger.info(f"Статус стрима: {stream_status}")
 
                 with db_ro_session() as db:
-                    active_stream = self._stream_service_factory(db).get_active_stream(channel_name)
+                    active_stream = self._stream_service_factory(db).get_active_stream(self._channel_name)
 
                 if stream_status.is_online and active_stream is None:
                     logger.info(f"Стрим начался: {game_name} - {title}")
-                    await self._handle_stream_start(channel_name, game_name, title)
+                    await self._handle_stream_start(self._channel_name, game_name, title)
 
                 elif not stream_status.is_online and active_stream is not None:
-                    await self._handle_stream_end(channel_name, active_stream)
+                    await self._handle_stream_end(self._channel_name, active_stream)
 
                 elif stream_status.is_online and active_stream:
                     if active_stream.game_name != game_name or active_stream.title != title:

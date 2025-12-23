@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from app.twitch.presentation.auth import TwitchAuth
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 class TokenCheckerJob:
     name = "check_token"
 
-    def __init__(self, twitch_auth, interval_seconds: int = 1000):
+    def __init__(self, twitch_auth: TwitchAuth, interval_seconds: int = 1000):
         self._twitch_auth = twitch_auth
         self._interval_seconds = interval_seconds
 

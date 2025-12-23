@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Callable
+from typing import Callable, Any
 
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.presentation.background.bot_tasks import ChatSummaryState
@@ -16,15 +16,15 @@ class ChatSummarizerJob:
 
     def __init__(
         self,
-        initial_channels: list[str],
-        user_cache,
+        channel_name: str,
+        user_cache: Any,
         twitch_api_service: TwitchApiService,
-        stream_service_factory: Callable,
-        chat_use_case_factory: Callable,
+        stream_service_factory: Callable[[Any], Any],
+        chat_use_case_factory: Callable[[Any], Any],
         generate_response_in_chat: Callable[[str, str], str],
         state: ChatSummaryState,
     ):
-        self._initial_channels = initial_channels
+        self._channel_name = channel_name
         self._user_cache = user_cache
         self._twitch_api_service = twitch_api_service
         self._stream_service_factory = stream_service_factory
@@ -40,25 +40,15 @@ class ChatSummarizerJob:
             try:
                 await asyncio.sleep(20 * 60)
 
-                if not self._initial_channels:
-                    logger.warning("Список каналов пуст в ChatSummarizerJob. Пропускаем анализ чата.")
-                    continue
-
-                channel_name = self._initial_channels[0]
-                broadcaster_id = await self._user_cache.get_user_id(channel_name)
-                if not broadcaster_id:
-                    logger.error(f"Не удалось получить ID канала {channel_name} для анализа чата")
-                    continue
-
                 with db_ro_session() as db:
-                    active_stream = self._stream_service_factory(db).get_active_stream(channel_name)
+                    active_stream = self._stream_service_factory(db).get_active_stream(self._channel_name)
                 if not active_stream:
                     logger.debug("Стрим не активен, пропускаем анализ чата")
                     continue
 
                 since = datetime.utcnow() - timedelta(minutes=20)
                 with db_ro_session() as db:
-                    messages = self._chat_use_case_factory(db).get_last_chat_messages_since(channel_name, since)
+                    messages = self._chat_use_case_factory(db).get_last_chat_messages_since(self._channel_name, since)
 
                 if not messages:
                     logger.debug("Нет сообщений для анализа")
@@ -69,7 +59,7 @@ class ChatSummarizerJob:
                     f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
                     f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
                 )
-                result = self._generate_response_in_chat(prompt, channel_name)
+                result = self._generate_response_in_chat(prompt, self._channel_name)
                 self._state.current_stream_summaries.append(result)
                 self._state.last_chat_summary_time = datetime.utcnow()
                 logger.info(f"Создан периодический анализ чата: {result}")

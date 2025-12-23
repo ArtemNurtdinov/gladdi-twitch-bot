@@ -1,7 +1,15 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Protocol
 
 from core.background_task_runner import BackgroundTaskRunner
+
+
+class BackgroundJob(Protocol):
+    name: str
+
+    def register(self, runner: BackgroundTaskRunner) -> None:
+        ...
 
 
 @dataclass
@@ -11,8 +19,7 @@ class ChatSummaryState:
 
 
 class BotBackgroundTasks:
-
-    def __init__(self, runner: BackgroundTaskRunner, jobs: list):
+    def __init__(self, runner: BackgroundTaskRunner, jobs: list[BackgroundJob]):
         self._runner = runner
         self._jobs = jobs
         self._registered = False

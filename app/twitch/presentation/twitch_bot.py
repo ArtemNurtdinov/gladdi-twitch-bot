@@ -77,11 +77,12 @@ class Bot(commands.Bot):
     _GROUP_ID = config.telegram.group_id
     _CHECK_VIEWERS_INTERVAL_SECONDS = 10
     _CHECK_STREAM_STATUS_INTERVAL_SECONDS = 60
+    _CHANNEL_NAME = "artemnefrit"
 
     def __init__(self, deps: BotDependencies):
         self._deps = deps
         self._prefix = '!'
-        self.initial_channels = ['artemnefrit']
+        self.initial_channels = [self._CHANNEL_NAME]
         super().__init__(token=deps.twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
 
         self._llm_client = deps.llm_client
@@ -122,7 +123,7 @@ class Bot(commands.Bot):
             runner=self._background_runner,
             jobs=[
                 PostJokeJob(
-                    initial_channels=self.initial_channels,
+                    channel_name=self._CHANNEL_NAME,
                     joke_service=self.joke_service,
                     user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
@@ -134,7 +135,7 @@ class Bot(commands.Bot):
                 ),
                 TokenCheckerJob(twitch_auth=self.twitch_auth),
                 StreamStatusJob(
-                    initial_channels=self.initial_channels,
+                    channel_name=self._CHANNEL_NAME,
                     user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
                     stream_service_factory=self._stream_service,
@@ -152,7 +153,7 @@ class Bot(commands.Bot):
                     stream_status_interval_seconds=self._CHECK_STREAM_STATUS_INTERVAL_SECONDS,
                 ),
                 ChatSummarizerJob(
-                    initial_channels=self.initial_channels,
+                    channel_name=self._CHANNEL_NAME,
                     user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
                     stream_service_factory=self._stream_service,
@@ -161,11 +162,11 @@ class Bot(commands.Bot):
                     state=self._chat_summary_state,
                 ),
                 MinigameTickJob(
-                    initial_channels=self.initial_channels,
+                    channel_name=self._CHANNEL_NAME,
                     minigame_orchestrator=self.minigame_orchestrator,
                 ),
                 ViewerTimeJob(
-                    initial_channels=self.initial_channels,
+                    channel_name=self._CHANNEL_NAME,
                     viewer_service_factory=self._viewer_service,
                     stream_service_factory=self._stream_service,
                     economy_service_factory=self._economy_service,
