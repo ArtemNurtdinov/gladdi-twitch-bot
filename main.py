@@ -66,5 +66,5 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    logger.info("Запуск API сервера...")
+    logger.info("Запуск сервера...")
     uvicorn.run("main:app", host=config.dashboard.host, port=config.dashboard.port, log_level=config.dashboard.log_level)

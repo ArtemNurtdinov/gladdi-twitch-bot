@@ -583,7 +583,7 @@ class Bot(commands.Bot):
         except Exception as e:
             logger.error(f"Ошибка при попытке дать таймаут пользователю {username}: {e}")
 
-    def split_text(self, text, max_length=500):
+    def _split_text(self, text, max_length=500):
         if len(text) <= max_length:
             return [text]
 
@@ -606,14 +606,14 @@ class Bot(commands.Bot):
         return messages
 
     async def _post_message_in_twitch_chat(self, message: str, ctx):
-        messages = self.split_text(message)
+        messages = self._split_text(message)
 
         for msg in messages:
             await ctx.send(msg)
             await asyncio.sleep(0.3)
 
     async def _send_channel_message(self, channel_name: str, message: str):
-        messages = self.split_text(message)
+        messages = self._split_text(message)
         channel = self.get_channel(channel_name)
         if not channel:
             logger.warning(f"Канал {channel_name} недоступен для отправки сообщения")
@@ -623,7 +623,6 @@ class Bot(commands.Bot):
             await asyncio.sleep(0.3)
 
     async def post_joke_periodically(self):
-        logger.info("Запуск периодической генерации анекдотов")
         while True:
             await asyncio.sleep(30)
 
@@ -648,16 +647,13 @@ class Bot(commands.Bot):
                 with SessionLocal.begin() as db:
                     self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
                     self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-                channel = self.get_channel(channel_name)
-                await channel.send(result)
-                logger.info(f"Анекдот сгенерирован: {result}")
+                await self._send_channel_message(channel_name, result)
                 self.joke_service.mark_joke_generated()
             except Exception as e:
                 logger.error(f"Ошибка при генерации анекдота: {e}")
                 await asyncio.sleep(60)
 
     async def check_token_periodically(self):
-        logger.info("Запуск периодической проверки токена")
         while True:
             await asyncio.sleep(1000)
             token_is_valid = self.twitch_auth.check_token_is_valid()
@@ -667,7 +663,6 @@ class Bot(commands.Bot):
                 logger.info("Токен обновлён")
 
     async def check_stream_status_periodically(self):
-        logger.info("Запуск периодической проверки статуса стрима")
 
         while True:
             try:
@@ -833,7 +828,6 @@ class Bot(commands.Bot):
         await self.telegram_bot.send_message(chat_id=self._GROUP_ID, text=result)
 
     async def summarize_chat_periodically(self):
-        logger.info("Запуск периодического анализа чата")
         while True:
             await asyncio.sleep(20 * 60)
 
@@ -880,7 +874,6 @@ class Bot(commands.Bot):
                 db.close()
 
     async def check_minigames_periodically(self):
-        logger.info("Запуск периодической проверки мини-игр")
         while True:
             try:
                 if not self.initial_channels:
@@ -896,7 +889,6 @@ class Bot(commands.Bot):
                 await asyncio.sleep(60)
 
     async def check_viewer_time_periodically(self):
-        logger.info("Запуск периодической проверки времени просмотра")
         while True:
             try:
                 if not self.initial_channels:
