@@ -78,6 +78,9 @@ class MinigameService:
         return time_since_last >= required_interval
 
     def start_guess_number_game(self, channel_name: str) -> GuessNumberGame:
+        if channel_name in self.active_guess_games:
+            raise ValueError(f"Игра уже активна в канале {channel_name}")
+
         target_number = random.randint(self.GUESS_MIN_NUMBER, self.GUESS_MAX_NUMBER)
 
         start_time = datetime.utcnow()

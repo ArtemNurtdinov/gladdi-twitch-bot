@@ -17,6 +17,7 @@ from app.ai.data.message_repository import AIMessageRepositoryImpl
 from app.battle.application.battle_use_case import BattleUseCase
 from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
+from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.minigame.domain.models import RPS_CHOICES
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from core.config import config
@@ -114,6 +115,25 @@ class Bot(commands.Bot):
         self.joke_service = JokeService(FileJokeSettingsRepository())
         self.minigame_service = MinigameService()
         self.user_cache = UserCacheService(twitch_api_service)
+        self.minigame_orchestrator = MinigameOrchestrator(
+            minigame_service=self.minigame_service,
+            economy_service_factory=self._economy_service,
+            chat_use_case_factory=self._chat_use_case,
+            stream_service_factory=self._stream_service,
+            get_used_words_use_case_factory=self._get_used_words_use_case,
+            add_used_word_use_case_factory=self._add_used_word_use_case,
+            ai_conversation_use_case_factory=self._ai_conversation_use_case,
+            llm_client=self._llm_client,
+            system_prompt=self.SYSTEM_PROMPT_FOR_GROUP,
+            prefix=self._prefix,
+            command_guess_letter=self._COMMAND_GUESS_LETTER,
+            command_guess_word=self._COMMAND_GUESS_WORD,
+            command_guess=self._COMMAND_GUESS,
+            command_rps=self._COMMAND_RPS,
+            nick_provider=lambda: self.nick,
+            split_text_fn=self.split_text,
+            send_channel_message=self._send_channel_message
+        )
 
         self._restore_stream_context()
 
@@ -1441,6 +1461,17 @@ class Bot(commands.Bot):
             await ctx.send(msg)
             await asyncio.sleep(0.3)
 
+    async def _send_channel_message(self, channel_name: str, message: str):
+        """Отправляет сообщение в канал, разбивая его на части."""
+        messages = self.split_text(message)
+        channel = self.get_channel(channel_name)
+        if not channel:
+            logger.warning(f"Канал {channel_name} недоступен для отправки сообщения")
+            return
+        for msg in messages:
+            await channel.send(msg)
+            await asyncio.sleep(0.3)
+
     async def post_joke_periodically(self):
         logger.info("Запуск периодической генерации анекдотов")
         while True:
@@ -1708,131 +1739,11 @@ class Bot(commands.Bot):
                     continue
 
                 channel_name = self.initial_channels[0]
-
-                rps_game_complete_time = self.minigame_service.check_rps_game_complete_time(channel_name, datetime.utcnow())
-
-                if rps_game_complete_time:
-                    game = self.minigame_service.get_active_rps_game(channel_name)
-                    bot_choice, winning_choice, winners = self.minigame_service.finish_rps(game, channel_name)
-                    if winners:
-                        share = max(1, game.bank // len(winners))
-                        with SessionLocal.begin() as db:
-                            for winner in winners:
-                                self._economy_service(db).add_balance(channel_name, winner, share, TransactionType.MINIGAME_WIN,
-                                                                      f"Победа в КНБ ({winning_choice})")
-                        winners_display = ", ".join(f"@{winner}" for winner in winners)
-                        message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
-                    else:
-                        message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
-                    with SessionLocal.begin() as db:
-                        self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-                    await self.get_channel(channel_name).send(message)
-                    await asyncio.sleep(60)
-                    continue
-
-                expired_games = self.minigame_service.check_expired_games()
-                for channel, timeout_message in expired_games.items():
-                    await self.get_channel(channel).send(timeout_message)
-                    with SessionLocal.begin() as db:
-                        self._chat_use_case(db).save_chat_message(channel, self.nick.lower(), timeout_message, datetime.utcnow())
-
-                with db_ro_session() as db:
-                    active_stream = self._stream_service(db).get_active_stream(channel_name)
-
-                if not active_stream:
-                    await asyncio.sleep(60)
-                    continue
-
-                if channel_name not in self.minigame_service.stream_start_time:
-                    self.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
-
-                if not self.minigame_service.should_start_new_game(channel_name):
-                    await asyncio.sleep(60)
-                    continue
-
-                choice = random.choice(["number", "word", "rps"])
-
-                if choice == "word":
-                    with db_ro_session() as db:
-                        used_words = self._get_used_words_use_case(db).get_used_words(channel_name, limit=50)
-                        last_messages = self._chat_use_case(db).get_last_chat_messages(channel_name, limit=50)
-
-                    chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
-                    if used_words:
-                        avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words)))
-                    else:
-                        avoid_clause = ""
-
-                    prompt = (
-                        "Проанализируй последние сообщения из чата и выбери одно подходящее русское существительное (ОДНО слово),"
-                        " связанное по смыслу с обсуждаемыми темами. Придумай короткую подсказку-описание к нему. Не повторяйся в загаданных словах." + avoid_clause +
-                        "\nОтвет верни строго в JSON без дополнительного текста: {\"word\": \"слово\", \"hint\": \"краткая подсказка\"}."
-                        "\nТребования: слово только из букв, без пробелов и дефисов; подсказка до 100 символов."
-                        "\n\nВот сообщения чата (ник: текст):\n" + chat_text
-                    )
-
-                    system_prompt = self.SYSTEM_PROMPT_FOR_GROUP
-                    ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
-
-                    response = self._llm_client.generate_ai_response(ai_messages)
-
-                    with SessionLocal.begin() as db:
-                        self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, response)
-
-                    data = json.loads(response)
-                    word = str(data.get("word", "")).strip()
-                    hint = str(data.get("hint", "")).strip()
-                    final_word = word.strip().lower()
-
-                    game = self.minigame_service.start_word_guess_game(channel_name, final_word, hint)
-                    with SessionLocal.begin() as db:
-                        self._add_used_word_use_case(db).add_used_words(channel_name, final_word)
-
-                    masked = game.get_masked_word()
-                    game_message = (
-                        f"НОВАЯ ИГРА 'поле чудес'! Слово из {len(game.target_word)} букв. Подсказка: {hint}. "
-                        f"Слово: {masked}. Приз: до {self.minigame_service.WORD_GAME_MAX_PRIZE} монет. "
-                        f"Угадывайте буквы: {self._prefix}{self._COMMAND_GUESS_LETTER} <буква> или слово: {self._prefix}{self._COMMAND_GUESS_WORD} <слово>. "
-                        f"Время на игру: {self.minigame_service.WORD_GAME_DURATION_MINUTES} минут"
-                    )
-                    logger.info(f"Запущена новая игра 'поле чудес' в канале {channel_name}")
-                    messages = self.split_text(game_message)
-                    for msg in messages:
-                        await self.get_channel(channel_name).send(msg)
-                        await asyncio.sleep(0.3)
-                        with SessionLocal.begin() as db:
-                            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), game_message, datetime.utcnow())
-                if choice == "number":
-                    game = self.minigame_service.start_guess_number_game(channel_name)
-                    game_message = (f"🎯 НОВАЯ МИНИ-ИГРА! Угадай число от {game.min_number} до {game.max_number}! "
-                                    f"Первый, кто угадает, получит приз до {self.minigame_service.GUESS_GAME_PRIZE} монет! "
-                                    f"Используй: {self._prefix}{self._COMMAND_GUESS} [число]. "
-                                    f"Время на игру: {self.minigame_service.GUESS_GAME_DURATION_MINUTES} минут ⏰")
-                    logger.info(f"Запущена новая игра 'угадай число' в канале {channel_name}")
-                    messages = self.split_text(game_message)
-                    for msg in messages:
-                        await self.get_channel(channel_name).send(msg)
-                        await asyncio.sleep(0.3)
-                    with SessionLocal.begin() as db:
-                        self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), game_message, datetime.utcnow())
-                if choice == "rps":
-                    self.minigame_service.start_rps_game(channel_name)
-                    game_message = (
-                        f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {MinigameService.RPS_BASE_BANK} монет + {MinigameService.RPS_ENTRY_FEE_PER_USER}"
-                        f" за каждого участника. "
-                        f"Участвовать: {self._prefix}{self._COMMAND_RPS} <камень/ножницы/бумага> — взнос {MinigameService.RPS_ENTRY_FEE_PER_USER} монет. "
-                        f"Время на голосование: {MinigameService.RPS_GAME_DURATION_MINUTES} минуты ⏰"
-                    )
-                    logger.info(f"Запущена новая игра КНБ в канале {channel_name}")
-                    messages = self.split_text(game_message)
-                    for msg in messages:
-                        await self.get_channel(channel_name).send(msg)
-                        await asyncio.sleep(0.3)
-                    with SessionLocal.begin() as db:
-                        self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), game_message, datetime.utcnow())
+                delay = await self.minigame_orchestrator.run_tick(channel_name)
+                await asyncio.sleep(delay)
             except Exception as e:
                 logger.error(f"Ошибка в check_minigames_periodically: {e}")
-            await asyncio.sleep(60)
+                await asyncio.sleep(60)
 
     async def check_viewer_time_periodically(self):
         logger.info("Запуск периодической проверки времени просмотра")
