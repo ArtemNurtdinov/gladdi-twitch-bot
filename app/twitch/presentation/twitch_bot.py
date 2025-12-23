@@ -37,6 +37,7 @@ from app.minigame.data.db.word_history_repository import WordHistoryRepositoryIm
 from app.stream.domain.models import StreamStatistics
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
+from core.background_task_runner import BackgroundTaskRunner
 from app.twitch.presentation.auth import TwitchAuth
 from app.chat.application.chat_use_case import ChatUseCase
 from app.chat.data.chat_repository import ChatRepositoryImpl
@@ -115,6 +116,7 @@ class Bot(commands.Bot):
         self.joke_service = JokeService(FileJokeSettingsRepository())
         self.minigame_service = MinigameService()
         self.user_cache = UserCacheService(twitch_api_service)
+        self._background_runner = BackgroundTaskRunner()
         self.minigame_orchestrator = MinigameOrchestrator(
             minigame_service=self.minigame_service,
             economy_service_factory=self._economy_service,
@@ -134,6 +136,7 @@ class Bot(commands.Bot):
             split_text_fn=self.split_text,
             send_channel_message=self._send_channel_message
         )
+        self._register_background_tasks()
 
         self._restore_stream_context()
 
@@ -142,7 +145,6 @@ class Bot(commands.Bot):
         self.last_chat_summary_time = None
         self.roll_cooldowns = {}
         self._tasks_started = False
-        self._background_tasks: list[asyncio.Task] = []
 
         request = HTTPXRequest(connection_pool_size=10, pool_timeout=10)
         self.telegram_bot = telegram.Bot(token=config.telegram.bot_token, request=request)
@@ -194,37 +196,23 @@ class Bot(commands.Bot):
         except Exception as e:
             logger.error(f"Не удалось прогреть кеш ID канала: {e}")
 
-    def _create_background_task(self, coro: Coroutine[Any, Any, Any]) -> asyncio.Task:
-        task = asyncio.create_task(coro)
-        self._background_tasks.append(task)
-
-        def _cleanup(_task: asyncio.Task):
-            if _task in self._background_tasks:
-                self._background_tasks.remove(_task)
-
-        task.add_done_callback(_cleanup)
-        return task
+    def _register_background_tasks(self):
+        self._background_runner.register("post_joke", self.post_joke_periodically)
+        self._background_runner.register("check_token", self.check_token_periodically)
+        self._background_runner.register("check_stream_status", self.check_stream_status_periodically)
+        self._background_runner.register("summarize_chat", self.summarize_chat_periodically)
+        self._background_runner.register("check_minigames", self.check_minigames_periodically)
+        self._background_runner.register("check_viewer_time", self.check_viewer_time_periodically)
 
     async def _start_background_tasks(self):
         if self._tasks_started:
             return
 
-        self._create_background_task(self.post_joke_periodically())
-        self._create_background_task(self.check_token_periodically())
-        self._create_background_task(self.check_stream_status_periodically())
-        self._create_background_task(self.summarize_chat_periodically())
-        self._create_background_task(self.check_minigames_periodically())
-        self._create_background_task(self.check_viewer_time_periodically())
+        self._background_runner.start_all()
         self._tasks_started = True
 
     async def close(self):
-        for task in list(self._background_tasks):
-            task.cancel()
-
-        if self._background_tasks:
-            await asyncio.gather(*self._background_tasks, return_exceptions=True)
-
-        self._background_tasks.clear()
+        await self._background_runner.cancel_all()
         self._tasks_started = False
 
         await super().close()
