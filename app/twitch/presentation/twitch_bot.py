@@ -1,55 +1,28 @@
 import asyncio
 import logging
 import random
-import json
-from typing import Coroutine, Any
-from telegram.request import HTTPXRequest
 from twitchio.ext import commands
 from datetime import datetime, timedelta
-import telegram
 
-from app.ai.application.conversation_service import ConversationService
-from app.ai.application.intent_use_case import IntentUseCase
-from app.ai.application.prompt_service import PromptService
-from app.ai.data.intent_detector_client import IntentDetectorClientImpl
-from app.ai.data.llm_client import LLMClientImpl
-from app.ai.data.message_repository import AIMessageRepositoryImpl
-from app.battle.application.battle_use_case import BattleUseCase
-from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
+from app.ai.domain.models import Intent, AIMessage, Role
+from app.battle.domain.models import UserBattleStats
+from app.betting.domain.betting_service import BettingService
+from app.betting.presentation.betting_schemas import UserBetStats
+from app.betting.domain.models import EmojiConfig, RarityLevel
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
+from app.minigame.domain.minigame_service import MinigameService
 from app.minigame.domain.models import RPS_CHOICES
-from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
+from app.stream.domain.models import StreamStatistics
+from app.twitch.bootstrap.deps import BotDependencies
+from app.twitch.presentation.commands.ask import AskCommandHandler
+from app.twitch.presentation.commands.battle import BattleCommandHandler
+from app.twitch.presentation.commands.followage import FollowageCommandHandler
+from app.twitch.presentation.commands.roll import RollCommandHandler
 from core.config import config
 from collections import Counter
 
 from core.db import db_ro_session, SessionLocal
-from app.ai.domain.models import Intent, AIMessage, Role
-from app.battle.data.battle_repository import BattleRepositoryImpl
-from app.battle.domain.models import UserBattleStats
-from app.betting.presentation.betting_schemas import UserBetStats
-from app.betting.data.betting_repository import BettingRepositoryImpl
-from app.betting.domain.betting_service import BettingService
-from app.betting.domain.models import EmojiConfig, RarityLevel
-from app.equipment.data.equipment_repository import EquipmentRepositoryImpl
-from app.equipment.domain.equipment_service import EquipmentService
-from app.minigame.data.db.word_history_repository import WordHistoryRepositoryImpl
-from app.stream.domain.models import StreamStatistics
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
-from core.background_task_runner import BackgroundTaskRunner
-from app.twitch.presentation.auth import TwitchAuth
-from app.chat.application.chat_use_case import ChatUseCase
-from app.chat.data.chat_repository import ChatRepositoryImpl
-from app.joke.data.settings_repository import FileJokeSettingsRepository
-from app.joke.domain.joke_service import JokeService
 from app.economy.domain.economy_service import EconomyService
-from app.economy.data.economy_repository import EconomyRepositoryImpl
-from app.minigame.domain.minigame_service import MinigameService
-from app.stream.domain.stream_service import StreamService
-from app.stream.data.stream_repository import StreamRepositoryImpl
-from app.viewer.data.viewer_repository import ViewerRepositoryImpl
-from app.viewer.domain.viewer_session_service import ViewerTimeService
 from app.economy.domain.models import ShopItems, TransactionType, JackpotPayoutMultiplierEffect, MissPayoutMultiplierEffect, \
     PartialPayoutMultiplierEffect
 
@@ -101,22 +74,23 @@ class Bot(commands.Bot):
     _CHECK_VIEWERS_INTERVAL_SECONDS = 10
     _CHECK_STREAM_STATUS_INTERVAL_SECONDS = 60
 
-    def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService):
+    def __init__(self, deps: BotDependencies):
+        self._deps = deps
         self._prefix = '!'
         self.initial_channels = ['artemnefrit']
-        super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
+        super().__init__(token=deps.twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
 
-        self._llm_client = LLMClientImpl()
-        self._intent_detector = IntentDetectorClientImpl()
-        self._intent_use_case = IntentUseCase(self._intent_detector, self._llm_client)
-        self._prompt_service = PromptService()
+        self._llm_client = deps.llm_client
+        self._intent_detector = deps.intent_detector
+        self._intent_use_case = deps.intent_use_case
+        self._prompt_service = deps.prompt_service
 
-        self.twitch_auth = twitch_auth
-        self.twitch_api_service = twitch_api_service
-        self.joke_service = JokeService(FileJokeSettingsRepository())
-        self.minigame_service = MinigameService()
-        self.user_cache = UserCacheService(twitch_api_service)
-        self._background_runner = BackgroundTaskRunner()
+        self.twitch_auth = deps.twitch_auth
+        self.twitch_api_service = deps.twitch_api_service
+        self.joke_service = deps.joke_service
+        self.minigame_service = deps.minigame_service
+        self.user_cache = deps.user_cache
+        self._background_runner = deps.background_runner
         self.minigame_orchestrator = MinigameOrchestrator(
             minigame_service=self.minigame_service,
             economy_service_factory=self._economy_service,
@@ -145,45 +119,97 @@ class Bot(commands.Bot):
         self.last_chat_summary_time = None
         self.roll_cooldowns = {}
         self._tasks_started = False
+        self.telegram_bot = deps.telegram_bot
 
-        request = HTTPXRequest(connection_pool_size=10, pool_timeout=10)
-        self.telegram_bot = telegram.Bot(token=config.telegram.bot_token, request=request)
+        # Command handlers (gradual extraction from monolith)
+        self._followage_handler = FollowageCommandHandler(
+            bot=self,
+            chat_use_case_factory=self._chat_use_case,
+            ai_conversation_use_case_factory=self._ai_conversation_use_case,
+            command_name=self._COMMAND_FOLLOWAGE,
+            nick_provider=lambda: self.nick,
+        )
+        self._ask_handler = AskCommandHandler(
+            intent_use_case=self._intent_use_case,
+            prompt_service=self._prompt_service,
+            ai_conversation_use_case_factory=self._ai_conversation_use_case,
+            chat_use_case_factory=self._chat_use_case,
+            command_name=self._COMMAND_GLADDI,
+            prefix=self._prefix,
+            source=self._SOURCE_TWITCH,
+            generate_response_fn=self.generate_response_in_chat,
+            post_message_fn=self._post_message_in_twitch_chat,
+            nick_provider=lambda: self.nick,
+        )
+        self._battle_handler = BattleCommandHandler(
+            bot=self,
+            economy_service_factory=self._economy_service,
+            chat_use_case_factory=self._chat_use_case,
+            ai_conversation_use_case_factory=self._ai_conversation_use_case,
+            battle_use_case_factory=self._battle_use_case,
+            equipment_service_factory=self._equipment_service,
+            split_text_fn=self.split_text,
+            timeout_fn=self._timeout_user,
+            command_name=self._COMMAND_FIGHT,
+            prefix=self._prefix,
+            generate_response_fn=self.generate_response_in_chat,
+            nick_provider=lambda: self.nick,
+        )
+        self._roll_handler = RollCommandHandler(
+            economy_service_factory=self._economy_service,
+            betting_service_factory=self._betting_service,
+            equipment_service_factory=self._equipment_service,
+            chat_use_case_factory=self._chat_use_case,
+            roll_cooldowns=self.roll_cooldowns,
+            cooldown_seconds=self._ROLL_COOLDOWN_SECONDS,
+            split_text_fn=self.split_text,
+            get_result_emoji_fn=self.get_result_emoji,
+            get_profit_display_fn=self.get_profit_display,
+            is_consolation_prize_fn=self.is_consolation_prize,
+            is_miss_fn=self.is_miss,
+            timeout_fn=self._timeout_user,
+            command_name=self._COMMAND_ROLL,
+            prefix=self._prefix,
+            nick_provider=lambda: self.nick,
+        )
+
+        # mutable holder for waiting user (so handler can mutate)
+        self._battle_waiting_user_ref = {"value": None}
 
         logger.info("Twitch бот инициализирован успешно")
 
-    def _chat_use_case(self, db) -> ChatUseCase:
-        return ChatUseCase(ChatRepositoryImpl(db))
+    def _chat_use_case(self, db):
+        return self._deps.chat_use_case(db)
 
-    def _battle_use_case(self, db) -> BattleUseCase:
-        return BattleUseCase(BattleRepositoryImpl(db))
+    def _battle_use_case(self, db):
+        return self._deps.battle_use_case(db)
 
-    def _ai_conversation_use_case(self, db) -> ConversationService:
-        message_repo = AIMessageRepositoryImpl(db)
-        return ConversationService(message_repo)
+    def _ai_conversation_use_case(self, db):
+        return self._deps.ai_conversation_use_case(db)
 
-    def _betting_service(self, db) -> BettingService:
-        return BettingService(BettingRepositoryImpl(db))
+    def _betting_service(self, db):
+        return self._deps.betting_service(db)
 
-    def _economy_service(self, db) -> EconomyService:
-        return EconomyService(EconomyRepositoryImpl(db))
+    def _economy_service(self, db):
+        return self._deps.economy_service(db)
 
-    def _equipment_service(self, db) -> EquipmentService:
-        return EquipmentService(EquipmentRepositoryImpl(db))
+    def _equipment_service(self, db):
+        return self._deps.equipment_service(db)
 
-    def _get_used_words_use_case(self, db) -> GetUsedWordsUseCase:
-        return GetUsedWordsUseCase(WordHistoryRepositoryImpl(db))
+    def _get_used_words_use_case(self, db):
+        return self._deps.get_used_words_use_case(db)
 
-    def _add_used_word_use_case(self, db) -> AddUsedWordsUseCase:
-        return AddUsedWordsUseCase(WordHistoryRepositoryImpl(db))
+    def _add_used_word_use_case(self, db):
+        return self._deps.add_used_word_use_case(db)
 
-    def _stream_service(self, db) -> StreamService:
-        return StreamService(StreamRepositoryImpl(db))
+    def _stream_service(self, db):
+        return self._deps.stream_service(db)
 
-    def _start_new_stream_use_case(self, db) -> StartNewStreamUseCase:
-        return StartNewStreamUseCase(StreamRepositoryImpl(db))
+    def _start_new_stream_use_case(self, db):
+        return self._deps.start_new_stream_use_case(db)
 
-    def _viewer_service(self, db) -> ViewerTimeService:
-        return ViewerTimeService(ViewerRepositoryImpl(db))
+    def _viewer_service(self, db):
+        return self._deps.viewer_service(db)
 
     async def _warmup_broadcaster_id(self):
         try:
@@ -272,438 +298,19 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_FOLLOWAGE)
     async def followage(self, ctx):
-        if not ctx.author:
-            return
-
-        user_name = ctx.author.name
-        channel_name = ctx.channel.name
-
-        logger.info(f"Команда {self._COMMAND_FOLLOWAGE} от пользователя {user_name} в канале {channel_name}")
-
-        broadcaster = await self.twitch_api_service.get_user_by_login(channel_name)
-        broadcaster_id = None if broadcaster is None else broadcaster.id
-
-        if not broadcaster_id:
-            logger.error(f"Не удалось получить ID канала {channel_name}")
-            result = f'@{user_name}, произошла ошибка при получении информации о канале {channel_name}.'
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        user_id = ctx.author.id
-
-        follow_info = await self.twitch_api_service.get_user_followage(broadcaster_id, str(user_id))
-
-        if follow_info:
-            followed_at = follow_info.followed_at
-            follow_date = datetime.fromisoformat(followed_at[:-1])
-            current_date = datetime.utcnow()
-            follow_duration = current_date - follow_date
-
-            days = follow_duration.days
-            hours, remainder = divmod(follow_duration.seconds, 3600)
-            minutes, _ = divmod(remainder, 60)
-            logger.info(f"Пользователь {user_name} подписан на {days} дней, {hours} часов, {minutes} минут")
-            prompt = f"@{user_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и {minutes} минут. Сообщи ему об этом как-нибудь оригинально."
-            result = self.generate_response_in_chat(prompt, channel_name)
-            with SessionLocal.begin() as db:
-                self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-        else:
-            result = f'@{user_name}, вы не отслеживаете канал {channel_name}.'
-            logger.info(f"Пользователь {user_name} не подписан на канал {channel_name}")
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+        await self._followage_handler.handle(ctx)
 
     @commands.command(name=_COMMAND_GLADDI)
     async def ask(self, ctx):
-        channel_name = ctx.channel.name
-        full_message = ctx.message.content
-        question = full_message[len(f"{self._prefix}{self._COMMAND_GLADDI}"):].strip()
-        nickname = ctx.author.display_name
-
-        logger.info(f"Команда от пользователя {nickname}")
-
-        intent = self._intent_use_case.get_intent_from_text(question)
-        logger.info(f"Определён интент: {intent}")
-
-        if intent == Intent.JACKBOX:
-            prompt = self._prompt_service.get_jackbox_prompt(self._SOURCE_TWITCH, nickname, question)
-        elif intent == Intent.SKUF_FEMBOY:
-            prompt = self._prompt_service.get_skuf_femboy_prompt(self._SOURCE_TWITCH, nickname, question)
-        elif intent == Intent.DANKAR_CUT:
-            prompt = self._prompt_service.get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, question)
-        elif intent == Intent.HELLO:
-            prompt = self._prompt_service.get_hello_prompt(self._SOURCE_TWITCH, nickname, question)
-        else:
-            prompt = self._prompt_service.get_default_prompt(self._SOURCE_TWITCH, nickname, question)
-
-        result = self.generate_response_in_chat(prompt, channel_name)
-        with SessionLocal.begin() as db:
-            self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-        logger.info(f"Отправлен ответ пользователю {nickname}")
-        await self._post_message_in_twitch_chat(result, ctx)
+        await self._ask_handler.handle(ctx)
 
     @commands.command(name=_COMMAND_FIGHT)
     async def battle(self, ctx):
-        channel_name = ctx.channel.name
-        challenger = ctx.author.display_name
-
-        logger.info(f"Команда {self._COMMAND_FIGHT} от пользователя {challenger}")
-
-        fee = EconomyService.BATTLE_ENTRY_FEE
-
-        with SessionLocal.begin() as db:
-            user_balance = self._economy_service(db).get_user_balance(channel_name, challenger)
-
-        if user_balance.balance < fee:
-            result = f"@{challenger}, недостаточно монет для участия в битве! Необходимо: {EconomyService.BATTLE_ENTRY_FEE} монет."
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        if not self.battle_waiting_user:
-            with SessionLocal.begin() as db:
-                user_balance = self._economy_service(db).subtract_balance(channel_name, challenger, fee,
-                                                                          TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
-                if not user_balance:
-                    error_result = f"@{challenger}, произошла ошибка при списании взноса за битву."
-                    self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), error_result, datetime.utcnow())
-
-            if error_result:
-                await ctx.send(error_result)
-                return
-
-            self.battle_waiting_user = challenger
-            result = (
-                f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {EconomyService.BATTLE_ENTRY_FEE} монет. "
-                f"Используй {self._prefix}{self._COMMAND_FIGHT}, чтобы принять вызов."
-            )
-            logger.info(f"{challenger} ищет оппонента для битвы")
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        if self.battle_waiting_user == challenger:
-            result = f"@{challenger}, ты не можешь сражаться сам с собой. Подожди достойного противника."
-            logger.warning(f"{challenger} пытается сражаться сам с собой")
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        with SessionLocal.begin() as db:
-            challenger_balance = self._economy_service(db).subtract_balance(channel_name, challenger, fee,
-                                                                            TransactionType.BATTLE_PARTICIPATION, "Участие в битве")
-        if not challenger_balance:
-            result = f"@{challenger}, произошла ошибка при списании взноса за битву."
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        opponent = self.battle_waiting_user
-        self.battle_waiting_user = None
-
-        logger.info(f"Начинается битва между {opponent} и {challenger}")
-
-        prompt = (
-            f"На арене сражаются два героя: {opponent} и {challenger}."
-            "\nСимулируй юмористическую и эпичную битву между ними, с абсурдом и неожиданными поворотами."
-        )
-
-        with db_ro_session() as db:
-            opponent_equipment = self._equipment_service(db).get_user_equipment(channel_name, opponent.lower())
-            challenger_equipment = self._equipment_service(db).get_user_equipment(channel_name, challenger.lower())
-            if opponent_equipment:
-                equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in opponent_equipment]
-                prompt += f"\nВооружение {opponent}: {', '.join(equipment_details)}."
-            if challenger_equipment:
-                equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in challenger_equipment]
-                prompt += f"\nВооружение {challenger}: {', '.join(equipment_details)}."
-
-        winner = random.choice([opponent, challenger])
-        loser = challenger if winner == opponent else opponent
-
-        prompt += (
-            "\nБитва должна быть короткой, но эпичной и красочной."
-            f"\nПобедить в битве должен {winner}, проигравший: {loser}"
-            f"\n\nПроигравший получит таймаут! Победитель получит {EconomyService.BATTLE_WINNER_PRIZE} монет!"
-        )
-
-        result = self.generate_response_in_chat(prompt, channel_name)
-
-        logger.info(f"Битва завершена. Победитель: {winner}")
-
-        winner_amount = EconomyService.BATTLE_WINNER_PRIZE
-        with SessionLocal.begin() as db:
-            self._economy_service(db).add_balance(channel_name, winner, winner_amount, TransactionType.BATTLE_WIN,
-                                                  f"Победа в битве против {loser}")
-            self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            self._battle_use_case(db).save_battle_history(channel_name, opponent, challenger, winner, result)
-
-        messages = self.split_text(result)
-
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
-
-        logger.info(f"Проигравший: {loser}, получает таймаут")
-
-        winner_message = f"{winner} получает {EconomyService.BATTLE_WINNER_PRIZE} монет!"
-        await ctx.send(winner_message)
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), winner_message, datetime.utcnow())
-        await asyncio.sleep(1)
-
-        base_battle_timeout = 120
-        with db_ro_session() as db:
-            equipment = self._equipment_service(db).get_user_equipment(channel_name, loser.lower())
-            final_timeout, protection_message = self._equipment_service(db).calculate_timeout_with_equipment(loser, base_battle_timeout,
-                                                                                                             equipment)
-
-        if final_timeout == 0:
-            no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
-            await ctx.send(no_timeout_message)
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), no_timeout_message, datetime.utcnow())
-        else:
-            timeout_minutes = final_timeout // 60
-            timeout_seconds_remainder = final_timeout % 60
-
-            if timeout_minutes > 0:
-                time_display = f"{timeout_minutes} минут" if timeout_seconds_remainder == 0 else f"{timeout_minutes}м {timeout_seconds_remainder}с"
-            else:
-                time_display = f"{timeout_seconds_remainder} секунд"
-
-            reason = f"Поражение в битве! Время на тренировки: {time_display}"
-
-            if protection_message:
-                reason += f" {protection_message}"
-
-            await self._timeout_user(ctx, loser, final_timeout, reason)
+        await self._battle_handler.handle(ctx, self._battle_waiting_user_ref)
 
     @commands.command(name=_COMMAND_ROLL)
     async def roll(self, ctx, amount: str = None):
-        channel_name = ctx.channel.name
-        nickname = ctx.author.display_name
-
-        bet_amount = BettingService.BET_COST
-        if amount:
-            try:
-                bet_amount = int(amount)
-            except ValueError:
-                result = (
-                    f"@{nickname}, неверная сумма ставки! Используй: {self._prefix}{self._COMMAND_ROLL} [сумма] (например: {self._prefix}{self._COMMAND_ROLL} 100). "
-                    f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{BettingService.MAX_BET_AMOUNT} монет.")
-                with SessionLocal.begin() as db:
-                    self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-                await ctx.send(result)
-                return
-
-        logger.info(f"Команда {self._COMMAND_ROLL} от пользователя {nickname}, сумма ставки: {bet_amount}")
-
-        current_time = datetime.now()
-        with db_ro_session() as db:
-            equipment = self._equipment_service(db).get_user_equipment(channel_name, nickname.lower())
-            cooldown_seconds = self._equipment_service(db).calculate_roll_cooldown_seconds(self._ROLL_COOLDOWN_SECONDS, equipment)
-
-        if nickname in self.roll_cooldowns:
-            time_since_last = (current_time - self.roll_cooldowns[nickname]).total_seconds()
-            if time_since_last < cooldown_seconds:
-                remaining_time = cooldown_seconds - time_since_last
-                result = f"@{nickname}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
-                logger.info(f"Пользователь {nickname} попытался использовать команду в кулдауне. Осталось: {remaining_time:.0f} сек")
-                with SessionLocal.begin() as db:
-                    self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-                await ctx.send(result)
-                return
-
-        self.roll_cooldowns[nickname] = current_time
-        logger.debug(f"Обновлен кулдаун для пользователя {nickname}: {current_time}")
-
-        emojis = EmojiConfig.get_emojis_list()
-        weights = EmojiConfig.get_weights_list()
-
-        slot_results = random.choices(emojis, weights=weights, k=3)
-        slot_result_string = EmojiConfig.format_slot_result(slot_results)
-
-        logger.info(f"Результат слот-машины для {nickname}: {slot_result_string}")
-
-        unique_results = set(slot_results)
-
-        if len(unique_results) == 1:
-            result_type = "jackpot"
-        elif len(unique_results) == 2:
-            result_type = "partial"
-        else:
-            result_type = "miss"
-
-        normalized_user_name = nickname.lower()
-
-        if bet_amount < BettingService.MIN_BET_AMOUNT:
-            result = f"Минимальная сумма ставки: {BettingService.MIN_BET_AMOUNT} монет."
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        if bet_amount > BettingService.MAX_BET_AMOUNT:
-            result = f"Максимальная сумма ставки: {BettingService.MAX_BET_AMOUNT} монет."
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        with db_ro_session() as db:
-            rarity_level = self._betting_service(db).determine_correct_rarity(slot_result_string, result_type)
-            equipment = self._equipment_service(db).get_user_equipment(channel_name, normalized_user_name)
-
-        with SessionLocal.begin() as db:
-            user_balance = self._economy_service(db).subtract_balance(
-                channel_name,
-                normalized_user_name,
-                bet_amount,
-                TransactionType.BET_LOSS,
-                f"Ставка в слот-машине: {slot_result_string}"
-            )
-            if not user_balance:
-                result = f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет."
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-                await ctx.send(result)
-                return
-            base_payout = BettingService.RARITY_MULTIPLIERS.get(rarity_level, 0.2) * bet_amount
-            timeout_seconds = None
-            if result_type == "jackpot":
-                payout = base_payout * BettingService.JACKPOT_MULTIPLIER
-            elif result_type == "partial":
-                payout = base_payout * BettingService.PARTIAL_MULTIPLIER
-            else:
-                consolation_prize = BettingService.CONSOLATION_PRIZES.get(rarity_level, 0)
-                if consolation_prize > 0:
-                    payout = max(consolation_prize, bet_amount * 0.1)
-                    if rarity_level in [RarityLevel.MYTHICAL, RarityLevel.LEGENDARY]:
-                        timeout_seconds = 0
-                    elif rarity_level == RarityLevel.EPIC:
-                        timeout_seconds = 60
-                    else:
-                        timeout_seconds = 120
-                else:
-                    payout = 0
-                    timeout_seconds = 180
-
-            if payout > 0:
-                if result_type in ("jackpot", "partial"):
-                    jackpot_multiplier = 1.0
-                    partial_multiplier = 1.0
-                    for item in equipment:
-                        for effect in item.shop_item.effects:
-                            if isinstance(effect, JackpotPayoutMultiplierEffect) and result_type == "jackpot":
-                                jackpot_multiplier *= effect.multiplier
-                            if isinstance(effect, PartialPayoutMultiplierEffect) and result_type == "partial":
-                                partial_multiplier *= effect.multiplier
-                    if result_type == "jackpot" and jackpot_multiplier != 1.0:
-                        payout *= jackpot_multiplier
-                    if result_type == "partial" and partial_multiplier != 1.0:
-                        payout *= partial_multiplier
-                elif result_type == "miss":
-                    miss_multiplier = 1.0
-                    for item in equipment:
-                        for effect in item.shop_item.effects:
-                            if isinstance(effect, MissPayoutMultiplierEffect):
-                                miss_multiplier *= effect.multiplier
-                    if miss_multiplier != 1.0:
-                        payout *= miss_multiplier
-
-            payout = int(payout) if payout > 0 else 0
-
-            if payout > 0:
-                transaction_type = TransactionType.BET_WIN if result_type != "miss" else TransactionType.BET_WIN
-                description = f"Выигрыш в слот-машине: {slot_result_string}" if result_type != "miss" else f"Консольный приз: {slot_result_string}"
-                user_balance = self._economy_service(db).add_balance(channel_name, normalized_user_name, payout, transaction_type,
-                                                                     description)
-            self._betting_service(db).save_bet(channel_name, normalized_user_name, slot_result_string, result_type, rarity_level)
-
-        result_emoji = self.get_result_emoji(result_type, payout)
-
-        economic_info = f" {result_emoji} Баланс: {user_balance.balance} монет"
-
-        profit = payout - bet_amount
-
-        profit_display = self.get_profit_display(result_type, payout, profit)
-
-        economic_info += f" ({profit_display})"
-
-        final_result = f"{slot_result_string} {economic_info}"
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), final_result, datetime.utcnow())
-
-        messages = self.split_text(final_result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
-
-        if timeout_seconds is not None and timeout_seconds > 0:
-            base_timeout_duration = timeout_seconds if timeout_seconds else 0
-
-            with db_ro_session() as db:
-                equipment = self._equipment_service(db).get_user_equipment(channel_name, nickname.lower())
-                final_timeout, protection_message = self._equipment_service(db).calculate_timeout_with_equipment(
-                    nickname,
-                    base_timeout_duration,
-                    equipment
-                )
-
-            if final_timeout == 0:
-                if self.is_consolation_prize(result_type, payout):
-                    no_timeout_message = f"🎁 @{nickname}, {protection_message} Консольный приз: {payout} монет"
-                else:
-                    no_timeout_message = f"🛡️ @{nickname}, {protection_message}"
-
-                with SessionLocal.begin() as db:
-                    self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), no_timeout_message, datetime.utcnow())
-
-                messages = self.split_text(no_timeout_message)
-                for msg in messages:
-                    await ctx.send(msg)
-                    await asyncio.sleep(0.3)
-            else:
-                if self.is_consolation_prize(result_type, payout):
-                    reason = f"Промах с редким эмодзи! Консольный приз: {payout} монет. Таймаут: {final_timeout} сек ⏰"
-                else:
-                    reason = f"Промах в слот-машине! Время на размышления: {final_timeout} сек ⏰"
-
-                if protection_message:
-                    reason += f" {protection_message}"
-
-                messages = self.split_text(reason)
-                for msg in messages:
-                    await ctx.send(msg)
-                    await asyncio.sleep(0.3)
-
-                await self._timeout_user(ctx, nickname, final_timeout, reason)
-        elif self.is_miss(result_type):
-            if self.is_consolation_prize(result_type, payout):
-                no_timeout_message = f"🎁 @{nickname}, повезло! Редкий эмодзи спас от таймаута! Консольный приз: {payout} монет"
-            else:
-                no_timeout_message = f"✨ @{nickname}, редкий эмодзи спас от таймаута!"
-
-            messages = self.split_text(no_timeout_message)
-            for msg in messages:
-                await ctx.send(msg)
-                await asyncio.sleep(0.3)
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), no_timeout_message, datetime.utcnow())
-
+        await self._roll_handler.handle(ctx, amount)
         self._cleanup_old_cooldowns()
 
     def is_miss(self, result_type: str) -> bool:

@@ -5,6 +5,7 @@ from typing import Optional
 
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.presentation.auth import TwitchAuth
+from app.twitch.bootstrap.deps import build_bot_dependencies
 from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.twitch.presentation.twitch_bot import Bot as TwitchBot
 
@@ -67,8 +68,8 @@ class BotManager:
             self._ensure_credentials(auth)
 
             twitch_api_service = TwitchApiService(auth)
-
-            self._bot = TwitchBot(auth, twitch_api_service)
+            deps = build_bot_dependencies(auth, twitch_api_service)
+            self._bot = TwitchBot(deps)
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None
