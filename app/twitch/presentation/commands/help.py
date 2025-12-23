@@ -13,7 +13,7 @@ class HelpCommandHandler:
         self,
         command_prefix: str,
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        commands: dict[str],
+        commands: set[str],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]]
     ):
