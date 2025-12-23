@@ -11,8 +11,11 @@ from app.viewer.domain.models import ViewerSession
 from app.viewer.domain.repo import ViewerRepository
 
 
-class ViewerRepositoryImpl(ViewerRepository[Session]):
+class ViewerRepositoryImpl(ViewerRepository):
     ACTIVITY_TIMEOUT_MINUTES = 5
+
+    def __init__(self, db: Session):
+        self._db = db
 
     def _to_viewer_session(self, row: StreamViewerSession) -> ViewerSession:
         return ViewerSession(
@@ -32,13 +35,13 @@ class ViewerRepositoryImpl(ViewerRepository[Session]):
             stream=map_stream_row(row.stream) if row.stream else None
         )
 
-    def get_viewer_session(self, db: Session, stream_id: int, channel_name: str, user_name: str) -> Optional[ViewerSession]:
-        row = db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
+    def get_viewer_session(self, stream_id: int, channel_name: str, user_name: str) -> Optional[ViewerSession]:
+        row = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
         if not row:
             return None
         return self._to_viewer_session(row)
 
-    def create_view_session(self, db: Session, stream_id: int, channel_name: str, user_name: str, current_time: datetime) -> ViewerSession:
+    def create_view_session(self, stream_id: int, channel_name: str, user_name: str, current_time: datetime):
         session = StreamViewerSession(
             stream_id=stream_id,
             channel_name=channel_name,
@@ -47,18 +50,18 @@ class ViewerRepositoryImpl(ViewerRepository[Session]):
             last_activity=current_time,
             is_watching=True
         )
-        db.add(session)
+        self._db.add(session)
 
-    def update_last_activity(self, db: Session, stream_id: int, channel_name: str, user_name: str, current_time: datetime):
-        session = db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
+    def update_last_activity(self, stream_id: int, channel_name: str, user_name: str, current_time: datetime):
+        session = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
         session.last_activity = current_time
         session.updated_at = current_time
         session.is_watching = True
 
-    def get_inactive_sessions(self, db: Session, stream_id: int, current_time: datetime) -> list[ViewerSession]:
+    def get_inactive_sessions(self, stream_id: int, current_time: datetime) -> list[ViewerSession]:
         cutoff_time = current_time - timedelta(minutes=self.ACTIVITY_TIMEOUT_MINUTES)
         rows = (
-            db.query(StreamViewerSession)
+            self._db.query(StreamViewerSession)
             .filter_by(
                 stream_id=stream_id,
                 is_watching=True
@@ -70,41 +73,40 @@ class ViewerRepositoryImpl(ViewerRepository[Session]):
 
     def finish_session(
         self,
-        db: Session,
         stream_id: int,
         channel_name: str,
         user_name: str,
         total_minutes: int,
         current_time: datetime
     ):
-        session = db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
+        session = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
         session.total_minutes = total_minutes
         session.session_end = current_time
         session.is_watching = False
         session.updated_at = current_time
 
-    def get_active_sessions(self, db: Session, stream_id: int) -> list[ViewerSession]:
-        rows = db.query(StreamViewerSession).filter_by(stream_id=stream_id, is_watching=True).all()
+    def get_active_sessions(self, stream_id: int) -> list[ViewerSession]:
+        rows = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, is_watching=True).all()
         return [self._to_viewer_session(row) for row in rows]
 
-    def get_unique_viewers_count(self, db: Session, stream_id: int) -> int:
-        return db.query(StreamViewerSession.user_name).filter_by(stream_id=stream_id).distinct().count()
+    def get_unique_viewers_count(self, stream_id: int) -> int:
+        return self._db.query(StreamViewerSession.user_name).filter_by(stream_id=stream_id).distinct().count()
 
-    def get_viewer_sessions(self, db: Session, stream_id: int) -> list[ViewerSession]:
-        rows = db.query(StreamViewerSession).filter_by(stream_id=stream_id).all()
+    def get_viewer_sessions(self, stream_id: int) -> list[ViewerSession]:
+        rows = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id).all()
         return [self._to_viewer_session(row) for row in rows]
 
-    def update_session_rewards(self, db: Session, session_id: int, rewards: str, current_time: datetime):
-        row = db.query(StreamViewerSession).filter_by(id=session_id).first()
+    def update_session_rewards(self, session_id: int, rewards: str, current_time: datetime):
+        row = self._db.query(StreamViewerSession).filter_by(id=session_id).first()
         if not row:
             return
         row.rewards_claimed = rewards
         row.last_reward_claimed = current_time
         row.updated_at = current_time
 
-    def get_user_sessions(self, db: Session, channel_name: str, user_name: str) -> list[ViewerSession]:
+    def get_user_sessions(self, channel_name: str, user_name: str) -> list[ViewerSession]:
         rows = (
-            db.query(StreamViewerSession)
+            self._db.query(StreamViewerSession)
             .options(joinedload(StreamViewerSession.stream))
             .filter_by(channel_name=channel_name, user_name=user_name)
             .order_by(desc(StreamViewerSession.session_start))
@@ -112,5 +114,5 @@ class ViewerRepositoryImpl(ViewerRepository[Session]):
         )
         return [self._to_viewer_session(row) for row in rows]
 
-    def get_stream_watchers_count(self, db: Session, stream_id: int) -> int:
-        return db.query(StreamViewerSession).filter_by(stream_id=stream_id, is_watching=True).count()
+    def get_stream_watchers_count(self, stream_id: int) -> int:
+        return self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, is_watching=True).count()

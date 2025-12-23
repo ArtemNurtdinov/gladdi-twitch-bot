@@ -112,7 +112,6 @@ class Bot(commands.Bot):
         self.twitch_api_service = twitch_api_service
         self.joke_service = JokeService(FileJokeSettingsRepository())
         self.minigame_service = MinigameService()
-        self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
 
         self._restore_stream_context()
 
@@ -160,6 +159,9 @@ class Bot(commands.Bot):
 
     def _start_new_stream_use_case(self, db) -> StartNewStreamUseCase:
         return StartNewStreamUseCase(StreamRepositoryImpl(db))
+
+    def _viewer_service(self, db) -> ViewerTimeService:
+        return ViewerTimeService(ViewerRepositoryImpl(db))
 
     async def _get_user_id_cached(self, login: str) -> str | None:
         now = datetime.utcnow()
@@ -249,7 +251,7 @@ class Bot(commands.Bot):
             self._economy_service(db).process_user_message_activity(channel_name, normalized_user_name)
             active_stream = self._stream_service(db).get_active_stream(channel_name)
             if active_stream:
-                self.viewer_service.update_viewer_session(db, active_stream.id, channel_name, nickname.lower(), datetime.utcnow())
+                self._viewer_service(db).update_viewer_session(active_stream.id, channel_name, nickname.lower(), datetime.utcnow())
 
         if message.content.startswith(self._prefix):
             await self.handle_commands(message)
@@ -1553,8 +1555,8 @@ class Bot(commands.Bot):
 
                     with SessionLocal.begin() as db:
                         self._stream_service(db).end_stream(active_stream.id, finish_time)
-                        self.viewer_service.finish_stream_sessions(db, active_stream.id, finish_time)
-                        total_viewers = self.viewer_service.get_unique_viewers_count(db, active_stream.id)
+                        self._viewer_service(db).finish_stream_sessions(active_stream.id, finish_time)
+                        total_viewers = self._viewer_service(db).get_unique_viewers_count(active_stream.id)
                         self._stream_service(db).update_stream_total_viewers(active_stream.id, total_viewers)
                         logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
@@ -1864,31 +1866,31 @@ class Bot(commands.Bot):
                     continue
 
                 with SessionLocal.begin() as db:
-                    self.viewer_service.check_inactive_viewers(db, active_stream.id, datetime.utcnow())
+                    self._viewer_service(db).check_inactive_viewers(active_stream.id, datetime.utcnow())
 
                 broadcaster_id = await self._get_user_id_cached(channel_name)
                 moderator_id = await self._get_user_id_cached(self.nick)
                 chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
                 if chatters:
                     with SessionLocal.begin() as db:
-                        self.viewer_service.update_viewers(db, active_stream.id, channel_name, chatters, datetime.utcnow())
+                        self._viewer_service(db).update_viewers(active_stream.id, channel_name, chatters, datetime.utcnow())
 
                 with db_ro_session() as db:
-                    viewers_count = self.viewer_service.get_stream_watchers_count(db, active_stream.id)
+                    viewers_count = self._viewer_service(db).get_stream_watchers_count(active_stream.id)
 
                 if viewers_count > active_stream.max_concurrent_viewers:
                     with SessionLocal.begin() as db:
                         self._stream_service(db).update_max_concurrent_viewers_count(active_stream.id, viewers_count)
 
                 with SessionLocal.begin() as db:
-                    viewer_sessions = self.viewer_service.get_stream_viewer_sessions(db, active_stream.id)
+                    viewer_sessions = self._viewer_service(db).get_stream_viewer_sessions(active_stream.id)
                     for session in viewer_sessions:
-                        available_rewards = self.viewer_service.get_available_rewards(session)
+                        available_rewards = self._viewer_service(db).get_available_rewards(session)
                         for minutes_threshold, reward_amount in available_rewards:
                             claimed_list = session.get_claimed_rewards_list()
                             claimed_list.append(minutes_threshold)
                             rewards = ','.join(map(str, sorted(claimed_list)))
-                            self.viewer_service.update_session_rewards(db, session.id, rewards, datetime.utcnow())
+                            self._viewer_service(db).update_session_rewards(session.id, rewards, datetime.utcnow())
                             self._economy_service(db).add_balance(channel_name, session.user_name, reward_amount,
                                                                   TransactionType.VIEWER_TIME_REWARD, description)
                             description = f"Награда за {minutes_threshold} минут просмотра стрима"
