@@ -35,6 +35,7 @@ from app.equipment.domain.equipment_service import EquipmentService
 from app.minigame.data.db.word_history_repository import WordHistoryRepositoryImpl
 from app.stream.domain.models import StreamStatistics
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.presentation.auth import TwitchAuth
 from app.chat.application.chat_use_case import ChatUseCase
 from app.chat.data.chat_repository import ChatRepositoryImpl
@@ -112,6 +113,7 @@ class Bot(commands.Bot):
         self.twitch_api_service = twitch_api_service
         self.joke_service = JokeService(FileJokeSettingsRepository())
         self.minigame_service = MinigameService()
+        self.user_cache = UserCacheService(twitch_api_service)
 
         self._restore_stream_context()
 
@@ -121,8 +123,6 @@ class Bot(commands.Bot):
         self.roll_cooldowns = {}
         self._tasks_started = False
         self._background_tasks: list[asyncio.Task] = []
-        self._user_id_cache: dict[str, tuple[str, datetime]] = {}
-        self._user_id_cache_ttl = timedelta(minutes=30)
 
         request = HTTPXRequest(connection_pool_size=10, pool_timeout=10)
         self.telegram_bot = telegram.Bot(token=config.telegram.bot_token, request=request)
@@ -163,20 +163,6 @@ class Bot(commands.Bot):
     def _viewer_service(self, db) -> ViewerTimeService:
         return ViewerTimeService(ViewerRepositoryImpl(db))
 
-    async def _get_user_id_cached(self, login: str) -> str | None:
-        now = datetime.utcnow()
-        cached = self._user_id_cache.get(login)
-        if cached:
-            cached_id, cached_at = cached
-            if now - cached_at < self._user_id_cache_ttl:
-                return cached_id
-
-        user_info = await self.twitch_api_service.get_user_by_login(login)
-        user_id = None if user_info is None else user_info.id
-        if user_id:
-            self._user_id_cache[login] = (user_id, now)
-        return user_id
-
     async def _warmup_broadcaster_id(self):
         try:
             if not self.initial_channels:
@@ -184,7 +170,7 @@ class Bot(commands.Bot):
                 return
 
             channel_name = self.initial_channels[0]
-            await self._get_user_id_cached(channel_name)
+            await self.user_cache.warmup(channel_name)
         except Exception as e:
             logger.error(f"Не удалось прогреть кеш ID канала: {e}")
 
@@ -1406,8 +1392,8 @@ class Bot(commands.Bot):
             user = await self.twitch_api_service.get_user_by_login(username)
             user_id = None if user is None else user.id
 
-            broadcaster_id = await self._get_user_id_cached(channel_name)
-            moderator_id = await self._get_user_id_cached(self.nick)
+            broadcaster_id = await self.user_cache.get_user_id(channel_name)
+            moderator_id = await self.user_cache.get_user_id(self.nick)
 
             if not user_id:
                 logger.error(f"Не удалось получить ID пользователя {username}")
@@ -1469,7 +1455,7 @@ class Bot(commands.Bot):
                     continue
 
                 channel_name = self.initial_channels[0]
-                broadcaster_id = await self._get_user_id_cached(channel_name)
+                broadcaster_id = await self.user_cache.get_user_id(channel_name)
 
                 if not broadcaster_id:
                     logger.error(f"Не удалось получить ID канала {channel_name} для генерации анекдота")
@@ -1510,7 +1496,7 @@ class Bot(commands.Bot):
                     continue
 
                 channel_name = self.initial_channels[0]
-                broadcaster_id = await self._get_user_id_cached(channel_name)
+                broadcaster_id = await self.user_cache.get_user_id(channel_name)
 
                 if not broadcaster_id:
                     logger.error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
@@ -1676,7 +1662,7 @@ class Bot(commands.Bot):
 
             channel_name = self.initial_channels[0]
             try:
-                broadcaster_id = await self._get_user_id_cached(channel_name)
+                broadcaster_id = await self.user_cache.get_user_id(channel_name)
 
                 if not broadcaster_id:
                     logger.error(f"Не удалось получить ID канала {channel_name} для анализа чата")
@@ -1868,8 +1854,8 @@ class Bot(commands.Bot):
                 with SessionLocal.begin() as db:
                     self._viewer_service(db).check_inactive_viewers(active_stream.id, datetime.utcnow())
 
-                broadcaster_id = await self._get_user_id_cached(channel_name)
-                moderator_id = await self._get_user_id_cached(self.nick)
+                broadcaster_id = await self.user_cache.get_user_id(channel_name)
+                moderator_id = await self.user_cache.get_user_id(self.nick)
                 chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
                 if chatters:
                     with SessionLocal.begin() as db:

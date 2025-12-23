@@ -1,0 +1,35 @@
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, Tuple
+
+from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+
+logger = logging.getLogger(__name__)
+
+
+class UserCacheService:
+
+    def __init__(self, twitch_api_service: TwitchApiService, ttl_minutes: int = 30):
+        self._twitch_api_service = twitch_api_service
+        self._ttl = timedelta(minutes=ttl_minutes)
+        self._cache: Dict[str, Tuple[str, datetime]] = {}
+
+    async def get_user_id(self, login: str) -> str | None:
+        now = datetime.utcnow()
+        cached = self._cache.get(login)
+        if cached:
+            user_id, cached_at = cached
+            if now - cached_at < self._ttl:
+                return user_id
+
+        user_info = await self._twitch_api_service.get_user_by_login(login)
+        user_id = None if user_info is None else user_info.id
+        if user_id:
+            self._cache[login] = (user_id, now)
+        return user_id
+
+    async def warmup(self, login: str):
+        try:
+            await self.get_user_id(login)
+        except Exception as e:
+            logger.error(f"Не удалось прогреть кеш ID для {login}: {e}")
