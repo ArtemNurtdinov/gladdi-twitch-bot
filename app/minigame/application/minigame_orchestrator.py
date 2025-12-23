@@ -33,7 +33,6 @@ class MinigameOrchestrator:
         command_guess: str,
         command_rps: str,
         bot_nick_provider: Callable[[], str | None],
-        split_text_fn: Callable[[str, int], list[str]],
         send_channel_message: Callable[[str, str], Awaitable[None]],
     ):
         self.minigame_service = minigame_service
@@ -51,7 +50,6 @@ class MinigameOrchestrator:
         self._command_guess = command_guess
         self._command_rps = command_rps
         self._bot_nick_provider = bot_nick_provider
-        self._split_text = split_text_fn
         self._send_channel_message = send_channel_message
 
     def _bot_name_lower(self) -> str:
