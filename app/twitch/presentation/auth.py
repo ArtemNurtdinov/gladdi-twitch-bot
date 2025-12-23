@@ -1,26 +1,25 @@
-import logging
+from logging import Logger
 
 import requests
 
 from core.config import config
 
-logger = logging.getLogger(__name__)
 
 class TwitchAuth:
     def __init__(
         self,
         access_token: str,
         refresh_token: str,
-        client_id: str | None = None,
-        client_secret: str | None = None,
+        logger: Logger
     ):
         self.access_token = access_token
         self.refresh_token = refresh_token
-        self.client_id = client_id or config.twitch.client_id
-        self.client_secret = client_secret or config.twitch.client_secret
+        self.client_id = config.twitch.client_id
+        self.client_secret = config.twitch.client_secret
+        self.logger = logger
 
     def update_access_token(self):
-        logger.info("updating access token")
+        self.logger.info("updating access token")
         url = 'https://id.twitch.tv/oauth2/token'
 
         data = {
@@ -50,13 +49,13 @@ class TwitchAuth:
         if response.status_code == 200:
             token_info = response.json()
             expires_in = token_info["expires_in"]
-            logger.info("Токен действителен")
+            self.logger.info("Токен действителен")
             return expires_in > 4000
         elif response.status_code == 401:
-            logger.info("Токен истек или недействителен.")
-            logger.info("Ответ от сервера:", response.json())
+            self.logger.info("Токен истек или недействителен.")
+            self.logger.info("Ответ от сервера:", response.json())
         else:
-            logger.info("Произошла ошибка при проверке токена.")
-            logger.info("Статус код:", response.status_code)
-            logger.info("Ответ от сервера:", response.json())
+            self.logger.info("Произошла ошибка при проверке токена.")
+            self.logger.info("Статус код:", response.status_code)
+            self.logger.info("Ответ от сервера:", response.json())
         return False

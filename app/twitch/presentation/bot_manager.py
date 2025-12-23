@@ -64,7 +64,7 @@ class BotManager:
             if self._task and not self._task.done():
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            auth = TwitchAuth(access_token=access_token, refresh_token=refresh_token)
+            auth = TwitchAuth(access_token=access_token, refresh_token=refresh_token, logger=logger)
             self._ensure_credentials(auth)
 
             twitch_api_service = TwitchApiService(auth)
