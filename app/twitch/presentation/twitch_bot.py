@@ -15,9 +15,15 @@ from app.twitch.presentation.commands.ask import AskCommandHandler
 from app.twitch.presentation.commands.battle import BattleCommandHandler
 from app.twitch.presentation.commands.balance import BalanceCommandHandler
 from app.twitch.presentation.commands.bonus import BonusCommandHandler
+from app.twitch.presentation.commands.equipment import EquipmentCommandHandler
 from app.twitch.presentation.commands.followage import FollowageCommandHandler
+from app.twitch.presentation.commands.guess import GuessCommandHandler
+from app.twitch.presentation.commands.help import HelpCommandHandler
 from app.twitch.presentation.commands.roll import RollCommandHandler
+from app.twitch.presentation.commands.rps import RpsCommandHandler
 from app.twitch.presentation.commands.shop import ShopCommandHandler
+from app.twitch.presentation.commands.stats import StatsCommandHandler
+from app.twitch.presentation.commands.top_bottom import TopBottomCommandHandler
 from app.twitch.presentation.commands.transfer import TransferCommandHandler
 from core.config import config
 from collections import Counter
@@ -200,6 +206,72 @@ class Bot(commands.Bot):
             nick_provider=lambda: self.nick,
             split_text_fn=self.split_text,
         )
+        self._equipment_handler = EquipmentCommandHandler(
+            equipment_service_factory=self._equipment_service,
+            chat_use_case_factory=self._chat_use_case,
+            command_name=self._COMMAND_EQUIPMENT,
+            command_shop=self._COMMAND_SHOP,
+            prefix=self._prefix,
+            nick_provider=lambda: self.nick,
+            split_text_fn=self.split_text,
+        )
+        self._top_bottom_handler = TopBottomCommandHandler(
+            economy_service_factory=self._economy_service,
+            chat_use_case_factory=self._chat_use_case,
+            command_top=self._COMMAND_TOP,
+            command_bottom=self._COMMAND_BOTTOM,
+            nick_provider=lambda: self.nick,
+            split_text_fn=self.split_text,
+        )
+        self._stats_handler = StatsCommandHandler(
+            economy_service_factory=self._economy_service,
+            betting_service_factory=self._betting_service,
+            battle_use_case_factory=self._battle_use_case,
+            chat_use_case_factory=self._chat_use_case,
+            command_name=self._COMMAND_STATS,
+            nick_provider=lambda: self.nick,
+            split_text_fn=self.split_text,
+        )
+        commands_map = {
+            self._COMMAND_BALANCE: "ваш баланс",
+            self._COMMAND_BONUS: "ежедневный бонус",
+            f"{self._COMMAND_ROLL} [сумма]": "слот-машина",
+            f"{self._COMMAND_TRANSFER} @ник сумма": "перевод монет",
+            self._COMMAND_SHOP: "магазин артефактов",
+            f"{self._COMMAND_BUY} название": "купить предмет",
+            self._COMMAND_EQUIPMENT: "ваша экипировка",
+            self._COMMAND_TOP: "топ богачей",
+            self._COMMAND_BOTTOM: "топ бомжей",
+            self._COMMAND_STATS: "ваша стата",
+            self._COMMAND_FIGHT: "сразиться в битве",
+            f"{self._COMMAND_GLADDI} текст": "спросить GLaDDi",
+            self._COMMAND_FOLLOWAGE: "сколько подписан",
+        }
+        self._help_handler = HelpCommandHandler(
+            chat_use_case_factory=self._chat_use_case,
+            prefix=self._prefix,
+            commands_map=commands_map,
+            nick_provider=lambda: self.nick,
+            split_text_fn=self.split_text,
+        )
+        self._guess_handler = GuessCommandHandler(
+            minigame_service=self.minigame_service,
+            economy_service_factory=self._economy_service,
+            chat_use_case_factory=self._chat_use_case,
+            command_guess=self._COMMAND_GUESS,
+            command_guess_letter=self._COMMAND_GUESS_LETTER,
+            command_guess_word=self._COMMAND_GUESS_WORD,
+            prefix=self._prefix,
+            nick_provider=lambda: self.nick,
+        )
+        self._rps_handler = RpsCommandHandler(
+            minigame_service=self.minigame_service,
+            economy_service_factory=self._economy_service,
+            chat_use_case_factory=self._chat_use_case,
+            command_name=self._COMMAND_RPS,
+            prefix=self._prefix,
+            nick_provider=lambda: self.nick,
+        )
 
         # mutable holder for waiting user (so handler can mutate)
         self._battle_waiting_user_ref = {"value": None}
@@ -363,447 +435,39 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_EQUIPMENT)
     async def equipment(self, ctx):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-        normalized_user_name = user_name.lower()
-
-        logger.info(f"Команда {self._COMMAND_EQUIPMENT} от пользователя {user_name}")
-
-        with db_ro_session() as db:
-            equipment = self._equipment_service(db).get_user_equipment(channel_name, normalized_user_name)
-
-        if not equipment:
-            result = f"@{user_name}, у вас нет активной экипировки. Загляните в {self._prefix}{self._COMMAND_SHOP}!"
-        else:
-            result = f"Экипировка @{user_name}:\n"
-
-            for item in equipment:
-                expires_date = item.expires_at.strftime("%d.%m.%Y")
-                result += f"{item.shop_item.emoji} {item.shop_item.name} до {expires_date}\n"
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self._equipment_handler.handle(ctx)
 
     @commands.command(name=_COMMAND_TOP)
     async def top_users(self, ctx):
-        channel_name = ctx.channel.name
-
-        logger.info(f"Команда {self._COMMAND_TOP}")
-
-        with db_ro_session() as db:
-            top_users = self._economy_service(db).get_top_users(channel_name, limit=7)
-
-        if not top_users:
-            result = "Нет данных для отображения топа."
-        else:
-            result = "ТОП БОГАЧЕЙ:\n"
-            for i, user in enumerate(top_users, 1):
-                result += f"{i}. {user.user_name}: {user.balance} монет."
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self._top_bottom_handler.handle_top(ctx)
 
     @commands.command(name=_COMMAND_BOTTOM)
     async def bottom_users(self, ctx):
-        channel_name = ctx.channel.name
-
-        logger.info(f"Команда {self._COMMAND_BOTTOM}")
-
-        with db_ro_session() as db:
-            bottom_users = self._economy_service(db).get_bottom_users(channel_name, limit=10)
-
-        if not bottom_users:
-            result = "Нет данных для отображения бомжей."
-        else:
-            result = "💸 ТОП БОМЖЕЙ:\n"
-            for i, user in enumerate(bottom_users, 1):
-                result += f"{i}. {user.user_name}: {user.balance} монет."
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self._top_bottom_handler.handle_bottom(ctx)
 
     @commands.command(name=_COMMAND_HELP)
     async def list_commands(self, ctx):
-        channel_name = ctx.channel.name
-        prefix = self._prefix
-        help_text = (
-            "📜 Доступные команды: "
-            f"{prefix}{self._COMMAND_BALANCE}: ваш баланс. "
-            f"{prefix}{self._COMMAND_BONUS}: ежедневный бонус. "
-            f"{prefix}{self._COMMAND_ROLL} [сумма]: слот-машина. "
-            f"{prefix}{self._COMMAND_TRANSFER} @ник сумма: перевод монет. "
-            f"{prefix}{self._COMMAND_SHOP}: магазин артефактов. "
-            f"{prefix}{self._COMMAND_BUY} название: купить предмет. "
-            f"{prefix}{self._COMMAND_EQUIPMENT}: ваша экипировка. "
-            f"{prefix}{self._COMMAND_TOP}: топ богачей. "
-            f"{prefix}{self._COMMAND_BOTTOM}: топ бомжей. "
-            f"{prefix}{self._COMMAND_STATS}: ваша стата. "
-            f"{prefix}{self._COMMAND_FIGHT}: сразиться в битве. "
-            f"{prefix}{self._COMMAND_GLADDI} текст: спросить GLaDDi. "
-            f"{prefix}{self._COMMAND_FOLLOWAGE}: сколько подписан. "
-        )
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), help_text, datetime.utcnow())
-
-        messages = self.split_text(help_text)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self._help_handler.handle(ctx)
 
     @commands.command(name=_COMMAND_STATS)
     async def user_stats(self, ctx):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-
-        logger.info(f"Команда {self._COMMAND_STATS} от пользователя {user_name}")
-
-        normalized_user_name = user_name.lower()
-
-        with SessionLocal.begin() as db:
-            balance = self._economy_service(db).get_user_balance(channel_name, normalized_user_name)
-            bets = self._betting_service(db).get_user_bets(channel_name, normalized_user_name)
-
-        if not bets:
-            bet_stats = UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)
-        else:
-            total_bets = len(bets)
-            jackpots = sum(1 for bet in bets if bet.result_type == "jackpot")
-            jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
-
-            bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
-
-        with db_ro_session() as db:
-            battles = self._battle_use_case(db).get_user_battles(channel_name, user_name)
-
-        if not battles:
-            battle_stats = UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
-        else:
-            total_battles = len(battles)
-            wins = sum(1 for battle in battles if battle.winner == user_name)
-            losses = total_battles - wins
-            win_rate = (wins / total_battles) * 100 if total_battles > 0 else 0.0
-            battle_stats = UserBattleStats(total_battles=total_battles, wins=wins, losses=losses, win_rate=win_rate)
-
-        result = f"📊 Статистика @{user_name}: "
-        result += f" 💰 Баланс: {balance.balance} монет."
-
-        if bet_stats.total_bets > 0:
-            result += f" 🎰 Ставки: {bet_stats.total_bets} | Джекпоты: {bet_stats.jackpots} ({bet_stats.jackpot_rate:.1f}%). "
-
-        if battle_stats.has_battles():
-            result += f" ⚔️ Битвы: {battle_stats.total_battles} | Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%). "
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self._stats_handler.handle(ctx)
 
     @commands.command(name=_COMMAND_GUESS)
     async def guess_number(self, ctx, number: str = None):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-
-        logger.info(f"Команда {self._COMMAND_GUESS} от пользователя {user_name}, число: {number}")
-        if not number:
-            result = f"@{user_name}, используй: {self._prefix}{self._COMMAND_GUESS} [число]"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        try:
-            guess = int(number)
-        except ValueError:
-            result = f"@{user_name}, укажи правильное число! Например: {self._prefix}{self._COMMAND_GUESS} 42"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        if not self.minigame_service.is_game_active(channel_name):
-            result = "Сейчас нет активной игры 'угадай число'"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        game = self.minigame_service.get_active_game(channel_name)
-
-        if datetime.utcnow() > game.end_time:
-            self.minigame_service.finish_guess_game_timeout(channel_name)
-            result = f"Время игры истекло! Загаданное число было {game.target_number}"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        if not game.is_active:
-            result = "Игра уже завершена"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        if not game.min_number <= guess <= game.max_number:
-            result = f"Число должно быть от {game.min_number} до {game.max_number}"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        if guess == game.target_number:
-            self.minigame_service.finish_game_with_winner(game, channel_name, user_name, guess)
-            description = f"Победа в игре 'угадай число': {guess}"
-            message = f"ПОЗДРАВЛЯЕМ! @{user_name} угадал число {guess} и выиграл {game.prize_amount} монет!"
-
-            with SessionLocal.begin() as db:
-                self._economy_service(db).add_balance(channel_name, user_name, game.prize_amount, TransactionType.MINIGAME_WIN, description)
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-        else:
-            if game.prize_amount > 300:
-                game.prize_amount = max(300, game.prize_amount - MinigameService.GUESS_PRIZE_DECREASE_PER_ATTEMPT)
-            hint = "больше" if guess < game.target_number else "меньше"
-            message = f"@{user_name}, не угадал! Загаданное число {hint} {guess}."
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
+        await self._guess_handler.handle_guess_number(ctx, number)
 
     @commands.command(name=_COMMAND_GUESS_LETTER)
     async def guess_letter(self, ctx, letter: str = None):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-        if not letter:
-            status = self.minigame_service.get_word_game_status(channel_name)
-            if status:
-                await ctx.send(status)
-                with SessionLocal.begin() as db:
-                    self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), status, datetime.utcnow())
-            else:
-                await ctx.send(f"@{user_name}, сейчас нет активной игры 'поле чудес' — дождитесь автоматического запуска.")
-            return
-
-        if not self.minigame_service.is_word_game_active(channel_name):
-            message = "Сейчас нет активной игры 'поле чудес'"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        game = self.minigame_service.get_active_word_game(channel_name)
-        if datetime.utcnow() > game.end_time:
-            self.minigame_service.finish_word_game_timeout(channel_name)
-            message = f"Время игры истекло! Слово было '{game.target_word}'"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        if not game.is_active:
-            message = "Игра уже завершена"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        if not len(letter) == 1 or not letter.isalpha():
-            message = "Введите одну букву русского алфавита"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        letter_revealed = False
-
-        letter = letter.lower()
-        if letter in game.guessed_letters:
-            letter_revealed = False
-        if letter in game.target_word:
-            game.guessed_letters.add(letter)
-            letter_revealed = True
-
-        masked = game.get_masked_word()
-
-        if letter_revealed:
-            if game.prize_amount > MinigameService.WORD_GAME_MIN_PRIZE:
-                game.prize_amount = max(MinigameService.WORD_GAME_MIN_PRIZE,
-                                        game.prize_amount - MinigameService.WORD_GAME_LETTER_REWARD_DECREASE)
-            letters_in_word = {ch for ch in game.target_word if ch.isalpha()}
-            all_letters_revealed = letters_in_word.issubset(game.guessed_letters)
-            if all_letters_revealed:
-                normalized_user_name = user_name.lower()
-
-                with SessionLocal.begin() as db:
-                    winner_balance = self._economy_service(db).add_balance(channel_name, normalized_user_name, game.prize_amount,
-                                                                           TransactionType.MINIGAME_WIN, f"Победа в игре 'поле чудес'")
-
-                message = f"ПОЗДРАВЛЯЕМ! @{user_name} угадал слово '{game.target_word}' и выиграл {game.prize_amount} монет! Баланс: {winner_balance.balance} монет"
-                self.minigame_service.finish_word_game_with_winner(game, channel_name, user_name)
-            else:
-                message = f"Буква есть! Слово: {masked}."
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-        else:
-            message = f"Такой буквы нет. Слово: {masked}."
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
+        await self._guess_handler.handle_guess_letter(ctx, letter)
 
     @commands.command(name=_COMMAND_GUESS_WORD)
     async def guess_word(self, ctx, *, word: str = None):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-        if not word:
-            status = self.minigame_service.get_word_game_status(channel_name)
-            if status:
-                await ctx.send(status)
-                with SessionLocal.begin() as db:
-                    self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), status, datetime.utcnow())
-            else:
-                await ctx.send(f"@{user_name}, сейчас нет активной игры 'поле чудес' — дождитесь автоматического запуска.")
-            return
-
-        word_game_is_active = self.minigame_service.is_word_game_active(channel_name)
-        if not word_game_is_active:
-            message = "Сейчас нет активной игры 'поле чудес'"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        game = self.minigame_service.get_active_word_game(channel_name)
-        if datetime.utcnow() > game.end_time:
-            self.minigame_service.finish_word_game_timeout(channel_name)
-            message = f"Время игры истекло! Слово было '{game.target_word}'"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        if not game.is_active:
-            message = "Игра уже завершена"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        if word.strip().lower() == game.target_word:
-            self.minigame_service.finish_word_game_with_winner(game, channel_name, user_name)
-            normalized_user_name = user_name.lower()
-
-            with SessionLocal.begin() as db:
-                winner_balance = self._economy_service(db).add_balance(channel_name, normalized_user_name, game.prize_amount,
-                                                                       TransactionType.MINIGAME_WIN, f"Победа в игре 'поле чудес'")
-
-            message = f"ПОЗДРАВЛЯЕМ! @{user_name} угадал слово '{game.target_word}' и выиграл {game.prize_amount} монет! Баланс: {winner_balance.balance} монет"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-        else:
-            masked = game.get_masked_word()
-            message = f"Неверное слово. Слово: {masked}."
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
+        await self._guess_handler.handle_guess_word(ctx, word)
 
     @commands.command(name=_COMMAND_RPS)
     async def join_rps(self, ctx, choice: str = None):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-        if not choice:
-            await ctx.send(f"@{user_name}, укажите ваш выбор: камень / ножницы / бумага")
-            return
-
-        rps_game_is_active = self.minigame_service.rps_game_is_active(channel_name)
-        if not rps_game_is_active:
-            message = "Сейчас нет активной игры 'камень-ножницы-бумага'"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        game = self.minigame_service.get_active_rps_game(channel_name)
-
-        if datetime.utcnow() > game.end_time:
-            bot_choice, winning_choice, winners = self.minigame_service.finish_rps(game, channel_name)
-            if winners:
-                share = max(1, game.bank // len(winners))
-                with SessionLocal.begin() as db:
-                    for winner in winners:
-                        self._economy_service(db).add_balance(channel_name, winner, share, TransactionType.MINIGAME_WIN,
-                                                              f"Победа в КНБ ({winning_choice})")
-                winners_display = ", ".join(f"@{winner}" for winner in winners)
-                message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
-            else:
-                message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        if not game.is_active:
-            message = "Игра уже завершена"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        normalized_choice = choice.strip().lower()
-        if normalized_choice not in RPS_CHOICES:
-            message = "Выберите: камень, ножницы или бумага"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        normalized_user_name = user_name.lower()
-        if game.user_choices and game.user_choices[normalized_user_name]:
-            existing = game.user_choices[normalized_user_name]
-            message = f"Вы уже выбрали: {existing}. Сменить нельзя в текущей игре"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        fee = MinigameService.RPS_ENTRY_FEE_PER_USER
-
-        with SessionLocal.begin() as db:
-            user_balance = self._economy_service(db).subtract_balance(channel_name, user_name, fee, TransactionType.SPECIAL_EVENT,
-                                                                      "Участие в игре 'камень-ножницы-бумага'")
-        if not user_balance:
-            message = f"Недостаточно средств! Требуется {fee} монет"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-            await ctx.send(message)
-            return
-
-        game.bank += fee
-        game.user_choices[normalized_user_name] = choice
-
-        message = f"Принято: @{user_name} — {normalized_choice}"
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), message, datetime.utcnow())
-        await ctx.send(message)
+        await self._rps_handler.handle(ctx, choice)
 
     def _cleanup_old_cooldowns(self):
         current_time = datetime.now()
