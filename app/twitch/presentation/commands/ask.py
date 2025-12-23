@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 from sqlalchemy.orm import Session
@@ -10,8 +9,6 @@ from app.chat.application.chat_use_case import ChatUseCase
 from core.db import SessionLocal
 from typing import Callable, Awaitable, Any
 from app.ai.domain.models import Intent
-
-logger = logging.getLogger(__name__)
 
 
 class AskCommandHandler:
@@ -42,7 +39,6 @@ class AskCommandHandler:
         user_message = full_message[len(f"{self.command_prefix}{self.command_name}"):].strip()
 
         intent = self.intent_use_case.get_intent_from_text(user_message)
-        logger.info(f"Определён интент: {intent}")
 
         if intent == Intent.JACKBOX:
             prompt = self.prompt_service.get_jackbox_prompt(display_name, user_message)
@@ -59,5 +55,4 @@ class AskCommandHandler:
         with SessionLocal.begin() as db:
             self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
             self._chat_use_case(db).save_chat_message(channel_name, self.nick_provider().lower(), result, datetime.utcnow())
-        logger.info(f"Отправлен ответ пользователю {display_name}")
         await self.post_message_fn(result, ctx)

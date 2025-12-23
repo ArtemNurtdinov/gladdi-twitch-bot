@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from datetime import datetime
 from typing import Callable
 
@@ -10,8 +9,6 @@ from app.economy.domain.economy_service import EconomyService
 from app.equipment.domain.equipment_service import EquipmentService
 from app.stream.domain.stream_service import StreamService
 from core.db import SessionLocal, db_ro_session
-
-logger = logging.getLogger(__name__)
 
 
 class BonusCommandHandler:
@@ -36,42 +33,39 @@ class BonusCommandHandler:
         self.nick_provider = nick_provider
         self.split_text = split_text_fn
 
-    async def handle(self, ctx):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
+    async def handle(self, channel_name: str, display_name: str, ctx):
         bot_nick = self.nick_provider() or ""
-
-        logger.info(f"Команда {self.command_name} от пользователя {user_name}")
+        user_name = display_name.lower()
 
         with db_ro_session() as db:
             active_stream = self._stream_service(db).get_active_stream(channel_name)
 
         if not active_stream:
-            result = f"🚫 @{user_name}, бонус доступен только во время стрима!"
+            result = f"🚫 @{display_name}, бонус доступен только во время стрима!"
         else:
             with SessionLocal.begin() as db:
-                user_equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name.lower())
+                user_equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name)
                 bonus_result = self._economy_service(db).claim_daily_bonus(
-                    active_stream.id, channel_name, user_name.lower(), user_equipment
+                    active_stream.id, channel_name, user_name, user_equipment
                 )
                 if bonus_result.success:
                     if bonus_result.bonus_message:
                         result = (
-                            f"🎁 @{user_name} получил бонус {bonus_result.bonus_amount} монет! "
+                            f"🎁 @{display_name} получил бонус {bonus_result.bonus_amount} монет! "
                             f"Баланс: {bonus_result.user_balance.balance} монет. {bonus_result.bonus_message}"
                         )
                     else:
                         result = (
-                            f"🎁 @{user_name} получил бонус {bonus_result.bonus_amount} монет! "
+                            f"🎁 @{display_name} получил бонус {bonus_result.bonus_amount} монет! "
                             f"Баланс: {bonus_result.user_balance.balance} монет"
                         )
                 else:
                     if bonus_result.failure_reason == "already_claimed":
-                        result = f"⏰ @{user_name}, бонус уже получен на этом стриме!"
+                        result = f"⏰ @{display_name}, бонус уже получен на этом стриме!"
                     elif bonus_result.failure_reason == "error":
-                        result = f"❌ @{user_name}, произошла ошибка при получении бонуса. Попробуй позже!"
+                        result = f"❌ @{display_name}, произошла ошибка при получении бонуса. Попробуй позже!"
                     else:
-                        result = f"❌ @{user_name}, бонус недоступен!"
+                        result = f"❌ @{display_name}, бонус недоступен!"
 
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
@@ -80,4 +74,3 @@ class BonusCommandHandler:
         for msg in messages:
             await ctx.send(msg)
             await asyncio.sleep(0.3)
-

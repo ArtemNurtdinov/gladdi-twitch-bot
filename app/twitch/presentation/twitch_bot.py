@@ -127,6 +127,8 @@ class Bot(commands.Bot):
             ai_conversation_use_case_factory=self._ai_conversation_use_case,
             command_name=self._COMMAND_FOLLOWAGE,
             nick_provider=lambda: self.nick,
+            generate_response_fn=self.generate_response_in_chat,
+            twitch_api_service=self.twitch_api_service
         )
         self._ask_handler = AskCommandHandler(
             command_prefix=self._prefix,
@@ -169,6 +171,7 @@ class Bot(commands.Bot):
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
             nick_provider=lambda: self.nick,
+            post_message_fn=self._post_message_in_twitch_chat,
         )
         self._bonus_handler = BonusCommandHandler(
             stream_service_factory=self._stream_service,
@@ -264,7 +267,6 @@ class Bot(commands.Bot):
             nick_provider=lambda: self.nick,
         )
 
-        # mutable holder for waiting user (so handler can mutate)
         self._battle_waiting_user_ref = {"value": None}
 
         logger.info("Twitch бот инициализирован успешно")
@@ -389,7 +391,11 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_FOLLOWAGE)
     async def followage(self, ctx):
-        await self._followage_handler.handle(ctx)
+        await self._followage_handler.handle(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx
+        )
 
     @commands.command(name=_COMMAND_GLADDI)
     async def ask(self, ctx):
@@ -402,7 +408,12 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_FIGHT)
     async def battle(self, ctx):
-        await self._battle_handler.handle(ctx, self._battle_waiting_user_ref)
+        await self._battle_handler.handle(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            battle_waiting_user_ref=self._battle_waiting_user_ref,
+            ctx=ctx
+        )
 
     @commands.command(name=_COMMAND_ROLL)
     async def roll(self, ctx, amount: str = None):
@@ -419,7 +430,11 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_BONUS)
     async def daily_bonus(self, ctx):
-        await self._bonus_handler.handle(ctx)
+        await self._bonus_handler.handle(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx
+        )
 
     @commands.command(name=_COMMAND_TRANSFER)
     async def transfer_money(self, ctx, recipient: str = None, amount: str = None):
@@ -435,7 +450,11 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_EQUIPMENT)
     async def equipment(self, ctx):
-        await self._equipment_handler.handle(ctx)
+        await self._equipment_handler.handle(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx
+        )
 
     @commands.command(name=_COMMAND_TOP)
     async def top_users(self, ctx):

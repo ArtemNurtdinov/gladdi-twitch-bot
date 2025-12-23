@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import random
 from datetime import datetime
 from typing import Any, Awaitable, Callable
@@ -13,8 +12,6 @@ from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.equipment.domain.equipment_service import EquipmentService
 from core.db import SessionLocal, db_ro_session
-
-logger = logging.getLogger(__name__)
 
 
 class BattleCommandHandler:
@@ -45,11 +42,8 @@ class BattleCommandHandler:
         self.generate_response_in_chat = generate_response_fn
         self.nick_provider = nick_provider
 
-    async def handle(self, ctx, battle_waiting_user_ref):
-        channel_name = ctx.channel.name
-        challenger = ctx.author.display_name
-
-        logger.info(f"Команда {self.command_name} от пользователя {challenger}")
+    async def handle(self, channel_name: str, display_name: str, battle_waiting_user_ref, ctx):
+        challenger = display_name
 
         fee = EconomyService.BATTLE_ENTRY_FEE
 
@@ -68,11 +62,11 @@ class BattleCommandHandler:
             error_result = None
             with SessionLocal.begin() as db:
                 user_balance = self._economy_service(db).subtract_balance(
-                    channel_name,
-                    challenger,
-                    fee,
-                    TransactionType.BATTLE_PARTICIPATION,
-                    "Участие в битве",
+                    channel_name=channel_name,
+                    user_name=challenger,
+                    amount=fee,
+                    transaction_type=TransactionType.BATTLE_PARTICIPATION,
+                    description="Участие в битве",
                 )
                 if not user_balance:
                     error_result = f"@{challenger}, произошла ошибка при списании взноса за битву."
@@ -88,7 +82,6 @@ class BattleCommandHandler:
                 f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {EconomyService.BATTLE_ENTRY_FEE} монет. "
                 f"Используй {self.prefix}{self.command_name}, чтобы принять вызов."
             )
-            logger.info(f"{challenger} ищет оппонента для битвы")
             with SessionLocal.begin() as db:
                 bot_nick = self.nick_provider() or ""
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
@@ -97,7 +90,6 @@ class BattleCommandHandler:
 
         if battle_waiting_user_ref["value"] == challenger:
             result = f"@{challenger}, ты не можешь сражаться сам с собой. Подожди достойного противника."
-            logger.warning(f"{challenger} пытается сражаться сам с собой")
             with SessionLocal.begin() as db:
                 bot_nick = self.nick_provider() or ""
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
@@ -122,8 +114,6 @@ class BattleCommandHandler:
 
         opponent = battle_waiting_user_ref["value"]
         battle_waiting_user_ref["value"] = None
-
-        logger.info(f"Начинается битва между {opponent} и {challenger}")
 
         prompt = (
             f"На арене сражаются два героя: {opponent} и {challenger}."
@@ -151,8 +141,6 @@ class BattleCommandHandler:
 
         result = self.generate_response_in_chat(prompt, channel_name)
 
-        logger.info(f"Битва завершена. Победитель: {winner}")
-
         winner_amount = EconomyService.BATTLE_WINNER_PRIZE
         with SessionLocal.begin() as db:
             self._economy_service(db).add_balance(
@@ -168,8 +156,6 @@ class BattleCommandHandler:
         for msg in messages:
             await ctx.send(msg)
             await asyncio.sleep(0.3)
-
-        logger.info(f"Проигравший: {loser}, получает таймаут")
 
         winner_message = f"{winner} получает {EconomyService.BATTLE_WINNER_PRIZE} монет!"
         await ctx.send(winner_message)
@@ -190,7 +176,7 @@ class BattleCommandHandler:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
             await ctx.send(no_timeout_message)
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), no_timeout_message, datetime.utcnow())
+                self._chat_use_case(db).save_chat_message(channel_name, self.nick_provider().lower(), no_timeout_message, datetime.utcnow())
         else:
             timeout_minutes = final_timeout // 60
             timeout_seconds_remainder = final_timeout % 60
@@ -210,4 +196,3 @@ class BattleCommandHandler:
                 reason += f" {protection_message}"
 
             await self.timeout_user(ctx, loser, final_timeout, reason)
-
