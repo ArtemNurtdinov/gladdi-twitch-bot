@@ -1,0 +1,29 @@
+from dataclasses import dataclass, field
+from datetime import datetime
+
+from core.background_task_runner import BackgroundTaskRunner
+
+
+@dataclass
+class ChatSummaryState:
+    current_stream_summaries: list[str] = field(default_factory=list)
+    last_chat_summary_time: datetime | None = None
+
+
+class BotBackgroundTasks:
+
+    def __init__(self, runner: BackgroundTaskRunner, jobs: list):
+        self._runner = runner
+        self._jobs = jobs
+        self._registered = False
+
+    def start_all(self) -> None:
+        if not self._registered:
+            for job in self._jobs:
+                job.register(self._runner)
+            self._registered = True
+        self._runner.start_all()
+
+    async def stop_all(self) -> None:
+        await self._runner.cancel_all()
+

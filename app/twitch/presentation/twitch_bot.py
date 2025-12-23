@@ -1,11 +1,10 @@
 import asyncio
 import logging
 from twitchio.ext import commands
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from app.ai.domain.models import Intent, AIMessage, Role
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
-from app.stream.domain.models import StreamStatistics
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.presentation.commands.ask import AskCommandHandler
 from app.twitch.presentation.commands.battle import BattleCommandHandler
@@ -21,11 +20,16 @@ from app.twitch.presentation.commands.shop import ShopCommandHandler
 from app.twitch.presentation.commands.stats import StatsCommandHandler
 from app.twitch.presentation.commands.top_bottom import TopBottomCommandHandler
 from app.twitch.presentation.commands.transfer import TransferCommandHandler
+from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
+from app.twitch.presentation.background.chat_summarizer_job import ChatSummaryState
+from app.twitch.presentation.background.post_joke_job import PostJokeJob
+from app.twitch.presentation.background.token_checker_job import TokenCheckerJob
+from app.twitch.presentation.background.stream_status_job import StreamStatusJob
+from app.twitch.presentation.background.chat_summarizer_job import ChatSummarizerJob
+from app.twitch.presentation.background.minigame_tick_job import MinigameTickJob
+from app.twitch.presentation.background.viewer_time_job import ViewerTimeJob
 from core.config import config
-from collections import Counter
-
 from core.db import db_ro_session, SessionLocal
-from app.economy.domain.models import TransactionType
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +95,11 @@ class Bot(commands.Bot):
         self.minigame_service = deps.minigame_service
         self.user_cache = deps.user_cache
         self._background_runner = deps.background_runner
+        self.telegram_bot = deps.telegram_bot
+        self._chat_summary_state = ChatSummaryState()
+        self.roll_cooldowns = {}
+        self.battle_waiting_user: str | None = None
+
         self.minigame_orchestrator = MinigameOrchestrator(
             minigame_service=self.minigame_service,
             economy_service_factory=self._economy_service,
@@ -109,16 +118,66 @@ class Bot(commands.Bot):
             bot_nick_provider=lambda: self.nick,
             send_channel_message=self._send_channel_message
         )
-        self._register_background_tasks()
+        self._background_tasks = BotBackgroundTasks(
+            runner=self._background_runner,
+            jobs=[
+                PostJokeJob(
+                    initial_channels=self.initial_channels,
+                    joke_service=self.joke_service,
+                    user_cache=self.user_cache,
+                    twitch_api_service=self.twitch_api_service,
+                    generate_response_in_chat=self.generate_response_in_chat,
+                    ai_conversation_use_case_factory=self._ai_conversation_use_case,
+                    chat_use_case_factory=self._chat_use_case,
+                    send_channel_message=self._send_channel_message,
+                    bot_nick_provider=lambda: self.nick,
+                ),
+                TokenCheckerJob(twitch_auth=self.twitch_auth),
+                StreamStatusJob(
+                    initial_channels=self.initial_channels,
+                    user_cache=self.user_cache,
+                    twitch_api_service=self.twitch_api_service,
+                    stream_service_factory=self._stream_service,
+                    start_new_stream_use_case_factory=self._start_new_stream_use_case,
+                    viewer_service_factory=self._viewer_service,
+                    battle_use_case_factory=self._battle_use_case,
+                    economy_service_factory=self._economy_service,
+                    chat_use_case_factory=self._chat_use_case,
+                    ai_conversation_use_case_factory=self._ai_conversation_use_case,
+                    minigame_service=self.minigame_service,
+                    telegram_bot=self.telegram_bot,
+                    group_id=self._GROUP_ID,
+                    generate_response_in_chat=self.generate_response_in_chat,
+                    state=self._chat_summary_state,
+                    stream_status_interval_seconds=self._CHECK_STREAM_STATUS_INTERVAL_SECONDS,
+                ),
+                ChatSummarizerJob(
+                    initial_channels=self.initial_channels,
+                    user_cache=self.user_cache,
+                    twitch_api_service=self.twitch_api_service,
+                    stream_service_factory=self._stream_service,
+                    chat_use_case_factory=self._chat_use_case,
+                    generate_response_in_chat=self.generate_response_in_chat,
+                    state=self._chat_summary_state,
+                ),
+                MinigameTickJob(
+                    initial_channels=self.initial_channels,
+                    minigame_orchestrator=self.minigame_orchestrator,
+                ),
+                ViewerTimeJob(
+                    initial_channels=self.initial_channels,
+                    viewer_service_factory=self._viewer_service,
+                    stream_service_factory=self._stream_service,
+                    economy_service_factory=self._economy_service,
+                    user_cache=self.user_cache,
+                    twitch_api_service=self.twitch_api_service,
+                    bot_nick_provider=lambda: self.nick,
+                    check_interval_seconds=self._CHECK_VIEWERS_INTERVAL_SECONDS,
+                ),
+            ],
+        )
 
         self._restore_stream_context()
-
-        self.battle_waiting_user: str | None = None
-        self.current_stream_summaries = []
-        self.last_chat_summary_time = None
-        self.roll_cooldowns = {}
-        self._tasks_started = False
-        self.telegram_bot = deps.telegram_bot
 
         self._followage_handler = FollowageCommandHandler(
             chat_use_case_factory=self._chat_use_case,
@@ -246,7 +305,7 @@ class Bot(commands.Bot):
             chat_use_case_factory=self._chat_use_case,
             commands_map=commands_map,
             bot_nick_provider=lambda: self.nick,
-            post_message_fn = self._post_message_in_twitch_chat
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._guess_handler = GuessCommandHandler(
             command_prefix=self._prefix,
@@ -315,25 +374,11 @@ class Bot(commands.Bot):
         except Exception as e:
             logger.error(f"Не удалось прогреть кеш ID канала: {e}")
 
-    def _register_background_tasks(self):
-        self._background_runner.register("post_joke", self.post_joke_periodically)
-        self._background_runner.register("check_token", self.check_token_periodically)
-        self._background_runner.register("check_stream_status", self.check_stream_status_periodically)
-        self._background_runner.register("summarize_chat", self.summarize_chat_periodically)
-        self._background_runner.register("check_minigames", self.check_minigames_periodically)
-        self._background_runner.register("check_viewer_time", self.check_viewer_time_periodically)
-
     async def _start_background_tasks(self):
-        if self._tasks_started:
-            return
-
-        self._background_runner.start_all()
-        self._tasks_started = True
+        self._background_tasks.start_all()
 
     async def close(self):
-        await self._background_runner.cancel_all()
-        self._tasks_started = False
-
+        await self._background_tasks.stop_all()
         await super().close()
 
     async def event_ready(self):
@@ -621,323 +666,6 @@ class Bot(commands.Bot):
         for msg in messages:
             await channel.send(msg)
             await asyncio.sleep(0.3)
-
-    async def post_joke_periodically(self):
-        while True:
-            await asyncio.sleep(30)
-
-            if not self.joke_service.should_generate_jokes():
-                continue
-
-            try:
-                if not self.initial_channels:
-                    logger.warning("Список каналов пуст в post_joke_periodically. Пропускаем генерацию анекдота.")
-                    continue
-
-                channel_name = self.initial_channels[0]
-                broadcaster_id = await self.user_cache.get_user_id(channel_name)
-
-                if not broadcaster_id:
-                    logger.error(f"Не удалось получить ID канала {channel_name} для генерации анекдота")
-                    continue
-
-                stream_info = await self.twitch_api_service.get_stream_info(broadcaster_id)
-                prompt = f"Придумай анекдот, связанной с категорией трансляции: {stream_info.game_name}."
-                result = self.generate_response_in_chat(prompt, channel_name)
-                with SessionLocal.begin() as db:
-                    self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
-                    self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-                await self._send_channel_message(channel_name, result)
-                self.joke_service.mark_joke_generated()
-            except Exception as e:
-                logger.error(f"Ошибка при генерации анекдота: {e}")
-                await asyncio.sleep(60)
-
-    async def check_token_periodically(self):
-        while True:
-            await asyncio.sleep(1000)
-            token_is_valid = self.twitch_auth.check_token_is_valid()
-            logger.info(f"Статус токена: {'действителен' if token_is_valid else 'недействителен'}")
-            if not token_is_valid:
-                self.twitch_auth.update_access_token()
-                logger.info("Токен обновлён")
-
-    async def check_stream_status_periodically(self):
-
-        while True:
-            try:
-                if not self.initial_channels:
-                    logger.warning("Список каналов пуст. Ожидание...")
-                    await asyncio.sleep(self._CHECK_STREAM_STATUS_INTERVAL_SECONDS)
-                    continue
-
-                channel_name = self.initial_channels[0]
-                broadcaster_id = await self.user_cache.get_user_id(channel_name)
-
-                if not broadcaster_id:
-                    logger.error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
-                    await asyncio.sleep(self._CHECK_STREAM_STATUS_INTERVAL_SECONDS)
-                    continue
-
-                stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
-
-                if stream_status is None:
-                    logger.error(f"Не удалось получить статус стрима для канала {channel_name}")
-                    await asyncio.sleep(self._CHECK_STREAM_STATUS_INTERVAL_SECONDS)
-                    continue
-
-                game_name = None
-                title = None
-                if stream_status.is_online and stream_status.stream_data:
-                    game_name = stream_status.stream_data.game_name
-                    title = stream_status.stream_data.title
-
-                logger.info(f"Статус стрима: {stream_status}")
-
-                with db_ro_session() as db:
-                    active_stream = self._stream_service(db).get_active_stream(channel_name)
-
-                if stream_status.is_online and active_stream is None:
-                    logger.info(f"Стрим начался: {game_name} - {title}")
-
-                    try:
-                        started_at = datetime.utcnow()
-                        with SessionLocal.begin() as db:
-                            start_stream_use_case = self._start_new_stream_use_case(db)
-                            start_stream_use_case(channel_name, started_at, game_name, title)
-                        self.minigame_service.set_stream_start_time(channel_name, started_at)
-                        await self.stream_announcement(game_name, title, channel_name)
-                        self.current_stream_summaries = []
-                    except Exception as e:
-                        logger.error(f"Ошибка при создании стрима: {e}")
-
-                elif not stream_status.is_online and active_stream is not None:
-                    logger.info("Стрим завершён")
-                    finish_time = datetime.utcnow()
-
-                    with SessionLocal.begin() as db:
-                        self._stream_service(db).end_stream(active_stream.id, finish_time)
-                        self._viewer_service(db).finish_stream_sessions(active_stream.id, finish_time)
-                        total_viewers = self._viewer_service(db).get_unique_viewers_count(active_stream.id)
-                        self._stream_service(db).update_stream_total_viewers(active_stream.id, total_viewers)
-                        logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
-
-                    self.minigame_service.reset_stream_state(channel_name)
-
-                    with db_ro_session() as db:
-                        chat_messages = self._chat_use_case(db).get_chat_messages(channel_name, active_stream.started_at, finish_time)
-                        total_messages = len(chat_messages)
-                        unique_users = len(set(msg.user_name for msg in chat_messages))
-                        user_counts = Counter(msg.user_name for msg in chat_messages)
-
-                    if user_counts:
-                        top_user = user_counts.most_common(1)[0][0]
-                    else:
-                        top_user = None
-
-                    with db_ro_session() as db:
-                        battles = self._battle_use_case(db).get_battles(channel_name, active_stream.started_at)
-
-                    total_battles = len(battles)
-                    if battles:
-                        winner_counts = Counter(b.winner for b in battles)
-                        top_winner = winner_counts.most_common(1)[0][0]
-                    else:
-                        top_winner = None
-                    stats = StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
-
-                    try:
-                        await self.stream_summarize(stats, channel_name, active_stream.started_at, finish_time)
-                    except Exception as e:
-                        logger.error(f"Ошибка при вызове stream_summarize: {e}")
-
-                elif stream_status.is_online and active_stream:
-                    if active_stream.game_name != game_name or active_stream.title != title:
-                        with SessionLocal.begin() as db:
-                            self._stream_service(db).update_stream_metadata(active_stream.id, game_name, title)
-                        logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
-
-            except Exception as e:
-                logger.error(f"Ошибка в check_stream_status_periodically: {e}")
-
-            await asyncio.sleep(self._CHECK_STREAM_STATUS_INTERVAL_SECONDS)
-
-    async def stream_announcement(self, game_name: str, title: str, channel_name: str):
-        prompt = f"Начался стрим. Категория: {game_name}, название: {title}. Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/artemnefrit"
-        result = self.generate_response_in_chat(prompt, channel_name)
-        try:
-            await self.telegram_bot.send_message(chat_id=self._GROUP_ID, text=result)
-            with SessionLocal.begin() as db:
-                self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
-            logger.info(f"Анонс стрима отправлен в Telegram: {result}")
-        except Exception as e:
-            logger.error(f"Ошибка отправки анонса в Telegram: {e}")
-
-    async def stream_summarize(self, stream_stat: StreamStatistics, channel_name: str, stream_start_dt, stream_end_dt):
-        logger.info("Создание итогового отчёта о стриме")
-
-        if self.last_chat_summary_time is None:
-            self.last_chat_summary_time = stream_start_dt
-
-        with db_ro_session() as db:
-            last_messages = self._chat_use_case(db).get_chat_messages(channel_name, self.last_chat_summary_time, stream_end_dt)
-            if last_messages:
-                chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
-                prompt = (
-                    f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-                    f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
-                )
-                result = self.generate_response_in_chat(prompt, channel_name)
-                self.current_stream_summaries.append(result)
-
-        duration = stream_end_dt - stream_start_dt
-        hours, remainder = divmod(int(duration.total_seconds()), 3600)
-        minutes, seconds = divmod(remainder, 60)
-        duration_str = f"{hours:02}:{minutes:02}:{seconds:02}"
-        top_user = stream_stat.top_user if stream_stat.top_user else 'нет'
-
-        stream_stat_message = f"Длительность: {duration_str}. Сообщений: {stream_stat.total_messages}. Самый активный пользователь: {top_user}."
-
-        if stream_stat.total_battles > 0:
-            stream_stat_message += f" Битв за стрим: {stream_stat.total_battles}. Главный победитель: {stream_stat.top_winner}"
-
-        if top_user and top_user != 'нет':
-            reward_amount = 200
-            with SessionLocal.begin() as db:
-                user_balance = self._economy_service(db).add_balance(channel_name, top_user, reward_amount, TransactionType.SPECIAL_EVENT,
-                                                                     "Награда за самую высокую активность в стриме")
-                stream_stat_message += f"{top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
-
-        logger.info(f"Статистика стрима: {stream_stat_message}")
-
-        prompt = f"Трансляция была завершена. Статистика:\n{stream_stat_message}"
-
-        if self.current_stream_summaries:
-            summary_text = "\n".join(self.current_stream_summaries)
-            prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
-
-        prompt += f"\n\nНа основе предоставленной информации подведи краткий итог трансляции"
-        result = self.generate_response_in_chat(prompt, channel_name)
-
-        with SessionLocal.begin() as db:
-            self._ai_conversation_use_case(db).save_conversation_to_db(channel_name, prompt, result)
-
-        self.current_stream_summaries = []
-        self.last_chat_summary_time = None
-
-        await self.telegram_bot.send_message(chat_id=self._GROUP_ID, text=result)
-
-    async def summarize_chat_periodically(self):
-        while True:
-            await asyncio.sleep(20 * 60)
-
-            if not self.initial_channels:
-                logger.warning("Список каналов пуст в summarize_chat_periodically. Пропускаем анализ чата.")
-                continue
-
-            channel_name = self.initial_channels[0]
-            try:
-                broadcaster_id = await self.user_cache.get_user_id(channel_name)
-
-                if not broadcaster_id:
-                    logger.error(f"Не удалось получить ID канала {channel_name} для анализа чата")
-                    continue
-
-                with db_ro_session() as db:
-                    active_stream = self._stream_service(db).get_active_stream(channel_name)
-                if not active_stream:
-                    logger.debug("Стрим не активен, пропускаем анализ чата")
-                    continue
-            except Exception as e:
-                logger.error(f"Ошибка при проверке статуса стрима в summarize_chat_periodically: {e}")
-                continue
-
-            since = datetime.utcnow() - timedelta(minutes=20)
-            with db_ro_session() as db:
-                messages = self._chat_use_case(db).get_last_chat_messages_since(channel_name, since)
-
-            if not messages:
-                logger.debug("Нет сообщений для анализа")
-                continue
-
-            chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in messages)
-            prompt = (f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-                      f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}")
-            try:
-                result = self.generate_response_in_chat(prompt, channel_name)
-                self.current_stream_summaries.append(result)
-                self.last_chat_summary_time = datetime.utcnow()
-                logger.info(f"Создан периодический анализ чата: {result}")
-            except Exception as e:
-                logger.error(f"Ошибка в summarize_chat_periodically: {e}")
-            finally:
-                db.close()
-
-    async def check_minigames_periodically(self):
-        while True:
-            try:
-                if not self.initial_channels:
-                    logger.warning("Список каналов пуст в check_minigames_periodically. Пропускаем проверку мини-игр.")
-                    await asyncio.sleep(60)
-                    continue
-
-                channel_name = self.initial_channels[0]
-                delay = await self.minigame_orchestrator.run_tick(channel_name)
-                await asyncio.sleep(delay)
-            except Exception as e:
-                logger.error(f"Ошибка в check_minigames_periodically: {e}")
-                await asyncio.sleep(60)
-
-    async def check_viewer_time_periodically(self):
-        while True:
-            try:
-                if not self.initial_channels:
-                    logger.warning("Список каналов пуст в check_viewer_time_periodically")
-                    await asyncio.sleep(self._CHECK_VIEWERS_INTERVAL_SECONDS)
-                    continue
-
-                channel_name = self.initial_channels[0]
-                with db_ro_session() as db:
-                    active_stream = self._stream_service(db).get_active_stream(channel_name)
-
-                if not active_stream:
-                    await asyncio.sleep(self._CHECK_VIEWERS_INTERVAL_SECONDS)
-                    continue
-
-                with SessionLocal.begin() as db:
-                    self._viewer_service(db).check_inactive_viewers(active_stream.id, datetime.utcnow())
-
-                broadcaster_id = await self.user_cache.get_user_id(channel_name)
-                moderator_id = await self.user_cache.get_user_id(self.nick)
-                chatters = await self.twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
-                if chatters:
-                    with SessionLocal.begin() as db:
-                        self._viewer_service(db).update_viewers(active_stream.id, channel_name, chatters, datetime.utcnow())
-
-                with db_ro_session() as db:
-                    viewers_count = self._viewer_service(db).get_stream_watchers_count(active_stream.id)
-
-                if viewers_count > active_stream.max_concurrent_viewers:
-                    with SessionLocal.begin() as db:
-                        self._stream_service(db).update_max_concurrent_viewers_count(active_stream.id, viewers_count)
-
-                with SessionLocal.begin() as db:
-                    viewer_sessions = self._viewer_service(db).get_stream_viewer_sessions(active_stream.id)
-                    for session in viewer_sessions:
-                        available_rewards = self._viewer_service(db).get_available_rewards(session)
-                        for minutes_threshold, reward_amount in available_rewards:
-                            claimed_list = session.get_claimed_rewards_list()
-                            claimed_list.append(minutes_threshold)
-                            rewards = ','.join(map(str, sorted(claimed_list)))
-                            self._viewer_service(db).update_session_rewards(session.id, rewards, datetime.utcnow())
-                            self._economy_service(db).add_balance(channel_name, session.user_name, reward_amount,
-                                                                  TransactionType.VIEWER_TIME_REWARD, description)
-                            description = f"Награда за {minutes_threshold} минут просмотра стрима"
-
-            except Exception as e:
-                logger.error(f"Ошибка в check_viewer_time_periodically: {e}")
-
-            await asyncio.sleep(self._CHECK_VIEWERS_INTERVAL_SECONDS)
 
     def _restore_stream_context(self):
         try:

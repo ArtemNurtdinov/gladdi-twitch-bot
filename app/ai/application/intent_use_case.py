@@ -15,3 +15,4 @@ class IntentUseCase:
             return self._intent_detector.validate_intent_via_llm(detected_intent, text, self._llm_client)
         return detected_intent
 
+

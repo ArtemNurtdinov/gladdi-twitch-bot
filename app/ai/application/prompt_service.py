@@ -37,3 +37,4 @@ class PromptService:
         return f"Ответь пользователю с никнеймом {nickname} на его сообщение: {message}."
 
 
+
