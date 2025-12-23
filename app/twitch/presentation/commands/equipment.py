@@ -1,6 +1,5 @@
-import asyncio
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Any, Awaitable
 
 from sqlalchemy.orm import Session
 
@@ -13,21 +12,21 @@ class EquipmentCommandHandler:
 
     def __init__(
         self,
-        equipment_service_factory: Callable[[Session], EquipmentService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        command_prefix: str,
         command_name: str,
         command_shop: str,
-        prefix: str,
+        equipment_service_factory: Callable[[Session], EquipmentService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         nick_provider: Callable[[], str],
-        split_text_fn: Callable[[str], list[str]],
+        post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self._equipment_service = equipment_service_factory
         self._chat_use_case = chat_use_case_factory
         self.command_name = command_name
         self.command_shop = command_shop
-        self.prefix = prefix
+        self.command_prefix = command_prefix
         self.nick_provider = nick_provider
-        self.split_text = split_text_fn
+        self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, ctx):
         user_name = display_name.lower()
@@ -37,7 +36,7 @@ class EquipmentCommandHandler:
             equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name)
 
         if not equipment:
-            result = f"@{display_name}, у вас нет активной экипировки. Загляните в {self.prefix}{self.command_shop}!"
+            result = f"@{display_name}, у вас нет активной экипировки. Загляните в {self.command_prefix}{self.command_shop}!"
         else:
             result = f"Экипировка @{display_name}:\n"
             for item in equipment:
@@ -47,7 +46,4 @@ class EquipmentCommandHandler:
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
 
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self.post_message_fn(result, ctx)

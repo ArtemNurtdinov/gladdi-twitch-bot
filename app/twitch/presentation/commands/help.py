@@ -1,6 +1,5 @@
-import asyncio
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Any, Awaitable
 
 from sqlalchemy.orm import Session
 
@@ -12,31 +11,27 @@ class HelpCommandHandler:
 
     def __init__(
         self,
+        command_prefix: str,
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        prefix: str,
         commands_map: dict[str, str],
         nick_provider: Callable[[], str],
-        split_text_fn: Callable[[str], list[str]],
+        post_message_fn: Callable[[str, Any], Awaitable[None]]
     ):
+        self.command_prefix = command_prefix
         self._chat_use_case = chat_use_case_factory
-        self.prefix = prefix
         self.commands_map = commands_map
         self.nick_provider = nick_provider
-        self.split_text = split_text_fn
+        self.post_message_fn = post_message_fn
 
-    async def handle(self, ctx):
-        channel_name = ctx.channel.name
+    async def handle(self, channel_name: str, ctx):
         bot_nick = self.nick_provider() or ""
 
         help_parts = ["📜 Доступные команды:"]
         for cmd, desc in self.commands_map.items():
-            help_parts.append(f"{self.prefix}{cmd}: {desc}")
+            help_parts.append(f"{self.command_prefix}{cmd}: {desc}")
         help_text = " ".join(help_parts)
 
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), help_text, datetime.utcnow())
 
-        messages = self.split_text(help_text)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self.post_message_fn(help_text, ctx)

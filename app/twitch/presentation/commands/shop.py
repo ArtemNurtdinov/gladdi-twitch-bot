@@ -1,7 +1,6 @@
-import asyncio
 import logging
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Any, Awaitable
 
 from sqlalchemy.orm import Session
 
@@ -25,7 +24,7 @@ class ShopCommandHandler:
         equipment_service_factory: Callable[[Session], EquipmentService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         nick_provider: Callable[[], str],
-        split_text_fn: Callable[[str], list[str]],
+        post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_shop_name = command_shop_name
@@ -34,10 +33,9 @@ class ShopCommandHandler:
         self._equipment_service = equipment_service_factory
         self._chat_use_case = chat_use_case_factory
         self.nick_provider = nick_provider
-        self.split_text = split_text_fn
+        self.post_message_fn = post_message_fn
 
-    async def handle_shop(self, ctx):
-        channel_name = ctx.channel.name
+    async def handle_shop(self, channel_name: str, ctx):
         bot_nick = self.nick_provider() or ""
 
         all_items = ShopItems.get_all_items()
@@ -57,24 +55,20 @@ class ShopCommandHandler:
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
 
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self.post_message_fn(result, ctx)
 
-    async def handle_buy(self, ctx, item_name: str | None):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
+    async def handle_buy(self, channel_name: str, display_name: str, ctx, item_name: str | None):
+        user_name = display_name.lower()
         bot_nick = self.nick_provider() or ""
 
         if not item_name:
             result = (
-                f"@{user_name}, укажи название предмета! Используй: {self.command_prefix}{self.command_buy_name} [название]. "
+                f"@{display_name}, укажи название предмета! Используй: {self.command_prefix}{self.command_buy_name} [название]. "
                 f"Пример: {self.command_prefix}{self.command_buy_name} стул"
             )
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         try:
@@ -83,41 +77,40 @@ class ShopCommandHandler:
             result = str(e)
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         item = ShopItems.get_item(item_type)
 
-        normalized_user_name = user_name.lower()
         with db_ro_session() as db:
-            equipment_exists = self._equipment_service(db).equipment_exists(channel_name, normalized_user_name, item_type)
+            equipment_exists = self._equipment_service(db).equipment_exists(channel_name, user_name, item_type)
 
         if equipment_exists:
             result = f"У вас уже есть {item.name}"
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         with SessionLocal.begin() as db:
-            user_balance = self._economy_service(db).get_user_balance(channel_name, normalized_user_name)
+            user_balance = self._economy_service(db).get_user_balance(channel_name, user_name)
 
         if user_balance.balance < item.price:
             result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         with SessionLocal.begin() as db:
             self._economy_service(db).subtract_balance(
-                channel_name, normalized_user_name, item.price, TransactionType.SHOP_PURCHASE, f"Покупка '{item.name}'"
+                channel_name, user_name, item.price, TransactionType.SHOP_PURCHASE, f"Покупка '{item.name}'"
             )
-            self._equipment_service(db).add_equipment_to_user(channel_name, normalized_user_name, item_type)
+            self._equipment_service(db).add_equipment_to_user(channel_name, user_name, item_type)
 
-        result = f"@{user_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
+        result = f"@{display_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-        await ctx.send(result)
+        await self.post_message_fn(result, ctx)
 

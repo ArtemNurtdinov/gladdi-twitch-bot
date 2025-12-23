@@ -122,13 +122,13 @@ class Bot(commands.Bot):
         self.telegram_bot = deps.telegram_bot
 
         self._followage_handler = FollowageCommandHandler(
-            bot=self,
             chat_use_case_factory=self._chat_use_case,
             ai_conversation_use_case_factory=self._ai_conversation_use_case,
             command_name=self._COMMAND_FOLLOWAGE,
             nick_provider=lambda: self.nick,
             generate_response_fn=self.generate_response_in_chat,
-            twitch_api_service=self.twitch_api_service
+            twitch_api_service=self.twitch_api_service,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._ask_handler = AskCommandHandler(
             command_prefix=self._prefix,
@@ -139,20 +139,20 @@ class Bot(commands.Bot):
             chat_use_case_factory=self._chat_use_case,
             generate_response_fn=self.generate_response_in_chat,
             post_message_fn=self._post_message_in_twitch_chat,
-            nick_provider=lambda: self.nick,
+            nick_provider=lambda: self.nick
         )
         self._battle_handler = BattleCommandHandler(
+            command_prefix=self._prefix,
+            command_name=self._COMMAND_FIGHT,
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
             ai_conversation_use_case_factory=self._ai_conversation_use_case,
             battle_use_case_factory=self._battle_use_case,
             equipment_service_factory=self._equipment_service,
-            split_text_fn=self.split_text,
             timeout_fn=self._timeout_user,
-            command_name=self._COMMAND_FIGHT,
-            prefix=self._prefix,
             generate_response_fn=self.generate_response_in_chat,
             nick_provider=lambda: self.nick,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._roll_handler = RollCommandHandler(
             command_prefix=self._prefix,
@@ -163,32 +163,32 @@ class Bot(commands.Bot):
             chat_use_case_factory=self._chat_use_case,
             roll_cooldowns=self.roll_cooldowns,
             cooldown_seconds=self._ROLL_COOLDOWN_SECONDS,
-            split_text_fn=self.split_text,
             timeout_fn=self._timeout_user,
             nick_provider=lambda: self.nick,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._balance_handler = BalanceCommandHandler(
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
             nick_provider=lambda: self.nick,
-            post_message_fn=self._post_message_in_twitch_chat,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._bonus_handler = BonusCommandHandler(
+            command_prefix=self._prefix,
+            command_name=self._COMMAND_BONUS,
             stream_service_factory=self._stream_service,
             equipment_service_factory=self._equipment_service,
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
-            command_name=self._COMMAND_BONUS,
-            prefix=self._prefix,
             nick_provider=lambda: self.nick,
-            split_text_fn=self.split_text,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._transfer_handler = TransferCommandHandler(
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
             command_name=self._COMMAND_TRANSFER,
             prefix=self._prefix,
-            nick_provider=lambda: self.nick,
+            nick_provider=lambda: self.nick
         )
         self._shop_handler = ShopCommandHandler(
             command_prefix=self._prefix,
@@ -198,16 +198,16 @@ class Bot(commands.Bot):
             equipment_service_factory=self._equipment_service,
             chat_use_case_factory=self._chat_use_case,
             nick_provider=lambda: self.nick,
-            split_text_fn=self.split_text,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._equipment_handler = EquipmentCommandHandler(
-            equipment_service_factory=self._equipment_service,
-            chat_use_case_factory=self._chat_use_case,
+            command_prefix=self._prefix,
             command_name=self._COMMAND_EQUIPMENT,
             command_shop=self._COMMAND_SHOP,
-            prefix=self._prefix,
+            equipment_service_factory=self._equipment_service,
+            chat_use_case_factory=self._chat_use_case,
             nick_provider=lambda: self.nick,
-            split_text_fn=self.split_text,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._top_bottom_handler = TopBottomCommandHandler(
             economy_service_factory=self._economy_service,
@@ -224,7 +224,7 @@ class Bot(commands.Bot):
             chat_use_case_factory=self._chat_use_case,
             command_name=self._COMMAND_STATS,
             nick_provider=lambda: self.nick,
-            split_text_fn=self.split_text,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         commands_map = {
             self._COMMAND_BALANCE: "ваш баланс",
@@ -242,29 +242,29 @@ class Bot(commands.Bot):
             self._COMMAND_FOLLOWAGE: "сколько подписан",
         }
         self._help_handler = HelpCommandHandler(
+            command_prefix=self._prefix,
             chat_use_case_factory=self._chat_use_case,
-            prefix=self._prefix,
             commands_map=commands_map,
             nick_provider=lambda: self.nick,
-            split_text_fn=self.split_text,
+            post_message_fn = self._post_message_in_twitch_chat
         )
         self._guess_handler = GuessCommandHandler(
-            minigame_service=self.minigame_service,
-            economy_service_factory=self._economy_service,
-            chat_use_case_factory=self._chat_use_case,
+            command_prefix=self._prefix,
             command_guess=self._COMMAND_GUESS,
             command_guess_letter=self._COMMAND_GUESS_LETTER,
             command_guess_word=self._COMMAND_GUESS_WORD,
-            prefix=self._prefix,
+            minigame_service=self.minigame_service,
+            economy_service_factory=self._economy_service,
+            chat_use_case_factory=self._chat_use_case,
             nick_provider=lambda: self.nick,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._rps_handler = RpsCommandHandler(
             minigame_service=self.minigame_service,
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
-            command_name=self._COMMAND_RPS,
-            prefix=self._prefix,
             nick_provider=lambda: self.nick,
+            post_message_fn=self._post_message_in_twitch_chat
         )
 
         self._battle_waiting_user_ref = {"value": None}
@@ -403,7 +403,7 @@ class Bot(commands.Bot):
             channel_name=ctx.channel.name,
             full_message=ctx.message.content,
             display_name=ctx.author.display_name,
-            ctx = ctx
+            ctx=ctx
         )
 
     @commands.command(name=_COMMAND_FIGHT)
@@ -417,15 +417,20 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_ROLL)
     async def roll(self, ctx, amount: str = None):
-        await self._roll_handler.handle(ctx, amount)
+        await self._roll_handler.handle(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx,
+            amount=amount
+        )
         self._cleanup_old_cooldowns()
 
     @commands.command(name=_COMMAND_BALANCE)
     async def balance(self, ctx):
         await self._balance_handler.handle(
             channel_name=ctx.channel.name,
-            display_name = ctx.author.display_name,
-            ctx = ctx
+            display_name=ctx.author.display_name,
+            ctx=ctx
         )
 
     @commands.command(name=_COMMAND_BONUS)
@@ -442,11 +447,19 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_SHOP)
     async def shop(self, ctx):
-        await self._shop_handler.handle_shop(ctx)
+        await self._shop_handler.handle_shop(
+            channel_name=ctx.channel.name,
+            ctx=ctx
+        )
 
     @commands.command(name=_COMMAND_BUY)
     async def buy_item(self, ctx, *, item_name: str = None):
-        await self._shop_handler.handle_buy(ctx, item_name)
+        await self._shop_handler.handle_buy(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx,
+            item_name=item_name
+        )
 
     @commands.command(name=_COMMAND_EQUIPMENT)
     async def equipment(self, ctx):
@@ -466,27 +479,54 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_HELP)
     async def list_commands(self, ctx):
-        await self._help_handler.handle(ctx)
+        await self._help_handler.handle(
+            channel_name=ctx.channel.name,
+            ctx=ctx
+        )
 
     @commands.command(name=_COMMAND_STATS)
     async def user_stats(self, ctx):
-        await self._stats_handler.handle(ctx)
+        await self._stats_handler.handle(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx
+        )
 
     @commands.command(name=_COMMAND_GUESS)
     async def guess_number(self, ctx, number: str = None):
-        await self._guess_handler.handle_guess_number(ctx, number)
+        await self._guess_handler.handle_guess_number(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx,
+            number=number
+        )
 
     @commands.command(name=_COMMAND_GUESS_LETTER)
     async def guess_letter(self, ctx, letter: str = None):
-        await self._guess_handler.handle_guess_letter(ctx, letter)
+        await self._guess_handler.handle_guess_letter(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx,
+            letter=letter
+        )
 
     @commands.command(name=_COMMAND_GUESS_WORD)
     async def guess_word(self, ctx, *, word: str = None):
-        await self._guess_handler.handle_guess_word(ctx, word)
+        await self._guess_handler.handle_guess_word(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx,
+            word=word
+        )
 
     @commands.command(name=_COMMAND_RPS)
     async def join_rps(self, ctx, choice: str = None):
-        await self._rps_handler.handle(ctx, choice)
+        await self._rps_handler.handle(
+            channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
+            ctx=ctx,
+            choice=choice
+        )
 
     def _cleanup_old_cooldowns(self):
         current_time = datetime.now()

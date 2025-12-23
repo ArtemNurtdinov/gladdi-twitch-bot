@@ -1,5 +1,3 @@
-import asyncio
-import logging
 import random
 from datetime import datetime
 from typing import Any, Awaitable, Callable
@@ -19,8 +17,6 @@ from app.economy.domain.models import (
 from app.equipment.domain.equipment_service import EquipmentService
 from core.db import SessionLocal, db_ro_session
 
-logger = logging.getLogger(__name__)
-
 
 class RollCommandHandler:
 
@@ -34,9 +30,9 @@ class RollCommandHandler:
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         roll_cooldowns: dict,
         cooldown_seconds: int,
-        split_text_fn: Callable[[str], list[str]],
         timeout_fn: Callable[[Any, str, int, str], Awaitable[None]],
         nick_provider: Callable[[], str],
+        post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
@@ -46,9 +42,9 @@ class RollCommandHandler:
         self._chat_use_case = chat_use_case_factory
         self.roll_cooldowns = roll_cooldowns
         self.cooldown_seconds = cooldown_seconds
-        self.split_text = split_text_fn
         self.timeout_user = timeout_fn
         self.nick_provider = nick_provider
+        self.post_message_fn = post_message_fn
 
     @staticmethod
     def is_miss(result_type: str) -> bool:
@@ -91,55 +87,47 @@ class RollCommandHandler:
             return f"{profit}"
         return "±0"
 
-    async def handle(self, ctx, amount: str | None = None):
-        channel_name = ctx.channel.name
-        nickname = ctx.author.display_name
-
+    async def handle(self, ctx, channel_name: str, display_name: str, amount: str | None = None):
+        user_name = display_name.lower()
         bet_amount = BettingService.BET_COST
         if amount:
             try:
                 bet_amount = int(amount)
             except ValueError:
                 result = (
-                    f"@{nickname}, неверная сумма ставки! Используй: {self.command_prefix}{self.command_name} [сумма] "
+                    f"@{display_name}, неверная сумма ставки! Используй: {self.command_prefix}{self.command_name} [сумма] "
                     f"(например: {self.command_prefix}{self.command_name} 100). "
                     f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{BettingService.MAX_BET_AMOUNT} монет."
                 )
                 bot_nick = self.nick_provider() or ""
                 with SessionLocal.begin() as db:
                     self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-                await ctx.send(result)
+                await self.post_message_fn(result, ctx)
                 return
-
-        logger.info(f"Команда {self.command_name} от пользователя {nickname}, сумма ставки: {bet_amount}")
 
         current_time = datetime.now()
         with db_ro_session() as db:
-            equipment = self._equipment_service(db).get_user_equipment(channel_name, nickname.lower())
+            equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name)
             cooldown_seconds = self._equipment_service(db).calculate_roll_cooldown_seconds(self.cooldown_seconds, equipment)
 
-        if nickname in self.roll_cooldowns:
-            time_since_last = (current_time - self.roll_cooldowns[nickname]).total_seconds()
+        if display_name in self.roll_cooldowns:
+            time_since_last = (current_time - self.roll_cooldowns[display_name]).total_seconds()
             if time_since_last < cooldown_seconds:
                 remaining_time = cooldown_seconds - time_since_last
-                result = f"@{nickname}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
-                logger.info(f"Пользователь {nickname} попытался использовать команду в кулдауне. Осталось: {remaining_time:.0f} сек")
+                result = f"@{display_name}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
                 bot_nick = self.nick_provider() or ""
                 with SessionLocal.begin() as db:
                     self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-                await ctx.send(result)
+                await self.post_message_fn(result, ctx)
                 return
 
-        self.roll_cooldowns[nickname] = current_time
-        logger.debug(f"Обновлен кулдаун для пользователя {nickname}: {current_time}")
+        self.roll_cooldowns[display_name] = current_time
 
         emojis = EmojiConfig.get_emojis_list()
         weights = EmojiConfig.get_weights_list()
 
         slot_results = random.choices(emojis, weights=weights, k=3)
         slot_result_string = EmojiConfig.format_slot_result(slot_results)
-
-        logger.info(f"Результат слот-машины для {nickname}: {slot_result_string}")
 
         unique_results = set(slot_results)
 
@@ -150,14 +138,12 @@ class RollCommandHandler:
         else:
             result_type = "miss"
 
-        normalized_user_name = nickname.lower()
-
         if bet_amount < BettingService.MIN_BET_AMOUNT:
             result = f"Минимальная сумма ставки: {BettingService.MIN_BET_AMOUNT} монет."
             bot_nick = self.nick_provider() or ""
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         if bet_amount > BettingService.MAX_BET_AMOUNT:
@@ -165,17 +151,17 @@ class RollCommandHandler:
             bot_nick = self.nick_provider() or ""
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         with db_ro_session() as db:
             rarity_level = self._betting_service(db).determine_correct_rarity(slot_result_string, result_type)
-            equipment = self._equipment_service(db).get_user_equipment(channel_name, normalized_user_name)
+            equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name)
 
         with SessionLocal.begin() as db:
             user_balance = self._economy_service(db).subtract_balance(
                 channel_name,
-                normalized_user_name,
+                user_name,
                 bet_amount,
                 TransactionType.BET_LOSS,
                 f"Ставка в слот-машине: {slot_result_string}"
@@ -184,7 +170,7 @@ class RollCommandHandler:
                 result = f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет."
                 bot_nick = self.nick_provider() or ""
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-                await ctx.send(result)
+                await self.post_message_fn(result, ctx)
                 return
             base_payout = BettingService.RARITY_MULTIPLIERS.get(rarity_level, 0.2) * bet_amount
             timeout_seconds = None
@@ -239,9 +225,9 @@ class RollCommandHandler:
                     else f"Консольный приз: {slot_result_string}"
                 )
                 user_balance = self._economy_service(db).add_balance(
-                    channel_name, normalized_user_name, payout, transaction_type, description
+                    channel_name, user_name, payout, transaction_type, description
                 )
-            self._betting_service(db).save_bet(channel_name, normalized_user_name, slot_result_string, result_type, rarity_level)
+            self._betting_service(db).save_bet(channel_name, user_name, slot_result_string, result_type, rarity_level)
 
         result_emoji = self.get_result_emoji(result_type, payout)
 
@@ -259,36 +245,29 @@ class RollCommandHandler:
             bot_nick = self.nick_provider() or ""
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), final_result, datetime.utcnow())
 
-        messages = self.split_text(final_result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self.post_message_fn(final_result, ctx)
 
         if timeout_seconds is not None and timeout_seconds > 0:
             base_timeout_duration = timeout_seconds if timeout_seconds else 0
 
             with db_ro_session() as db:
-                equipment = self._equipment_service(db).get_user_equipment(channel_name, nickname.lower())
+                equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name)
                 final_timeout, protection_message = self._equipment_service(db).calculate_timeout_with_equipment(
-                    nickname,
                     base_timeout_duration,
                     equipment
                 )
 
             if final_timeout == 0:
                 if self.is_consolation_prize(result_type, payout):
-                    no_timeout_message = f"🎁 @{nickname}, {protection_message} Консольный приз: {payout} монет"
+                    no_timeout_message = f"🎁 @{display_name}, {protection_message} Консольный приз: {payout} монет"
                 else:
-                    no_timeout_message = f"🛡️ @{nickname}, {protection_message}"
+                    no_timeout_message = f"🛡️ @{display_name}, {protection_message}"
 
                 with SessionLocal.begin() as db:
                     bot_nick = self.nick_provider() or ""
                     self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), no_timeout_message, datetime.utcnow())
 
-                messages = self.split_text(no_timeout_message)
-                for msg in messages:
-                    await ctx.send(msg)
-                    await asyncio.sleep(0.3)
+                await self.post_message_fn(no_timeout_message, ctx)
             else:
                 if self.is_consolation_prize(result_type, payout):
                     reason = f"Промах с редким эмодзи! Консольный приз: {payout} монет. Таймаут: {final_timeout} сек ⏰"
@@ -298,19 +277,13 @@ class RollCommandHandler:
                 if protection_message:
                     reason += f" {protection_message}"
 
-                messages = self.split_text(reason)
-                for msg in messages:
-                    await ctx.send(msg)
-                    await asyncio.sleep(0.3)
+                await self.post_message_fn(reason, ctx)
 
-                await self.timeout_user(ctx, nickname, final_timeout, reason)
+                await self.timeout_user(ctx, display_name, final_timeout, reason)
         elif self.is_miss(result_type):
             if self.is_consolation_prize(result_type, payout):
-                no_timeout_message = f"🎁 @{nickname}, повезло! Редкий эмодзи спас от таймаута! Консольный приз: {payout} монет"
+                no_timeout_message = f"🎁 @{display_name}, повезло! Редкий эмодзи спас от таймаута! Консольный приз: {payout} монет"
             else:
-                no_timeout_message = f"✨ @{nickname}, редкий эмодзи спас от таймаута!"
+                no_timeout_message = f"✨ @{display_name}, редкий эмодзи спас от таймаута!"
 
-            messages = self.split_text(no_timeout_message)
-            for msg in messages:
-                await ctx.send(msg)
-                await asyncio.sleep(0.3)
+            await self.post_message_fn(no_timeout_message, ctx)

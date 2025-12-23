@@ -1,6 +1,5 @@
-import asyncio
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Any, Awaitable
 
 from sqlalchemy.orm import Session
 
@@ -15,23 +14,23 @@ class BonusCommandHandler:
 
     def __init__(
         self,
+        command_prefix: str,
+        command_name: str,
         stream_service_factory: Callable[[Session], StreamService],
         equipment_service_factory: Callable[[Session], EquipmentService],
         economy_service_factory: Callable[[Session], EconomyService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        command_name: str,
-        prefix: str,
         nick_provider: Callable[[], str],
-        split_text_fn: Callable[[str], list[str]],
+        post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
+        self.command_prefix = command_prefix
+        self.command_name = command_name
         self._stream_service: Callable[[Session], StreamService] = stream_service_factory
         self._equipment_service = equipment_service_factory
         self._economy_service = economy_service_factory
         self._chat_use_case = chat_use_case_factory
-        self.command_name = command_name
-        self.prefix = prefix
         self.nick_provider = nick_provider
-        self.split_text = split_text_fn
+        self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, ctx):
         bot_nick = self.nick_provider() or ""
@@ -70,7 +69,4 @@ class BonusCommandHandler:
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
 
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self.post_message_fn(result, ctx)

@@ -18,29 +18,29 @@ class BattleCommandHandler:
 
     def __init__(
         self,
+        command_prefix: str,
+        command_name: str,
         economy_service_factory: Callable[[Session], EconomyService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         ai_conversation_use_case_factory: Callable[[Session], ConversationService],
         battle_use_case_factory: Callable[[Session], BattleUseCase],
         equipment_service_factory: Callable[[Session], EquipmentService],
-        split_text_fn: Callable[[str], list[str]],
         timeout_fn: Callable[[Any, str, int, str], Awaitable[None]],
-        command_name: str,
-        prefix: str,
         generate_response_fn: Callable[[str, str], str],
         nick_provider: Callable[[], str],
+        post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
+        self.command_prefix = command_prefix
+        self.command_name = command_name
         self._economy_service = economy_service_factory
         self._chat_use_case = chat_use_case_factory
         self._ai_conversation_use_case = ai_conversation_use_case_factory
         self._battle_use_case = battle_use_case_factory
         self._equipment_service = equipment_service_factory
-        self.split_text = split_text_fn
         self.timeout_user = timeout_fn
-        self.command_name = command_name
-        self.prefix = prefix
         self.generate_response_in_chat = generate_response_fn
         self.nick_provider = nick_provider
+        self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, battle_waiting_user_ref, ctx):
         challenger = display_name
@@ -55,7 +55,7 @@ class BattleCommandHandler:
             with SessionLocal.begin() as db:
                 bot_nick = self.nick_provider() or ""
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         if not battle_waiting_user_ref["value"]:
@@ -74,18 +74,18 @@ class BattleCommandHandler:
                     self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), error_result, datetime.utcnow())
 
             if error_result:
-                await ctx.send(error_result)
+                await self.post_message_fn(error_result, ctx)
                 return
 
             battle_waiting_user_ref["value"] = challenger
             result = (
                 f"@{challenger} ищет себе оппонента для эпичной битвы! Взнос: {EconomyService.BATTLE_ENTRY_FEE} монет. "
-                f"Используй {self.prefix}{self.command_name}, чтобы принять вызов."
+                f"Используй {self.command_prefix}{self.command_name}, чтобы принять вызов."
             )
             with SessionLocal.begin() as db:
                 bot_nick = self.nick_provider() or ""
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         if battle_waiting_user_ref["value"] == challenger:
@@ -93,7 +93,7 @@ class BattleCommandHandler:
             with SessionLocal.begin() as db:
                 bot_nick = self.nick_provider() or ""
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         with SessionLocal.begin() as db:
@@ -109,7 +109,7 @@ class BattleCommandHandler:
             with SessionLocal.begin() as db:
                 bot_nick = self.nick_provider() or ""
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         opponent = battle_waiting_user_ref["value"]
@@ -151,14 +151,10 @@ class BattleCommandHandler:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
             self._battle_use_case(db).save_battle_history(channel_name, opponent, challenger, winner, result)
 
-        messages = self.split_text(result)
-
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self.post_message_fn(result, ctx)
 
         winner_message = f"{winner} получает {EconomyService.BATTLE_WINNER_PRIZE} монет!"
-        await ctx.send(winner_message)
+        await self.post_message_fn(winner_message, ctx)
 
         with SessionLocal.begin() as db:
             bot_nick = self.nick_provider() or ""
@@ -169,12 +165,12 @@ class BattleCommandHandler:
         with db_ro_session() as db:
             equipment = self._equipment_service(db).get_user_equipment(channel_name, loser.lower())
             final_timeout, protection_message = self._equipment_service(db).calculate_timeout_with_equipment(
-                loser, base_battle_timeout, equipment
+                base_battle_timeout, equipment
             )
 
         if final_timeout == 0:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
-            await ctx.send(no_timeout_message)
+            await self.post_message_fn(no_timeout_message, ctx)
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, self.nick_provider().lower(), no_timeout_message, datetime.utcnow())
         else:

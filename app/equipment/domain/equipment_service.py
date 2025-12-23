@@ -1,11 +1,8 @@
-import logging
 from datetime import datetime, timedelta
 
 from app.economy.domain.models import ShopItems, TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect, RollCooldownOverrideEffect
 from app.equipment.domain.models import UserEquipmentItem
 from app.equipment.domain.repo import EquipmentRepository
-
-logger = logging.getLogger(__name__)
 
 
 class EquipmentService:
@@ -16,7 +13,7 @@ class EquipmentService:
     def get_user_equipment(self, channel_name: str, user_name: str) -> list[UserEquipmentItem]:
         return self._repo.list_user_equipment(channel_name, user_name)
 
-    def calculate_timeout_with_equipment(self, user_name: str, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
+    def calculate_timeout_with_equipment(self, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
         if base_timeout_seconds <= 0:
             return 0, ""
 
@@ -52,8 +49,6 @@ class EquipmentService:
                     else:
                         timeout_messages.append(f"{item.shop_item.emoji} {item.shop_item.name} снизил таймаут!")
 
-                    logger.info(f"⚡ СНИЖЕНИЕ ТАЙМАУТА: {user_name} применен эффект от {item.shop_item.name} (множитель: {effect.reduction_factor})")
-
         if reduction_items:
             reduced_timeout = int(base_timeout_seconds * cumulative_reduction)
 
@@ -61,8 +56,6 @@ class EquipmentService:
                 message = timeout_messages[0]
             else:
                 message = f"🔥 СТАК ЗАЩИТЫ! {' + '.join(timeout_messages)}"
-
-            logger.info(f"⚡ ИТОГОВОЕ СНИЖЕНИЕ ТАЙМАУТА: {user_name} (было: {base_timeout_seconds}с, стало: {reduced_timeout}с, общий множитель: {cumulative_reduction:.2f})")
             return reduced_timeout, message
 
         return base_timeout_seconds, ""
