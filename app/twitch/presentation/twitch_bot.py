@@ -95,7 +95,8 @@ class Bot(commands.Bot):
     _ROLL_COOLDOWN_SECONDS = 60
     _GROUP_ID = config.telegram.group_id
     _SOURCE_TWITCH = "twitch"
-    _CHECK_VIEWERS_INTERVAL_SECONDS = 60
+    _CHECK_VIEWERS_INTERVAL_SECONDS = 10
+    _CHECK_STREAM_STATUS_INTERVAL_SECONDS = 60
 
     def __init__(self, twitch_auth: TwitchAuth, twitch_api_service: TwitchApiService):
         self._prefix = '!'
@@ -202,7 +203,7 @@ class Bot(commands.Bot):
 
         self._create_background_task(self.post_joke_periodically())
         self._create_background_task(self.check_token_periodically())
-        self._create_background_task(self.check_stream_start_periodically())
+        self._create_background_task(self.check_stream_status_periodically())
         self._create_background_task(self.summarize_chat_periodically())
         self._create_background_task(self.check_minigames_periodically())
         self._create_background_task(self.check_viewer_time_periodically())
@@ -1496,14 +1497,14 @@ class Bot(commands.Bot):
                 self.twitch_auth.update_access_token()
                 logger.info("Токен обновлён")
 
-    async def check_stream_start_periodically(self):
+    async def check_stream_status_periodically(self):
         logger.info("Запуск периодической проверки статуса стрима")
 
         while True:
             try:
                 if not self.initial_channels:
                     logger.warning("Список каналов пуст. Ожидание...")
-                    await asyncio.sleep(60)
+                    await asyncio.sleep(self._CHECK_STREAM_STATUS_INTERVAL_SECONDS)
                     continue
 
                 channel_name = self.initial_channels[0]
@@ -1511,14 +1512,14 @@ class Bot(commands.Bot):
 
                 if not broadcaster_id:
                     logger.error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
-                    await asyncio.sleep(60)
+                    await asyncio.sleep(self._CHECK_STREAM_STATUS_INTERVAL_SECONDS)
                     continue
 
                 stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
 
                 if stream_status is None:
                     logger.error(f"Не удалось получить статус стрима для канала {channel_name}")
-                    await asyncio.sleep(60)
+                    await asyncio.sleep(self._CHECK_STREAM_STATUS_INTERVAL_SECONDS)
                     continue
 
                 game_name = None
@@ -1593,9 +1594,9 @@ class Bot(commands.Bot):
                         logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
             except Exception as e:
-                logger.error(f"Ошибка в check_stream_start_periodically: {e}")
+                logger.error(f"Ошибка в check_stream_status_periodically: {e}")
 
-            await asyncio.sleep(60)
+            await asyncio.sleep(self._CHECK_STREAM_STATUS_INTERVAL_SECONDS)
 
     async def stream_announcement(self, game_name: str, title: str, channel_name: str):
         prompt = f"Начался стрим. Категория: {game_name}, название: {title}. Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/artemnefrit"
