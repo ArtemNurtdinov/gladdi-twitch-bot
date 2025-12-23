@@ -286,25 +286,25 @@ class Bot(commands.Bot):
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
-        commands_map = {
-            self._COMMAND_BALANCE: "ваш баланс",
-            self._COMMAND_BONUS: "ежедневный бонус",
-            f"{self._COMMAND_ROLL} [сумма]": "слот-машина",
-            f"{self._COMMAND_TRANSFER} @ник сумма": "перевод монет",
-            self._COMMAND_SHOP: "магазин артефактов",
-            f"{self._COMMAND_BUY} название": "купить предмет",
-            self._COMMAND_EQUIPMENT: "ваша экипировка",
-            self._COMMAND_TOP: "топ богачей",
-            self._COMMAND_BOTTOM: "топ бомжей",
-            self._COMMAND_STATS: "ваша стата",
-            self._COMMAND_FIGHT: "сразиться в битве",
-            f"{self._COMMAND_GLADDI} текст": "спросить GLaDDi",
-            self._COMMAND_FOLLOWAGE: "сколько подписан",
+        commands = {
+            self._COMMAND_BALANCE,
+            self._COMMAND_BONUS,
+            f"{self._COMMAND_ROLL} [сумма]",
+            f"{self._COMMAND_TRANSFER} @ник сумма",
+            self._COMMAND_SHOP,
+            f"{self._COMMAND_BUY} название",
+            self._COMMAND_EQUIPMENT,
+            self._COMMAND_TOP,
+            self._COMMAND_BOTTOM,
+            self._COMMAND_STATS,
+            self._COMMAND_FIGHT,
+            f"{self._COMMAND_GLADDI} текст",
+            self._COMMAND_FOLLOWAGE,
         }
         self._help_handler = HelpCommandHandler(
             command_prefix=self._prefix,
             chat_use_case_factory=self._chat_use_case,
-            commands_map=commands_map,
+            commands=commands,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )

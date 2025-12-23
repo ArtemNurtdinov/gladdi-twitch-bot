@@ -13,13 +13,13 @@ class HelpCommandHandler:
         self,
         command_prefix: str,
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        commands_map: dict[str, str],
+        commands: dict[str],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]]
     ):
         self.command_prefix = command_prefix
         self._chat_use_case = chat_use_case_factory
-        self.commands_map = commands_map
+        self.commands = commands
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
@@ -27,8 +27,8 @@ class HelpCommandHandler:
         bot_nick = self.bot_nick_provider().lower()
 
         help_parts = ["📜 Доступные команды:"]
-        for cmd, desc in self.commands_map.items():
-            help_parts.append(f"{self.command_prefix}{cmd}: {desc}")
+        for cmd in self.commands:
+            help_parts.append(f"{self.command_prefix}{cmd}")
         help_text = " ".join(help_parts)
 
         with SessionLocal.begin() as db:
