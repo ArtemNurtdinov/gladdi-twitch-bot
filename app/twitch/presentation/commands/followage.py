@@ -40,7 +40,7 @@ class FollowageCommandHandler:
             result = f'@{display_name}, произошла ошибка при получении информации о канале {channel_name}.'
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, self.nick_provider().lower(), result, datetime.utcnow())
-            await ctx.send(result)
+            await self.post_message_fn(result, ctx)
             return
 
         user_id = ctx.author.id

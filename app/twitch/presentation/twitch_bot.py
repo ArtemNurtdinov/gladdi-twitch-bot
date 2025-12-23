@@ -184,11 +184,12 @@ class Bot(commands.Bot):
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._transfer_handler = TransferCommandHandler(
+            command_prefix=self._prefix,
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
             command_name=self._COMMAND_TRANSFER,
-            prefix=self._prefix,
-            nick_provider=lambda: self.nick
+            nick_provider=lambda: self.nick,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._shop_handler = ShopCommandHandler(
             command_prefix=self._prefix,
@@ -215,7 +216,7 @@ class Bot(commands.Bot):
             command_top=self._COMMAND_TOP,
             command_bottom=self._COMMAND_BOTTOM,
             nick_provider=lambda: self.nick,
-            split_text_fn=self.split_text,
+            post_message_fn=self._post_message_in_twitch_chat
         )
         self._stats_handler = StatsCommandHandler(
             economy_service_factory=self._economy_service,
@@ -443,7 +444,13 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_TRANSFER)
     async def transfer_money(self, ctx, recipient: str = None, amount: str = None):
-        await self._transfer_handler.handle(ctx, recipient, amount)
+        await self._transfer_handler.handle(
+            channel_name=ctx.channel.name,
+            sender_display_name=ctx.author.display_name,
+            ctx=ctx,
+            recipient=recipient,
+            amount=amount
+        )
 
     @commands.command(name=_COMMAND_SHOP)
     async def shop(self, ctx):
@@ -471,11 +478,17 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_TOP)
     async def top_users(self, ctx):
-        await self._top_bottom_handler.handle_top(ctx)
+        await self._top_bottom_handler.handle_top(
+            channel_name=ctx.channel.name,
+            ctx=ctx
+        )
 
     @commands.command(name=_COMMAND_BOTTOM)
     async def bottom_users(self, ctx):
-        await self._top_bottom_handler.handle_bottom(ctx)
+        await self._top_bottom_handler.handle_bottom(
+            channel_name=ctx.channel.name,
+            ctx=ctx
+        )
 
     @commands.command(name=_COMMAND_HELP)
     async def list_commands(self, ctx):

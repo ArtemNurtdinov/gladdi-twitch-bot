@@ -1,6 +1,5 @@
-import asyncio
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Any, Awaitable
 
 from sqlalchemy.orm import Session
 
@@ -18,17 +17,16 @@ class TopBottomCommandHandler:
         command_top: str,
         command_bottom: str,
         nick_provider: Callable[[], str],
-        split_text_fn: Callable[[str], list[str]],
+        post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self._economy_service = economy_service_factory
         self._chat_use_case = chat_use_case_factory
         self.command_top = command_top
         self.command_bottom = command_bottom
         self.nick_provider = nick_provider
-        self.split_text = split_text_fn
+        self.post_message_fn = post_message_fn
 
-    async def handle_top(self, ctx):
-        channel_name = ctx.channel.name
+    async def handle_top(self, channel_name: str, ctx):
         bot_nick = self.nick_provider() or ""
 
         with db_ro_session() as db:
@@ -44,13 +42,9 @@ class TopBottomCommandHandler:
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
 
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self.post_message_fn(result, ctx)
 
-    async def handle_bottom(self, ctx):
-        channel_name = ctx.channel.name
+    async def handle_bottom(self, channel_name: str, ctx):
         bot_nick = self.nick_provider() or ""
 
         with db_ro_session() as db:
@@ -66,9 +60,6 @@ class TopBottomCommandHandler:
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
 
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self.post_message_fn(result, ctx)
 
 
