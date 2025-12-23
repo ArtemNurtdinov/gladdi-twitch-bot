@@ -106,7 +106,7 @@ class Bot(commands.Bot):
             command_guess_word=self._COMMAND_GUESS_WORD,
             command_guess=self._COMMAND_GUESS,
             command_rps=self._COMMAND_RPS,
-            nick_provider=lambda: self.nick,
+            bot_nick_provider=lambda: self.nick,
             split_text_fn=self.split_text,
             send_channel_message=self._send_channel_message
         )
