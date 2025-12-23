@@ -19,3 +19,4 @@ class LLMClientImpl(LLMClient):
 
         raise Exception(f"Ошибка запроса: {response.status_code} - {response.text}")
 
+

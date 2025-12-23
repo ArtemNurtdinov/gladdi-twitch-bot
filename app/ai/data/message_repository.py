@@ -33,3 +33,4 @@ class AIMessageRepositoryImpl(AIMessageRepository):
         ai_message = AIDbMessage(channel_name=channel_name, role=Role.ASSISTANT, content=ai_message)
         self._db.add(user_message)
         self._db.add(ai_message)
+

@@ -52,7 +52,6 @@ class BotDependencies:
     background_runner: BackgroundTaskRunner
     telegram_bot: telegram.Bot
 
-    # Factories below are kept as callables to preserve lazy DB session usage
     chat_use_case_factory: Callable = ChatUseCase
     battle_use_case_factory: Callable = BattleUseCase
     ai_conversation_use_case_factory: Callable = ConversationService

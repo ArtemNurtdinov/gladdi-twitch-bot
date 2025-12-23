@@ -53,3 +53,4 @@ class ChatUseCase:
     def get_last_chat_messages_since(self, channel_name: str, since: datetime) -> list[ChatMessage]:
         return self._repo.get_last_chat_messages_since(channel_name, since)
 
+

@@ -11,3 +11,4 @@ class IntentDetectorClient(Protocol):
     def validate_intent_via_llm(self, detected_intent: Intent, text: str, llm_client: LLMClient) -> Intent:
         ...
 
+

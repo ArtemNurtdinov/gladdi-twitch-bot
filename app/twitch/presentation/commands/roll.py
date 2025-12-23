@@ -2,34 +2,44 @@ import asyncio
 import logging
 import random
 from datetime import datetime
+from typing import Any, Awaitable, Callable
 
-from app.economy.domain.models import JackpotPayoutMultiplierEffect, PartialPayoutMultiplierEffect, MissPayoutMultiplierEffect, \
-    TransactionType
-from core.db import SessionLocal, db_ro_session
+from sqlalchemy.orm import Session
+
 from app.betting.domain.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
-from typing import Callable
+from app.chat.application.chat_use_case import ChatUseCase
+from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.models import (
+    JackpotPayoutMultiplierEffect,
+    MissPayoutMultiplierEffect,
+    PartialPayoutMultiplierEffect,
+    TransactionType,
+)
+from app.equipment.domain.equipment_service import EquipmentService
+from core.db import SessionLocal, db_ro_session
 
 logger = logging.getLogger(__name__)
 
 
 class RollCommandHandler:
-    """Обработчик команды ставки/слот-машины."""
 
     def __init__(
         self,
-        economy_service_factory,
-        betting_service_factory,
-        equipment_service_factory,
-        chat_use_case_factory,
+        command_prefix: str,
+        command_name: str,
+        economy_service_factory: Callable[[Session], EconomyService],
+        betting_service_factory: Callable[[Session], BettingService],
+        equipment_service_factory: Callable[[Session], EquipmentService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         roll_cooldowns: dict,
         cooldown_seconds: int,
-        split_text_fn,
-        timeout_fn,
-        command_name: str,
-        prefix: str,
+        split_text_fn: Callable[[str], list[str]],
+        timeout_fn: Callable[[Any, str, int, str], Awaitable[None]],
         nick_provider: Callable[[], str],
     ):
+        self.command_prefix = command_prefix
+        self.command_name = command_name
         self._economy_service = economy_service_factory
         self._betting_service = betting_service_factory
         self._equipment_service = equipment_service_factory
@@ -38,8 +48,6 @@ class RollCommandHandler:
         self.cooldown_seconds = cooldown_seconds
         self.split_text = split_text_fn
         self.timeout_user = timeout_fn
-        self.command_name = command_name
-        self.prefix = prefix
         self.nick_provider = nick_provider
 
     @staticmethod
@@ -93,8 +101,8 @@ class RollCommandHandler:
                 bet_amount = int(amount)
             except ValueError:
                 result = (
-                    f"@{nickname}, неверная сумма ставки! Используй: {self.prefix}{self.command_name} [сумма] "
-                    f"(например: {self.prefix}{self.command_name} 100). "
+                    f"@{nickname}, неверная сумма ставки! Используй: {self.command_prefix}{self.command_name} [сумма] "
+                    f"(например: {self.command_prefix}{self.command_name} 100). "
                     f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{BettingService.MAX_BET_AMOUNT} монет."
                 )
                 bot_nick = self.nick_provider() or ""
@@ -306,4 +314,3 @@ class RollCommandHandler:
             for msg in messages:
                 await ctx.send(msg)
                 await asyncio.sleep(0.3)
-

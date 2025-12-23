@@ -1,24 +1,26 @@
 import asyncio
-import logging
 from datetime import datetime
 from typing import Callable
 
-from core.db import SessionLocal, db_ro_session
-from app.betting.presentation.betting_schemas import UserBetStats
-from app.battle.domain.models import UserBattleStats
+from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
+from app.battle.application.battle_use_case import BattleUseCase
+from app.battle.domain.models import UserBattleStats
+from app.betting.domain.betting_service import BettingService
+from app.betting.presentation.betting_schemas import UserBetStats
+from app.chat.application.chat_use_case import ChatUseCase
+from app.economy.domain.economy_service import EconomyService
+from core.db import SessionLocal, db_ro_session
 
 
 class StatsCommandHandler:
-    """Обработчик пользовательской статистики."""
 
     def __init__(
         self,
-        economy_service_factory,
-        betting_service_factory,
-        battle_use_case_factory,
-        chat_use_case_factory,
+        economy_service_factory: Callable[[Session], EconomyService],
+        betting_service_factory: Callable[[Session], BettingService],
+        battle_use_case_factory: Callable[[Session], BattleUseCase],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_name: str,
         nick_provider: Callable[[], str],
         split_text_fn: Callable[[str], list[str]],
@@ -36,8 +38,6 @@ class StatsCommandHandler:
         user_name = ctx.author.display_name
         normalized_user_name = user_name.lower()
         bot_nick = self.nick_provider() or ""
-
-        logger.info(f"Команда {self.command_name} от пользователя {user_name}")
 
         with SessionLocal.begin() as db:
             balance = self._economy_service(db).get_user_balance(channel_name, normalized_user_name)
@@ -78,4 +78,3 @@ class StatsCommandHandler:
         for msg in messages:
             await ctx.send(msg)
             await asyncio.sleep(0.3)
-

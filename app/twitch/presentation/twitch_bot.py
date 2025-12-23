@@ -71,7 +71,6 @@ class Bot(commands.Bot):
     _COMMAND_HELP = "команды"
     _ROLL_COOLDOWN_SECONDS = 60
     _GROUP_ID = config.telegram.group_id
-    _SOURCE_TWITCH = "twitch"
     _CHECK_VIEWERS_INTERVAL_SECONDS = 10
     _CHECK_STREAM_STATUS_INTERVAL_SECONDS = 60
 
@@ -122,7 +121,6 @@ class Bot(commands.Bot):
         self._tasks_started = False
         self.telegram_bot = deps.telegram_bot
 
-        # Command handlers (gradual extraction from monolith)
         self._followage_handler = FollowageCommandHandler(
             bot=self,
             chat_use_case_factory=self._chat_use_case,
@@ -131,19 +129,17 @@ class Bot(commands.Bot):
             nick_provider=lambda: self.nick,
         )
         self._ask_handler = AskCommandHandler(
+            command_prefix=self._prefix,
+            command_name=self._COMMAND_GLADDI,
             intent_use_case=self._intent_use_case,
             prompt_service=self._prompt_service,
             ai_conversation_use_case_factory=self._ai_conversation_use_case,
             chat_use_case_factory=self._chat_use_case,
-            command_name=self._COMMAND_GLADDI,
-            prefix=self._prefix,
-            source=self._SOURCE_TWITCH,
             generate_response_fn=self.generate_response_in_chat,
             post_message_fn=self._post_message_in_twitch_chat,
             nick_provider=lambda: self.nick,
         )
         self._battle_handler = BattleCommandHandler(
-            bot=self,
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
             ai_conversation_use_case_factory=self._ai_conversation_use_case,
@@ -157,6 +153,8 @@ class Bot(commands.Bot):
             nick_provider=lambda: self.nick,
         )
         self._roll_handler = RollCommandHandler(
+            command_prefix=self._prefix,
+            command_name=self._COMMAND_ROLL,
             economy_service_factory=self._economy_service,
             betting_service_factory=self._betting_service,
             equipment_service_factory=self._equipment_service,
@@ -165,14 +163,11 @@ class Bot(commands.Bot):
             cooldown_seconds=self._ROLL_COOLDOWN_SECONDS,
             split_text_fn=self.split_text,
             timeout_fn=self._timeout_user,
-            command_name=self._COMMAND_ROLL,
-            prefix=self._prefix,
             nick_provider=lambda: self.nick,
         )
         self._balance_handler = BalanceCommandHandler(
             economy_service_factory=self._economy_service,
             chat_use_case_factory=self._chat_use_case,
-            command_name=self._COMMAND_BALANCE,
             nick_provider=lambda: self.nick,
         )
         self._bonus_handler = BonusCommandHandler(
@@ -193,12 +188,12 @@ class Bot(commands.Bot):
             nick_provider=lambda: self.nick,
         )
         self._shop_handler = ShopCommandHandler(
+            command_prefix=self._prefix,
+            command_shop_name=self._COMMAND_SHOP,
+            command_buy_name=self._COMMAND_BUY,
             economy_service_factory=self._economy_service,
             equipment_service_factory=self._equipment_service,
             chat_use_case_factory=self._chat_use_case,
-            command_shop=self._COMMAND_SHOP,
-            command_buy=self._COMMAND_BUY,
-            prefix=self._prefix,
             nick_provider=lambda: self.nick,
             split_text_fn=self.split_text,
         )
@@ -379,11 +374,11 @@ class Bot(commands.Bot):
         prompt = None
 
         if intent == Intent.JACKBOX:
-            prompt = self._prompt_service.get_jackbox_prompt(self._SOURCE_TWITCH, nickname, content)
+            prompt = self._prompt_service.get_jackbox_prompt(nickname, content)
         elif intent == Intent.DANKAR_CUT:
-            prompt = self._prompt_service.get_dankar_cut_prompt(self._SOURCE_TWITCH, nickname, content)
+            prompt = self._prompt_service.get_dankar_cut_prompt(nickname, content)
         elif intent == Intent.HELLO:
-            prompt = self._prompt_service.get_hello_prompt(self._SOURCE_TWITCH, nickname, content)
+            prompt = self._prompt_service.get_hello_prompt(nickname, content)
 
         if prompt is not None:
             result = self.generate_response_in_chat(prompt, channel_name)
@@ -398,7 +393,12 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_GLADDI)
     async def ask(self, ctx):
-        await self._ask_handler.handle(ctx)
+        await self._ask_handler.handle(
+            channel_name=ctx.channel.name,
+            full_message=ctx.message.content,
+            display_name=ctx.author.display_name,
+            ctx = ctx
+        )
 
     @commands.command(name=_COMMAND_FIGHT)
     async def battle(self, ctx):
@@ -411,7 +411,11 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_BALANCE)
     async def balance(self, ctx):
-        await self._balance_handler.handle(ctx)
+        await self._balance_handler.handle(
+            channel_name=ctx.channel.name,
+            display_name = ctx.author.display_name,
+            ctx = ctx
+        )
 
     @commands.command(name=_COMMAND_BONUS)
     async def daily_bonus(self, ctx):
@@ -538,7 +542,6 @@ class Bot(commands.Bot):
             await asyncio.sleep(0.3)
 
     async def _send_channel_message(self, channel_name: str, message: str):
-        """Отправляет сообщение в канал, разбивая его на части."""
         messages = self.split_text(message)
         channel = self.get_channel(channel_name)
         if not channel:

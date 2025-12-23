@@ -3,26 +3,31 @@ import logging
 from datetime import datetime
 from typing import Callable
 
+from sqlalchemy.orm import Session
+
+from app.chat.application.chat_use_case import ChatUseCase
+from app.economy.domain.economy_service import EconomyService
+from app.equipment.domain.equipment_service import EquipmentService
+from app.stream.domain.stream_service import StreamService
 from core.db import SessionLocal, db_ro_session
 
 logger = logging.getLogger(__name__)
 
 
 class BonusCommandHandler:
-    """Обработчик ежедневного бонуса (доступен только на активном стриме)."""
 
     def __init__(
         self,
-        stream_service_factory,
-        equipment_service_factory,
-        economy_service_factory,
-        chat_use_case_factory,
+        stream_service_factory: Callable[[Session], StreamService],
+        equipment_service_factory: Callable[[Session], EquipmentService],
+        economy_service_factory: Callable[[Session], EconomyService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_name: str,
         prefix: str,
         nick_provider: Callable[[], str],
         split_text_fn: Callable[[str], list[str]],
     ):
-        self._stream_service = stream_service_factory
+        self._stream_service: Callable[[Session], StreamService] = stream_service_factory
         self._equipment_service = equipment_service_factory
         self._economy_service = economy_service_factory
         self._chat_use_case = chat_use_case_factory

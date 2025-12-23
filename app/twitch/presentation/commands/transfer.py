@@ -1,18 +1,19 @@
-import logging
 from datetime import datetime
 from typing import Callable
 
-from core.db import SessionLocal
+from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
+from app.chat.application.chat_use_case import ChatUseCase
+from app.economy.domain.economy_service import EconomyService
+from core.db import SessionLocal
 
 
 class TransferCommandHandler:
 
     def __init__(
         self,
-        economy_service_factory,
-        chat_use_case_factory,
+        economy_service_factory: Callable[[Session], EconomyService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_name: str,
         prefix: str,
         nick_provider: Callable[[], str],
@@ -27,8 +28,6 @@ class TransferCommandHandler:
         channel_name = ctx.channel.name
         sender_name = ctx.author.display_name
         bot_nick = self.nick_provider() or ""
-
-        logger.info(f"Команда {self.command_name} от пользователя {sender_name}")
 
         if not recipient or not amount:
             result = (
@@ -69,8 +68,6 @@ class TransferCommandHandler:
                 channel_name, normalized_sender_name, normalized_receiver_name, transfer_amount
             )
 
-        logger.info(f"Перевод выполнен: {sender_name} -> {recipient}")
-
         if transfer_result.success:
             result = f"@{sender_name} перевел {transfer_amount} монет пользователю @{recipient}! "
         else:
@@ -79,4 +76,3 @@ class TransferCommandHandler:
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())
         await ctx.send(result)
-

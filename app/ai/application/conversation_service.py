@@ -12,3 +12,4 @@ class ConversationService:
     def save_conversation_to_db(self, channel_name: str, user_message: str, ai_message: str) -> None:
         self._message_repo.add_messages_to_db(channel_name, user_message, ai_message)
 
+

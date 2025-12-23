@@ -14,3 +14,4 @@ class IntentUseCase:
         if detected_intent in (Intent.HELLO, Intent.DANKAR_CUT, Intent.JACKBOX):
             return self._intent_detector.validate_intent_via_llm(detected_intent, text, self._llm_client)
         return detected_intent
+

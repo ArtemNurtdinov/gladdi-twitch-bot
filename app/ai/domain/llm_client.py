@@ -7,3 +7,4 @@ class LLMClient(Protocol):
     def generate_ai_response(self, user_messages: list[AIMessage]) -> str:
         ...
 
+

@@ -2,10 +2,14 @@ import logging
 from datetime import datetime
 from typing import Callable
 
-from core.db import SessionLocal, db_ro_session
+from sqlalchemy.orm import Session
+
+from app.chat.application.chat_use_case import ChatUseCase
+from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.models import RPS_CHOICES
 from app.minigame.domain.minigame_service import MinigameService
+from core.db import SessionLocal, db_ro_session
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +20,8 @@ class RpsCommandHandler:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_factory,
-        chat_use_case_factory,
+        economy_service_factory: Callable[[Session], EconomyService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_name: str,
         prefix: str,
         nick_provider: Callable[[], str],
@@ -124,4 +128,5 @@ class RpsCommandHandler:
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, bot_nick, message, datetime.utcnow())
         await ctx.send(message)
+
 

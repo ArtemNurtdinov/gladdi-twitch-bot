@@ -3,18 +3,21 @@ import logging
 from datetime import datetime
 from typing import Callable
 
+from sqlalchemy.orm import Session
+
+from app.chat.application.chat_use_case import ChatUseCase
+from app.equipment.domain.equipment_service import EquipmentService
 from core.db import SessionLocal, db_ro_session
 
 logger = logging.getLogger(__name__)
 
 
 class EquipmentCommandHandler:
-    """Обработчик команды отображения экипировки пользователя."""
 
     def __init__(
         self,
-        equipment_service_factory,
-        chat_use_case_factory,
+        equipment_service_factory: Callable[[Session], EquipmentService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_name: str,
         command_shop: str,
         prefix: str,

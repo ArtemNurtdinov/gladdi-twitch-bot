@@ -1,22 +1,22 @@
-import logging
 from datetime import datetime
 from typing import Callable
 
-from core.db import SessionLocal, db_ro_session
+from sqlalchemy.orm import Session
+
+from app.chat.application.chat_use_case import ChatUseCase
+from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
-
-logger = logging.getLogger(__name__)
+from core.db import SessionLocal
 
 
 class GuessCommandHandler:
-    """Обработчики игр угадай число / букву / слово."""
 
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_factory,
-        chat_use_case_factory,
+        economy_service_factory: Callable[[Session], EconomyService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_guess: str,
         command_guess_letter: str,
         command_guess_word: str,
@@ -37,7 +37,6 @@ class GuessCommandHandler:
         user_name = ctx.author.display_name
         bot_nick = (self.nick_provider() or "").lower()
 
-        logger.info(f"Команда {self.command_guess} от пользователя {user_name}, число: {number}")
         if not number:
             result = f"@{user_name}, используй: {self.prefix}{self.command_guess} [число]"
             with SessionLocal.begin() as db:
@@ -263,4 +262,3 @@ class GuessCommandHandler:
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick, message, datetime.utcnow())
             await ctx.send(message)
-

@@ -1,19 +1,18 @@
 import asyncio
-import logging
 from datetime import datetime
 from typing import Callable
 
-from core.db import SessionLocal
+from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
+from app.chat.application.chat_use_case import ChatUseCase
+from core.db import SessionLocal
 
 
 class HelpCommandHandler:
-    """Обработчик списка команд."""
 
     def __init__(
         self,
-        chat_use_case_factory,
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         prefix: str,
         commands_map: dict[str, str],
         nick_provider: Callable[[], str],
@@ -41,4 +40,3 @@ class HelpCommandHandler:
         for msg in messages:
             await ctx.send(msg)
             await asyncio.sleep(0.3)
-

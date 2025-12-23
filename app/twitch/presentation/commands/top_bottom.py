@@ -1,20 +1,20 @@
 import asyncio
-import logging
 from datetime import datetime
 from typing import Callable
 
-from core.db import SessionLocal, db_ro_session
+from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
+from app.chat.application.chat_use_case import ChatUseCase
+from app.economy.domain.economy_service import EconomyService
+from core.db import SessionLocal, db_ro_session
 
 
 class TopBottomCommandHandler:
-    """Обработчик топов богачей и бомжей."""
 
     def __init__(
         self,
-        economy_service_factory,
-        chat_use_case_factory,
+        economy_service_factory: Callable[[Session], EconomyService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         command_top: str,
         command_bottom: str,
         nick_provider: Callable[[], str],
@@ -30,8 +30,6 @@ class TopBottomCommandHandler:
     async def handle_top(self, ctx):
         channel_name = ctx.channel.name
         bot_nick = self.nick_provider() or ""
-
-        logger.info(f"Команда {self.command_top}")
 
         with db_ro_session() as db:
             top_users = self._economy_service(db).get_top_users(channel_name, limit=7)
@@ -55,8 +53,6 @@ class TopBottomCommandHandler:
         channel_name = ctx.channel.name
         bot_nick = self.nick_provider() or ""
 
-        logger.info(f"Команда {self.command_bottom}")
-
         with db_ro_session() as db:
             bottom_users = self._economy_service(db).get_bottom_users(channel_name, limit=10)
 
@@ -74,4 +70,5 @@ class TopBottomCommandHandler:
         for msg in messages:
             await ctx.send(msg)
             await asyncio.sleep(0.3)
+
 

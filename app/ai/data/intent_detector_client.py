@@ -52,3 +52,4 @@ class IntentDetectorClientImpl(IntentDetectorClient):
                 return intent
         return detected_intent
 
+

@@ -3,9 +3,13 @@ import logging
 from datetime import datetime
 from typing import Callable
 
+from sqlalchemy.orm import Session
+
+from app.chat.application.chat_use_case import ChatUseCase
+from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.models import ShopItems, TransactionType
+from app.equipment.domain.equipment_service import EquipmentService
 from core.db import SessionLocal, db_ro_session
-from app.economy.domain.models import TransactionType
-from app.economy.domain.models import ShopItems
 
 logger = logging.getLogger(__name__)
 
@@ -14,30 +18,27 @@ class ShopCommandHandler:
 
     def __init__(
         self,
-        economy_service_factory,
-        equipment_service_factory,
-        chat_use_case_factory,
-        command_shop: str,
-        command_buy: str,
-        prefix: str,
+        command_prefix: str,
+        command_shop_name: str,
+        command_buy_name: str,
+        economy_service_factory: Callable[[Session], EconomyService],
+        equipment_service_factory: Callable[[Session], EquipmentService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
         nick_provider: Callable[[], str],
         split_text_fn: Callable[[str], list[str]],
     ):
+        self.command_prefix = command_prefix
+        self.command_shop_name = command_shop_name
+        self.command_buy_name = command_buy_name
         self._economy_service = economy_service_factory
         self._equipment_service = equipment_service_factory
         self._chat_use_case = chat_use_case_factory
-        self.command_shop = command_shop
-        self.command_buy = command_buy
-        self.prefix = prefix
         self.nick_provider = nick_provider
         self.split_text = split_text_fn
 
     async def handle_shop(self, ctx):
         channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
         bot_nick = self.nick_provider() or ""
-
-        logger.info(f"Команда {self.command_shop} от пользователя {user_name}")
 
         all_items = ShopItems.get_all_items()
 
@@ -49,8 +50,8 @@ class ShopCommandHandler:
             result += f"{item.emoji} {item.name} - {item.price} монет. "
 
         result += (
-            f"Используй: {self.prefix}{self.command_buy} [название предмета]. "
-            f"Пример: {self.prefix}{self.command_buy} стул. Все предметы действуют 30 дней!"
+            f"Используй: {self.command_prefix}{self.command_buy_name} [название предмета]. "
+            f"Пример: {self.command_prefix}{self.command_buy_name} стул. Все предметы действуют 30 дней!"
         )
 
         with SessionLocal.begin() as db:
@@ -66,12 +67,10 @@ class ShopCommandHandler:
         user_name = ctx.author.display_name
         bot_nick = self.nick_provider() or ""
 
-        logger.info(f"Команда {self.command_buy} от пользователя {user_name}")
-
         if not item_name:
             result = (
-                f"@{user_name}, укажи название предмета! Используй: {self.prefix}{self.command_buy} [название]. "
-                f"Пример: {self.prefix}{self.command_buy} стул"
+                f"@{user_name}, укажи название предмета! Используй: {self.command_prefix}{self.command_buy_name} [название]. "
+                f"Пример: {self.command_prefix}{self.command_buy_name} стул"
             )
             with SessionLocal.begin() as db:
                 self._chat_use_case(db).save_chat_message(channel_name, bot_nick.lower(), result, datetime.utcnow())

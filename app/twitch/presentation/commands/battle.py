@@ -2,34 +2,37 @@ import asyncio
 import logging
 import random
 from datetime import datetime
+from typing import Any, Awaitable, Callable
 
-from core.db import SessionLocal, db_ro_session
+from sqlalchemy.orm import Session
+
+from app.ai.application.conversation_service import ConversationService
+from app.battle.application.battle_use_case import BattleUseCase
+from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
-from typing import Callable
+from app.equipment.domain.equipment_service import EquipmentService
+from core.db import SessionLocal, db_ro_session
 
 logger = logging.getLogger(__name__)
 
 
 class BattleCommandHandler:
-    """Обработчик команды битвы."""
 
     def __init__(
         self,
-        bot,
-        economy_service_factory,
-        chat_use_case_factory,
-        ai_conversation_use_case_factory,
-        battle_use_case_factory,
-        equipment_service_factory,
-        split_text_fn,
-        timeout_fn,
+        economy_service_factory: Callable[[Session], EconomyService],
+        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        ai_conversation_use_case_factory: Callable[[Session], ConversationService],
+        battle_use_case_factory: Callable[[Session], BattleUseCase],
+        equipment_service_factory: Callable[[Session], EquipmentService],
+        split_text_fn: Callable[[str], list[str]],
+        timeout_fn: Callable[[Any, str, int, str], Awaitable[None]],
         command_name: str,
         prefix: str,
-        generate_response_fn,
+        generate_response_fn: Callable[[str, str], str],
         nick_provider: Callable[[], str],
     ):
-        self.bot = bot
         self._economy_service = economy_service_factory
         self._chat_use_case = chat_use_case_factory
         self._ai_conversation_use_case = ai_conversation_use_case_factory
