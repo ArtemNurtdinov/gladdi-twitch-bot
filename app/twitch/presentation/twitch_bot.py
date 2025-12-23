@@ -1,14 +1,11 @@
 import asyncio
 import logging
-import random
 from twitchio.ext import commands
 from datetime import datetime, timedelta
 
 from app.ai.domain.models import Intent, AIMessage, Role
 from app.battle.domain.models import UserBattleStats
-from app.betting.domain.betting_service import BettingService
 from app.betting.presentation.betting_schemas import UserBetStats
-from app.betting.domain.models import EmojiConfig, RarityLevel
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.minigame.domain.minigame_service import MinigameService
 from app.minigame.domain.models import RPS_CHOICES
@@ -22,9 +19,7 @@ from core.config import config
 from collections import Counter
 
 from core.db import db_ro_session, SessionLocal
-from app.economy.domain.economy_service import EconomyService
-from app.economy.domain.models import ShopItems, TransactionType, JackpotPayoutMultiplierEffect, MissPayoutMultiplierEffect, \
-    PartialPayoutMultiplierEffect
+from app.economy.domain.models import ShopItems, TransactionType
 
 logger = logging.getLogger(__name__)
 
