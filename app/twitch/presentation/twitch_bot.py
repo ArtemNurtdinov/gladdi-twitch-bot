@@ -15,8 +15,8 @@ from app.ai.data.intent_detector_client import IntentDetectorClientImpl
 from app.ai.data.llm_client import LLMClientImpl
 from app.ai.data.message_repository import AIMessageRepositoryImpl
 from app.battle.application.battle_use_case import BattleUseCase
-from app.minigame.domain.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.domain.get_used_words_use_case import GetUsedWordsUseCase
+from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.models import RPS_CHOICES
 from core.config import config
 from collections import Counter

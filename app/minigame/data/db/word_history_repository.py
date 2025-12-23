@@ -22,8 +22,5 @@ class WordHistoryRepositoryImpl(WordHistoryRepository):
         return [row[0].lower() for row in rows]
 
     def add_word(self, channel_name: str, word: str):
-        normalized = "".join(ch for ch in str(word).lower() if ch.isalpha())
-        if not normalized:
-            return
-        record = OrmWordHistory(channel_name=channel_name, word=normalized, created_at=datetime.utcnow())
+        record = OrmWordHistory(channel_name=channel_name, word=word, created_at=datetime.utcnow())
         self._db.add(record)
