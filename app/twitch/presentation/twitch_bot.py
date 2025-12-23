@@ -17,11 +17,13 @@ from app.twitch.presentation.commands.balance import BalanceCommandHandler
 from app.twitch.presentation.commands.bonus import BonusCommandHandler
 from app.twitch.presentation.commands.followage import FollowageCommandHandler
 from app.twitch.presentation.commands.roll import RollCommandHandler
+from app.twitch.presentation.commands.shop import ShopCommandHandler
+from app.twitch.presentation.commands.transfer import TransferCommandHandler
 from core.config import config
 from collections import Counter
 
 from core.db import db_ro_session, SessionLocal
-from app.economy.domain.models import ShopItems, TransactionType
+from app.economy.domain.models import TransactionType
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +183,23 @@ class Bot(commands.Bot):
             nick_provider=lambda: self.nick,
             split_text_fn=self.split_text,
         )
+        self._transfer_handler = TransferCommandHandler(
+            economy_service_factory=self._economy_service,
+            chat_use_case_factory=self._chat_use_case,
+            command_name=self._COMMAND_TRANSFER,
+            prefix=self._prefix,
+            nick_provider=lambda: self.nick,
+        )
+        self._shop_handler = ShopCommandHandler(
+            economy_service_factory=self._economy_service,
+            equipment_service_factory=self._equipment_service,
+            chat_use_case_factory=self._chat_use_case,
+            command_shop=self._COMMAND_SHOP,
+            command_buy=self._COMMAND_BUY,
+            prefix=self._prefix,
+            nick_provider=lambda: self.nick,
+            split_text_fn=self.split_text,
+        )
 
         # mutable holder for waiting user (so handler can mutate)
         self._battle_waiting_user_ref = {"value": None}
@@ -332,135 +351,15 @@ class Bot(commands.Bot):
 
     @commands.command(name=_COMMAND_TRANSFER)
     async def transfer_money(self, ctx, recipient: str = None, amount: str = None):
-        channel_name = ctx.channel.name
-        sender_name = ctx.author.display_name
-
-        logger.info(f"Команда {self._COMMAND_TRANSFER} от пользователя {sender_name}")
-
-        if not recipient or not amount:
-            result = f"@{sender_name}, используй: {self._prefix}{self._COMMAND_TRANSFER} [никнейм] [сумма]. Например: {self._prefix}{self._COMMAND_TRANSFER} @ArtemNeFRiT 100"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        try:
-            transfer_amount = int(amount)
-        except ValueError:
-            result = f"@{sender_name}, неверная сумма! Укажи число. Например: {self._prefix}{self._COMMAND_TRANSFER} {recipient} 100"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        if transfer_amount <= 0:
-            result = f"@{sender_name}, сумма должна быть больше 0!"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        recipient = recipient.lstrip('@')
-
-        normalized_sender_name = sender_name.lower()
-        normalized_receiver_name = recipient.lower()
-
-        with SessionLocal.begin() as db:
-            transfer_result = self._economy_service(db).transfer_money(channel_name, normalized_sender_name, normalized_receiver_name,
-                                                                       transfer_amount)
-        logger.info(f"Перевод выполнен: {sender_name} -> {recipient}")
-
-        if transfer_result.success:
-            result = f"@{sender_name} перевел {transfer_amount} монет пользователю @{recipient}! "
-        else:
-            result = f"@{sender_name}, {transfer_result.message}"
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-        await ctx.send(result)
+        await self._transfer_handler.handle(ctx, recipient, amount)
 
     @commands.command(name=_COMMAND_SHOP)
     async def shop(self, ctx):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-
-        logger.info(f"Команда {self._COMMAND_SHOP} от пользователя {user_name}")
-
-        all_items = ShopItems.get_all_items()
-
-        result = "МАГАЗИН АРТЕФАКТОВ:\n"
-
-        sorted_items = sorted(all_items.items(), key=lambda x: x[1].price)
-
-        for item_type, item in sorted_items:
-            result += f"{item.emoji} {item.name} - {item.price} монет. "
-
-        result += f"Используй: {self._prefix}{self._COMMAND_BUY} [название предмета]. Пример: {self._prefix}{self._COMMAND_BUY} стул. Все предметы действуют 30 дней!"
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self._shop_handler.handle_shop(ctx)
 
     @commands.command(name=_COMMAND_BUY)
     async def buy_item(self, ctx, *, item_name: str = None):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-
-        logger.info(f"Команда {self._COMMAND_BUY} от пользователя {user_name}")
-
-        if not item_name:
-            result = f"@{user_name}, укажи название предмета! Используй: {self._prefix}{self._COMMAND_BUY} [название]. Пример: {self._prefix}{self._COMMAND_BUY} стул"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        try:
-            item_type = ShopItems.find_item_by_name(item_name)
-        except ValueError as e:
-            result = str(e)
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        item = ShopItems.get_item(item_type)
-
-        normalized_user_name = user_name.lower()
-        with db_ro_session() as db:
-            equipment_exists = self._equipment_service(db).equipment_exists(channel_name, normalized_user_name, item_type)
-
-        if equipment_exists:
-            result = f"У вас уже есть {item.name}"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        with SessionLocal.begin() as db:
-            user_balance = self._economy_service(db).get_user_balance(channel_name, normalized_user_name)
-
-        if user_balance.balance < item.price:
-            result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
-            with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-            await ctx.send(result)
-            return
-
-        with SessionLocal.begin() as db:
-            self._economy_service(db).subtract_balance(channel_name, normalized_user_name, item.price, TransactionType.SHOP_PURCHASE,
-                                                       f"Покупка '{item.name}'")
-            self._equipment_service(db).add_equipment_to_user(channel_name, normalized_user_name, item_type)
-
-        result = f"@{user_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-        await ctx.send(result)
+        await self._shop_handler.handle_buy(ctx, item_name)
 
     @commands.command(name=_COMMAND_EQUIPMENT)
     async def equipment(self, ctx):
