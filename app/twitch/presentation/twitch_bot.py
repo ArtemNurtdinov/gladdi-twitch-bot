@@ -18,6 +18,7 @@ from app.battle.application.battle_use_case import BattleUseCase
 from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.models import RPS_CHOICES
+from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from core.config import config
 from collections import Counter
 
@@ -109,7 +110,6 @@ class Bot(commands.Bot):
         self.twitch_auth = twitch_auth
         self.twitch_api_service = twitch_api_service
         self.joke_service = JokeService(FileJokeSettingsRepository())
-        self.stream_service = StreamService(StreamRepositoryImpl())
         self.minigame_service = MinigameService()
         self.viewer_service = ViewerTimeService(ViewerRepositoryImpl())
 
@@ -129,30 +129,36 @@ class Bot(commands.Bot):
 
         logger.info("Twitch бот инициализирован успешно")
 
-    def _chat_use_case(self, db):
+    def _chat_use_case(self, db) -> ChatUseCase:
         return ChatUseCase(ChatRepositoryImpl(db))
 
-    def _battle_use_case(self, db):
+    def _battle_use_case(self, db) -> BattleUseCase:
         return BattleUseCase(BattleRepositoryImpl(db))
 
-    def _ai_conversation_use_case(self, db):
+    def _ai_conversation_use_case(self, db) -> ConversationService:
         message_repo = AIMessageRepositoryImpl(db)
         return ConversationService(message_repo)
 
-    def _betting_service(self, db):
+    def _betting_service(self, db) -> BettingService:
         return BettingService(BettingRepositoryImpl(db))
 
-    def _economy_service(self, db):
+    def _economy_service(self, db) -> EconomyService:
         return EconomyService(EconomyRepositoryImpl(db))
 
-    def _equipment_service(self, db):
+    def _equipment_service(self, db) -> EquipmentService:
         return EquipmentService(EquipmentRepositoryImpl(db))
 
-    def _get_used_words_use_case(self, db):
+    def _get_used_words_use_case(self, db) -> GetUsedWordsUseCase:
         return GetUsedWordsUseCase(WordHistoryRepositoryImpl(db))
 
-    def _add_used_word_use_case(self, db):
+    def _add_used_word_use_case(self, db) -> AddUsedWordsUseCase:
         return AddUsedWordsUseCase(WordHistoryRepositoryImpl(db))
+
+    def _stream_service(self, db) -> StreamService:
+        return StreamService(StreamRepositoryImpl(db))
+
+    def _start_new_stream_use_case(self, db) -> StartNewStreamUseCase:
+        return StartNewStreamUseCase(StreamRepositoryImpl(db))
 
     async def _get_user_id_cached(self, login: str) -> str | None:
         now = datetime.utcnow()
@@ -240,7 +246,7 @@ class Bot(commands.Bot):
         with SessionLocal.begin() as db:
             self._chat_use_case(db).save_chat_message(channel_name, normalized_user_name, content, datetime.utcnow())
             self._economy_service(db).process_user_message_activity(channel_name, normalized_user_name)
-            active_stream = self.stream_service.get_active_stream(db, channel_name)
+            active_stream = self._stream_service(db).get_active_stream(channel_name)
             if active_stream:
                 self.viewer_service.update_viewer_session(db, active_stream.id, channel_name, nickname.lower(), datetime.utcnow())
 
@@ -464,7 +470,8 @@ class Bot(commands.Bot):
         base_battle_timeout = 120
         with db_ro_session() as db:
             equipment = self._equipment_service(db).get_user_equipment(channel_name, loser.lower())
-            final_timeout, protection_message = self._equipment_service(db).calculate_timeout_with_equipment(loser, base_battle_timeout, equipment)
+            final_timeout, protection_message = self._equipment_service(db).calculate_timeout_with_equipment(loser, base_battle_timeout,
+                                                                                                             equipment)
 
         if final_timeout == 0:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
@@ -767,7 +774,7 @@ class Bot(commands.Bot):
         logger.info(f"Команда {self._COMMAND_BONUS} от пользователя {user_name}")
 
         with db_ro_session() as db:
-            active_stream = self.stream_service.get_active_stream(db, channel_name)
+            active_stream = self._stream_service(db).get_active_stream(channel_name)
 
         if not active_stream:
             result = f"🚫 @{user_name}, бонус доступен только во время стрима!"
@@ -1507,9 +1514,6 @@ class Bot(commands.Bot):
                     await asyncio.sleep(60)
                     continue
 
-                with db_ro_session() as db:
-                    active_stream = self.stream_service.get_active_stream(db, channel_name)
-
                 stream_status = await self.twitch_api_service.get_stream_status(broadcaster_id)
 
                 if stream_status is None:
@@ -1523,13 +1527,19 @@ class Bot(commands.Bot):
                     game_name = stream_status.stream_data.game_name
                     title = stream_status.stream_data.title
 
+                logger.info(f"Статус стрима: {stream_status}")
+
+                with db_ro_session() as db:
+                    active_stream = self._stream_service(db).get_active_stream(channel_name)
+
                 if stream_status.is_online and active_stream is None:
                     logger.info(f"Стрим начался: {game_name} - {title}")
 
                     try:
                         started_at = datetime.utcnow()
                         with SessionLocal.begin() as db:
-                            self.stream_service.start_new_stream(db, channel_name, started_at, game_name, title)
+                            start_stream_use_case = self._start_new_stream_use_case(db)
+                            start_stream_use_case(channel_name, started_at, game_name, title)
                         self.minigame_service.set_stream_start_time(channel_name, started_at)
                         await self.stream_announcement(game_name, title, channel_name)
                         self.current_stream_summaries = []
@@ -1541,10 +1551,10 @@ class Bot(commands.Bot):
                     finish_time = datetime.utcnow()
 
                     with SessionLocal.begin() as db:
-                        self.stream_service.end_stream(db, active_stream.id, finish_time)
+                        self._stream_service(db).end_stream(active_stream.id, finish_time)
                         self.viewer_service.finish_stream_sessions(db, active_stream.id, finish_time)
                         total_viewers = self.viewer_service.get_unique_viewers_count(db, active_stream.id)
-                        self.stream_service.update_stream_total_viewers(db, active_stream.id, total_viewers)
+                        self._stream_service(db).update_stream_total_viewers(active_stream.id, total_viewers)
                         logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
                     self.minigame_service.reset_stream_state(channel_name)
@@ -1579,7 +1589,7 @@ class Bot(commands.Bot):
                 elif stream_status.is_online and active_stream:
                     if active_stream.game_name != game_name or active_stream.title != title:
                         with SessionLocal.begin() as db:
-                            self.stream_service.update_stream_metadata(db, active_stream.id, game_name, title)
+                            self._stream_service(db).update_stream_metadata(active_stream.id, game_name, title)
                         logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
             except Exception as e:
@@ -1670,7 +1680,7 @@ class Bot(commands.Bot):
                     continue
 
                 with db_ro_session() as db:
-                    active_stream = self.stream_service.get_active_stream(db, channel_name)
+                    active_stream = self._stream_service(db).get_active_stream(channel_name)
                 if not active_stream:
                     logger.debug("Стрим не активен, пропускаем анализ чата")
                     continue
@@ -1738,7 +1748,7 @@ class Bot(commands.Bot):
                         self._chat_use_case(db).save_chat_message(channel, self.nick.lower(), timeout_message, datetime.utcnow())
 
                 with db_ro_session() as db:
-                    active_stream = self.stream_service.get_active_stream(db, channel_name)
+                    active_stream = self._stream_service(db).get_active_stream(channel_name)
 
                 if not active_stream:
                     await asyncio.sleep(60)
@@ -1846,7 +1856,7 @@ class Bot(commands.Bot):
 
                 channel_name = self.initial_channels[0]
                 with db_ro_session() as db:
-                    active_stream = self.stream_service.get_active_stream(db, channel_name)
+                    active_stream = self._stream_service(db).get_active_stream(channel_name)
 
                 if not active_stream:
                     await asyncio.sleep(self._CHECK_VIEWERS_INTERVAL_SECONDS)
@@ -1867,7 +1877,7 @@ class Bot(commands.Bot):
 
                 if viewers_count > active_stream.max_concurrent_viewers:
                     with SessionLocal.begin() as db:
-                        self.stream_service.update_max_concurrent_viewers_count(db, active_stream.id, viewers_count)
+                        self._stream_service(db).update_max_concurrent_viewers_count(active_stream.id, viewers_count)
 
                 with SessionLocal.begin() as db:
                     viewer_sessions = self.viewer_service.get_stream_viewer_sessions(db, active_stream.id)
@@ -1895,7 +1905,7 @@ class Bot(commands.Bot):
 
             channel_name = self.initial_channels[0]
             with db_ro_session() as db:
-                active_stream = self.stream_service.get_active_stream(db, channel_name)
+                active_stream = self._stream_service(db).get_active_stream(channel_name)
 
             if active_stream:
                 self.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)

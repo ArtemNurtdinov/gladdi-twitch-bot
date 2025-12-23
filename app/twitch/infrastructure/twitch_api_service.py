@@ -105,14 +105,10 @@ class TwitchApiService:
                 return None
 
     async def get_stream_info(self, broadcaster_id: str) -> StreamInfo:
-        logger.debug(f"Получение информации о стриме для канала: {broadcaster_id}")
         channel_info = await self.get_channel_info(broadcaster_id)
-        logger.debug(f"Информация о стриме: игра={channel_info.game_name}, название={channel_info.title}")
         return StreamInfo(channel_info.game_name, channel_info.title)
 
     async def get_stream_status(self, broadcaster_id: str) -> Optional[StreamStatus]:
-        logger.debug(f"Проверка статуса стрима для канала: {broadcaster_id}")
-
         url = f'{self.base_url}/streams'
         headers = self._get_headers()
         params = {'user_id': broadcaster_id}

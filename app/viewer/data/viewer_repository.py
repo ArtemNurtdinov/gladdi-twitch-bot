@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
 
-from app.stream.application.mappers.stream_mapper import map_stream_row
+from app.stream.data.mappers.stream_mapper import map_stream_row
 
 from app.viewer.data.db.viewer_session import StreamViewerSession
 from app.viewer.domain.models import ViewerSession

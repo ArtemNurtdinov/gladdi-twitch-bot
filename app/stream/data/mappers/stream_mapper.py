@@ -1,13 +1,8 @@
-from typing import Optional
-
 from app.stream.data.db.stream import Stream
 from app.stream.domain.models import StreamInfo
 
 
-def map_stream_row(row: Optional[Stream]) -> StreamInfo | None:
-    if not row:
-        return None
-
+def map_stream_row(row: Stream) -> StreamInfo:
     return StreamInfo(
         id=row.id,
         channel_name=row.channel_name,
