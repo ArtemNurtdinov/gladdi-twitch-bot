@@ -13,6 +13,8 @@ from app.stream.domain.models import StreamStatistics
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.presentation.commands.ask import AskCommandHandler
 from app.twitch.presentation.commands.battle import BattleCommandHandler
+from app.twitch.presentation.commands.balance import BalanceCommandHandler
+from app.twitch.presentation.commands.bonus import BonusCommandHandler
 from app.twitch.presentation.commands.followage import FollowageCommandHandler
 from app.twitch.presentation.commands.roll import RollCommandHandler
 from core.config import config
@@ -158,14 +160,26 @@ class Bot(commands.Bot):
             roll_cooldowns=self.roll_cooldowns,
             cooldown_seconds=self._ROLL_COOLDOWN_SECONDS,
             split_text_fn=self.split_text,
-            get_result_emoji_fn=self.get_result_emoji,
-            get_profit_display_fn=self.get_profit_display,
-            is_consolation_prize_fn=self.is_consolation_prize,
-            is_miss_fn=self.is_miss,
             timeout_fn=self._timeout_user,
             command_name=self._COMMAND_ROLL,
             prefix=self._prefix,
             nick_provider=lambda: self.nick,
+        )
+        self._balance_handler = BalanceCommandHandler(
+            economy_service_factory=self._economy_service,
+            chat_use_case_factory=self._chat_use_case,
+            command_name=self._COMMAND_BALANCE,
+            nick_provider=lambda: self.nick,
+        )
+        self._bonus_handler = BonusCommandHandler(
+            stream_service_factory=self._stream_service,
+            equipment_service_factory=self._equipment_service,
+            economy_service_factory=self._economy_service,
+            chat_use_case_factory=self._chat_use_case,
+            command_name=self._COMMAND_BONUS,
+            prefix=self._prefix,
+            nick_provider=lambda: self.nick,
+            split_text_fn=self.split_text,
         )
 
         # mutable holder for waiting user (so handler can mutate)
@@ -308,100 +322,13 @@ class Bot(commands.Bot):
         await self._roll_handler.handle(ctx, amount)
         self._cleanup_old_cooldowns()
 
-    def is_miss(self, result_type: str) -> bool:
-        return result_type == "miss"
-
-    def is_consolation_prize(self, result_type: str, payout: int) -> bool:
-        return self.is_miss(result_type) and payout > 0
-
-    def is_jackpot(self, result_type: str) -> bool:
-        return result_type == "jackpot"
-
-    def is_partial_match(self, result_type: str) -> bool:
-        return result_type == "partial"
-
-    def get_result_emoji(self, result_type: str, payout: int) -> str:
-        if self.is_consolation_prize(result_type, payout):
-            return "🎁"
-        elif self.is_jackpot(result_type):
-            return "🎰"
-        elif self.is_partial_match(result_type):
-            return "✨"
-        elif self.is_miss(result_type):
-            return "💥"
-        else:
-            return "💰"
-
-    def get_profit_display(self, result_type: str, payout: int, profit: int) -> str:
-        if self.is_consolation_prize(result_type, payout):
-            net_result = profit
-            if net_result > 0:
-                return f"+{net_result}"
-            elif net_result < 0:
-                return f"{net_result}"
-            else:
-                return "±0"
-        else:
-            if profit > 0:
-                return f"+{profit}"
-            elif profit < 0:
-                return f"{profit}"
-            else:
-                return "±0"
-
     @commands.command(name=_COMMAND_BALANCE)
     async def balance(self, ctx):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-
-        logger.info(f"Команда {self._COMMAND_BALANCE} от пользователя {user_name}")
-
-        with SessionLocal.begin() as db:
-            user_balance = self._economy_service(db).get_user_balance(channel_name, user_name)
-
-        result = f"💰 @{user_name}, твой баланс: {user_balance.balance} монет"
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-        await ctx.send(result)
+        await self._balance_handler.handle(ctx)
 
     @commands.command(name=_COMMAND_BONUS)
     async def daily_bonus(self, ctx):
-        channel_name = ctx.channel.name
-        user_name = ctx.author.display_name
-
-        logger.info(f"Команда {self._COMMAND_BONUS} от пользователя {user_name}")
-
-        with db_ro_session() as db:
-            active_stream = self._stream_service(db).get_active_stream(channel_name)
-
-        if not active_stream:
-            result = f"🚫 @{user_name}, бонус доступен только во время стрима!"
-        else:
-            with SessionLocal.begin() as db:
-                user_equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name.lower())
-                bonus_result = self._economy_service(db).claim_daily_bonus(active_stream.id, channel_name, user_name.lower(),
-                                                                           user_equipment)
-                if bonus_result.success:
-                    if bonus_result.bonus_message:
-                        result = f"🎁 @{user_name} получил бонус {bonus_result.bonus_amount} монет! Баланс: {bonus_result.user_balance.balance} монет. {bonus_result.bonus_message}"
-                    else:
-                        result = f"🎁 @{user_name} получил бонус {bonus_result.bonus_amount} монет! Баланс: {bonus_result.user_balance.balance} монет"
-                else:
-                    if bonus_result.failure_reason == "already_claimed":
-                        result = f"⏰ @{user_name}, бонус уже получен на этом стриме!"
-                    elif bonus_result.failure_reason == "error":
-                        result = f"❌ @{user_name}, произошла ошибка при получении бонуса. Попробуй позже!"
-                    else:
-                        result = f"❌ @{user_name}, бонус недоступен!"
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
-
-        messages = self.split_text(result)
-        for msg in messages:
-            await ctx.send(msg)
-            await asyncio.sleep(0.3)
+        await self._bonus_handler.handle(ctx)
 
     @commands.command(name=_COMMAND_TRANSFER)
     async def transfer_money(self, ctx, recipient: str = None, amount: str = None):

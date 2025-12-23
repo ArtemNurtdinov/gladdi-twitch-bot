@@ -25,10 +25,6 @@ class RollCommandHandler:
         roll_cooldowns: dict,
         cooldown_seconds: int,
         split_text_fn,
-        get_result_emoji_fn,
-        get_profit_display_fn,
-        is_consolation_prize_fn,
-        is_miss_fn,
         timeout_fn,
         command_name: str,
         prefix: str,
@@ -41,14 +37,51 @@ class RollCommandHandler:
         self.roll_cooldowns = roll_cooldowns
         self.cooldown_seconds = cooldown_seconds
         self.split_text = split_text_fn
-        self.get_result_emoji = get_result_emoji_fn
-        self.get_profit_display = get_profit_display_fn
-        self.is_consolation_prize = is_consolation_prize_fn
-        self.is_miss = is_miss_fn
         self.timeout_user = timeout_fn
         self.command_name = command_name
         self.prefix = prefix
         self.nick_provider = nick_provider
+
+    @staticmethod
+    def is_miss(result_type: str) -> bool:
+        return result_type == "miss"
+
+    @staticmethod
+    def is_consolation_prize(result_type: str, payout: int) -> bool:
+        return result_type == "miss" and payout > 0
+
+    @staticmethod
+    def is_jackpot(result_type: str) -> bool:
+        return result_type == "jackpot"
+
+    @staticmethod
+    def is_partial_match(result_type: str) -> bool:
+        return result_type == "partial"
+
+    def get_result_emoji(self, result_type: str, payout: int) -> str:
+        if self.is_consolation_prize(result_type, payout):
+            return "🎁"
+        if self.is_jackpot(result_type):
+            return "🎰"
+        if self.is_partial_match(result_type):
+            return "✨"
+        if self.is_miss(result_type):
+            return "💥"
+        return "💰"
+
+    def get_profit_display(self, result_type: str, payout: int, profit: int) -> str:
+        if self.is_consolation_prize(result_type, payout):
+            net_result = profit
+            if net_result > 0:
+                return f"+{net_result}"
+            if net_result < 0:
+                return f"{net_result}"
+            return "±0"
+        if profit > 0:
+            return f"+{profit}"
+        if profit < 0:
+            return f"{profit}"
+        return "±0"
 
     async def handle(self, ctx, amount: str | None = None):
         channel_name = ctx.channel.name
