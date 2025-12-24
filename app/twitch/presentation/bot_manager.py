@@ -8,6 +8,7 @@ from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.presentation.auth import TwitchAuth
 from app.twitch.bootstrap.deps import build_bot_dependencies
 from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
+from app.twitch.presentation.bot_factory import BotFactory
 from app.twitch.presentation.twitch_bot import Bot as TwitchBot
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ class BotManager:
 
             twitch_api_service = TwitchApiService(auth)
             deps = build_bot_dependencies(auth, twitch_api_service)
-            self._bot = TwitchBot(deps, DEFAULT_SETTINGS)
+            self._bot = BotFactory(deps, DEFAULT_SETTINGS).create()
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None
