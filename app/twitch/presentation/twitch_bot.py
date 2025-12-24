@@ -580,10 +580,8 @@ class Bot(commands.Bot):
             choice=choice
         )
 
-    async def _timeout_user(self, ctx, username: str, duration_seconds: int, reason: str):
+    async def _timeout_user(self, channel_name: str, username: str, duration_seconds: int, reason: str):
         try:
-            channel_name = ctx.channel.name
-
             user = await self.twitch_api_service.get_user_by_login(username)
             user_id = None if user is None else user.id
 

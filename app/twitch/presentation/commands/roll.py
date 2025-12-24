@@ -30,7 +30,7 @@ class RollCommandHandler:
         betting_service_factory: Callable[[Session], BettingService],
         equipment_service_factory: Callable[[Session], EquipmentService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        timeout_fn: Callable[[Any, str, int, str], Awaitable[None]],
+        timeout_fn: Callable[[str, str, int, str], Awaitable[None]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
@@ -296,7 +296,7 @@ class RollCommandHandler:
 
                 await self.post_message_fn(reason, ctx)
 
-                await self.timeout_user(ctx, display_name, final_timeout, reason)
+                await self.timeout_user(channel_name, display_name, final_timeout, reason)
         elif self.is_miss(result_type):
             if self.is_consolation_prize(result_type, payout):
                 no_timeout_message = f"🎁 @{display_name}, повезло! Редкий эмодзи спас от таймаута! Консольный приз: {payout} монет"

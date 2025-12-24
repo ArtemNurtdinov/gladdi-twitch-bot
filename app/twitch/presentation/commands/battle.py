@@ -25,7 +25,7 @@ class BattleCommandHandler:
         ai_conversation_use_case_factory: Callable[[Session], ConversationService],
         battle_use_case_factory: Callable[[Session], BattleUseCase],
         equipment_service_factory: Callable[[Session], EquipmentService],
-        timeout_fn: Callable[[Any, str, int, str], Awaitable[None]],
+        timeout_fn: Callable[[str, str, int, str], Awaitable[None]],
         generate_response_fn: Callable[[str, str], str],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
@@ -192,4 +192,4 @@ class BattleCommandHandler:
             if protection_message:
                 reason += f" {protection_message}"
 
-            await self.timeout_user(ctx, loser, final_timeout, reason)
+            await self.timeout_user(channel_name, loser, final_timeout, reason)
