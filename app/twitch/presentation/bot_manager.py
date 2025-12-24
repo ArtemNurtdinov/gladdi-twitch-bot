@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
+from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings, DEFAULT_SETTINGS
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.presentation.auth import TwitchAuth
 from app.twitch.bootstrap.deps import build_bot_dependencies
@@ -69,7 +70,7 @@ class BotManager:
 
             twitch_api_service = TwitchApiService(auth)
             deps = build_bot_dependencies(auth, twitch_api_service)
-            self._bot = TwitchBot(deps)
+            self._bot = TwitchBot(deps, DEFAULT_SETTINGS)
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None

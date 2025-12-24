@@ -28,11 +28,10 @@ from app.twitch.presentation.background.stream_status_job import StreamStatusJob
 from app.twitch.presentation.background.chat_summarizer_job import ChatSummarizerJob
 from app.twitch.presentation.background.minigame_tick_job import MinigameTickJob
 from app.twitch.presentation.background.viewer_time_job import ViewerTimeJob
-from core.config import config
+from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings, DEFAULT_SETTINGS
 from core.db import db_ro_session, SessionLocal
 
 logger = logging.getLogger(__name__)
-
 
 # noinspection PyDeprecation
 class Bot(commands.Bot):
@@ -55,34 +54,12 @@ class Bot(commands.Bot):
         "\nНе обсуждай политические темы, интим и криминал."
         "\nОтвечай кратко."
     )
-    _COMMAND_ROLL = "ставка"
-    _COMMAND_FOLLOWAGE = "followage"
-    _COMMAND_GLADDI = "gladdi"
-    _COMMAND_FIGHT = "битва"
-    _COMMAND_BALANCE = "баланс"
-    _COMMAND_BONUS = "бонус"
-    _COMMAND_TRANSFER = "перевод"
-    _COMMAND_SHOP = "магазин"
-    _COMMAND_BUY = "купить"
-    _COMMAND_EQUIPMENT = "экипировка"
-    _COMMAND_TOP = "топ"
-    _COMMAND_BOTTOM = "бомжи"
-    _COMMAND_STATS = "стата"
-    _COMMAND_GUESS = "угадай"
-    _COMMAND_GUESS_LETTER = "буква"
-    _COMMAND_GUESS_WORD = "слово"
-    _COMMAND_RPS = "кнб"
-    _COMMAND_HELP = "команды"
-    _GROUP_ID = config.telegram.group_id
-    _CHECK_VIEWERS_INTERVAL_SECONDS = 10
-    _CHECK_STREAM_STATUS_INTERVAL_SECONDS = 60
-    _CHANNEL_NAME = "artemnefrit"
-
-    def __init__(self, deps: BotDependencies):
-        # базовая конфигурация
+    def __init__(self, deps: BotDependencies, settings: TwitchBotSettings):
+        self._settings = settings
         self._deps = deps
-        self._prefix = '!'
-        self.initial_channels = [self._CHANNEL_NAME]
+
+        self._prefix = self._settings.prefix
+        self.initial_channels = [self._settings.channel_name]
         super().__init__(token=deps.twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
 
         self._init_service_factories(deps)
@@ -123,10 +100,10 @@ class Bot(commands.Bot):
             llm_client=self._llm_client,
             system_prompt=self.SYSTEM_PROMPT_FOR_GROUP,
             prefix=self._prefix,
-            command_guess_letter=self._COMMAND_GUESS_LETTER,
-            command_guess_word=self._COMMAND_GUESS_WORD,
-            command_guess=self._COMMAND_GUESS,
-            command_rps=self._COMMAND_RPS,
+            command_guess_letter=self._settings.command_guess_letter,
+            command_guess_word=self._settings.command_guess_word,
+            command_guess=self._settings.command_guess,
+            command_rps=self._settings.command_rps,
             bot_nick_provider=lambda: self.nick,
             send_channel_message=self._send_channel_message
         )
@@ -136,7 +113,7 @@ class Bot(commands.Bot):
             runner=self._background_runner,
             jobs=[
                 PostJokeJob(
-                    channel_name=self._CHANNEL_NAME,
+                    channel_name=self._settings.channel_name,
                     joke_service=self.joke_service,
                     user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
@@ -148,7 +125,7 @@ class Bot(commands.Bot):
                 ),
                 TokenCheckerJob(twitch_auth=self.twitch_auth),
                 StreamStatusJob(
-                    channel_name=self._CHANNEL_NAME,
+                    channel_name=self._settings.channel_name,
                     user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
                     stream_service_factory=self._deps.stream_service,
@@ -160,13 +137,13 @@ class Bot(commands.Bot):
                     ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
                     minigame_service=self.minigame_service,
                     telegram_bot=self.telegram_bot,
-                    _telegram_group_id=self._GROUP_ID,
+                    _telegram_group_id=self._settings.group_id,
                     generate_response_in_chat=self.generate_response_in_chat,
                     state=self._chat_summary_state,
-                    stream_status_interval_seconds=self._CHECK_STREAM_STATUS_INTERVAL_SECONDS,
+                    stream_status_interval_seconds=self._settings.check_stream_status_interval_seconds,
                 ),
                 ChatSummarizerJob(
-                    channel_name=self._CHANNEL_NAME,
+                    channel_name=self._settings.channel_name,
                     twitch_api_service=self.twitch_api_service,
                     stream_service_factory=self._deps.stream_service,
                     chat_use_case_factory=self._deps.chat_use_case,
@@ -174,18 +151,18 @@ class Bot(commands.Bot):
                     state=self._chat_summary_state,
                 ),
                 MinigameTickJob(
-                    channel_name=self._CHANNEL_NAME,
+                    channel_name=self._settings.channel_name,
                     minigame_orchestrator=self.minigame_orchestrator,
                 ),
                 ViewerTimeJob(
-                    channel_name=self._CHANNEL_NAME,
+                    channel_name=self._settings.channel_name,
                     viewer_service_factory=self._deps.viewer_service,
                     stream_service_factory=self._deps.stream_service,
                     economy_service_factory=self._deps.economy_service,
                     user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
                     bot_nick_provider=lambda: self.nick,
-                    check_interval_seconds=self._CHECK_VIEWERS_INTERVAL_SECONDS,
+                    check_interval_seconds=self._settings.check_viewers_interval_seconds,
                 ),
             ],
         )
@@ -194,7 +171,7 @@ class Bot(commands.Bot):
         self._followage_handler = FollowageCommandHandler(
             chat_use_case_factory=self._deps.chat_use_case,
             ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
-            command_name=self._COMMAND_FOLLOWAGE,
+            command_name=self._settings.command_followage,
             bot_nick_provider=lambda: self.nick,
             generate_response_fn=self.generate_response_in_chat,
             twitch_api_service=self.twitch_api_service,
@@ -202,7 +179,7 @@ class Bot(commands.Bot):
         )
         self._ask_handler = AskCommandHandler(
             command_prefix=self._prefix,
-            command_name=self._COMMAND_GLADDI,
+            command_name=self._settings.command_gladdi,
             intent_use_case=self._intent_use_case,
             prompt_service=self._prompt_service,
             ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
@@ -213,7 +190,7 @@ class Bot(commands.Bot):
         )
         self._battle_handler = BattleCommandHandler(
             command_prefix=self._prefix,
-            command_name=self._COMMAND_FIGHT,
+            command_name=self._settings.command_fight,
             economy_service_factory=self._deps.economy_service,
             chat_use_case_factory=self._deps.chat_use_case,
             ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
@@ -226,7 +203,7 @@ class Bot(commands.Bot):
         )
         self._roll_handler = RollCommandHandler(
             command_prefix=self._prefix,
-            command_name=self._COMMAND_ROLL,
+            command_name=self._settings.command_roll,
             economy_service_factory=self._deps.economy_service,
             betting_service_factory=self._deps.betting_service,
             equipment_service_factory=self._deps.equipment_service,
@@ -243,7 +220,7 @@ class Bot(commands.Bot):
         )
         self._bonus_handler = BonusCommandHandler(
             command_prefix=self._prefix,
-            command_name=self._COMMAND_BONUS,
+            command_name=self._settings.command_bonus,
             stream_service_factory=self._deps.stream_service,
             equipment_service_factory=self._deps.equipment_service,
             economy_service_factory=self._deps.economy_service,
@@ -255,14 +232,14 @@ class Bot(commands.Bot):
             command_prefix=self._prefix,
             economy_service_factory=self._deps.economy_service,
             chat_use_case_factory=self._deps.chat_use_case,
-            command_name=self._COMMAND_TRANSFER,
+            command_name=self._settings.command_transfer,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._shop_handler = ShopCommandHandler(
             command_prefix=self._prefix,
-            command_shop_name=self._COMMAND_SHOP,
-            command_buy_name=self._COMMAND_BUY,
+            command_shop_name=self._settings.command_shop,
+            command_buy_name=self._settings.command_buy,
             economy_service_factory=self._deps.economy_service,
             equipment_service_factory=self._deps.equipment_service,
             chat_use_case_factory=self._deps.chat_use_case,
@@ -271,8 +248,8 @@ class Bot(commands.Bot):
         )
         self._equipment_handler = EquipmentCommandHandler(
             command_prefix=self._prefix,
-            command_name=self._COMMAND_EQUIPMENT,
-            command_shop=self._COMMAND_SHOP,
+            command_name=self._settings.command_equipment,
+            command_shop=self._settings.command_shop,
             equipment_service_factory=self._deps.equipment_service,
             chat_use_case_factory=self._deps.chat_use_case,
             bot_nick_provider=lambda: self.nick,
@@ -281,8 +258,8 @@ class Bot(commands.Bot):
         self._top_bottom_handler = TopBottomCommandHandler(
             economy_service_factory=self._deps.economy_service,
             chat_use_case_factory=self._deps.chat_use_case,
-            command_top=self._COMMAND_TOP,
-            command_bottom=self._COMMAND_BOTTOM,
+            command_top=self._settings.command_top,
+            command_bottom=self._settings.command_bottom,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
@@ -291,24 +268,24 @@ class Bot(commands.Bot):
             betting_service_factory=self._deps.betting_service,
             battle_use_case_factory=self._deps.battle_use_case,
             chat_use_case_factory=self._deps.chat_use_case,
-            command_name=self._COMMAND_STATS,
+            command_name=self._settings.command_stats,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         commands = {
-            self._COMMAND_BALANCE,
-            self._COMMAND_BONUS,
-            f"{self._COMMAND_ROLL} [сумма]",
-            f"{self._COMMAND_TRANSFER} @ник сумма",
-            self._COMMAND_SHOP,
-            f"{self._COMMAND_BUY} название",
-            self._COMMAND_EQUIPMENT,
-            self._COMMAND_TOP,
-            self._COMMAND_BOTTOM,
-            self._COMMAND_STATS,
-            self._COMMAND_FIGHT,
-            f"{self._COMMAND_GLADDI} текст",
-            self._COMMAND_FOLLOWAGE,
+            self._settings.command_balance,
+            self._settings.command_bonus,
+            f"{self._settings.command_roll} [сумма]",
+            f"{self._settings.command_transfer} @ник сумма",
+            self._settings.command_shop,
+            f"{self._settings.command_buy} название",
+            self._settings.command_equipment,
+            self._settings.command_top,
+            self._settings.command_bottom,
+            self._settings.command_stats,
+            self._settings.command_fight,
+            f"{self._settings.command_gladdi} текст",
+            self._settings.command_followage,
         }
         self._help_handler = HelpCommandHandler(
             command_prefix=self._prefix,
@@ -319,9 +296,9 @@ class Bot(commands.Bot):
         )
         self._guess_handler = GuessCommandHandler(
             command_prefix=self._prefix,
-            command_guess=self._COMMAND_GUESS,
-            command_guess_letter=self._COMMAND_GUESS_LETTER,
-            command_guess_word=self._COMMAND_GUESS_WORD,
+            command_guess=self._settings.command_guess,
+            command_guess_letter=self._settings.command_guess_letter,
+            command_guess_word=self._settings.command_guess_word,
             minigame_service=self.minigame_service,
             economy_service_factory=self._deps.economy_service,
             chat_use_case_factory=self._deps.chat_use_case,
@@ -407,7 +384,7 @@ class Bot(commands.Bot):
                 self._deps.chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
             logger.info(f"Отправлен ответ на сообщение от {nickname}")
 
-    @commands.command(name=_COMMAND_FOLLOWAGE)
+    @commands.command(name=DEFAULT_SETTINGS.command_followage)
     async def followage(self, ctx):
         await self._followage_handler.handle(
             channel_name=ctx.channel.name,
@@ -415,7 +392,7 @@ class Bot(commands.Bot):
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_GLADDI)
+    @commands.command(name=DEFAULT_SETTINGS.command_gladdi)
     async def ask(self, ctx):
         await self._ask_handler.handle(
             channel_name=ctx.channel.name,
@@ -424,7 +401,7 @@ class Bot(commands.Bot):
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_FIGHT)
+    @commands.command(name=DEFAULT_SETTINGS.command_fight)
     async def battle(self, ctx):
         await self._battle_handler.handle(
             channel_name=ctx.channel.name,
@@ -433,7 +410,7 @@ class Bot(commands.Bot):
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_ROLL)
+    @commands.command(name=DEFAULT_SETTINGS.command_roll)
     async def roll(self, ctx, amount: str = None):
         await self._roll_handler.handle(
             channel_name=ctx.channel.name,
@@ -442,7 +419,7 @@ class Bot(commands.Bot):
             amount=amount
         )
 
-    @commands.command(name=_COMMAND_BALANCE)
+    @commands.command(name=DEFAULT_SETTINGS.command_balance)
     async def balance(self, ctx):
         await self._balance_handler.handle(
             channel_name=ctx.channel.name,
@@ -450,7 +427,7 @@ class Bot(commands.Bot):
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_BONUS)
+    @commands.command(name=DEFAULT_SETTINGS.command_bonus)
     async def daily_bonus(self, ctx):
         await self._bonus_handler.handle(
             channel_name=ctx.channel.name,
@@ -458,7 +435,7 @@ class Bot(commands.Bot):
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_TRANSFER)
+    @commands.command(name=DEFAULT_SETTINGS.command_transfer)
     async def transfer_money(self, ctx, recipient: str = None, amount: str = None):
         await self._transfer_handler.handle(
             channel_name=ctx.channel.name,
@@ -468,14 +445,14 @@ class Bot(commands.Bot):
             amount=amount
         )
 
-    @commands.command(name=_COMMAND_SHOP)
+    @commands.command(name=DEFAULT_SETTINGS.command_shop)
     async def shop(self, ctx):
         await self._shop_handler.handle_shop(
             channel_name=ctx.channel.name,
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_BUY)
+    @commands.command(name=DEFAULT_SETTINGS.command_buy)
     async def buy_item(self, ctx, *, item_name: str = None):
         await self._shop_handler.handle_buy(
             channel_name=ctx.channel.name,
@@ -484,7 +461,7 @@ class Bot(commands.Bot):
             item_name=item_name
         )
 
-    @commands.command(name=_COMMAND_EQUIPMENT)
+    @commands.command(name=DEFAULT_SETTINGS.command_equipment)
     async def equipment(self, ctx):
         await self._equipment_handler.handle(
             channel_name=ctx.channel.name,
@@ -492,28 +469,28 @@ class Bot(commands.Bot):
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_TOP)
+    @commands.command(name=DEFAULT_SETTINGS.command_top)
     async def top_users(self, ctx):
         await self._top_bottom_handler.handle_top(
             channel_name=ctx.channel.name,
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_BOTTOM)
+    @commands.command(name=DEFAULT_SETTINGS.command_bottom)
     async def bottom_users(self, ctx):
         await self._top_bottom_handler.handle_bottom(
             channel_name=ctx.channel.name,
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_HELP)
+    @commands.command(name=DEFAULT_SETTINGS.command_help)
     async def list_commands(self, ctx):
         await self._help_handler.handle(
             channel_name=ctx.channel.name,
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_STATS)
+    @commands.command(name=DEFAULT_SETTINGS.command_stats)
     async def user_stats(self, ctx):
         await self._stats_handler.handle(
             channel_name=ctx.channel.name,
@@ -521,7 +498,7 @@ class Bot(commands.Bot):
             ctx=ctx
         )
 
-    @commands.command(name=_COMMAND_GUESS)
+    @commands.command(name=DEFAULT_SETTINGS.command_guess)
     async def guess_number(self, ctx, number: str = None):
         await self._guess_handler.handle_guess_number(
             channel_name=ctx.channel.name,
@@ -530,7 +507,7 @@ class Bot(commands.Bot):
             number=number
         )
 
-    @commands.command(name=_COMMAND_GUESS_LETTER)
+    @commands.command(name=DEFAULT_SETTINGS.command_guess_letter)
     async def guess_letter(self, ctx, letter: str = None):
         await self._guess_handler.handle_guess_letter(
             channel_name=ctx.channel.name,
@@ -539,7 +516,7 @@ class Bot(commands.Bot):
             letter=letter
         )
 
-    @commands.command(name=_COMMAND_GUESS_WORD)
+    @commands.command(name=DEFAULT_SETTINGS.command_guess_word)
     async def guess_word(self, ctx, *, word: str = None):
         await self._guess_handler.handle_guess_word(
             channel_name=ctx.channel.name,
@@ -548,7 +525,7 @@ class Bot(commands.Bot):
             word=word
         )
 
-    @commands.command(name=_COMMAND_RPS)
+    @commands.command(name=DEFAULT_SETTINGS.command_rps)
     async def join_rps(self, ctx, choice: str = None):
         await self._rps_handler.handle(
             channel_name=ctx.channel.name,
