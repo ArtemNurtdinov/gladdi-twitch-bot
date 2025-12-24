@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings, DEFAULT_SETTINGS
+from app.twitch.bootstrap.twitch_bot_settings import DEFAULT_SETTINGS
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.presentation.auth import TwitchAuth
 from app.twitch.bootstrap.deps import build_bot_dependencies
@@ -23,6 +23,7 @@ class BotManager:
         self._started_at: Optional[datetime] = None
         self._last_error: Optional[str] = None
         self._lock = asyncio.Lock()
+        self._twitch_api_service: Optional[TwitchApiService] = None
 
     def _ensure_credentials(self, auth: TwitchAuth) -> None:
         missing = []
@@ -43,6 +44,7 @@ class BotManager:
         self._task = None
         self._status = BotStatusEnum.STOPPED
         self._started_at = None
+        self._twitch_api_service = None
 
     def _on_bot_done(self, task: asyncio.Task) -> None:
         try:
@@ -70,6 +72,7 @@ class BotManager:
             self._ensure_credentials(auth)
 
             twitch_api_service = TwitchApiService(auth)
+            self._twitch_api_service = twitch_api_service
             deps = build_bot_dependencies(auth, twitch_api_service)
             self._bot = BotFactory(deps, DEFAULT_SETTINGS).create()
             self._status = BotStatusEnum.RUNNING
@@ -85,6 +88,7 @@ class BotManager:
         async with self._lock:
             task = self._task
             bot = self._bot
+            twitch_api_service = self._twitch_api_service
 
             if not isinstance(task, asyncio.Task):
                 logger.info("Попытка остановки, но бот не запущен")
@@ -92,6 +96,8 @@ class BotManager:
             try:
                 if bot:
                     await bot.close()
+                if twitch_api_service:
+                    await twitch_api_service.aclose()
                 if task and not task.done():
                     task.cancel()
                     try:
