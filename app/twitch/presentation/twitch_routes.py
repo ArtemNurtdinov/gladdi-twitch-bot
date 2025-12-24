@@ -1,6 +1,6 @@
-import requests
 import logging
 from fastapi import APIRouter, HTTPException
+import httpx
 
 from app.twitch.presentation.bot_manager import BotManager
 from core.config import config
@@ -50,7 +50,8 @@ async def oauth_callback(code: str | None = None, state: str | None = None) -> B
             "grant_type": "authorization_code",
             "redirect_uri": config.twitch.redirect_url,
         }
-        response = requests.post(TOKEN_URL, data=data, timeout=10)
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(TOKEN_URL, data=data)
         if response.status_code != 200:
             logging.error("Не удалось получить токены: %s", response.text)
             raise ValueError(f"Не удалось получить токены: {response.text}")

@@ -1,6 +1,6 @@
 from logging import Logger
 
-import requests
+import httpx
 
 from core.config import config
 
@@ -18,7 +18,7 @@ class TwitchAuth:
         self.client_secret = config.twitch.client_secret
         self.logger = logger
 
-    def update_access_token(self):
+    async def update_access_token(self):
         self.logger.info("updating access token")
         url = 'https://id.twitch.tv/oauth2/token'
 
@@ -29,7 +29,8 @@ class TwitchAuth:
             'refresh_token': self.refresh_token
         }
 
-        response = requests.post(url, data=data)
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(url, data=data)
         token_data = response.json()
 
         if 'access_token' in token_data:
@@ -38,13 +39,14 @@ class TwitchAuth:
         else:
             raise Exception('Ошибка обновления токена:', token_data)
 
-    def check_token_is_valid(self) -> bool:
+    async def check_token_is_valid(self) -> bool:
         if not self.access_token:
             raise ValueError("Access token пуст")
 
         url = 'https://id.twitch.tv/oauth2/validate'
         headers = {'Authorization': f'OAuth {self.access_token}'}
-        response = requests.get(url, headers=headers)
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(url, headers=headers)
 
         if response.status_code == 200:
             token_info = response.json()
