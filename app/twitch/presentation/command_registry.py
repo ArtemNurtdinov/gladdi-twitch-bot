@@ -6,6 +6,7 @@ from app.twitch.application.battle.handle_battle_use_case import HandleBattleUse
 from app.twitch.application.bonus.handle_bonus_use_case import HandleBonusUseCase
 from app.twitch.application.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 from app.twitch.application.follow.handle_followage_use_case import HandleFollowageUseCase
+from app.twitch.application.guess.handle_guess_use_case import HandleGuessUseCase
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.presentation.commands.ask import AskCommandHandler
@@ -188,9 +189,12 @@ class CommandRegistry:
             command_guess=settings.command_guess,
             command_guess_letter=settings.command_guess_letter,
             command_guess_word=settings.command_guess_word,
-            minigame_service=deps.minigame_service,
-            economy_service_factory=deps.economy_service,
-            chat_use_case_factory=deps.chat_use_case,
+            handle_guess_use_case=HandleGuessUseCase(
+                minigame_service=deps.minigame_service,
+                economy_service_factory=deps.economy_service,
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )
