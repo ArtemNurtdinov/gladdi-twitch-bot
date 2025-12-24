@@ -1,24 +1,23 @@
 from datetime import datetime
-from typing import Callable, Any, Awaitable
+from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
-from core.db import SessionLocal
+from app.twitch.application.balance.dto import BalanceDTO
+from app.twitch.application.balance.handle_balance_use_case import HandleBalanceUseCase
 
 
 class BalanceCommandHandler:
 
     def __init__(
         self,
-        economy_service_factory: Callable[[Session], EconomyService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        handle_balance_use_case: HandleBalanceUseCase,
+        db_session_provider: Callable[[], ContextManager[Session]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
-        self._economy_service = economy_service_factory
-        self._chat_use_case = chat_use_case_factory
+        self._handle_balance_use_case = handle_balance_use_case
+        self._db_session_provider = db_session_provider
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
@@ -26,11 +25,13 @@ class BalanceCommandHandler:
         user_name = display_name.lower()
         bot_nick = self.bot_nick_provider().lower()
 
-        with SessionLocal.begin() as db:
-            user_balance = self._economy_service(db).get_user_balance(channel_name, user_name)
+        dto = BalanceDTO(
+            channel_name=channel_name,
+            display_name=display_name,
+            user_name=user_name,
+            bot_nick=bot_nick,
+            occurred_at=datetime.utcnow(),
+        )
 
-        result = f"💰 @{display_name}, твой баланс: {user_balance.balance} монет"
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
+        result = await self._handle_balance_use_case.handle(self._db_session_provider, dto)
         await self.post_message_fn(result, ctx)

@@ -1,10 +1,12 @@
 from contextlib import contextmanager
+from typing import ContextManager, Generator
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from core.config import config
+from sqlalchemy.orm import Session
 
 Base = declarative_base()
 
@@ -45,7 +47,7 @@ def get_db_ro():
 
 
 @contextmanager
-def db_ro_session():
+def db_ro_session() -> ContextManager[Session]:
     db = SessionLocal()
     try:
         yield db

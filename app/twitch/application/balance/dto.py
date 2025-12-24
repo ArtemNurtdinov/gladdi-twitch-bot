@@ -4,5 +4,5 @@ from app.twitch.application.dto import ChatContextDTO
 
 
 @dataclass(frozen=True)
-class FollowageDTO(ChatContextDTO):
-    user_id: str
+class BalanceDTO(ChatContextDTO):
+    pass

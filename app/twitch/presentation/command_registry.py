@@ -1,5 +1,8 @@
 from typing import Callable, Awaitable
 
+from app.twitch.application.ask.handle_ask_use_case import HandleAskUseCase
+from app.twitch.application.balance.handle_balance_use_case import HandleBalanceUseCase
+from app.twitch.application.battle.handle_battle_use_case import HandleBattleUseCase
 from app.twitch.application.follow.handle_followage_use_case import HandleFollowageUseCase
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
@@ -17,7 +20,7 @@ from app.twitch.presentation.commands.shop import ShopCommandHandler
 from app.twitch.presentation.commands.stats import StatsCommandHandler
 from app.twitch.presentation.commands.top_bottom import TopBottomCommandHandler
 from app.twitch.presentation.commands.transfer import TransferCommandHandler
-from core.db import SessionLocal
+from core.db import SessionLocal, db_ro_session
 
 
 class CommandRegistry:
@@ -46,24 +49,31 @@ class CommandRegistry:
         self.ask = AskCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_gladdi,
-            intent_use_case=deps.intent_use_case,
-            prompt_service=deps.prompt_service,
-            ai_conversation_use_case_factory=deps.ai_conversation_use_case,
-            chat_use_case_factory=deps.chat_use_case,
-            generate_response_fn=generate_response_fn,
+            handle_ask_use_case=HandleAskUseCase(
+                intent_use_case=deps.intent_use_case,
+                prompt_service=deps.prompt_service,
+                ai_conversation_use_case_factory=deps.ai_conversation_use_case,
+                chat_use_case_factory=deps.chat_use_case,
+                generate_response_fn=generate_response_fn,
+            ),
+            db_session_provider=SessionLocal.begin,
             post_message_fn=post_message_fn,
             bot_nick_provider=bot_nick_provider,
         )
         self.battle = BattleCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_fight,
-            economy_service_factory=deps.economy_service,
-            chat_use_case_factory=deps.chat_use_case,
-            ai_conversation_use_case_factory=deps.ai_conversation_use_case,
-            battle_use_case_factory=deps.battle_use_case,
-            equipment_service_factory=deps.equipment_service,
+            handle_battle_use_case=HandleBattleUseCase(
+                economy_service_factory=deps.economy_service,
+                chat_use_case_factory=deps.chat_use_case,
+                ai_conversation_use_case_factory=deps.ai_conversation_use_case,
+                battle_use_case_factory=deps.battle_use_case,
+                equipment_service_factory=deps.equipment_service,
+                generate_response_fn=generate_response_fn,
+            ),
+            db_session_provider=SessionLocal.begin,
+            db_readonly_session_provider=lambda: db_ro_session(),
             timeout_fn=timeout_fn,
-            generate_response_fn=generate_response_fn,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )
@@ -79,8 +89,11 @@ class CommandRegistry:
             post_message_fn=post_message_fn,
         )
         self.balance = BalanceCommandHandler(
-            economy_service_factory=deps.economy_service,
-            chat_use_case_factory=deps.chat_use_case,
+            handle_balance_use_case=HandleBalanceUseCase(
+                economy_service_factory=deps.economy_service,
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )

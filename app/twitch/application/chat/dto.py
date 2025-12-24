@@ -1,12 +1,8 @@
 from dataclasses import dataclass
-from datetime import datetime
+
+from app.twitch.application.dto import ChatContextDTO
 
 
 @dataclass(frozen=True)
-class ChatMessageDTO:
-    channel_name: str
-    display_name: str
-    user_name: str
+class ChatMessageDTO(ChatContextDTO):
     message: str
-    bot_nick: str
-    occurred_at: datetime
