@@ -2,6 +2,7 @@ import asyncio
 import logging
 from typing import Any
 
+from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 class MinigameTickJob:
     name = "check_minigames"
 
-    def __init__(self, channel_name: str, minigame_orchestrator: Any, default_delay: int = 60):
+    def __init__(self, channel_name: str, minigame_orchestrator: MinigameOrchestrator, default_delay: int = 60):
         self._channel_name = channel_name
         self._minigame_orchestrator = minigame_orchestrator
         self._default_delay = default_delay
