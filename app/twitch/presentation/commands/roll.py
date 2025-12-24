@@ -19,6 +19,8 @@ from core.db import SessionLocal, db_ro_session
 
 
 class RollCommandHandler:
+    DEFAULT_COOLDOWN_SECONDS = 60
+    CLEANUP_THRESHOLD_SECONDS = 300
 
     def __init__(
         self,
@@ -28,8 +30,6 @@ class RollCommandHandler:
         betting_service_factory: Callable[[Session], BettingService],
         equipment_service_factory: Callable[[Session], EquipmentService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        roll_cooldowns: dict,
-        cooldown_seconds: int,
         timeout_fn: Callable[[Any, str, int, str], Awaitable[None]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
@@ -40,11 +40,23 @@ class RollCommandHandler:
         self._betting_service = betting_service_factory
         self._equipment_service = equipment_service_factory
         self._chat_use_case = chat_use_case_factory
-        self.roll_cooldowns = roll_cooldowns
-        self.cooldown_seconds = cooldown_seconds
+        self.roll_cooldowns: dict[str, datetime] = {}
         self.timeout_user = timeout_fn
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
+
+    def _cleanup_old_cooldowns(self):
+        current_time = datetime.now()
+        cleanup_threshold = self.CLEANUP_THRESHOLD_SECONDS
+
+        old_nicknames = [
+            nickname
+            for nickname, last_time in self.roll_cooldowns.items()
+            if (current_time - last_time).total_seconds() > cleanup_threshold
+        ]
+
+        for nickname in old_nicknames:
+            del self.roll_cooldowns[nickname]
 
     @staticmethod
     def is_miss(result_type: str) -> bool:
@@ -88,6 +100,8 @@ class RollCommandHandler:
         return "±0"
 
     async def handle(self, ctx, channel_name: str, display_name: str, amount: str | None = None):
+        self._cleanup_old_cooldowns()
+
         user_name = display_name.lower()
         bet_amount = BettingService.BET_COST
         if amount:
@@ -108,7 +122,10 @@ class RollCommandHandler:
         current_time = datetime.now()
         with db_ro_session() as db:
             equipment = self._equipment_service(db).get_user_equipment(channel_name, user_name)
-            cooldown_seconds = self._equipment_service(db).calculate_roll_cooldown_seconds(self.cooldown_seconds, equipment)
+            cooldown_seconds = self._equipment_service(db).calculate_roll_cooldown_seconds(
+                default_cooldown_seconds=RollCommandHandler.DEFAULT_COOLDOWN_SECONDS,
+                equipment=equipment
+            )
 
         if display_name in self.roll_cooldowns:
             time_since_last = (current_time - self.roll_cooldowns[display_name]).total_seconds()

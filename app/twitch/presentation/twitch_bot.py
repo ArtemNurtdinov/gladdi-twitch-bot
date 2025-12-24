@@ -73,7 +73,6 @@ class Bot(commands.Bot):
     _COMMAND_GUESS_WORD = "слово"
     _COMMAND_RPS = "кнб"
     _COMMAND_HELP = "команды"
-    _ROLL_COOLDOWN_SECONDS = 60
     _GROUP_ID = config.telegram.group_id
     _CHECK_VIEWERS_INTERVAL_SECONDS = 10
     _CHECK_STREAM_STATUS_INTERVAL_SECONDS = 60
@@ -98,7 +97,6 @@ class Bot(commands.Bot):
         self._background_runner = deps.background_runner
         self.telegram_bot = deps.telegram_bot
         self._chat_summary_state = ChatSummaryState()
-        self.roll_cooldowns = {}
         self.battle_waiting_user: str | None = None
 
         self.minigame_orchestrator = MinigameOrchestrator(
@@ -220,8 +218,6 @@ class Bot(commands.Bot):
             betting_service_factory=self._betting_service,
             equipment_service_factory=self._equipment_service,
             chat_use_case_factory=self._chat_use_case,
-            roll_cooldowns=self.roll_cooldowns,
-            cooldown_seconds=self._ROLL_COOLDOWN_SECONDS,
             timeout_fn=self._timeout_user,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
@@ -469,7 +465,6 @@ class Bot(commands.Bot):
             ctx=ctx,
             amount=amount
         )
-        self._cleanup_old_cooldowns()
 
     @commands.command(name=_COMMAND_BALANCE)
     async def balance(self, ctx):
@@ -585,22 +580,6 @@ class Bot(commands.Bot):
             ctx=ctx,
             choice=choice
         )
-
-    def _cleanup_old_cooldowns(self):
-        current_time = datetime.now()
-        cleanup_threshold = 300
-
-        old_nicknames = []
-        for nickname, last_time in self.roll_cooldowns.items():
-            if (current_time - last_time).total_seconds() > cleanup_threshold:
-                old_nicknames.append(nickname)
-
-        for nickname in old_nicknames:
-            del self.roll_cooldowns[nickname]
-
-        total_cleaned = len(old_nicknames)
-        if total_cleaned > 0:
-            logger.debug(f"Очищено {total_cleaned} старых записей кулдаунов: roll={len(old_nicknames)}")
 
     async def _timeout_user(self, ctx, username: str, duration_seconds: int, reason: str):
         try:
