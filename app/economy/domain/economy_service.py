@@ -268,7 +268,7 @@ class EconomyService:
             ),
         )
 
-        return DailyBonusResult(success=True, user_balance=saved, bonus_amount=bonus_amount, bonus_message=bonus_message)
+        return DailyBonusResult(success=True, bonus_amount=bonus_amount, bonus_message=bonus_message)
 
     def get_top_users(self, channel_name: str, limit: int) -> list[BalanceBrief]:
         return self._repo.get_top_users(channel_name, limit)

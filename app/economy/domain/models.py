@@ -58,7 +58,6 @@ class BalanceBrief:
 @dataclass
 class DailyBonusResult:
     success: bool
-    user_balance: Optional[UserBalanceInfo] = None
     bonus_amount: int = 0
     bonus_message: str = ""
     failure_reason: str = ""
