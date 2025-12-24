@@ -9,7 +9,7 @@ from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings, DEFAULT_SETTINGS
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.chat_summarizer_job import ChatSummaryState
-from app.twitch.presentation.chat_event_service import ChatEventService
+from app.twitch.presentation.chat_event_service import ChatEventHandler
 from core.db import db_ro_session
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class Bot(commands.Bot):
         self.minigame_orchestrator = None
         self._background_tasks: Optional[BotBackgroundTasks] = None
         self._command_registry = None
-        self._chat_event_service: ChatEventService | None = None
+        self._chat_event_handler: ChatEventHandler | None = None
 
         logger.info("Twitch бот инициализирован успешно")
 
@@ -71,8 +71,8 @@ class Bot(commands.Bot):
     def set_command_registry(self, command_registry):
         self._command_registry = command_registry
 
-    def set_chat_event_service(self, chat_event_service: ChatEventService):
-        self._chat_event_service = chat_event_service
+    def set_chat_event_handler(self, chat_event_handler: ChatEventHandler):
+        self._chat_event_handler = chat_event_handler
 
     async def _warmup_broadcaster_id(self):
         try:
@@ -119,11 +119,11 @@ class Bot(commands.Bot):
             await self.handle_commands(message)
             return
 
-        if not self._chat_event_service:
-            logger.error("ChatEventService не сконфигурирован")
+        if not self._chat_event_handler:
+            logger.error("ChatEventHandler не сконфигурирован")
             return
 
-        await self._chat_event_service.handle(
+        await self._chat_event_handler.handle(
             channel_name=message.channel.name,
             display_name=message.author.display_name,
             message=message.content,

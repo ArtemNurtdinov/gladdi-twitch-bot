@@ -1,5 +1,6 @@
 from typing import Callable, Awaitable
 
+from app.twitch.application.follow.handle_followage_use_case import HandleFollowageUseCase
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.presentation.commands.ask import AskCommandHandler
@@ -16,6 +17,7 @@ from app.twitch.presentation.commands.shop import ShopCommandHandler
 from app.twitch.presentation.commands.stats import StatsCommandHandler
 from app.twitch.presentation.commands.top_bottom import TopBottomCommandHandler
 from app.twitch.presentation.commands.transfer import TransferCommandHandler
+from core.db import SessionLocal
 
 
 class CommandRegistry:
@@ -30,12 +32,15 @@ class CommandRegistry:
         timeout_fn: Callable[[str, str, int, str], Awaitable[None]]
     ):
         self.followage = FollowageCommandHandler(
-            chat_use_case_factory=deps.chat_use_case,
-            ai_conversation_use_case_factory=deps.ai_conversation_use_case,
-            command_name=settings.command_followage,
+            handle_followage_use_case=HandleFollowageUseCase(
+                chat_use_case_factory=deps.chat_use_case,
+                ai_conversation_use_case_factory=deps.ai_conversation_use_case,
+                twitch_api_service=deps.twitch_api_service,
+                prompt_service=deps.prompt_service,
+                generate_response_fn=generate_response_fn,
+            ),
+            db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
-            generate_response_fn=generate_response_fn,
-            twitch_api_service=deps.twitch_api_service,
             post_message_fn=post_message_fn,
         )
         self.ask = AskCommandHandler(

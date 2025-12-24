@@ -1,4 +1,5 @@
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
+from app.twitch.application.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
@@ -8,9 +9,10 @@ from app.twitch.presentation.background.post_joke_job import PostJokeJob
 from app.twitch.presentation.background.stream_status_job import StreamStatusJob
 from app.twitch.presentation.background.token_checker_job import TokenCheckerJob
 from app.twitch.presentation.background.viewer_time_job import ViewerTimeJob
-from app.twitch.presentation.chat_event_service import ChatEventService
+from app.twitch.presentation.chat_event_service import ChatEventHandler
 from app.twitch.presentation.command_registry import CommandRegistry
 from app.twitch.presentation.twitch_bot import Bot
+from core.db import SessionLocal
 
 
 class BotFactory:
@@ -24,7 +26,7 @@ class BotFactory:
         bot.set_minigame_orchestrator(self._create_minigame(bot))
         bot.set_background_tasks(self._create_background_tasks(bot))
         bot.set_command_registry(self._create_command_registry(bot))
-        bot.set_chat_event_service(self._create_chat_event_service(bot))
+        bot.set_chat_event_handler(self._create_chat_event_handler(bot))
         bot.restore_stream_context()
         return bot
 
@@ -118,9 +120,18 @@ class BotFactory:
             timeout_fn=bot.timeout_user
         )
 
-    def _create_chat_event_service(self, bot: Bot) -> ChatEventService:
-        return ChatEventService(
-            deps=self._deps,
+    def _create_chat_event_handler(self, bot: Bot) -> ChatEventHandler:
+        handle_chat_message = HandleChatMessageUseCase(
+            chat_use_case_factory=self._deps.chat_use_case,
+            economy_service_factory=self._deps.economy_service,
+            stream_service_factory=self._deps.stream_service,
+            viewer_service_factory=self._deps.viewer_service,
+            intent_use_case=self._deps.intent_use_case,
+            prompt_service=self._deps.prompt_service,
             generate_response_fn=bot.generate_response_in_chat,
+        )
+        return ChatEventHandler(
+            handle_chat_message_use_case=handle_chat_message,
+            db_session_provider=SessionLocal.begin,
             send_channel_message=bot.send_channel_message,
         )
