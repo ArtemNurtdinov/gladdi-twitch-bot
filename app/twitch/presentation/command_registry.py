@@ -4,6 +4,7 @@ from app.twitch.application.ask.handle_ask_use_case import HandleAskUseCase
 from app.twitch.application.balance.handle_balance_use_case import HandleBalanceUseCase
 from app.twitch.application.battle.handle_battle_use_case import HandleBattleUseCase
 from app.twitch.application.bonus.handle_bonus_use_case import HandleBonusUseCase
+from app.twitch.application.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 from app.twitch.application.follow.handle_followage_use_case import HandleFollowageUseCase
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
@@ -134,8 +135,12 @@ class CommandRegistry:
             command_prefix=prefix,
             command_name=settings.command_equipment,
             command_shop=settings.command_shop,
-            equipment_service_factory=deps.equipment_service,
-            chat_use_case_factory=deps.chat_use_case,
+            handle_equipment_use_case=HandleEquipmentUseCase(
+                equipment_service_factory=deps.equipment_service,
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
+            db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )
