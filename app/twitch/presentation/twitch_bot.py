@@ -79,11 +79,25 @@ class Bot(commands.Bot):
     _CHANNEL_NAME = "artemnefrit"
 
     def __init__(self, deps: BotDependencies):
+        # базовая конфигурация
         self._deps = deps
         self._prefix = '!'
         self.initial_channels = [self._CHANNEL_NAME]
         super().__init__(token=deps.twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
 
+        self._init_service_factories(deps)
+
+        self._chat_summary_state = ChatSummaryState()
+        self._battle_waiting_user_ref = {"value": None}
+
+        self.minigame_orchestrator = self._setup_minigame()
+        self._background_tasks = self._setup_background_jobs()
+        self._setup_handlers()
+
+        self._restore_stream_context()
+        logger.info("Twitch бот инициализирован успешно")
+
+    def _init_service_factories(self, deps: BotDependencies):
         self._llm_client = deps.llm_client
         self._intent_detector = deps.intent_detector
         self._intent_use_case = deps.intent_use_case
@@ -96,17 +110,16 @@ class Bot(commands.Bot):
         self.user_cache = deps.user_cache
         self._background_runner = deps.background_runner
         self.telegram_bot = deps.telegram_bot
-        self._chat_summary_state = ChatSummaryState()
-        self.battle_waiting_user: str | None = None
 
-        self.minigame_orchestrator = MinigameOrchestrator(
+    def _setup_minigame(self) -> MinigameOrchestrator:
+        return MinigameOrchestrator(
             minigame_service=self.minigame_service,
-            economy_service_factory=self._economy_service,
-            chat_use_case_factory=self._chat_use_case,
-            stream_service_factory=self._stream_service,
-            get_used_words_use_case_factory=self._get_used_words_use_case,
-            add_used_word_use_case_factory=self._add_used_word_use_case,
-            ai_conversation_use_case_factory=self._ai_conversation_use_case,
+            economy_service_factory=self._deps.economy_service,
+            chat_use_case_factory=self._deps.chat_use_case,
+            stream_service_factory=self._deps.stream_service,
+            get_used_words_use_case_factory=self._deps.get_used_words_use_case,
+            add_used_word_use_case_factory=self._deps.add_used_word_use_case,
+            ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
             llm_client=self._llm_client,
             system_prompt=self.SYSTEM_PROMPT_FOR_GROUP,
             prefix=self._prefix,
@@ -117,7 +130,9 @@ class Bot(commands.Bot):
             bot_nick_provider=lambda: self.nick,
             send_channel_message=self._send_channel_message
         )
-        self._background_tasks = BotBackgroundTasks(
+
+    def _setup_background_jobs(self) -> BotBackgroundTasks:
+        return BotBackgroundTasks(
             runner=self._background_runner,
             jobs=[
                 PostJokeJob(
@@ -126,8 +141,8 @@ class Bot(commands.Bot):
                     user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
                     generate_response_in_chat=self.generate_response_in_chat,
-                    ai_conversation_use_case_factory=self._ai_conversation_use_case,
-                    chat_use_case_factory=self._chat_use_case,
+                    ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
+                    chat_use_case_factory=self._deps.chat_use_case,
                     send_channel_message=self._send_channel_message,
                     bot_nick_provider=lambda: self.nick,
                 ),
@@ -136,13 +151,13 @@ class Bot(commands.Bot):
                     channel_name=self._CHANNEL_NAME,
                     user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
-                    stream_service_factory=self._stream_service,
-                    start_new_stream_use_case_factory=self._start_new_stream_use_case,
-                    viewer_service_factory=self._viewer_service,
-                    battle_use_case_factory=self._battle_use_case,
-                    economy_service_factory=self._economy_service,
-                    chat_use_case_factory=self._chat_use_case,
-                    ai_conversation_use_case_factory=self._ai_conversation_use_case,
+                    stream_service_factory=self._deps.stream_service,
+                    start_new_stream_use_case_factory=self._deps.start_new_stream_use_case,
+                    viewer_service_factory=self._deps.viewer_service,
+                    battle_use_case_factory=self._deps.battle_use_case,
+                    economy_service_factory=self._deps.economy_service,
+                    chat_use_case_factory=self._deps.chat_use_case,
+                    ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
                     minigame_service=self.minigame_service,
                     telegram_bot=self.telegram_bot,
                     _telegram_group_id=self._GROUP_ID,
@@ -153,8 +168,8 @@ class Bot(commands.Bot):
                 ChatSummarizerJob(
                     channel_name=self._CHANNEL_NAME,
                     twitch_api_service=self.twitch_api_service,
-                    stream_service_factory=self._stream_service,
-                    chat_use_case_factory=self._chat_use_case,
+                    stream_service_factory=self._deps.stream_service,
+                    chat_use_case_factory=self._deps.chat_use_case,
                     generate_response_in_chat=self.generate_response_in_chat,
                     state=self._chat_summary_state,
                 ),
@@ -164,9 +179,9 @@ class Bot(commands.Bot):
                 ),
                 ViewerTimeJob(
                     channel_name=self._CHANNEL_NAME,
-                    viewer_service_factory=self._viewer_service,
-                    stream_service_factory=self._stream_service,
-                    economy_service_factory=self._economy_service,
+                    viewer_service_factory=self._deps.viewer_service,
+                    stream_service_factory=self._deps.stream_service,
+                    economy_service_factory=self._deps.economy_service,
                     user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
                     bot_nick_provider=lambda: self.nick,
@@ -175,11 +190,10 @@ class Bot(commands.Bot):
             ],
         )
 
-        self._restore_stream_context()
-
+    def _setup_handlers(self):
         self._followage_handler = FollowageCommandHandler(
-            chat_use_case_factory=self._chat_use_case,
-            ai_conversation_use_case_factory=self._ai_conversation_use_case,
+            chat_use_case_factory=self._deps.chat_use_case,
+            ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
             command_name=self._COMMAND_FOLLOWAGE,
             bot_nick_provider=lambda: self.nick,
             generate_response_fn=self.generate_response_in_chat,
@@ -191,8 +205,8 @@ class Bot(commands.Bot):
             command_name=self._COMMAND_GLADDI,
             intent_use_case=self._intent_use_case,
             prompt_service=self._prompt_service,
-            ai_conversation_use_case_factory=self._ai_conversation_use_case,
-            chat_use_case_factory=self._chat_use_case,
+            ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
+            chat_use_case_factory=self._deps.chat_use_case,
             generate_response_fn=self.generate_response_in_chat,
             post_message_fn=self._post_message_in_twitch_chat,
             bot_nick_provider=lambda: self.nick
@@ -200,11 +214,11 @@ class Bot(commands.Bot):
         self._battle_handler = BattleCommandHandler(
             command_prefix=self._prefix,
             command_name=self._COMMAND_FIGHT,
-            economy_service_factory=self._economy_service,
-            chat_use_case_factory=self._chat_use_case,
-            ai_conversation_use_case_factory=self._ai_conversation_use_case,
-            battle_use_case_factory=self._battle_use_case,
-            equipment_service_factory=self._equipment_service,
+            economy_service_factory=self._deps.economy_service,
+            chat_use_case_factory=self._deps.chat_use_case,
+            ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
+            battle_use_case_factory=self._deps.battle_use_case,
+            equipment_service_factory=self._deps.equipment_service,
             timeout_fn=self._timeout_user,
             generate_response_fn=self.generate_response_in_chat,
             bot_nick_provider=lambda: self.nick,
@@ -213,34 +227,34 @@ class Bot(commands.Bot):
         self._roll_handler = RollCommandHandler(
             command_prefix=self._prefix,
             command_name=self._COMMAND_ROLL,
-            economy_service_factory=self._economy_service,
-            betting_service_factory=self._betting_service,
-            equipment_service_factory=self._equipment_service,
-            chat_use_case_factory=self._chat_use_case,
+            economy_service_factory=self._deps.economy_service,
+            betting_service_factory=self._deps.betting_service,
+            equipment_service_factory=self._deps.equipment_service,
+            chat_use_case_factory=self._deps.chat_use_case,
             timeout_fn=self._timeout_user,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._balance_handler = BalanceCommandHandler(
-            economy_service_factory=self._economy_service,
-            chat_use_case_factory=self._chat_use_case,
+            economy_service_factory=self._deps.economy_service,
+            chat_use_case_factory=self._deps.chat_use_case,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._bonus_handler = BonusCommandHandler(
             command_prefix=self._prefix,
             command_name=self._COMMAND_BONUS,
-            stream_service_factory=self._stream_service,
-            equipment_service_factory=self._equipment_service,
-            economy_service_factory=self._economy_service,
-            chat_use_case_factory=self._chat_use_case,
+            stream_service_factory=self._deps.stream_service,
+            equipment_service_factory=self._deps.equipment_service,
+            economy_service_factory=self._deps.economy_service,
+            chat_use_case_factory=self._deps.chat_use_case,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._transfer_handler = TransferCommandHandler(
             command_prefix=self._prefix,
-            economy_service_factory=self._economy_service,
-            chat_use_case_factory=self._chat_use_case,
+            economy_service_factory=self._deps.economy_service,
+            chat_use_case_factory=self._deps.chat_use_case,
             command_name=self._COMMAND_TRANSFER,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
@@ -249,9 +263,9 @@ class Bot(commands.Bot):
             command_prefix=self._prefix,
             command_shop_name=self._COMMAND_SHOP,
             command_buy_name=self._COMMAND_BUY,
-            economy_service_factory=self._economy_service,
-            equipment_service_factory=self._equipment_service,
-            chat_use_case_factory=self._chat_use_case,
+            economy_service_factory=self._deps.economy_service,
+            equipment_service_factory=self._deps.equipment_service,
+            chat_use_case_factory=self._deps.chat_use_case,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
@@ -259,24 +273,24 @@ class Bot(commands.Bot):
             command_prefix=self._prefix,
             command_name=self._COMMAND_EQUIPMENT,
             command_shop=self._COMMAND_SHOP,
-            equipment_service_factory=self._equipment_service,
-            chat_use_case_factory=self._chat_use_case,
+            equipment_service_factory=self._deps.equipment_service,
+            chat_use_case_factory=self._deps.chat_use_case,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._top_bottom_handler = TopBottomCommandHandler(
-            economy_service_factory=self._economy_service,
-            chat_use_case_factory=self._chat_use_case,
+            economy_service_factory=self._deps.economy_service,
+            chat_use_case_factory=self._deps.chat_use_case,
             command_top=self._COMMAND_TOP,
             command_bottom=self._COMMAND_BOTTOM,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._stats_handler = StatsCommandHandler(
-            economy_service_factory=self._economy_service,
-            betting_service_factory=self._betting_service,
-            battle_use_case_factory=self._battle_use_case,
-            chat_use_case_factory=self._chat_use_case,
+            economy_service_factory=self._deps.economy_service,
+            betting_service_factory=self._deps.betting_service,
+            battle_use_case_factory=self._deps.battle_use_case,
+            chat_use_case_factory=self._deps.chat_use_case,
             command_name=self._COMMAND_STATS,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
@@ -298,7 +312,7 @@ class Bot(commands.Bot):
         }
         self._help_handler = HelpCommandHandler(
             command_prefix=self._prefix,
-            chat_use_case_factory=self._chat_use_case,
+            chat_use_case_factory=self._deps.chat_use_case,
             commands=commands,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
@@ -309,55 +323,18 @@ class Bot(commands.Bot):
             command_guess_letter=self._COMMAND_GUESS_LETTER,
             command_guess_word=self._COMMAND_GUESS_WORD,
             minigame_service=self.minigame_service,
-            economy_service_factory=self._economy_service,
-            chat_use_case_factory=self._chat_use_case,
+            economy_service_factory=self._deps.economy_service,
+            chat_use_case_factory=self._deps.chat_use_case,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
         self._rps_handler = RpsCommandHandler(
             minigame_service=self.minigame_service,
-            economy_service_factory=self._economy_service,
-            chat_use_case_factory=self._chat_use_case,
+            economy_service_factory=self._deps.economy_service,
+            chat_use_case_factory=self._deps.chat_use_case,
             bot_nick_provider=lambda: self.nick,
             post_message_fn=self._post_message_in_twitch_chat
         )
-
-        self._battle_waiting_user_ref = {"value": None}
-
-        logger.info("Twitch бот инициализирован успешно")
-
-    def _chat_use_case(self, db):
-        return self._deps.chat_use_case(db)
-
-    def _battle_use_case(self, db):
-        return self._deps.battle_use_case(db)
-
-    def _ai_conversation_use_case(self, db):
-        return self._deps.ai_conversation_use_case(db)
-
-    def _betting_service(self, db):
-        return self._deps.betting_service(db)
-
-    def _economy_service(self, db):
-        return self._deps.economy_service(db)
-
-    def _equipment_service(self, db):
-        return self._deps.equipment_service(db)
-
-    def _get_used_words_use_case(self, db):
-        return self._deps.get_used_words_use_case(db)
-
-    def _add_used_word_use_case(self, db):
-        return self._deps.add_used_word_use_case(db)
-
-    def _stream_service(self, db):
-        return self._deps.stream_service(db)
-
-    def _start_new_stream_use_case(self, db):
-        return self._deps.start_new_stream_use_case(db)
-
-    def _viewer_service(self, db):
-        return self._deps.viewer_service(db)
 
     async def _warmup_broadcaster_id(self):
         try:
@@ -401,11 +378,11 @@ class Bot(commands.Bot):
         normalized_user_name = nickname.lower()
 
         with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, normalized_user_name, content, datetime.utcnow())
-            self._economy_service(db).process_user_message_activity(channel_name, normalized_user_name)
-            active_stream = self._stream_service(db).get_active_stream(channel_name)
+            self._deps.chat_use_case(db).save_chat_message(channel_name, normalized_user_name, content, datetime.utcnow())
+            self._deps.economy_service(db).process_user_message_activity(channel_name, normalized_user_name)
+            active_stream = self._deps.stream_service(db).get_active_stream(channel_name)
             if active_stream:
-                self._viewer_service(db).update_viewer_session(active_stream.id, channel_name, nickname.lower(), datetime.utcnow())
+                self._deps.viewer_service(db).update_viewer_session(active_stream.id, channel_name, nickname.lower(), datetime.utcnow())
 
         if message.content.startswith(self._prefix):
             await self.handle_commands(message)
@@ -427,7 +404,7 @@ class Bot(commands.Bot):
             result = self.generate_response_in_chat(prompt, channel_name)
             await self._post_message_in_twitch_chat(result, message.channel)
             with SessionLocal.begin() as db:
-                self._chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
+                self._deps.chat_use_case(db).save_chat_message(channel_name, self.nick.lower(), result, datetime.utcnow())
             logger.info(f"Отправлен ответ на сообщение от {nickname}")
 
     @commands.command(name=_COMMAND_FOLLOWAGE)
@@ -653,7 +630,7 @@ class Bot(commands.Bot):
 
             channel_name = self.initial_channels[0]
             with db_ro_session() as db:
-                active_stream = self._stream_service(db).get_active_stream(channel_name)
+                active_stream = self._deps.stream_service(db).get_active_stream(channel_name)
 
             if active_stream:
                 self.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
@@ -666,7 +643,7 @@ class Bot(commands.Bot):
     def generate_response_in_chat(self, prompt: str, channel_name: str) -> str:
         messages = []
         with db_ro_session() as db:
-            last_messages = self._ai_conversation_use_case(db).get_last_messages(channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
+            last_messages = self._deps.ai_conversation_use_case(db).get_last_messages(channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
         messages.extend(last_messages)
         messages.append(AIMessage(Role.USER, prompt))
         assistant_message = self._llm_client.generate_ai_response(messages)

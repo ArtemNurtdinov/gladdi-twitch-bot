@@ -1,8 +1,5 @@
-import logging
 from datetime import datetime, timedelta
 from typing import Optional
-
-from sqlalchemy.orm import Session
 
 from app.economy.domain.models import (
     UserBalanceInfo,
@@ -16,8 +13,6 @@ from app.economy.domain.models import (
 )
 from app.economy.domain.repo import EconomyRepository
 from app.equipment.domain.models import UserEquipmentItem
-
-logger = logging.getLogger(__name__)
 
 
 class EconomyService:
@@ -129,7 +124,6 @@ class EconomyService:
 
         current_balance = user_balance.balance or 0
         if current_balance < amount:
-            logger.warning(f"Недостаточно средств у {normalized_user_name}: {current_balance} < {amount}")
             return None
 
         balance_before = current_balance
@@ -150,8 +144,6 @@ class EconomyService:
                 created_at=datetime.utcnow(),
             ),
         )
-
-        logger.info(f"У пользователя {normalized_user_name} списано {amount} монет. Новый баланс: {saved.balance}")
 
         return saved
 
@@ -275,8 +267,6 @@ class EconomyService:
                 created_at=datetime.utcnow(),
             ),
         )
-
-        logger.info(f"Пользователь {user_name} получил бонус {bonus_amount}")
 
         return DailyBonusResult(success=True, user_balance=saved, bonus_amount=bonus_amount, bonus_message=bonus_message)
 
