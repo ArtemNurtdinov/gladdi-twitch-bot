@@ -17,7 +17,6 @@ class ChatSummarizerJob:
     def __init__(
         self,
         channel_name: str,
-        user_cache: Any,
         twitch_api_service: TwitchApiService,
         stream_service_factory: Callable[[Any], Any],
         chat_use_case_factory: Callable[[Any], Any],
@@ -25,7 +24,6 @@ class ChatSummarizerJob:
         state: ChatSummaryState,
     ):
         self._channel_name = channel_name
-        self._user_cache = user_cache
         self._twitch_api_service = twitch_api_service
         self._stream_service_factory = stream_service_factory
         self._chat_use_case_factory = chat_use_case_factory

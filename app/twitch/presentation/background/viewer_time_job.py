@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Callable, Any
 
 from app.economy.domain.models import TransactionType
+from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from core.background_task_runner import BackgroundTaskRunner
 from core.db import SessionLocal, db_ro_session
@@ -20,7 +21,7 @@ class ViewerTimeJob:
         viewer_service_factory: Callable[[Any], Any],
         stream_service_factory: Callable[[Any], Any],
         economy_service_factory: Callable[[Any], Any],
-        user_cache: Any,
+        user_cache: UserCacheService,
         twitch_api_service: TwitchApiService,
         bot_nick_provider: Callable[[], str],
         check_interval_seconds: int,
@@ -51,8 +52,7 @@ class ViewerTimeJob:
                     self._viewer_service_factory(db).check_inactive_viewers(active_stream.id, datetime.utcnow())
 
                 broadcaster_id = await self._user_cache.get_user_id(self._channel_name)
-                moderator_login = self._bot_nick_provider()
-                moderator_id = await self._user_cache.get_user_id(moderator_login)
+                moderator_id = await self._user_cache.get_user_id(self._bot_nick_provider())
                 chatters = await self._twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
                 if chatters:
                     with SessionLocal.begin() as db:

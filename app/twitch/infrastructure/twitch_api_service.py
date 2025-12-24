@@ -217,8 +217,6 @@ class TwitchApiService:
             )
 
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> List[str]:
-        logger.debug(f"Получение списка зрителей для канала {broadcaster_id}")
-
         url = f'{self.base_url}/chat/chatters'
         headers = self._get_headers()
         params = {
@@ -236,8 +234,6 @@ class TwitchApiService:
                     for chatter in data['data']:
                         if 'user_login' in chatter:
                             chatters.append(chatter['user_login'])
-
-                logger.debug(f"Получено {len(chatters)} зрителей в чате канала {broadcaster_id}")
                 return chatters
             except Exception as e:
                 logger.error(f"Ошибка при получении списка зрителей: {e}")

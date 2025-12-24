@@ -145,14 +145,13 @@ class Bot(commands.Bot):
                     ai_conversation_use_case_factory=self._ai_conversation_use_case,
                     minigame_service=self.minigame_service,
                     telegram_bot=self.telegram_bot,
-                    group_id=self._GROUP_ID,
+                    _telegram_group_id=self._GROUP_ID,
                     generate_response_in_chat=self.generate_response_in_chat,
                     state=self._chat_summary_state,
                     stream_status_interval_seconds=self._CHECK_STREAM_STATUS_INTERVAL_SECONDS,
                 ),
                 ChatSummarizerJob(
                     channel_name=self._CHANNEL_NAME,
-                    user_cache=self.user_cache,
                     twitch_api_service=self.twitch_api_service,
                     stream_service_factory=self._stream_service,
                     chat_use_case_factory=self._chat_use_case,
@@ -638,11 +637,12 @@ class Bot(commands.Bot):
             await asyncio.sleep(0.3)
 
     async def _send_channel_message(self, channel_name: str, message: str):
-        messages = self._split_text(message)
         channel = self.get_channel(channel_name)
         if not channel:
             logger.warning(f"Канал {channel_name} недоступен для отправки сообщения")
             return
+
+        messages = self._split_text(message)
         for msg in messages:
             await channel.send(msg)
             await asyncio.sleep(0.3)

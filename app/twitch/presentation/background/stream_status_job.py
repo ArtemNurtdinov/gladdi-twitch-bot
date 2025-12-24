@@ -4,8 +4,12 @@ from collections import Counter
 from datetime import datetime
 from typing import Callable, Any
 
+import telegram
+
 from app.economy.domain.models import TransactionType
+from app.minigame.domain.minigame_service import MinigameService
 from app.stream.domain.models import StreamStatistics
+from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.presentation.background.bot_tasks import ChatSummaryState
 from core.background_task_runner import BackgroundTaskRunner
@@ -20,7 +24,7 @@ class StreamStatusJob:
     def __init__(
         self,
         channel_name: str,
-        user_cache: Any,
+        user_cache: UserCacheService,
         twitch_api_service: TwitchApiService,
         stream_service_factory: Callable[[Any], Any],
         start_new_stream_use_case_factory: Callable[[Any], Any],
@@ -29,9 +33,9 @@ class StreamStatusJob:
         economy_service_factory: Callable[[Any], Any],
         chat_use_case_factory: Callable[[Any], Any],
         ai_conversation_use_case_factory: Callable[[Any], Any],
-        minigame_service: Any,
-        telegram_bot: Any,
-        group_id: int,
+        minigame_service: MinigameService,
+        telegram_bot: telegram.Bot,
+        _telegram_group_id: int,
         generate_response_in_chat: Callable[[str, str], str],
         state: ChatSummaryState,
         stream_status_interval_seconds: int,
@@ -48,7 +52,7 @@ class StreamStatusJob:
         self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
         self._minigame_service = minigame_service
         self._telegram_bot = telegram_bot
-        self._group_id = group_id
+        self._telegram_group_id = _telegram_group_id
         self._generate_response_in_chat = generate_response_in_chat
         self._state = state
         self._interval_seconds = stream_status_interval_seconds
@@ -129,7 +133,11 @@ class StreamStatusJob:
             battles = self._battle_use_case_factory(db).get_battles(channel_name, active_stream.started_at)
 
         with db_ro_session() as db:
-            chat_messages = self._chat_use_case_factory(db).get_chat_messages(channel_name, active_stream.started_at, finish_time)
+            chat_messages = self._chat_use_case_factory(db).get_chat_messages(
+                channel_name=channel_name,
+                from_time=active_stream.started_at,
+                to_time=finish_time
+            )
 
         stats = self._build_stream_statistics(chat_messages, battles)
 
@@ -158,7 +166,7 @@ class StreamStatusJob:
         )
         result = self._generate_response_in_chat(prompt, channel_name)
         try:
-            await self._telegram_bot.send_message(chat_id=self._group_id, text=result)
+            await self._telegram_bot.send_message(chat_id=self._telegram_group_id, text=result)
             with SessionLocal.begin() as db:
                 self._ai_conversation_use_case_factory(db).save_conversation_to_db(channel_name, prompt, result)
             logger.info(f"Анонс стрима отправлен в Telegram: {result}")
@@ -173,7 +181,9 @@ class StreamStatusJob:
 
         with db_ro_session() as db:
             last_messages = self._chat_use_case_factory(db).get_chat_messages(
-                channel_name, self._state.last_chat_summary_time, stream_end_dt
+                channel_name=channel_name,
+                from_time=self._state.last_chat_summary_time,
+                to_time=stream_end_dt
             )
             if last_messages:
                 chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
@@ -226,5 +236,5 @@ class StreamStatusJob:
         self._state.current_stream_summaries = []
         self._state.last_chat_summary_time = None
 
-        await self._telegram_bot.send_message(chat_id=self._group_id, text=result)
+        await self._telegram_bot.send_message(chat_id=self._telegram_group_id, text=result)
 

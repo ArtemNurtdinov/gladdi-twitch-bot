@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from typing import Callable, Awaitable, Any
 
+from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from core.db import SessionLocal
 from core.background_task_runner import BackgroundTaskRunner
@@ -17,7 +18,7 @@ class PostJokeJob:
         self,
         channel_name: str,
         joke_service: Any,
-        user_cache: Any,
+        user_cache: UserCacheService,
         twitch_api_service: TwitchApiService,
         generate_response_in_chat: Callable[[str, str], str],
         ai_conversation_use_case_factory: Callable[[Any], Any],
