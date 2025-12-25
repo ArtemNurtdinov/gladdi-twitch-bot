@@ -1,12 +1,17 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Callable, Any
+from typing import Callable, Any, ContextManager
 
+from sqlalchemy.orm import Session
+
+from app.twitch.application.background.chat_summary.dto import ChatSummarizerDTO
+from app.twitch.application.background.chat_summary.handle_chat_summarizer_use_case import (
+    HandleChatSummarizerUseCase,
+)
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.presentation.background.bot_tasks import ChatSummaryState
 from core.background_task_runner import BackgroundTaskRunner
-from core.db import db_ro_session
 
 logger = logging.getLogger(__name__)
 
@@ -18,16 +23,14 @@ class ChatSummarizerJob:
         self,
         channel_name: str,
         twitch_api_service: TwitchApiService,
-        stream_service_factory: Callable[[Any], Any],
-        chat_use_case_factory: Callable[[Any], Any],
-        generate_response_in_chat: Callable[[str, str], str],
+        handle_chat_summarizer_use_case: HandleChatSummarizerUseCase,
+        db_readonly_session_provider: Callable[[], ContextManager[Session]],
         state: ChatSummaryState,
     ):
         self._channel_name = channel_name
         self._twitch_api_service = twitch_api_service
-        self._stream_service_factory = stream_service_factory
-        self._chat_use_case_factory = chat_use_case_factory
-        self._generate_response_in_chat = generate_response_in_chat
+        self._handle_chat_summarizer_use_case = handle_chat_summarizer_use_case
+        self._db_readonly_session_provider = db_readonly_session_provider
         self._state = state
 
     def register(self, runner: BackgroundTaskRunner) -> None:
@@ -38,26 +41,22 @@ class ChatSummarizerJob:
             try:
                 await asyncio.sleep(20 * 60)
 
-                with db_ro_session() as db:
-                    active_stream = self._stream_service_factory(db).get_active_stream(self._channel_name)
-                if not active_stream:
-                    logger.debug("Стрим не активен, пропускаем анализ чата")
-                    continue
-
-                since = datetime.utcnow() - timedelta(minutes=20)
-                with db_ro_session() as db:
-                    messages = self._chat_use_case_factory(db).get_last_chat_messages_since(self._channel_name, since)
-
-                if not messages:
-                    logger.debug("Нет сообщений для анализа")
-                    continue
-
-                chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in messages)
-                prompt = (
-                    f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-                    f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
+                dto = ChatSummarizerDTO(
+                    channel_name=self._channel_name,
+                    display_name="",
+                    user_name="",
+                    bot_nick="",
+                    occurred_at=datetime.utcnow(),
+                    interval_minutes=20,
                 )
-                result = self._generate_response_in_chat(prompt, self._channel_name)
+
+                result = await self._handle_chat_summarizer_use_case.handle(
+                    db_readonly_session_provider=self._db_readonly_session_provider,
+                    dto=dto,
+                )
+                if result is None:
+                    logger.debug("Нет данных для анализа или стрим не активен")
+                    continue
                 self._state.current_stream_summaries.append(result)
                 self._state.last_chat_summary_time = datetime.utcnow()
                 logger.info(f"Создан периодический анализ чата: {result}")

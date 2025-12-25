@@ -1,8 +1,9 @@
 import asyncio
 import logging
-from typing import Any
+from datetime import datetime
 
-from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
+from app.twitch.application.background.minigame_tick.dto import MinigameTickDTO
+from app.twitch.application.background.minigame_tick.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
@@ -11,9 +12,9 @@ logger = logging.getLogger(__name__)
 class MinigameTickJob:
     name = "check_minigames"
 
-    def __init__(self, channel_name: str, minigame_orchestrator: MinigameOrchestrator, default_delay: int = 60):
+    def __init__(self, channel_name: str, handle_minigame_tick_use_case: HandleMinigameTickUseCase, default_delay: int = 60):
         self._channel_name = channel_name
-        self._minigame_orchestrator = minigame_orchestrator
+        self._handle_minigame_tick_use_case = handle_minigame_tick_use_case
         self._default_delay = default_delay
 
     def register(self, runner: BackgroundTaskRunner) -> None:
@@ -22,7 +23,14 @@ class MinigameTickJob:
     async def run(self):
         while True:
             try:
-                delay = await self._minigame_orchestrator.run_tick(self._channel_name)
+                dto = MinigameTickDTO(
+                    channel_name=self._channel_name,
+                    display_name="",
+                    user_name="",
+                    bot_nick="",
+                    occurred_at=datetime.utcnow(),
+                )
+                delay = await self._handle_minigame_tick_use_case.handle(dto)
                 await asyncio.sleep(delay)
             except asyncio.CancelledError:
                 logger.info("MinigameTickJob cancelled")

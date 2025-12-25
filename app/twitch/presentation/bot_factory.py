@@ -1,5 +1,12 @@
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.twitch.application.interaction.chat.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.twitch.application.background.chat_summary.handle_chat_summarizer_use_case import (
+    HandleChatSummarizerUseCase,
+)
+from app.twitch.application.background.minigame_tick.handle_minigame_tick_use_case import (
+    HandleMinigameTickUseCase,
+)
+from app.twitch.application.background.post_joke.handle_post_joke_use_case import HandlePostJokeUseCase
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
@@ -12,7 +19,7 @@ from app.twitch.presentation.background.viewer_time_job import ViewerTimeJob
 from app.twitch.presentation.chat_event_service import ChatEventHandler
 from app.twitch.presentation.command_registry import CommandRegistry
 from app.twitch.presentation.twitch_bot import Bot
-from core.db import SessionLocal
+from core.db import SessionLocal, db_ro_session
 
 
 class BotFactory:
@@ -56,12 +63,15 @@ class BotFactory:
             jobs=[
                 PostJokeJob(
                     channel_name=self._settings.channel_name,
-                    joke_service=self._deps.joke_service,
-                    user_cache=self._deps.user_cache,
-                    twitch_api_service=self._deps.twitch_api_service,
-                    generate_response_in_chat=bot.generate_response_in_chat,
-                    ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
-                    chat_use_case_factory=self._deps.chat_use_case,
+                    handle_post_joke_use_case=HandlePostJokeUseCase(
+                        joke_service=self._deps.joke_service,
+                        user_cache=self._deps.user_cache,
+                        twitch_api_service=self._deps.twitch_api_service,
+                        generate_response_fn=bot.generate_response_in_chat,
+                        ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
+                        chat_use_case_factory=self._deps.chat_use_case,
+                    ),
+                    db_session_provider=SessionLocal.begin,
                     send_channel_message=bot.send_channel_message,
                     bot_nick_provider=lambda: bot.nick,
                 ),
@@ -87,14 +97,19 @@ class BotFactory:
                 ChatSummarizerJob(
                     channel_name=self._settings.channel_name,
                     twitch_api_service=self._deps.twitch_api_service,
-                    stream_service_factory=self._deps.stream_service,
-                    chat_use_case_factory=self._deps.chat_use_case,
-                    generate_response_in_chat=bot.generate_response_in_chat,
+                    handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
+                        stream_service_factory=self._deps.stream_service,
+                        chat_use_case_factory=self._deps.chat_use_case,
+                        generate_response_fn=bot.generate_response_in_chat,
+                    ),
+                    db_readonly_session_provider=lambda: db_ro_session(),
                     state=bot.chat_summary_state,
                 ),
                 MinigameTickJob(
                     channel_name=self._settings.channel_name,
-                    minigame_orchestrator=bot.minigame_orchestrator,
+                    handle_minigame_tick_use_case=HandleMinigameTickUseCase(
+                        minigame_orchestrator=bot.minigame_orchestrator,
+                    ),
                 ),
                 ViewerTimeJob(
                     channel_name=self._settings.channel_name,
