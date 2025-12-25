@@ -8,7 +8,12 @@ from app.twitch.application.equipment.handle_equipment_use_case import HandleEqu
 from app.twitch.application.follow.handle_followage_use_case import HandleFollowageUseCase
 from app.twitch.application.guess.handle_guess_use_case import HandleGuessUseCase
 from app.twitch.application.help.handle_help_use_case import HandleHelpUseCase
+from app.twitch.application.rps.handle_rps_use_case import HandleRpsUseCase
 from app.twitch.application.roll.handle_roll_use_case import HandleRollUseCase
+from app.twitch.application.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
+from app.twitch.application.stats.handle_stats_use_case import HandleStatsUseCase
+from app.twitch.application.transfer.handle_transfer_use_case import HandleTransferUseCase
+from app.twitch.application.shop.handle_shop_use_case import HandleShopUseCase
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.presentation.commands.ask import AskCommandHandler
@@ -122,9 +127,12 @@ class CommandRegistry:
         )
         self.transfer = TransferCommandHandler(
             command_prefix=prefix,
-            economy_service_factory=deps.economy_service,
-            chat_use_case_factory=deps.chat_use_case,
             command_name=settings.command_transfer,
+            handle_transfer_use_case=HandleTransferUseCase(
+                economy_service_factory=deps.economy_service,
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )
@@ -132,9 +140,13 @@ class CommandRegistry:
             command_prefix=prefix,
             command_shop_name=settings.command_shop,
             command_buy_name=settings.command_buy,
-            economy_service_factory=deps.economy_service,
-            equipment_service_factory=deps.equipment_service,
-            chat_use_case_factory=deps.chat_use_case,
+            handle_shop_use_case=HandleShopUseCase(
+                economy_service_factory=deps.economy_service,
+                equipment_service_factory=deps.equipment_service,
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
+            db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )
@@ -152,18 +164,26 @@ class CommandRegistry:
             post_message_fn=post_message_fn,
         )
         self.top_bottom = TopBottomCommandHandler(
-            economy_service_factory=deps.economy_service,
-            chat_use_case_factory=deps.chat_use_case,
+            handle_top_bottom_use_case=HandleTopBottomUseCase(
+                economy_service_factory=deps.economy_service,
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
+            db_readonly_session_provider=lambda: db_ro_session(),
             command_top=settings.command_top,
             command_bottom=settings.command_bottom,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )
         self.stats = StatsCommandHandler(
-            economy_service_factory=deps.economy_service,
-            betting_service_factory=deps.betting_service,
-            battle_use_case_factory=deps.battle_use_case,
-            chat_use_case_factory=deps.chat_use_case,
+            handle_stats_use_case=HandleStatsUseCase(
+                economy_service_factory=deps.economy_service,
+                betting_service_factory=deps.betting_service,
+                battle_use_case_factory=deps.battle_use_case,
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
+            db_readonly_session_provider=lambda: db_ro_session(),
             command_name=settings.command_stats,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
@@ -208,9 +228,12 @@ class CommandRegistry:
             post_message_fn=post_message_fn,
         )
         self.rps = RpsCommandHandler(
-            minigame_service=deps.minigame_service,
-            economy_service_factory=deps.economy_service,
-            chat_use_case_factory=deps.chat_use_case,
+            handle_rps_use_case=HandleRpsUseCase(
+                minigame_service=deps.minigame_service,
+                economy_service_factory=deps.economy_service,
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )

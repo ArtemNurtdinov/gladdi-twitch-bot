@@ -1,26 +1,27 @@
 from datetime import datetime
-from typing import Callable, Any, Awaitable
+from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
-from core.db import SessionLocal, db_ro_session
+from app.twitch.application.top_bottom.dto import BottomDTO, TopDTO
+from app.twitch.application.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
 
 
 class TopBottomCommandHandler:
 
     def __init__(
         self,
-        economy_service_factory: Callable[[Session], EconomyService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        handle_top_bottom_use_case: HandleTopBottomUseCase,
+        db_session_provider: Callable[[], ContextManager[Session]],
+        db_readonly_session_provider: Callable[[], ContextManager[Session]],
         command_top: str,
         command_bottom: str,
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
-        self._economy_service = economy_service_factory
-        self._chat_use_case = chat_use_case_factory
+        self._handle_top_bottom_use_case = handle_top_bottom_use_case
+        self._db_session_provider = db_session_provider
+        self._db_readonly_session_provider = db_readonly_session_provider
         self.command_top = command_top
         self.command_bottom = command_bottom
         self.bot_nick_provider = bot_nick_provider
@@ -29,35 +30,39 @@ class TopBottomCommandHandler:
     async def handle_top(self, channel_name: str, ctx):
         bot_nick = self.bot_nick_provider().lower()
 
-        with db_ro_session() as db:
-            top_users = self._economy_service(db).get_top_users(channel_name, limit=7)
+        dto = TopDTO(
+            channel_name=channel_name,
+            display_name="",
+            user_name="",
+            bot_nick=bot_nick,
+            occurred_at=datetime.utcnow(),
+            limit=7,
+        )
 
-        if not top_users:
-            result = "Нет данных для отображения топа."
-        else:
-            result = "ТОП БОГАЧЕЙ:\n"
-            for i, user in enumerate(top_users, 1):
-                result += f"{i}. {user.user_name}: {user.balance} монет."
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
+        result = await self._handle_top_bottom_use_case.handle_top(
+            db_readonly_session_provider=self._db_readonly_session_provider,
+            db_session_provider=self._db_session_provider,
+            dto=dto,
+        )
 
         await self.post_message_fn(result, ctx)
 
     async def handle_bottom(self, channel_name: str, ctx):
         bot_nick = self.bot_nick_provider().lower()
 
-        with db_ro_session() as db:
-            bottom_users = self._economy_service(db).get_bottom_users(channel_name, limit=10)
+        dto = BottomDTO(
+            channel_name=channel_name,
+            display_name="",
+            user_name="",
+            bot_nick=bot_nick,
+            occurred_at=datetime.utcnow(),
+            limit=10,
+        )
 
-        if not bottom_users:
-            result = "Нет данных для отображения бомжей."
-        else:
-            result = "💸 ТОП БОМЖЕЙ:\n"
-            for i, user in enumerate(bottom_users, 1):
-                result += f"{i}. {user.user_name}: {user.balance} монет."
-
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, result, datetime.utcnow())
+        result = await self._handle_top_bottom_use_case.handle_bottom(
+            db_readonly_session_provider=self._db_readonly_session_provider,
+            db_session_provider=self._db_session_provider,
+            dto=dto,
+        )
 
         await self.post_message_fn(result, ctx)
