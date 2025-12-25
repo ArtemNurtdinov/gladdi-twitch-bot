@@ -7,6 +7,8 @@ from app.twitch.application.bonus.handle_bonus_use_case import HandleBonusUseCas
 from app.twitch.application.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 from app.twitch.application.follow.handle_followage_use_case import HandleFollowageUseCase
 from app.twitch.application.guess.handle_guess_use_case import HandleGuessUseCase
+from app.twitch.application.help.handle_help_use_case import HandleHelpUseCase
+from app.twitch.application.roll.handle_roll_use_case import HandleRollUseCase
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.presentation.commands.ask import AskCommandHandler
@@ -83,10 +85,14 @@ class CommandRegistry:
         self.roll = RollCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_roll,
-            economy_service_factory=deps.economy_service,
-            betting_service_factory=deps.betting_service,
-            equipment_service_factory=deps.equipment_service,
-            chat_use_case_factory=deps.chat_use_case,
+            handle_roll_use_case=HandleRollUseCase(
+                economy_service_factory=deps.economy_service,
+                betting_service_factory=deps.betting_service,
+                equipment_service_factory=deps.equipment_service,
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
+            db_readonly_session_provider=lambda: db_ro_session(),
             timeout_fn=timeout_fn,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
@@ -179,7 +185,10 @@ class CommandRegistry:
         }
         self.help = HelpCommandHandler(
             command_prefix=prefix,
-            chat_use_case_factory=deps.chat_use_case,
+            handle_help_use_case=HandleHelpUseCase(
+                chat_use_case_factory=deps.chat_use_case,
+            ),
+            db_session_provider=SessionLocal.begin,
             commands=commands,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,

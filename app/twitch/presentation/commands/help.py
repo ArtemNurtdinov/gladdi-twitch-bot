@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import Callable, Any, Awaitable
+from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
-from core.db import SessionLocal
+from app.twitch.application.help.dto import HelpDTO
+from app.twitch.application.help.handle_help_use_case import HandleHelpUseCase
 
 
 class HelpCommandHandler:
@@ -12,13 +12,15 @@ class HelpCommandHandler:
     def __init__(
         self,
         command_prefix: str,
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        handle_help_use_case: HandleHelpUseCase,
+        db_session_provider: Callable[[], ContextManager[Session]],
         commands: set[str],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]]
     ):
         self.command_prefix = command_prefix
-        self._chat_use_case = chat_use_case_factory
+        self._handle_help_use_case = handle_help_use_case
+        self._db_session_provider = db_session_provider
         self.commands = commands
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
@@ -26,12 +28,16 @@ class HelpCommandHandler:
     async def handle(self, channel_name: str, ctx):
         bot_nick = self.bot_nick_provider().lower()
 
-        help_parts = ["📜 Доступные команды:"]
-        for cmd in self.commands:
-            help_parts.append(f"{self.command_prefix}{cmd}")
-        help_text = " ".join(help_parts)
+        dto = HelpDTO(
+            channel_name=channel_name,
+            display_name="",
+            user_name="",
+            bot_nick=bot_nick,
+            occurred_at=datetime.utcnow(),
+            command_prefix=self.command_prefix,
+            commands=self.commands,
+        )
 
-        with SessionLocal.begin() as db:
-            self._chat_use_case(db).save_chat_message(channel_name, bot_nick, help_text, datetime.utcnow())
+        result = await self._handle_help_use_case.handle(self._db_session_provider, dto)
 
-        await self.post_message_fn(help_text, ctx)
+        await self.post_message_fn(result, ctx)
