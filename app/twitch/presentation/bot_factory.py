@@ -1,5 +1,5 @@
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
-from app.twitch.application.chat.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.twitch.application.interaction.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks

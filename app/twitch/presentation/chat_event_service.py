@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Callable, Awaitable, ContextManager
 
-from app.twitch.application.chat.dto import ChatMessageDTO
-from app.twitch.application.chat.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.twitch.application.interaction.chat.dto import ChatMessageDTO
+from app.twitch.application.interaction.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 
 
 class ChatEventHandler:

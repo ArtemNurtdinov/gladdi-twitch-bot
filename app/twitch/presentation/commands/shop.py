@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.shop.dto import ShopBuyDTO, ShopListDTO
-from app.twitch.application.shop.handle_shop_use_case import HandleShopUseCase
+from app.twitch.application.interaction.shop.dto import ShopBuyDTO, ShopListDTO
+from app.twitch.application.interaction.shop.handle_shop_use_case import HandleShopUseCase
 
 
 class ShopCommandHandler:

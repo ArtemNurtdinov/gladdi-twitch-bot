@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.follow.dto import FollowageDTO
-from app.twitch.application.follow.handle_followage_use_case import HandleFollowageUseCase
+from app.twitch.application.interaction.follow.dto import FollowageDTO
+from app.twitch.application.interaction.follow.handle_followage_use_case import HandleFollowageUseCase
 
 
 class FollowageCommandHandler:

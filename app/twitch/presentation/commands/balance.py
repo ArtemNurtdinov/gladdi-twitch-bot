@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.balance.dto import BalanceDTO
-from app.twitch.application.balance.handle_balance_use_case import HandleBalanceUseCase
+from app.twitch.application.interaction.balance.dto import BalanceDTO
+from app.twitch.application.interaction.balance.handle_balance_use_case import HandleBalanceUseCase
 
 
 class BalanceCommandHandler:

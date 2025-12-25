@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.ask.dto import AskCommandDTO
-from app.twitch.application.ask.handle_ask_use_case import HandleAskUseCase
+from app.twitch.application.interaction.ask.dto import AskCommandDTO
+from app.twitch.application.interaction.ask.handle_ask_use_case import HandleAskUseCase
 
 
 class AskCommandHandler:

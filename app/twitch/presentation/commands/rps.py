@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.rps.dto import RpsDTO
-from app.twitch.application.rps.handle_rps_use_case import HandleRpsUseCase
+from app.twitch.application.interaction.rps.dto import RpsDTO
+from app.twitch.application.interaction.rps.handle_rps_use_case import HandleRpsUseCase
 
 
 class RpsCommandHandler:
