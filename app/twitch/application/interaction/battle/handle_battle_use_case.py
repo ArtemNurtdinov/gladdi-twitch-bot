@@ -10,6 +10,7 @@ from app.twitch.application.interaction.battle.dto import BattleDTO, BattleUseCa
 from app.twitch.application.shared import ChatResponder
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
 
 
@@ -17,14 +18,14 @@ class HandleBattleUseCase:
 
     def __init__(
         self,
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
         conversation_service_provider: ConversationServiceProvider,
         battle_use_case_factory: Callable[[Session], BattleUseCase],
         equipment_service_provider: EquipmentServiceProvider,
         chat_responder: ChatResponder,
     ):
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
         self._battle_use_case_factory = battle_use_case_factory
@@ -44,7 +45,7 @@ class HandleBattleUseCase:
         fee = EconomyService.BATTLE_ENTRY_FEE
 
         with db_session_provider() as db:
-            user_balance = self._economy_service_factory(db).get_user_balance(battle_dto.channel_name, challenger_user)
+            user_balance = self._economy_service_provider.get(db).get_user_balance(battle_dto.channel_name, challenger_user)
 
         if user_balance.balance < fee:
             result = (
@@ -67,7 +68,7 @@ class HandleBattleUseCase:
         if not battle_dto.waiting_user:
             error_result = None
             with db_session_provider() as db:
-                user_balance = self._economy_service_factory(db).subtract_balance(
+                user_balance = self._economy_service_provider.get(db).subtract_balance(
                     channel_name=battle_dto.channel_name,
                     user_name=challenger_user,
                     amount=fee,
@@ -125,7 +126,7 @@ class HandleBattleUseCase:
             )
 
         with db_session_provider() as db:
-            challenger_balance = self._economy_service_factory(db).subtract_balance(
+            challenger_balance = self._economy_service_provider.get(db).subtract_balance(
                 channel_name=battle_dto.channel_name,
                 user_name=challenger_user,
                 amount=fee,
@@ -178,7 +179,7 @@ class HandleBattleUseCase:
 
         winner_amount = EconomyService.BATTLE_WINNER_PRIZE
         with db_session_provider() as db:
-            self._economy_service_factory(db).add_balance(
+            self._economy_service_provider.get(db).add_balance(
                 battle_dto.channel_name,
                 winner,
                 winner_amount,

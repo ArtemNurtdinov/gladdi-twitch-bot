@@ -65,7 +65,6 @@ class BotDependencies:
 
     battle_use_case_factory: Callable = BattleUseCase
     betting_service_factory: Callable = BettingService
-    economy_service_factory: Callable = EconomyService
     get_used_words_use_case_factory: Callable = GetUsedWordsUseCase
     add_used_word_use_case_factory: Callable = AddUsedWordsUseCase
     start_new_stream_use_case_factory: Callable = StartNewStreamUseCase
@@ -76,9 +75,6 @@ class BotDependencies:
 
     def betting_service(self, db) -> BettingService:
         return self.betting_service_factory(BettingRepositoryImpl(db))
-
-    def economy_service(self, db) -> EconomyService:
-        return self.economy_service_factory(EconomyRepositoryImpl(db))
 
     def get_used_words_use_case(self, db) -> GetUsedWordsUseCase:
         return self.get_used_words_use_case_factory(WordHistoryRepositoryImpl(db))

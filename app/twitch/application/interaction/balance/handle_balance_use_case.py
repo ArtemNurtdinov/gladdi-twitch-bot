@@ -2,19 +2,19 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.balance.dto import BalanceDTO
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 
 
 class HandleBalanceUseCase:
 
     def __init__(
         self,
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
     ):
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -23,7 +23,7 @@ class HandleBalanceUseCase:
         dto: BalanceDTO,
     ) -> str:
         with db_session_provider() as db:
-            user_balance = self._economy_service_factory(db).get_user_balance(
+            user_balance = self._economy_service_provider.get(db).get_user_balance(
                 dto.channel_name,
                 dto.user_name,
             )
@@ -39,4 +39,3 @@ class HandleBalanceUseCase:
             )
 
         return result
-

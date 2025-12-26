@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from app.betting.domain.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
-from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import (
     JackpotPayoutMultiplierEffect,
     MissPayoutMultiplierEffect,
@@ -15,6 +14,7 @@ from app.economy.domain.models import (
 )
 from app.twitch.application.interaction.roll.dto import RollDTO, RollUseCaseResult, RollTimeoutAction
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
 
 
@@ -23,12 +23,12 @@ class HandleRollUseCase:
 
     def __init__(
         self,
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         betting_service_factory: Callable[[Session], BettingService],
         equipment_service_provider: EquipmentServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._betting_service_factory = betting_service_factory
         self._equipment_service_provider = equipment_service_provider
         self._chat_use_case_provider = chat_use_case_provider
@@ -110,7 +110,7 @@ class HandleRollUseCase:
             equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
 
         with db_session_provider() as db:
-            user_balance = self._economy_service_factory(db).subtract_balance(
+            user_balance = self._economy_service_provider.get(db).subtract_balance(
                 dto.channel_name,
                 dto.user_name,
                 bet_amount,
@@ -175,7 +175,7 @@ class HandleRollUseCase:
                     if result_type != "miss"
                     else f"Консольный приз: {slot_result_string}"
                 )
-                user_balance = self._economy_service_factory(db).add_balance(
+                user_balance = self._economy_service_provider.get(db).add_balance(
                     dto.channel_name, dto.user_name, payout, transaction_type, description
                 )
             self._betting_service_factory(db).save_bet(dto.channel_name, dto.user_name, slot_result_string, result_type, rarity_level)
@@ -208,7 +208,8 @@ class HandleRollUseCase:
                     no_timeout_message = f"🛡️ @{dto.display_name}, {protection_message}"
 
                 with db_session_provider() as db:
-                    self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, no_timeout_message, dto.occurred_at)
+                    self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, no_timeout_message,
+                                                                           dto.occurred_at)
                 messages.append(no_timeout_message)
             else:
                 if self._is_consolation_prize(result_type, payout):

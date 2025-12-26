@@ -3,12 +3,12 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.models import RPS_CHOICES
 from app.minigame.domain.minigame_service import MinigameService
 from app.twitch.application.interaction.rps.dto import RpsDTO
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 
 
 class HandleRpsUseCase:
@@ -16,11 +16,11 @@ class HandleRpsUseCase:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
         self._minigame_service = minigame_service
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -49,7 +49,7 @@ class HandleRpsUseCase:
                 share = max(1, game.bank // len(winners))
                 with db_session_provider() as db:
                     for winner in winners:
-                        self._economy_service_factory(db).add_balance(
+                        self._economy_service_provider.get(db).add_balance(
                             dto.channel_name,
                             winner,
                             share,
@@ -93,7 +93,7 @@ class HandleRpsUseCase:
         fee = MinigameService.RPS_ENTRY_FEE_PER_USER
 
         with db_session_provider() as db:
-            user_balance = self._economy_service_factory(db).subtract_balance(
+            user_balance = self._economy_service_provider.get(db).subtract_balance(
                 channel_name=dto.channel_name,
                 user_name=user_name,
                 amount=fee,

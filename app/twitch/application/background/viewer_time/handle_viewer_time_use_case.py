@@ -4,10 +4,10 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.twitch.application.background.viewer_time.dto import ViewerTimeDTO
 from app.twitch.application.shared import StreamServiceProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
@@ -21,13 +21,13 @@ class HandleViewerTimeUseCase:
         self,
         viewer_service_factory: Callable[[Session], ViewerTimeService],
         stream_service_provider: StreamServiceProvider,
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         user_cache: UserCacheService,
         twitch_api_service: TwitchApiService,
     ):
         self._viewer_service_factory = viewer_service_factory
         self._stream_service_provider = stream_service_provider
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._user_cache = user_cache
         self._twitch_api_service = twitch_api_service
 
@@ -77,7 +77,7 @@ class HandleViewerTimeUseCase:
                         session.id, rewards, viewer_time_dto.occurred_at or datetime.utcnow()
                     )
                     description = f"Награда за {minutes_threshold} минут просмотра стрима"
-                    self._economy_service_factory(db).add_balance(
+                    self._economy_service_provider.get(db).add_balance(
                         viewer_time_dto.channel_name,
                         session.user_name,
                         reward_amount,

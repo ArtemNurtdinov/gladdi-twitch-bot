@@ -2,10 +2,10 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.bonus.dto import BonusDTO
 from app.twitch.application.shared import StreamServiceProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
 
 
@@ -15,12 +15,12 @@ class HandleBonusUseCase:
         self,
         stream_service_provider: StreamServiceProvider,
         equipment_service_provider: EquipmentServiceProvider,
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._stream_service_provider = stream_service_provider
         self._equipment_service_provider = equipment_service_provider
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -37,7 +37,7 @@ class HandleBonusUseCase:
         else:
             with db_session_provider() as db:
                 user_equipment = self._equipment_service_provider.get(db).get_user_equipment(bonus.channel_name, bonus.user_name)
-                bonus_result = self._economy_service_factory(db).claim_daily_bonus(
+                bonus_result = self._economy_service_provider.get(db).claim_daily_bonus(
                     active_stream_id=active_stream.id,
                     channel_name=bonus.channel_name,
                     user_name=bonus.user_name,

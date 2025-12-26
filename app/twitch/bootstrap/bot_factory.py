@@ -95,7 +95,7 @@ class BotFactory:
     def _create_minigame(self, bot: Bot) -> MinigameOrchestrator:
         return MinigameOrchestrator(
             minigame_service=self._deps.minigame_service,
-            economy_service_factory=self._deps.economy_service,
+            economy_service_provider=self._deps.economy_service_provider,
             chat_use_case_provider=self._deps.chat_use_case_provider,
             stream_service_provider=self._deps.stream_service_provider,
             get_used_words_use_case_factory=self._deps.get_used_words_use_case,
@@ -145,7 +145,7 @@ class BotFactory:
                         start_new_stream_use_case_factory=self._deps.start_new_stream_use_case,
                         viewer_service_factory=self._deps.viewer_service,
                         battle_use_case_factory=self._deps.battle_use_case,
-                        economy_service_factory=self._deps.economy_service,
+                        economy_service_provider=self._deps.economy_service_provider,
                         chat_use_case_provider=self._deps.chat_use_case_provider,
                         conversation_service_provider=self._deps.conversation_service_provider,
                         minigame_service=self._deps.minigame_service,
@@ -181,7 +181,7 @@ class BotFactory:
                     handle_viewer_time_use_case=HandleViewerTimeUseCase(
                         viewer_service_factory=self._deps.viewer_service,
                         stream_service_provider=self._deps.stream_service_provider,
-                        economy_service_factory=self._deps.economy_service,
+                        economy_service_provider=self._deps.economy_service_provider,
                         user_cache=self._deps.user_cache,
                         twitch_api_service=self._deps.twitch_api_service,
                     ),
@@ -231,7 +231,7 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_fight,
             handle_battle_use_case=HandleBattleUseCase(
-                economy_service_factory=deps.economy_service,
+                economy_service_provider=deps.economy_service_provider,
                 chat_use_case_provider=deps.chat_use_case_provider,
                 conversation_service_provider=deps.conversation_service_provider,
                 battle_use_case_factory=deps.battle_use_case,
@@ -248,7 +248,7 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_roll,
             handle_roll_use_case=HandleRollUseCase(
-                economy_service_factory=deps.economy_service,
+                economy_service_provider=deps.economy_service_provider,
                 betting_service_factory=deps.betting_service,
                 equipment_service_provider=deps.equipment_service_provider,
                 chat_use_case_provider=deps.chat_use_case_provider
@@ -261,7 +261,7 @@ class BotFactory:
         )
         balance = BalanceCommandHandler(
             handle_balance_use_case=HandleBalanceUseCase(
-                economy_service_factory=deps.economy_service,
+                economy_service_provider=deps.economy_service_provider,
                 chat_use_case_provider=deps.chat_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,
@@ -274,7 +274,7 @@ class BotFactory:
             handle_bonus_use_case=HandleBonusUseCase(
                 stream_service_provider=deps.stream_service_provider,
                 equipment_service_provider=deps.equipment_service_provider,
-                economy_service_factory=deps.economy_service,
+                economy_service_provider=deps.economy_service_provider,
                 chat_use_case_provider=deps.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
@@ -286,7 +286,7 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_transfer,
             handle_transfer_use_case=HandleTransferUseCase(
-                economy_service_factory=deps.economy_service,
+                economy_service_provider=deps.economy_service_provider,
                 chat_use_case_provider=deps.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
@@ -298,7 +298,7 @@ class BotFactory:
             command_shop_name=settings.command_shop,
             command_buy_name=settings.command_buy,
             handle_shop_use_case=HandleShopUseCase(
-                economy_service_factory=deps.economy_service,
+                economy_service_provider=deps.economy_service_provider,
                 equipment_service_provider=deps.equipment_service_provider,
                 chat_use_case_provider=deps.chat_use_case_provider
             ),
@@ -334,7 +334,7 @@ class BotFactory:
         )
         stats = StatsCommandHandler(
             handle_stats_use_case=HandleStatsUseCase(
-                economy_service_factory=deps.economy_service,
+                economy_service_provider=deps.economy_service_provider,
                 betting_service_factory=deps.betting_service,
                 battle_use_case_factory=deps.battle_use_case,
                 chat_use_case_provider=deps.chat_use_case_provider,
@@ -377,7 +377,7 @@ class BotFactory:
             command_guess_word=settings.command_guess_word,
             handle_guess_use_case=HandleGuessUseCase(
                 minigame_service=deps.minigame_service,
-                economy_service_factory=deps.economy_service,
+                economy_service_provider=deps.economy_service_provider,
                 chat_use_case_provider=deps.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
@@ -387,7 +387,7 @@ class BotFactory:
         rps = RpsCommandHandler(
             handle_rps_use_case=HandleRpsUseCase(
                 minigame_service=deps.minigame_service,
-                economy_service_factory=deps.economy_service,
+                economy_service_provider=deps.economy_service_provider,
                 chat_use_case_provider=deps.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
@@ -415,7 +415,7 @@ class BotFactory:
     def _create_chat_event_handler(self, bot: Bot, chat_responder: ChatResponder) -> ChatEventHandler:
         handle_chat_message = HandleChatMessageUseCase(
             chat_use_case_provider=self._deps.chat_use_case_provider,
-            economy_service_factory=self._deps.economy_service,
+            economy_service_provider=self._deps.economy_service_provider,
             stream_service_provider=self._deps.stream_service_provider,
             viewer_service_factory=self._deps.viewer_service,
             intent_use_case=self._deps.intent_use_case,

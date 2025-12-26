@@ -2,19 +2,19 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.transfer.dto import TransferDTO
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 
 
 class HandleTransferUseCase:
 
     def __init__(
         self,
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -53,7 +53,7 @@ class HandleTransferUseCase:
         normalized_receiver_name = recipient.lower()
 
         with db_session_provider() as db:
-            transfer_result = self._economy_service_factory(db).transfer_money(
+            transfer_result = self._economy_service_provider.get(db).transfer_money(
                 dto.channel_name, dto.user_name, normalized_receiver_name, transfer_amount
             )
 

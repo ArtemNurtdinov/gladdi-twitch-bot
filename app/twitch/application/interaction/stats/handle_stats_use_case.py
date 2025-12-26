@@ -6,22 +6,21 @@ from app.battle.application.battle_use_case import BattleUseCase
 from app.battle.domain.models import UserBattleStats
 from app.betting.domain.betting_service import BettingService
 from app.betting.presentation.betting_schemas import UserBetStats
-from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.stats.dto import StatsDTO
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 
 
 class HandleStatsUseCase:
 
     def __init__(
         self,
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         betting_service_factory: Callable[[Session], BettingService],
         battle_use_case_factory: Callable[[Session], BattleUseCase],
         chat_use_case_provider: ChatUseCaseProvider,
     ):
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._betting_service_factory = betting_service_factory
         self._battle_use_case_factory = battle_use_case_factory
         self._chat_use_case_provider = chat_use_case_provider
@@ -33,7 +32,7 @@ class HandleStatsUseCase:
         dto: StatsDTO,
     ) -> str:
         with db_session_provider() as db:
-            balance = self._economy_service_factory(db).get_user_balance(dto.channel_name, dto.user_name)
+            balance = self._economy_service_provider.get(db).get_user_balance(dto.channel_name, dto.user_name)
             bets = self._betting_service_factory(db).get_user_bets(dto.channel_name, dto.user_name)
 
         if not bets:
@@ -73,4 +72,3 @@ class HandleStatsUseCase:
             )
 
         return result
-

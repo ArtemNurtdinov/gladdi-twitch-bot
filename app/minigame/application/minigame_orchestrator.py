@@ -9,6 +9,7 @@ from app.ai.domain.models import AIMessage, Role
 from app.minigame.domain.minigame_service import MinigameService
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 from core.db import SessionLocal, db_ro_session
 from app.economy.domain.models import TransactionType
 from app.twitch.application.shared import StreamServiceProvider
@@ -22,7 +23,7 @@ class MinigameOrchestrator:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_factory,
+        economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
         stream_service_provider: StreamServiceProvider,
         get_used_words_use_case_factory,
@@ -39,7 +40,7 @@ class MinigameOrchestrator:
         send_channel_message: Callable[[str, str], Awaitable[None]],
     ):
         self.minigame_service = minigame_service
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._stream_service_provider = stream_service_provider
         self._get_used_words_use_case_factory = get_used_words_use_case_factory
@@ -94,7 +95,7 @@ class MinigameOrchestrator:
             share = max(1, game.bank // len(winners))
             with SessionLocal.begin() as db:
                 for winner in winners:
-                    self._economy_service_factory(db).add_balance(
+                    self._economy_service_provider.get(db).add_balance(
                         channel_name, winner, share, TransactionType.MINIGAME_WIN, f"Победа в КНБ ({winning_choice})"
                     )
             winners_display = ", ".join(f"@{winner}" for winner in winners)
