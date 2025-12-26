@@ -34,17 +34,15 @@ class PostJokeJob:
             try:
                 await asyncio.sleep(30)
 
-                dto = PostJokeDTO(
+                post_joke = PostJokeDTO(
                     channel_name=self._channel_name,
-                    display_name="",
-                    user_name="",
                     bot_nick=self._bot_nick_provider().lower(),
                     occurred_at=datetime.utcnow(),
                 )
 
                 result = await self._handle_post_joke_use_case.handle(
                     db_session_provider=self._db_session_provider,
-                    dto=dto,
+                    post_joke=post_joke,
                 )
                 if result is None:
                     continue

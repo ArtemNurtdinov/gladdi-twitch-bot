@@ -1,5 +1,3 @@
-from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Protocol
 
 from core.background_task_runner import BackgroundTaskRunner
@@ -10,12 +8,6 @@ class BackgroundJob(Protocol):
 
     def register(self, runner: BackgroundTaskRunner) -> None:
         ...
-
-
-@dataclass
-class ChatSummaryState:
-    current_stream_summaries: list[str] = field(default_factory=list)
-    last_chat_summary_time: datetime | None = None
 
 
 class BotBackgroundTasks:

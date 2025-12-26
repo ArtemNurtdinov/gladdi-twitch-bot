@@ -1,6 +1,7 @@
 """Background jobs for Twitch bot."""
 
-from .bot_tasks import BotBackgroundTasks, ChatSummaryState
+from .bot_tasks import BotBackgroundTasks
+from app.twitch.application.background.state import ChatSummaryState
 from .post_joke_job import PostJokeJob
 from .token_checker_job import TokenCheckerJob
 from .stream_status_job import StreamStatusJob

@@ -16,3 +16,4 @@ class IntentUseCase:
         return detected_intent
 
 
+

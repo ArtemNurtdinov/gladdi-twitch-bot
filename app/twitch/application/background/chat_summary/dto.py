@@ -1,9 +1,11 @@
 from dataclasses import dataclass
-
-from app.twitch.application.interaction.dto import ChatContextDTO
+from datetime import datetime
 
 
 @dataclass(frozen=True)
-class ChatSummarizerDTO(ChatContextDTO):
+class ChatSummarizerDTO:
+    channel_name: str
+    occurred_at: datetime
     interval_minutes: int
+
 

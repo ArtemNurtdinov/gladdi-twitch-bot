@@ -31,12 +31,12 @@ class HandlePostJokeUseCase:
     async def handle(
         self,
         db_session_provider: Callable[[], ContextManager[Session]],
-        dto: PostJokeDTO,
+        post_joke: PostJokeDTO,
     ) -> Optional[str]:
         if not self._joke_service.should_generate_jokes():
             return None
 
-        broadcaster_id = await self._user_cache.get_user_id(dto.channel_name)
+        broadcaster_id = await self._user_cache.get_user_id(post_joke.channel_name)
 
         if not broadcaster_id:
             return None
@@ -44,17 +44,16 @@ class HandlePostJokeUseCase:
         stream_info = await self._twitch_api_service.get_stream_info(broadcaster_id)
         game_name = stream_info.game_name if stream_info else "стрима"
         prompt = f"Придумай анекдот, связанный с категорией трансляции: {game_name}."
-        result = self._generate_response_fn(prompt, dto.channel_name)
+        result = self._generate_response_fn(prompt, post_joke.channel_name)
 
         with db_session_provider() as db:
-            self._ai_conversation_use_case_factory(db).save_conversation_to_db(dto.channel_name, prompt, result)
+            self._ai_conversation_use_case_factory(db).save_conversation_to_db(post_joke.channel_name, prompt, result)
             self._chat_use_case_factory(db).save_chat_message(
-                channel_name=dto.channel_name,
-                user_name=dto.bot_nick,
+                channel_name=post_joke.channel_name,
+                user_name=post_joke.bot_nick,
                 content=result,
-                current_time=dto.occurred_at,
+                current_time=post_joke.occurred_at,
             )
 
         self._joke_service.mark_joke_generated()
         return result
-

@@ -25,9 +25,6 @@ class MinigameTickJob:
             try:
                 dto = MinigameTickDTO(
                     channel_name=self._channel_name,
-                    display_name="",
-                    user_name="",
-                    bot_nick="",
                     occurred_at=datetime.utcnow(),
                 )
                 delay = await self._handle_minigame_tick_use_case.handle(dto)

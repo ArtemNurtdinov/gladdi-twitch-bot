@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from app.twitch.presentation.auth import TwitchAuth
+from app.twitch.application.background.token_checker.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 class TokenCheckerJob:
     name = "check_token"
 
-    def __init__(self, twitch_auth: TwitchAuth, interval_seconds: int = 1000):
-        self._twitch_auth = twitch_auth
-        self._interval_seconds = interval_seconds
+    def __init__(self, handle_token_checker_use_case: HandleTokenCheckerUseCase):
+        self._handle_token_checker_use_case = handle_token_checker_use_case
+        self._interval_seconds = handle_token_checker_use_case.interval_seconds
 
     def register(self, runner: BackgroundTaskRunner) -> None:
         runner.register(self.name, self.run)
@@ -21,11 +21,7 @@ class TokenCheckerJob:
         while True:
             try:
                 await asyncio.sleep(self._interval_seconds)
-                token_is_valid = await self._twitch_auth.check_token_is_valid()
-                logger.info(f"Статус токена: {'действителен' if token_is_valid else 'недействителен'}")
-                if not token_is_valid:
-                    await self._twitch_auth.update_access_token()
-                    logger.info("Токен обновлён")
+                await self._handle_token_checker_use_case.handle()
             except asyncio.CancelledError:
                 logger.info("TokenCheckerJob cancelled")
                 break
