@@ -98,7 +98,7 @@ class BotFactory:
             economy_service_provider=self._deps.economy_service_provider,
             chat_use_case_provider=self._deps.chat_use_case_provider,
             stream_service_provider=self._deps.stream_service_provider,
-            get_used_words_use_case_factory=self._deps.get_used_words_use_case,
+            get_used_words_use_case_provider=self._deps.get_used_words_use_case_provider,
             add_used_word_use_case_factory=self._deps.add_used_word_use_case,
             llm_client=self._deps.llm_client,
             system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,

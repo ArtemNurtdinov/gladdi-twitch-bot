@@ -10,6 +10,7 @@ from app.minigame.domain.minigame_service import MinigameService
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
+from app.twitch.application.shared.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
 from core.db import SessionLocal, db_ro_session
 from app.economy.domain.models import TransactionType
 from app.twitch.application.shared import StreamServiceProvider
@@ -26,7 +27,7 @@ class MinigameOrchestrator:
         economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
         stream_service_provider: StreamServiceProvider,
-        get_used_words_use_case_factory,
+        get_used_words_use_case_provider: GetUsedWordsUseCaseProvider,
         add_used_word_use_case_factory,
         conversation_service_provider: ConversationServiceProvider,
         llm_client,
@@ -43,7 +44,7 @@ class MinigameOrchestrator:
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._stream_service_provider = stream_service_provider
-        self._get_used_words_use_case_factory = get_used_words_use_case_factory
+        self._get_used_words_use_case_provider = get_used_words_use_case_provider
         self._add_used_word_use_case_factory = add_used_word_use_case_factory
         self._conversation_service_provider = conversation_service_provider
         self._llm_client = llm_client
@@ -124,7 +125,7 @@ class MinigameOrchestrator:
 
     async def _start_word_game(self, channel_name: str):
         with db_ro_session() as db:
-            used_words = self._get_used_words_use_case_factory(db).get_used_words(channel_name, limit=50)
+            used_words = self._get_used_words_use_case_provider.get(db).get_used_words(channel_name, limit=50)
             last_messages = self._chat_use_case_provider.get(db).get_last_chat_messages(channel_name, limit=50)
 
         chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)

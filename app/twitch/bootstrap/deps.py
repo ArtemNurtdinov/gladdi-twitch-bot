@@ -36,6 +36,7 @@ from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProv
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
+from app.twitch.application.shared.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
 from app.twitch.application.shared.start_stream_use_case_provider import StartStreamUseCaseProvider
 from app.twitch.application.shared.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.auth import TwitchAuth
@@ -69,19 +70,13 @@ class BotDependencies:
     viewer_service_provider: ViewerServiceProvider
     battle_use_case_provider: BattleUseCaseProvider
     betting_service_provider: BettingServiceProvider
+    get_used_words_use_case_provider: GetUsedWordsUseCaseProvider
 
     get_used_words_use_case_factory: Callable = GetUsedWordsUseCase
     add_used_word_use_case_factory: Callable = AddUsedWordsUseCase
-    viewer_service_factory: Callable = ViewerTimeService
-
-    def get_used_words_use_case(self, db) -> GetUsedWordsUseCase:
-        return self.get_used_words_use_case_factory(WordHistoryRepositoryImpl(db))
 
     def add_used_word_use_case(self, db) -> AddUsedWordsUseCase:
         return self.add_used_word_use_case_factory(WordHistoryRepositoryImpl(db))
-
-    def viewer_service(self, db) -> ViewerTimeService:
-        return self.viewer_service_factory(ViewerRepositoryImpl(db))
 
 
 def build_bot_dependencies(
@@ -128,6 +123,9 @@ def build_bot_dependencies(
     def betting_service(db):
         return BettingService(BettingRepositoryImpl(db))
 
+    def get_used_words_use_case(db):
+        return GetUsedWordsUseCase(WordHistoryRepositoryImpl(db))
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
@@ -148,6 +146,7 @@ def build_bot_dependencies(
         start_stream_use_case_provider=StartStreamUseCaseProvider(start_stream_use_case),
         viewer_service_provider=ViewerServiceProvider(viewer_service),
         battle_use_case_provider=BattleUseCaseProvider(battle_use_case),
-        betting_service_provider=BettingServiceProvider(betting_service)
+        betting_service_provider=BettingServiceProvider(betting_service),
+        get_used_words_use_case_provider=GetUsedWordsUseCaseProvider(get_used_words_use_case)
     )
     return deps
