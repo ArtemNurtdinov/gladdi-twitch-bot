@@ -6,12 +6,12 @@ from typing import Callable, ContextManager, Protocol
 import telegram
 from sqlalchemy.orm import Session
 
-from app.battle.application.battle_use_case import BattleUseCase
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.domain.models import StreamStatistics
 from app.twitch.application.background.stream_status.dto import StreamStatusDTO
 from app.twitch.application.shared import ChatResponder, StreamServiceProvider
+from app.twitch.application.shared.battle_use_case_provider import BattleUseCaseProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
@@ -37,7 +37,7 @@ class HandleStreamStatusUseCase:
         stream_service_provider: StreamServiceProvider,
         start_stream_use_case_provider: StartStreamUseCaseProvider,
         viewer_service_provider: ViewerServiceProvider,
-        battle_use_case_factory: Callable[[Session], BattleUseCase],
+        battle_use_case_provider: BattleUseCaseProvider,
         economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
         conversation_service_provider: ConversationServiceProvider,
@@ -52,7 +52,7 @@ class HandleStreamStatusUseCase:
         self._stream_service_provider = stream_service_provider
         self._start_stream_use_case_provider = start_stream_use_case_provider
         self._viewer_service_provider = viewer_service_provider
-        self._battle_use_case_factory = battle_use_case_factory
+        self._battle_use_case_provider = battle_use_case_provider
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
@@ -136,7 +136,7 @@ class HandleStreamStatusUseCase:
         self._minigame_service.reset_stream_state(channel_name)
 
         with db_readonly_session_provider() as db:
-            battles = self._battle_use_case_factory(db).get_battles(channel_name, active_stream.started_at)
+            battles = self._battle_use_case_provider.get(db).get_battles(channel_name, active_stream.started_at)
 
         with db_readonly_session_provider() as db:
             chat_messages = self._chat_use_case_provider.get(db).get_chat_messages(

@@ -30,6 +30,7 @@ from app.stream.application.start_new_stream_use_case import StartNewStreamUseCa
 from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.stream.domain.stream_service import StreamService
 from app.twitch.application.shared import StreamServiceProvider
+from app.twitch.application.shared.battle_use_case_provider import BattleUseCaseProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
@@ -65,6 +66,7 @@ class BotDependencies:
     economy_service_provider: EconomyServiceProvider
     start_stream_use_case_provider: StartStreamUseCaseProvider
     viewer_service_provider: ViewerServiceProvider
+    battle_use_case_provider: BattleUseCaseProvider
 
     battle_use_case_factory: Callable = BattleUseCase
     betting_service_factory: Callable = BettingService
@@ -126,6 +128,9 @@ def build_bot_dependencies(
     def viewer_service(db):
         return ViewerTimeService(ViewerRepositoryImpl(db))
 
+    def battle_use_case(db):
+        return BattleUseCase(BattleRepositoryImpl(db))
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
@@ -144,6 +149,7 @@ def build_bot_dependencies(
         equipment_service_provider=EquipmentServiceProvider(equipment_service),
         economy_service_provider=EconomyServiceProvider(economy_service),
         start_stream_use_case_provider=StartStreamUseCaseProvider(start_stream_use_case),
-        viewer_service_provider=ViewerServiceProvider(viewer_service)
+        viewer_service_provider=ViewerServiceProvider(viewer_service),
+        battle_use_case_provider=BattleUseCaseProvider(battle_use_case)
     )
     return deps

@@ -8,6 +8,7 @@ from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.twitch.application.interaction.battle.dto import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
 from app.twitch.application.shared import ChatResponder
+from app.twitch.application.shared.battle_use_case_provider import BattleUseCaseProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
@@ -21,14 +22,14 @@ class HandleBattleUseCase:
         economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
         conversation_service_provider: ConversationServiceProvider,
-        battle_use_case_factory: Callable[[Session], BattleUseCase],
+        battle_use_case_provider: BattleUseCaseProvider,
         equipment_service_provider: EquipmentServiceProvider,
         chat_responder: ChatResponder,
     ):
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
-        self._battle_use_case_factory = battle_use_case_factory
+        self._battle_use_case_provider = battle_use_case_provider
         self._equipment_service_provider = equipment_service_provider
         self._chat_responder = chat_responder
 
@@ -193,7 +194,7 @@ class HandleBattleUseCase:
                 content=result_story,
                 current_time=battle_dto.occurred_at,
             )
-            self._battle_use_case_factory(db).save_battle_history(
+            self._battle_use_case_provider.get(db).save_battle_history(
                 battle_dto.channel_name, opponent_display, challenger_display, winner, result_story
             )
 

@@ -2,11 +2,11 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.battle.application.battle_use_case import BattleUseCase
 from app.battle.domain.models import UserBattleStats
 from app.betting.domain.betting_service import BettingService
 from app.betting.presentation.betting_schemas import UserBetStats
 from app.twitch.application.interaction.stats.dto import StatsDTO
+from app.twitch.application.shared.battle_use_case_provider import BattleUseCaseProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 
@@ -17,12 +17,12 @@ class HandleStatsUseCase:
         self,
         economy_service_provider: EconomyServiceProvider,
         betting_service_factory: Callable[[Session], BettingService],
-        battle_use_case_factory: Callable[[Session], BattleUseCase],
+        battle_use_case_provider: BattleUseCaseProvider,
         chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._economy_service_provider = economy_service_provider
         self._betting_service_factory = betting_service_factory
-        self._battle_use_case_factory = battle_use_case_factory
+        self._battle_use_case_provider = battle_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -44,7 +44,7 @@ class HandleStatsUseCase:
             bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
 
         with db_readonly_session_provider() as db:
-            battles = self._battle_use_case_factory(db).get_user_battles(dto.channel_name, dto.display_name)
+            battles = self._battle_use_case_provider.get(db).get_user_battles(dto.channel_name, dto.display_name)
 
         if not battles:
             battle_stats = UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
