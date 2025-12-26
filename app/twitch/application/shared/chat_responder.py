@@ -2,9 +2,8 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.ai.application.conversation_service import ConversationService
+from app.ai.domain.llm_client import LLMClient
 from app.ai.domain.models import AIMessage, Role
-from app.ai.data.llm_client import LLMClientImpl
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 
 
@@ -13,7 +12,7 @@ class ChatResponder:
     def __init__(
         self,
         conversation_service_provider: ConversationServiceProvider,
-        llm_client: LLMClientImpl,
+        llm_client: LLMClient,
         system_prompt: str,
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
     ):
@@ -33,4 +32,3 @@ class ChatResponder:
         messages.append(AIMessage(Role.USER, prompt))
         assistant_message = self._llm_client.generate_ai_response(messages)
         return assistant_message
-

@@ -1,15 +1,9 @@
-from typing import Callable, ContextManager
-
-from sqlalchemy.orm import Session
-
-from app.ai.application.conversation_service import ConversationService
 from app.ai.application.intent_use_case import IntentUseCase
 from app.ai.application.prompt_service import PromptService
 from app.ai.domain.models import Intent
 from app.twitch.application.interaction.ask.dto import AskCommandDTO
 from app.twitch.application.shared import ChatResponder
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
+from app.twitch.application.interaction.ask.ask_uow import AskUnitOfWorkFactory
 
 
 class HandleAskUseCase:
@@ -18,22 +12,15 @@ class HandleAskUseCase:
         self,
         intent_use_case: IntentUseCase,
         prompt_service: PromptService,
-        conversation_service_provider: ConversationServiceProvider,
-        chat_use_case_provider: ChatUseCaseProvider,
+        unit_of_work_factory: AskUnitOfWorkFactory,
         chat_responder: ChatResponder,
     ):
         self._intent_use_case = intent_use_case
         self._prompt_service = prompt_service
-        self._conversation_service_provider = conversation_service_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._unit_of_work_factory = unit_of_work_factory
         self._chat_responder = chat_responder
 
-    async def handle(
-        self,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        dto: AskCommandDTO,
-    ) -> str:
-
+    async def handle(self, dto: AskCommandDTO) -> str:
         intent = self._intent_use_case.get_intent_from_text(dto.message)
 
         if intent == Intent.JACKBOX:
@@ -49,13 +36,13 @@ class HandleAskUseCase:
 
         result = self._chat_responder.generate_response(prompt, dto.channel_name)
 
-        with db_session_provider() as db:
-            self._conversation_service_provider.get(db).save_conversation_to_db(
+        with self._unit_of_work_factory.create() as uow:
+            uow.conversation.save_conversation_to_db(
                 channel_name=dto.channel_name,
                 user_message=prompt,
                 ai_message=result,
             )
-            self._chat_use_case_provider.get(db).save_chat_message(
+            uow.chat.save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.bot_nick.lower(),
                 content=result,
