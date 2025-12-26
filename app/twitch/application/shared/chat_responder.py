@@ -32,3 +32,10 @@ class ChatResponder:
         messages.append(AIMessage(Role.USER, prompt))
         assistant_message = self._llm_client.generate_ai_response(messages)
         return assistant_message
+
+    def generate_response_from_history(self, history: list[AIMessage], prompt: str) -> str:
+        messages = list(history)
+        messages.append(AIMessage(Role.USER, prompt))
+        return self._llm_client.generate_ai_response(messages)
+
+    
