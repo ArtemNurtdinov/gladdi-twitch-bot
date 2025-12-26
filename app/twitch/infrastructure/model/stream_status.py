@@ -24,11 +24,3 @@ class StreamData:
 class StreamStatus:
     is_online: bool
     stream_data: Optional[StreamData] = None
-    
-    @classmethod
-    def online(cls, stream_data: StreamData) -> 'StreamStatus':
-        return cls(is_online=True, stream_data=stream_data)
-    
-    @classmethod
-    def offline(cls) -> 'StreamStatus':
-        return cls(is_online=False, stream_data=None) 

@@ -148,10 +148,10 @@ class TwitchApiService:
                     is_mature=stream_raw.get('is_mature', False)
                 )
                 logger.debug(f"Стрим для {broadcaster_id}: онлайн")
-                return StreamStatus.online(stream_data)
+                return StreamStatus(is_online=True, stream_data=stream_data)
             else:
                 logger.debug(f"Стрим для {broadcaster_id}: офлайн")
-                return StreamStatus.offline()
+                return StreamStatus(is_online=False, stream_data=None)
         except httpx.TimeoutException:
             logger.error(f"Таймаут при получении статуса стрима {broadcaster_id}")
             return None
