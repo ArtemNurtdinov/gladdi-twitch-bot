@@ -3,10 +3,10 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.battle.domain.models import UserBattleStats
-from app.betting.domain.betting_service import BettingService
 from app.betting.presentation.betting_schemas import UserBetStats
 from app.twitch.application.interaction.stats.dto import StatsDTO
 from app.twitch.application.shared.battle_use_case_provider import BattleUseCaseProvider
+from app.twitch.application.shared.betting_service_provider import BettingServiceProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 
@@ -16,12 +16,12 @@ class HandleStatsUseCase:
     def __init__(
         self,
         economy_service_provider: EconomyServiceProvider,
-        betting_service_factory: Callable[[Session], BettingService],
+        betting_service_provider: BettingServiceProvider,
         battle_use_case_provider: BattleUseCaseProvider,
         chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._economy_service_provider = economy_service_provider
-        self._betting_service_factory = betting_service_factory
+        self._betting_service_provider = betting_service_provider
         self._battle_use_case_provider = battle_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider
 
@@ -33,7 +33,7 @@ class HandleStatsUseCase:
     ) -> str:
         with db_session_provider() as db:
             balance = self._economy_service_provider.get(db).get_user_balance(dto.channel_name, dto.user_name)
-            bets = self._betting_service_factory(db).get_user_bets(dto.channel_name, dto.user_name)
+            bets = self._betting_service_provider.get(db).get_user_bets(dto.channel_name, dto.user_name)
 
         if not bets:
             bet_stats = UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)

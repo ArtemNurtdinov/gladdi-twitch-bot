@@ -13,6 +13,7 @@ from app.economy.domain.models import (
     TransactionType,
 )
 from app.twitch.application.interaction.roll.dto import RollDTO, RollUseCaseResult, RollTimeoutAction
+from app.twitch.application.shared.betting_service_provider import BettingServiceProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
@@ -24,12 +25,12 @@ class HandleRollUseCase:
     def __init__(
         self,
         economy_service_provider: EconomyServiceProvider,
-        betting_service_factory: Callable[[Session], BettingService],
+        betting_service_provider: BettingServiceProvider,
         equipment_service_provider: EquipmentServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
         self._economy_service_provider = economy_service_provider
-        self._betting_service_factory = betting_service_factory
+        self._betting_service_provider = betting_service_provider
         self._equipment_service_provider = equipment_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
@@ -106,7 +107,7 @@ class HandleRollUseCase:
             result_type = "miss"
 
         with db_readonly_session_provider() as db:
-            rarity_level = self._betting_service_factory(db).determine_correct_rarity(slot_result_string, result_type)
+            rarity_level = self._betting_service_provider.get(db).determine_correct_rarity(slot_result_string, result_type)
             equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
 
         with db_session_provider() as db:
@@ -178,7 +179,7 @@ class HandleRollUseCase:
                 user_balance = self._economy_service_provider.get(db).add_balance(
                     dto.channel_name, dto.user_name, payout, transaction_type, description
                 )
-            self._betting_service_factory(db).save_bet(dto.channel_name, dto.user_name, slot_result_string, result_type, rarity_level)
+            self._betting_service_provider.get(db).save_bet(dto.channel_name, dto.user_name, slot_result_string, result_type, rarity_level)
 
         result_emoji = self._get_result_emoji(result_type, payout)
         profit = payout - bet_amount

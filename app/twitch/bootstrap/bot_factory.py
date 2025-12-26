@@ -249,7 +249,7 @@ class BotFactory:
             command_name=settings.command_roll,
             handle_roll_use_case=HandleRollUseCase(
                 economy_service_provider=deps.economy_service_provider,
-                betting_service_factory=deps.betting_service,
+                betting_service_provider=deps.betting_service_provider,
                 equipment_service_provider=deps.equipment_service_provider,
                 chat_use_case_provider=deps.chat_use_case_provider
             ),
@@ -335,7 +335,7 @@ class BotFactory:
         stats = StatsCommandHandler(
             handle_stats_use_case=HandleStatsUseCase(
                 economy_service_provider=deps.economy_service_provider,
-                betting_service_factory=deps.betting_service,
+                betting_service_provider=deps.betting_service_provider,
                 battle_use_case_provider=deps.battle_use_case_provider,
                 chat_use_case_provider=deps.chat_use_case_provider,
             ),
