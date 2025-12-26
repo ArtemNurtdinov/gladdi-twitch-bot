@@ -1,7 +1,7 @@
 import logging
 from collections import Counter
 from datetime import datetime
-from typing import Callable, ContextManager
+from typing import Callable, ContextManager, Protocol
 
 import telegram
 from sqlalchemy.orm import Session
@@ -13,7 +13,6 @@ from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.domain.models import StreamStatistics
 from app.stream.domain.stream_service import StreamService
-from app.twitch.application.background.state import ChatSummaryState
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from app.twitch.application.background.stream_status.dto import StreamStatusDTO
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
@@ -22,6 +21,11 @@ from app.chat.application.chat_use_case import ChatUseCase
 from app.ai.application.conversation_service import ConversationService
 
 logger = logging.getLogger(__name__)
+
+
+class ChatSummaryStateProtocol(Protocol):
+    current_stream_summaries: list[str]
+    last_chat_summary_time: datetime | None
 
 
 class HandleStreamStatusUseCase:
@@ -41,7 +45,7 @@ class HandleStreamStatusUseCase:
         telegram_bot: telegram.Bot,
         telegram_group_id: int,
         generate_response_fn: Callable[[str, str], str],
-        state: ChatSummaryState,
+        state: ChatSummaryStateProtocol,
     ):
         self._user_cache = user_cache
         self._twitch_api_service = twitch_api_service

@@ -9,7 +9,7 @@ from app.twitch.application.background.chat_summary.dto import ChatSummarizerDTO
 from app.twitch.application.background.chat_summary.handle_chat_summarizer_use_case import (
     HandleChatSummarizerUseCase,
 )
-from app.twitch.application.background.state import ChatSummaryState
+from app.twitch.presentation.background.model.state import ChatSummaryState
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from core.background_task_runner import BackgroundTaskRunner
 

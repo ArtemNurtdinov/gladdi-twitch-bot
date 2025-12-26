@@ -4,7 +4,7 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.background.state import ChatSummaryState
+from app.twitch.presentation.background.model.state import ChatSummaryState
 from app.twitch.application.background.stream_status.dto import StreamStatusDTO
 from app.twitch.application.background.stream_status.handle_stream_status_use_case import HandleStreamStatusUseCase
 from core.background_task_runner import BackgroundTaskRunner
