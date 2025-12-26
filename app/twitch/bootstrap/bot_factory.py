@@ -99,7 +99,7 @@ class BotFactory:
             chat_use_case_provider=self._deps.chat_use_case_provider,
             stream_service_provider=self._deps.stream_service_provider,
             get_used_words_use_case_provider=self._deps.get_used_words_use_case_provider,
-            add_used_word_use_case_factory=self._deps.add_used_word_use_case,
+            add_used_words_use_case_provider=self._deps.add_used_words_use_case_provider,
             llm_client=self._deps.llm_client,
             system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
             prefix=self._settings.prefix,

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Callable
 
 import telegram
 from telegram.request import HTTPXRequest
@@ -10,6 +9,7 @@ from app.ai.application.prompt_service import PromptService
 from app.ai.data.intent_detector_client import IntentDetectorClientImpl
 from app.ai.data.llm_client import LLMClientImpl
 from app.ai.data.message_repository import AIMessageRepositoryImpl
+from app.ai.domain.llm_client import LLMClient
 from app.battle.application.battle_use_case import BattleUseCase
 from app.battle.data.battle_repository import BattleRepositoryImpl
 from app.betting.data.betting_repository import BettingRepositoryImpl
@@ -30,6 +30,7 @@ from app.stream.application.start_new_stream_use_case import StartNewStreamUseCa
 from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.stream.domain.stream_service import StreamService
 from app.twitch.application.shared import StreamServiceProvider
+from app.twitch.application.shared.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
 from app.twitch.application.shared.battle_use_case_provider import BattleUseCaseProvider
 from app.twitch.application.shared.betting_service_provider import BettingServiceProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
@@ -52,7 +53,7 @@ from core.config import config
 class BotDependencies:
     twitch_auth: TwitchAuth
     twitch_api_service: TwitchApiService
-    llm_client: LLMClientImpl
+    llm_client: LLMClient
     intent_detector: IntentDetectorClientImpl
     intent_use_case: IntentUseCase
     prompt_service: PromptService
@@ -71,12 +72,7 @@ class BotDependencies:
     battle_use_case_provider: BattleUseCaseProvider
     betting_service_provider: BettingServiceProvider
     get_used_words_use_case_provider: GetUsedWordsUseCaseProvider
-
-    get_used_words_use_case_factory: Callable = GetUsedWordsUseCase
-    add_used_word_use_case_factory: Callable = AddUsedWordsUseCase
-
-    def add_used_word_use_case(self, db) -> AddUsedWordsUseCase:
-        return self.add_used_word_use_case_factory(WordHistoryRepositoryImpl(db))
+    add_used_words_use_case_provider: AddUsedWordsUseCaseProvider
 
 
 def build_bot_dependencies(
@@ -126,6 +122,9 @@ def build_bot_dependencies(
     def get_used_words_use_case(db):
         return GetUsedWordsUseCase(WordHistoryRepositoryImpl(db))
 
+    def add_used_word_use_case(db):
+        return AddUsedWordsUseCase(WordHistoryRepositoryImpl(db))
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
@@ -147,6 +146,7 @@ def build_bot_dependencies(
         viewer_service_provider=ViewerServiceProvider(viewer_service),
         battle_use_case_provider=BattleUseCaseProvider(battle_use_case),
         betting_service_provider=BettingServiceProvider(betting_service),
-        get_used_words_use_case_provider=GetUsedWordsUseCaseProvider(get_used_words_use_case)
+        get_used_words_use_case_provider=GetUsedWordsUseCaseProvider(get_used_words_use_case),
+        add_used_words_use_case_provider=AddUsedWordsUseCaseProvider(add_used_word_use_case)
     )
     return deps

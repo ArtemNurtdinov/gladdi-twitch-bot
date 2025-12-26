@@ -5,8 +5,10 @@ import random
 from datetime import datetime
 from typing import Callable, Awaitable
 
+from app.ai.domain.llm_client import LLMClient
 from app.ai.domain.models import AIMessage, Role
 from app.minigame.domain.minigame_service import MinigameService
+from app.twitch.application.shared.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
@@ -28,9 +30,9 @@ class MinigameOrchestrator:
         chat_use_case_provider: ChatUseCaseProvider,
         stream_service_provider: StreamServiceProvider,
         get_used_words_use_case_provider: GetUsedWordsUseCaseProvider,
-        add_used_word_use_case_factory,
+        add_used_words_use_case_provider: AddUsedWordsUseCaseProvider,
         conversation_service_provider: ConversationServiceProvider,
-        llm_client,
+        llm_client: LLMClient,
         system_prompt: str,
         prefix: str,
         command_guess_letter: str,
@@ -45,7 +47,7 @@ class MinigameOrchestrator:
         self._chat_use_case_provider = chat_use_case_provider
         self._stream_service_provider = stream_service_provider
         self._get_used_words_use_case_provider = get_used_words_use_case_provider
-        self._add_used_word_use_case_factory = add_used_word_use_case_factory
+        self._add_used_words_use_case_provider = add_used_words_use_case_provider
         self._conversation_service_provider = conversation_service_provider
         self._llm_client = llm_client
         self._system_prompt = system_prompt
@@ -156,7 +158,7 @@ class MinigameOrchestrator:
 
         game = self.minigame_service.start_word_guess_game(channel_name, final_word, hint)
         with SessionLocal.begin() as db:
-            self._add_used_word_use_case_factory(db).add_used_words(channel_name, final_word)
+            self._add_used_words_use_case_provider.get(db).add_used_words(channel_name, final_word)
 
         masked = game.get_masked_word()
         game_message = (
