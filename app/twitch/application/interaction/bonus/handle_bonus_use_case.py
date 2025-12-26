@@ -5,20 +5,20 @@ from sqlalchemy.orm import Session
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.equipment.domain.equipment_service import EquipmentService
-from app.stream.domain.stream_service import StreamService
 from app.twitch.application.interaction.bonus.dto import BonusDTO
+from app.twitch.application.shared import StreamServiceProvider
 
 
 class HandleBonusUseCase:
 
     def __init__(
         self,
-        stream_service_factory: Callable[[Session], StreamService],
+        stream_service_provider: StreamServiceProvider,
         equipment_service_factory: Callable[[Session], EquipmentService],
         economy_service_factory: Callable[[Session], EconomyService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
     ):
-        self._stream_service_factory = stream_service_factory
+        self._stream_service_provider = stream_service_provider
         self._equipment_service_factory = equipment_service_factory
         self._economy_service_factory = economy_service_factory
         self._chat_use_case_factory = chat_use_case_factory
@@ -30,7 +30,7 @@ class HandleBonusUseCase:
         bonus: BonusDTO,
     ) -> str:
         with db_readonly_session_provider() as db:
-            active_stream = self._stream_service_factory(db).get_active_stream(bonus.channel_name)
+            active_stream = self._stream_service_provider.get(db).get_active_stream(bonus.channel_name)
 
         if not active_stream:
             result = f"🚫 @{bonus.display_name}, бонус доступен только во время стрима!"

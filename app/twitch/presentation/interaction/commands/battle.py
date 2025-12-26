@@ -31,7 +31,7 @@ class BattleCommandHandler:
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, battle_waiting_user_ref, ctx):
-        dto = BattleDTO(
+        battle_dto = BattleDTO(
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
@@ -42,9 +42,9 @@ class BattleCommandHandler:
         )
 
         result = await self._handle_battle_use_case.handle(
-            self._db_session_provider,
-            self._db_readonly_session_provider,
-            dto,
+            db_session_provider=self._db_session_provider,
+            db_readonly_session_provider=self._db_readonly_session_provider,
+            battle_dto=battle_dto,
         )
 
         battle_waiting_user_ref["value"] = result.new_waiting_user

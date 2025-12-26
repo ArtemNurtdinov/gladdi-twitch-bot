@@ -9,6 +9,7 @@ from app.ai.domain.models import AIMessage, Role
 from app.minigame.domain.minigame_service import MinigameService
 from core.db import SessionLocal, db_ro_session
 from app.economy.domain.models import TransactionType
+from app.twitch.application.shared import StreamServiceProvider
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ class MinigameOrchestrator:
         minigame_service: MinigameService,
         economy_service_factory,
         chat_use_case_factory,
-        stream_service_factory,
+        stream_service_provider: StreamServiceProvider,
         get_used_words_use_case_factory,
         add_used_word_use_case_factory,
         ai_conversation_use_case_factory,
@@ -38,7 +39,7 @@ class MinigameOrchestrator:
         self.minigame_service = minigame_service
         self._economy_service_factory = economy_service_factory
         self._chat_use_case_factory = chat_use_case_factory
-        self._stream_service_factory = stream_service_factory
+        self._stream_service_provider = stream_service_provider
         self._get_used_words_use_case_factory = get_used_words_use_case_factory
         self._add_used_word_use_case_factory = add_used_word_use_case_factory
         self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
@@ -64,7 +65,7 @@ class MinigameOrchestrator:
         await self._finish_expired_games()
 
         with db_ro_session() as db:
-            active_stream = self._stream_service_factory(db).get_active_stream(channel_name)
+            active_stream = self._stream_service_provider.get(db).get_active_stream(channel_name)
 
         if not active_stream:
             return self.DEFAULT_SLEEP_SECONDS

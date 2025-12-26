@@ -29,6 +29,7 @@ from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.stream.domain.stream_service import StreamService
+from app.twitch.application.shared import StreamServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.infrastructure.auth import TwitchAuth
@@ -51,6 +52,8 @@ class BotDependencies:
     user_cache: UserCacheService
     background_runner: BackgroundTaskRunner
     telegram_bot: telegram.Bot
+    stream_service_factory: Callable
+    stream_service_provider: StreamServiceProvider
 
     chat_use_case_factory: Callable = ChatUseCase
     battle_use_case_factory: Callable = BattleUseCase
@@ -60,7 +63,6 @@ class BotDependencies:
     equipment_service_factory: Callable = EquipmentService
     get_used_words_use_case_factory: Callable = GetUsedWordsUseCase
     add_used_word_use_case_factory: Callable = AddUsedWordsUseCase
-    stream_service_factory: Callable = StreamService
     start_new_stream_use_case_factory: Callable = StartNewStreamUseCase
     viewer_service_factory: Callable = ViewerTimeService
 
@@ -90,14 +92,13 @@ class BotDependencies:
         return self.add_used_word_use_case_factory(WordHistoryRepositoryImpl(db))
 
     def stream_service(self, db) -> StreamService:
-        return self.stream_service_factory(StreamRepositoryImpl(db))
+        return self.stream_service_factory(db)
 
     def start_new_stream_use_case(self, db) -> StartNewStreamUseCase:
         return self.start_new_stream_use_case_factory(StreamRepositoryImpl(db))
 
     def viewer_service(self, db) -> ViewerTimeService:
         return self.viewer_service_factory(ViewerRepositoryImpl(db))
-
 
 def build_bot_dependencies(
     twitch_auth: TwitchAuth,
@@ -116,7 +117,10 @@ def build_bot_dependencies(
     http_request = HTTPXRequest(connection_pool_size=10, pool_timeout=10)
     telegram_bot = telegram.Bot(token=config.telegram.bot_token, request=http_request)
 
-    return BotDependencies(
+    def stream_service(db):
+        return StreamService(StreamRepositoryImpl(db))
+
+    deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
         llm_client=llm_client,
@@ -128,5 +132,9 @@ def build_bot_dependencies(
         user_cache=user_cache,
         background_runner=background_runner,
         telegram_bot=telegram_bot,
+        stream_service_factory=stream_service,
+        stream_service_provider=StreamServiceProvider(stream_service),
     )
+    return deps
+
 

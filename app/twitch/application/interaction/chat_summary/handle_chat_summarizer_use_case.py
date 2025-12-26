@@ -4,7 +4,7 @@ from typing import Callable, ContextManager, Optional
 from sqlalchemy.orm import Session
 
 from app.twitch.application.interaction.chat_summary.dto import ChatSummarizerDTO
-from app.stream.domain.stream_service import StreamService
+from app.twitch.application.shared import StreamServiceProvider
 from app.chat.application.chat_use_case import ChatUseCase
 
 
@@ -12,11 +12,11 @@ class HandleChatSummarizerUseCase:
 
     def __init__(
         self,
-        stream_service_factory: Callable[[Session], StreamService],
+        stream_service_provider: StreamServiceProvider,
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         generate_response_fn: Callable[[str, str], str],
     ):
-        self._stream_service_factory = stream_service_factory
+        self._stream_service_provider = stream_service_provider
         self._chat_use_case_factory = chat_use_case_factory
         self._generate_response_fn = generate_response_fn
 
@@ -26,7 +26,7 @@ class HandleChatSummarizerUseCase:
         dto: ChatSummarizerDTO,
     ) -> Optional[str]:
         with db_readonly_session_provider() as db:
-            active_stream = self._stream_service_factory(db).get_active_stream(dto.channel_name)
+            active_stream = self._stream_service_provider.get(db).get_active_stream(dto.channel_name)
         if not active_stream:
             return None
 

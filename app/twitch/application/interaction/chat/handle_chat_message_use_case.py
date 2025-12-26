@@ -7,8 +7,8 @@ from app.ai.application.prompt_service import PromptService
 from app.ai.domain.models import Intent
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
-from app.stream.domain.stream_service import StreamService
 from app.twitch.application.interaction.chat.dto import ChatMessageDTO
+from app.twitch.application.shared import StreamServiceProvider
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 
 
@@ -18,7 +18,7 @@ class HandleChatMessageUseCase:
         self,
         chat_use_case_factory: Callable[[Session], ChatUseCase],
         economy_service_factory: Callable[[Session], EconomyService],
-        stream_service_factory: Callable[[Session], StreamService],
+        stream_service_provider: StreamServiceProvider,
         viewer_service_factory: Callable[[Session], ViewerTimeService],
         intent_use_case: IntentUseCase,
         prompt_service: PromptService,
@@ -26,7 +26,7 @@ class HandleChatMessageUseCase:
     ):
         self._chat_use_case_factory = chat_use_case_factory
         self._economy_service_factory = economy_service_factory
-        self._stream_service_factory = stream_service_factory
+        self._stream_service_provider = stream_service_provider
         self._viewer_service_factory = viewer_service_factory
         self._intent_use_case = intent_use_case
         self._prompt_service = prompt_service
@@ -49,7 +49,7 @@ class HandleChatMessageUseCase:
                 channel_name=dto.channel_name,
                 user_name=dto.user_name,
             )
-            active_stream = self._stream_service_factory(db).get_active_stream(dto.channel_name)
+            active_stream = self._stream_service_provider.get(db).get_active_stream(dto.channel_name)
             if active_stream:
                 self._viewer_service_factory(db).update_viewer_session(
                     stream_id=active_stream.id,

@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
-from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.viewer_time.dto import ViewerTimeDTO
+from app.twitch.application.shared import StreamServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
@@ -20,13 +20,13 @@ class HandleViewerTimeUseCase:
     def __init__(
         self,
         viewer_service_factory: Callable[[Session], ViewerTimeService],
-        stream_service_factory: Callable[[Session], StreamService],
+        stream_service_provider: StreamServiceProvider,
         economy_service_factory: Callable[[Session], EconomyService],
         user_cache: UserCacheService,
         twitch_api_service: TwitchApiService,
     ):
         self._viewer_service_factory = viewer_service_factory
-        self._stream_service_factory = stream_service_factory
+        self._stream_service_provider = stream_service_provider
         self._economy_service_factory = economy_service_factory
         self._user_cache = user_cache
         self._twitch_api_service = twitch_api_service
@@ -38,7 +38,7 @@ class HandleViewerTimeUseCase:
         viewer_time_dto: ViewerTimeDTO,
     ) -> None:
         with db_readonly_session_provider() as db:
-            active_stream = self._stream_service_factory(db).get_active_stream(viewer_time_dto.channel_name)
+            active_stream = self._stream_service_provider.get(db).get_active_stream(viewer_time_dto.channel_name)
 
         if not active_stream:
             return
@@ -63,7 +63,7 @@ class HandleViewerTimeUseCase:
 
         if viewers_count > active_stream.max_concurrent_viewers:
             with db_session_provider() as db:
-                self._stream_service_factory(db).update_max_concurrent_viewers_count(active_stream.id, viewers_count)
+                self._stream_service_provider.get(db).update_max_concurrent_viewers_count(active_stream.id, viewers_count)
 
         with db_session_provider() as db:
             viewer_sessions = self._viewer_service_factory(db).get_stream_viewer_sessions(active_stream.id)

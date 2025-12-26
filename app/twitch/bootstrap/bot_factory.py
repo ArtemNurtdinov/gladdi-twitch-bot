@@ -97,7 +97,7 @@ class BotFactory:
             minigame_service=self._deps.minigame_service,
             economy_service_factory=self._deps.economy_service,
             chat_use_case_factory=self._deps.chat_use_case,
-            stream_service_factory=self._deps.stream_service,
+            stream_service_provider=self._deps.stream_service_provider,
             get_used_words_use_case_factory=self._deps.get_used_words_use_case,
             add_used_word_use_case_factory=self._deps.add_used_word_use_case,
             ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
@@ -141,7 +141,7 @@ class BotFactory:
                     handle_stream_status_use_case=HandleStreamStatusUseCase(
                         user_cache=self._deps.user_cache,
                         twitch_api_service=self._deps.twitch_api_service,
-                        stream_service_factory=self._deps.stream_service,
+                        stream_service_provider=self._deps.stream_service_provider,
                         start_new_stream_use_case_factory=self._deps.start_new_stream_use_case,
                         viewer_service_factory=self._deps.viewer_service,
                         battle_use_case_factory=self._deps.battle_use_case,
@@ -163,7 +163,7 @@ class BotFactory:
                     channel_name=self._settings.channel_name,
                     twitch_api_service=self._deps.twitch_api_service,
                     handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
-                        stream_service_factory=self._deps.stream_service,
+                        stream_service_provider=self._deps.stream_service_provider,
                         chat_use_case_factory=self._deps.chat_use_case,
                         chat_responder=chat_responder,
                     ),
@@ -180,7 +180,7 @@ class BotFactory:
                     channel_name=self._settings.channel_name,
                     handle_viewer_time_use_case=HandleViewerTimeUseCase(
                         viewer_service_factory=self._deps.viewer_service,
-                        stream_service_factory=self._deps.stream_service,
+                        stream_service_provider=self._deps.stream_service_provider,
                         economy_service_factory=self._deps.economy_service,
                         user_cache=self._deps.user_cache,
                         twitch_api_service=self._deps.twitch_api_service,
@@ -272,7 +272,7 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_bonus,
             handle_bonus_use_case=HandleBonusUseCase(
-                stream_service_factory=deps.stream_service,
+                stream_service_provider=deps.stream_service_provider,
                 equipment_service_factory=deps.equipment_service,
                 economy_service_factory=deps.economy_service,
                 chat_use_case_factory=deps.chat_use_case,
@@ -416,7 +416,7 @@ class BotFactory:
         handle_chat_message = HandleChatMessageUseCase(
             chat_use_case_factory=self._deps.chat_use_case,
             economy_service_factory=self._deps.economy_service,
-            stream_service_factory=self._deps.stream_service,
+            stream_service_provider=self._deps.stream_service_provider,
             viewer_service_factory=self._deps.viewer_service,
             intent_use_case=self._deps.intent_use_case,
             prompt_service=self._deps.prompt_service,
@@ -435,7 +435,7 @@ class BotFactory:
 
         try:
             HandleRestoreStreamContextUseCase(
-                stream_service_factory=self._deps.stream_service,
+                stream_service_provider=self._deps.stream_service_provider,
                 minigame_service=self._deps.minigame_service,
                 db_readonly_session_provider=lambda: db_ro_session(),
             ).handle(self._settings.channel_name)

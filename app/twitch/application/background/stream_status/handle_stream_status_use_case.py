@@ -12,10 +12,9 @@ from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.domain.models import StreamStatistics
-from app.stream.domain.stream_service import StreamService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from app.twitch.application.background.stream_status.dto import StreamStatusDTO
-from app.twitch.application.shared import ChatResponder
+from app.twitch.application.shared import ChatResponder, StreamServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.chat.application.chat_use_case import ChatUseCase
@@ -35,7 +34,7 @@ class HandleStreamStatusUseCase:
         self,
         user_cache: UserCacheService,
         twitch_api_service: TwitchApiService,
-        stream_service_factory: Callable[[Session], StreamService],
+        stream_service_provider: StreamServiceProvider,
         start_new_stream_use_case_factory: Callable[[Session], StartNewStreamUseCase],
         viewer_service_factory: Callable[[Session], ViewerTimeService],
         battle_use_case_factory: Callable[[Session], BattleUseCase],
@@ -50,7 +49,7 @@ class HandleStreamStatusUseCase:
     ):
         self._user_cache = user_cache
         self._twitch_api_service = twitch_api_service
-        self._stream_service_factory = stream_service_factory
+        self._stream_service_provider = stream_service_provider
         self._start_new_stream_use_case_factory = start_new_stream_use_case_factory
         self._viewer_service_factory = viewer_service_factory
         self._battle_use_case_factory = battle_use_case_factory
@@ -86,7 +85,7 @@ class HandleStreamStatusUseCase:
         logger.info(f"Статус стрима: {stream_status}")
 
         with db_readonly_session_provider() as db:
-            active_stream = self._stream_service_factory(db).get_active_stream(dto.channel_name)
+            active_stream = self._stream_service_provider.get(db).get_active_stream(dto.channel_name)
 
         if stream_status.is_online and active_stream is None:
             logger.info(f"Стрим начался: {game_name} - {title}")
@@ -98,7 +97,7 @@ class HandleStreamStatusUseCase:
         elif stream_status.is_online and active_stream:
             if active_stream.game_name != game_name or active_stream.title != title:
                 with db_session_provider() as db:
-                    self._stream_service_factory(db).update_stream_metadata(active_stream.id, game_name, title)
+                    self._stream_service_provider.get(db).update_stream_metadata(active_stream.id, game_name, title)
                 logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
     async def _handle_stream_start(
@@ -129,10 +128,10 @@ class HandleStreamStatusUseCase:
         finish_time = datetime.utcnow()
         logger.info("Стрим завершён")
         with db_session_provider() as db:
-            self._stream_service_factory(db).end_stream(active_stream.id, finish_time)
+            self._stream_service_provider.get(db).end_stream(active_stream.id, finish_time)
             self._viewer_service_factory(db).finish_stream_sessions(active_stream.id, finish_time)
             total_viewers = self._viewer_service_factory(db).get_unique_viewers_count(active_stream.id)
-            self._stream_service_factory(db).update_stream_total_viewers(active_stream.id, total_viewers)
+            self._stream_service_provider.get(db).update_stream_total_viewers(active_stream.id, total_viewers)
             logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
         self._minigame_service.reset_stream_state(channel_name)
@@ -204,7 +203,7 @@ class HandleStreamStatusUseCase:
                     f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
                     f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
                 )
-                result = self._generate_response_fn(prompt, channel_name)
+                result = self._chat_responder.generate_response(prompt, channel_name)
                 self._state.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
@@ -241,7 +240,7 @@ class HandleStreamStatusUseCase:
             prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
 
         prompt += f"\n\nНа основе предоставленной информации подведи краткий итог трансляции"
-        result = self._generate_response_fn(prompt, channel_name)
+        result = self._chat_responder.generate_response(prompt, channel_name)
 
         with db_session_provider() as db:
             self._ai_conversation_use_case_factory(db).save_conversation_to_db(channel_name, prompt, result)
