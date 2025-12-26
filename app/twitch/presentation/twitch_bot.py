@@ -4,13 +4,11 @@ from typing import Optional
 
 from twitchio.ext import commands
 
-from app.ai.domain.models import AIMessage, Role
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings, DEFAULT_SETTINGS
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.model.state import ChatSummaryState
 from app.twitch.presentation.interaction.chat_event_handler import ChatEventHandler
-from core.db import db_ro_session
 
 logger = logging.getLogger(__name__)
 
@@ -346,29 +344,3 @@ class Bot(commands.Bot):
             await channel.send(msg)
             await asyncio.sleep(0.3)
 
-    def restore_stream_context(self):
-        try:
-            if not self.initial_channels:
-                logger.warning("Список каналов пуст при восстановлении контекста стрима")
-                return
-
-            channel_name = self.initial_channels[0]
-            with db_ro_session() as db:
-                active_stream = self._deps.stream_service(db).get_active_stream(channel_name)
-
-            if active_stream:
-                self._deps.minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
-                logger.info(f"Найден активный стрим ID {active_stream.id}")
-            else:
-                logger.info("Активных стримов не найдено")
-        except Exception as e:
-            logger.error(f"Ошибка при восстановлении состояния стрима: {e}")
-
-    def generate_response_in_chat(self, prompt: str, channel_name: str) -> str:
-        messages = []
-        with db_ro_session() as db:
-            last_messages = self._deps.ai_conversation_use_case(db).get_last_messages(channel_name, self.SYSTEM_PROMPT_FOR_GROUP)
-        messages.extend(last_messages)
-        messages.append(AIMessage(Role.USER, prompt))
-        assistant_message = self._deps.llm_client.generate_ai_response(messages)
-        return assistant_message

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.chat.application.chat_use_case import ChatUseCase
 from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.chat_summary.dto import ChatSummarizerDTO
+from app.twitch.application.shared import ChatResponder
 
 
 class HandleChatSummarizerUseCase:
@@ -14,11 +15,11 @@ class HandleChatSummarizerUseCase:
         self,
         stream_service_factory: Callable[[Session], StreamService],
         chat_use_case_factory: Callable[[Session], ChatUseCase],
-        generate_response_fn: Callable[[str, str], str],
+        chat_responder: ChatResponder,
     ):
         self._stream_service_factory = stream_service_factory
         self._chat_use_case_factory = chat_use_case_factory
-        self._generate_response_fn = generate_response_fn
+        self._chat_responder = chat_responder
 
     async def handle(
         self,
@@ -42,7 +43,7 @@ class HandleChatSummarizerUseCase:
             f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
             f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
         )
-        result = self._generate_response_fn(prompt, chat_summarizer.channel_name)
+        result = self._chat_responder.generate_response(prompt, chat_summarizer.channel_name)
         return result
 
 

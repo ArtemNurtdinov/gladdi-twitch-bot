@@ -15,6 +15,7 @@ from app.stream.domain.models import StreamStatistics
 from app.stream.domain.stream_service import StreamService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from app.twitch.application.background.stream_status.dto import StreamStatusDTO
+from app.twitch.application.shared import ChatResponder
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.chat.application.chat_use_case import ChatUseCase
@@ -44,7 +45,7 @@ class HandleStreamStatusUseCase:
         minigame_service: MinigameService,
         telegram_bot: telegram.Bot,
         telegram_group_id: int,
-        generate_response_fn: Callable[[str, str], str],
+        chat_responder: ChatResponder,
         state: ChatSummaryStateProtocol,
     ):
         self._user_cache = user_cache
@@ -59,7 +60,7 @@ class HandleStreamStatusUseCase:
         self._minigame_service = minigame_service
         self._telegram_bot = telegram_bot
         self._telegram_group_id = telegram_group_id
-        self._generate_response_fn = generate_response_fn
+        self._chat_responder = chat_responder
         self._state = state
 
     async def handle(
@@ -171,7 +172,7 @@ class HandleStreamStatusUseCase:
             f"Начался стрим. Категория: {game_name}, название: {title}. "
             f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
         )
-        result = self._generate_response_fn(prompt, channel_name)
+        result = self._chat_responder.generate_response(prompt, channel_name)
         try:
             await self._telegram_bot.send_message(chat_id=self._telegram_group_id, text=result)
         except Exception as e:

@@ -1,3 +1,5 @@
+import logging
+
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.twitch.application.background.chat_summary.handle_chat_summarizer_use_case import (
     HandleChatSummarizerUseCase,
@@ -6,6 +8,9 @@ from app.twitch.application.background.minigame_tick.handle_minigame_tick_use_ca
     HandleMinigameTickUseCase,
 )
 from app.twitch.application.background.post_joke.handle_post_joke_use_case import HandlePostJokeUseCase
+from app.twitch.application.background.stream_context.handle_restore_stream_context_use_case import (
+    HandleRestoreStreamContextUseCase,
+)
 from app.twitch.application.background.stream_status.handle_stream_status_use_case import (
     HandleStreamStatusUseCase,
 )
@@ -30,6 +35,7 @@ from app.twitch.application.interaction.top_bottom.handle_top_bottom_use_case im
     HandleTopBottomUseCase,
 )
 from app.twitch.application.interaction.transfer.handle_transfer_use_case import HandleTransferUseCase
+from app.twitch.application.shared import ChatResponder
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
@@ -59,6 +65,9 @@ from app.twitch.presentation.twitch_bot import Bot
 from core.db import SessionLocal, db_ro_session
 
 
+logger = logging.getLogger(__name__)
+
+
 class BotFactory:
     def __init__(self, deps: BotDependencies, settings: TwitchBotSettings):
         self._deps = deps
@@ -66,13 +75,22 @@ class BotFactory:
 
     def create(self) -> Bot:
         bot = Bot(self._deps, self._settings)
+        chat_responder = self._create_chat_responder(bot)
 
         bot.set_minigame_orchestrator(self._create_minigame(bot))
-        bot.set_background_tasks(self._create_background_tasks(bot))
-        bot.set_command_registry(self._create_command_registry(bot))
-        bot.set_chat_event_handler(self._create_chat_event_handler(bot))
-        bot.restore_stream_context()
+        bot.set_background_tasks(self._create_background_tasks(bot, chat_responder))
+        bot.set_command_registry(self._create_command_registry(bot, chat_responder))
+        bot.set_chat_event_handler(self._create_chat_event_handler(bot, chat_responder))
+        self._restore_stream_context()
         return bot
+
+    def _create_chat_responder(self, bot: Bot) -> ChatResponder:
+        return ChatResponder(
+            ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
+            llm_client=self._deps.llm_client,
+            system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
+            db_readonly_session_provider=lambda: db_ro_session(),
+        )
 
     def _create_minigame(self, bot: Bot) -> MinigameOrchestrator:
         return MinigameOrchestrator(
@@ -94,7 +112,7 @@ class BotFactory:
             send_channel_message=bot.send_channel_message,
         )
 
-    def _create_background_tasks(self, bot: Bot) -> BotBackgroundTasks:
+    def _create_background_tasks(self, bot: Bot, chat_responder: ChatResponder) -> BotBackgroundTasks:
         return BotBackgroundTasks(
             runner=self._deps.background_runner,
             jobs=[
@@ -104,7 +122,7 @@ class BotFactory:
                         joke_service=self._deps.joke_service,
                         user_cache=self._deps.user_cache,
                         twitch_api_service=self._deps.twitch_api_service,
-                        generate_response_fn=bot.generate_response_in_chat,
+                        chat_responder=chat_responder,
                         ai_conversation_use_case_factory=self._deps.ai_conversation_use_case,
                         chat_use_case_factory=self._deps.chat_use_case,
                     ),
@@ -133,7 +151,7 @@ class BotFactory:
                         minigame_service=self._deps.minigame_service,
                         telegram_bot=self._deps.telegram_bot,
                         telegram_group_id=self._settings.group_id,
-                        generate_response_fn=bot.generate_response_in_chat,
+                        chat_responder=chat_responder,
                         state=bot.chat_summary_state,
                     ),
                     db_session_provider=SessionLocal.begin,
@@ -147,7 +165,7 @@ class BotFactory:
                     handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
                         stream_service_factory=self._deps.stream_service,
                         chat_use_case_factory=self._deps.chat_use_case,
-                        generate_response_fn=bot.generate_response_in_chat,
+                        chat_responder=chat_responder,
                     ),
                     db_readonly_session_provider=lambda: db_ro_session(),
                     state=bot.chat_summary_state,
@@ -175,11 +193,11 @@ class BotFactory:
             ],
         )
 
-    def _create_command_registry(self, bot: Bot) -> CommandRegistry:
+    def _create_command_registry(self, bot: Bot, chat_responder: ChatResponder) -> CommandRegistry:
         prefix = self._settings.prefix
         bot_nick_provider = lambda: bot.nick
         post_message_fn = bot.post_message_in_twitch_chat
-        generate_response_fn = bot.generate_response_in_chat
+        generate_response_fn = chat_responder.generate_response
         timeout_fn = bot.timeout_user
         deps = self._deps
         settings = self._settings
@@ -395,7 +413,7 @@ class BotFactory:
             rps=rps,
         )
 
-    def _create_chat_event_handler(self, bot: Bot) -> ChatEventHandler:
+    def _create_chat_event_handler(self, bot: Bot, chat_responder: ChatResponder) -> ChatEventHandler:
         handle_chat_message = HandleChatMessageUseCase(
             chat_use_case_factory=self._deps.chat_use_case,
             economy_service_factory=self._deps.economy_service,
@@ -403,11 +421,25 @@ class BotFactory:
             viewer_service_factory=self._deps.viewer_service,
             intent_use_case=self._deps.intent_use_case,
             prompt_service=self._deps.prompt_service,
-            generate_response_fn=bot.generate_response_in_chat,
+            generate_response_fn=chat_responder.generate_response,
         )
         return ChatEventHandler(
             handle_chat_message_use_case=handle_chat_message,
             db_session_provider=SessionLocal.begin,
             send_channel_message=bot.send_channel_message,
         )
+
+    def _restore_stream_context(self) -> None:
+        if not self._settings.channel_name:
+            logger.warning("Список каналов пуст при восстановлении контекста стрима")
+            return
+
+        try:
+            HandleRestoreStreamContextUseCase(
+                stream_service_factory=self._deps.stream_service,
+                minigame_service=self._deps.minigame_service,
+                db_readonly_session_provider=lambda: db_ro_session(),
+            ).handle(self._settings.channel_name)
+        except Exception as e:
+            logger.error(f"Ошибка при восстановлении состояния стрима: {e}")
 
