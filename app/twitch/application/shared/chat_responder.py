@@ -5,18 +5,19 @@ from sqlalchemy.orm import Session
 from app.ai.application.conversation_service import ConversationService
 from app.ai.domain.models import AIMessage, Role
 from app.ai.data.llm_client import LLMClientImpl
+from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 
 
 class ChatResponder:
 
     def __init__(
         self,
-        ai_conversation_use_case_factory: Callable[[Session], ConversationService],
+        conversation_service_provider: ConversationServiceProvider,
         llm_client: LLMClientImpl,
         system_prompt: str,
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
     ):
-        self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
+        self._conversation_service_provider = conversation_service_provider
         self._llm_client = llm_client
         self._system_prompt = system_prompt
         self._db_readonly_session_provider = db_readonly_session_provider
@@ -24,7 +25,7 @@ class ChatResponder:
     def generate_response(self, prompt: str, channel_name: str) -> str:
         messages = []
         with self._db_readonly_session_provider() as db:
-            history = self._ai_conversation_use_case_factory(db).get_last_messages(
+            history = self._conversation_service_provider.get(db).get_last_messages(
                 channel_name=channel_name,
                 system_prompt=self._system_prompt
             )

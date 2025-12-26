@@ -2,20 +2,19 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.top_bottom.dto import BottomDTO, TopDTO
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 
 
 class HandleTopBottomUseCase:
 
     def __init__(
         self,
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle_top(
@@ -25,7 +24,7 @@ class HandleTopBottomUseCase:
         dto: TopDTO,
     ) -> str:
         with db_readonly_session_provider() as db:
-            top_users = self._economy_service_factory(db).get_top_users(dto.channel_name, limit=dto.limit)
+            top_users = self._economy_service_provider.get(db).get_top_users(dto.channel_name, limit=dto.limit)
 
         if not top_users:
             result = "Нет данных для отображения топа."
@@ -52,7 +51,7 @@ class HandleTopBottomUseCase:
         dto: BottomDTO,
     ) -> str:
         with db_readonly_session_provider() as db:
-            bottom_users = self._economy_service_factory(db).get_bottom_users(dto.channel_name, limit=dto.limit)
+            bottom_users = self._economy_service_provider.get(db).get_bottom_users(dto.channel_name, limit=dto.limit)
 
         if not bottom_users:
             result = "Нет данных для отображения бомжей."

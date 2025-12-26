@@ -6,10 +6,10 @@ from app.ai.application.conversation_service import ConversationService
 from app.ai.application.intent_use_case import IntentUseCase
 from app.ai.application.prompt_service import PromptService
 from app.ai.domain.models import Intent
-from app.chat.application.chat_use_case import ChatUseCase
 from app.twitch.application.interaction.ask.dto import AskCommandDTO
 from app.twitch.application.shared import ChatResponder
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 
 
 class HandleAskUseCase:
@@ -18,13 +18,13 @@ class HandleAskUseCase:
         self,
         intent_use_case: IntentUseCase,
         prompt_service: PromptService,
-        ai_conversation_use_case_factory: Callable[[Session], ConversationService],
+        conversation_service_provider: ConversationServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
         chat_responder: ChatResponder,
     ):
         self._intent_use_case = intent_use_case
         self._prompt_service = prompt_service
-        self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
+        self._conversation_service_provider = conversation_service_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._chat_responder = chat_responder
 
@@ -50,7 +50,7 @@ class HandleAskUseCase:
         result = self._chat_responder.generate_response(prompt, dto.channel_name)
 
         with db_session_provider() as db:
-            self._ai_conversation_use_case_factory(db).save_conversation_to_db(
+            self._conversation_service_provider.get(db).save_conversation_to_db(
                 channel_name=dto.channel_name,
                 user_message=prompt,
                 ai_message=result,
@@ -63,4 +63,3 @@ class HandleAskUseCase:
             )
 
         return result
-

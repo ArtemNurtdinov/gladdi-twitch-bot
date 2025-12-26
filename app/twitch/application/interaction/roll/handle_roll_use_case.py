@@ -13,9 +13,9 @@ from app.economy.domain.models import (
     PartialPayoutMultiplierEffect,
     TransactionType,
 )
-from app.equipment.domain.equipment_service import EquipmentService
 from app.twitch.application.interaction.roll.dto import RollDTO, RollUseCaseResult, RollTimeoutAction
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
 
 
 class HandleRollUseCase:
@@ -25,12 +25,12 @@ class HandleRollUseCase:
         self,
         economy_service_factory: Callable[[Session], EconomyService],
         betting_service_factory: Callable[[Session], BettingService],
-        equipment_service_factory: Callable[[Session], EquipmentService],
+        equipment_service_provider: EquipmentServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
         self._economy_service_factory = economy_service_factory
         self._betting_service_factory = betting_service_factory
-        self._equipment_service_factory = equipment_service_factory
+        self._equipment_service_provider = equipment_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -44,8 +44,8 @@ class HandleRollUseCase:
         current_time = datetime.now()
 
         with db_readonly_session_provider() as db:
-            equipment = self._equipment_service_factory(db).get_user_equipment(dto.channel_name, dto.user_name)
-            cooldown_seconds = self._equipment_service_factory(db).calculate_roll_cooldown_seconds(
+            equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
+            cooldown_seconds = self._equipment_service_provider.get(db).calculate_roll_cooldown_seconds(
                 default_cooldown_seconds=HandleRollUseCase.DEFAULT_COOLDOWN_SECONDS,
                 equipment=equipment,
             )
@@ -107,7 +107,7 @@ class HandleRollUseCase:
 
         with db_readonly_session_provider() as db:
             rarity_level = self._betting_service_factory(db).determine_correct_rarity(slot_result_string, result_type)
-            equipment = self._equipment_service_factory(db).get_user_equipment(dto.channel_name, dto.user_name)
+            equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
 
         with db_session_provider() as db:
             user_balance = self._economy_service_factory(db).subtract_balance(
@@ -193,8 +193,8 @@ class HandleRollUseCase:
             base_timeout_duration = timeout_seconds if timeout_seconds else 0
 
             with db_readonly_session_provider() as db:
-                equipment = self._equipment_service_factory(db).get_user_equipment(dto.channel_name, dto.user_name)
-                final_timeout, protection_message = self._equipment_service_factory(db).calculate_timeout_with_equipment(
+                equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
+                final_timeout, protection_message = self._equipment_service_provider.get(db).calculate_timeout_with_equipment(
                     base_timeout_duration,
                     equipment,
                 )

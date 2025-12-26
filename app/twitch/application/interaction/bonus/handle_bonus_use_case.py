@@ -2,12 +2,11 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
-from app.equipment.domain.equipment_service import EquipmentService
 from app.twitch.application.interaction.bonus.dto import BonusDTO
 from app.twitch.application.shared import StreamServiceProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
 
 
 class HandleBonusUseCase:
@@ -15,12 +14,12 @@ class HandleBonusUseCase:
     def __init__(
         self,
         stream_service_provider: StreamServiceProvider,
-        equipment_service_factory: Callable[[Session], EquipmentService],
+        equipment_service_provider: EquipmentServiceProvider,
         economy_service_factory: Callable[[Session], EconomyService],
         chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._stream_service_provider = stream_service_provider
-        self._equipment_service_factory = equipment_service_factory
+        self._equipment_service_provider = equipment_service_provider
         self._economy_service_factory = economy_service_factory
         self._chat_use_case_provider = chat_use_case_provider
 
@@ -37,7 +36,7 @@ class HandleBonusUseCase:
             result = f"🚫 @{bonus.display_name}, бонус доступен только во время стрима!"
         else:
             with db_session_provider() as db:
-                user_equipment = self._equipment_service_factory(db).get_user_equipment(bonus.channel_name, bonus.user_name)
+                user_equipment = self._equipment_service_provider.get(db).get_user_equipment(bonus.channel_name, bonus.user_name)
                 bonus_result = self._economy_service_factory(db).claim_daily_bonus(
                     active_stream_id=active_stream.id,
                     channel_name=bonus.channel_name,

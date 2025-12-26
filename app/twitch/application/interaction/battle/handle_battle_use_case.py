@@ -3,15 +3,14 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.ai.application.conversation_service import ConversationService
 from app.battle.application.battle_use_case import BattleUseCase
-from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
-from app.equipment.domain.equipment_service import EquipmentService
 from app.twitch.application.interaction.battle.dto import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
 from app.twitch.application.shared import ChatResponder
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
+from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
 
 
 class HandleBattleUseCase:
@@ -20,16 +19,16 @@ class HandleBattleUseCase:
         self,
         economy_service_factory: Callable[[Session], EconomyService],
         chat_use_case_provider: ChatUseCaseProvider,
-        ai_conversation_use_case_factory: Callable[[Session], ConversationService],
+        conversation_service_provider: ConversationServiceProvider,
         battle_use_case_factory: Callable[[Session], BattleUseCase],
-        equipment_service_factory: Callable[[Session], EquipmentService],
+        equipment_service_provider: EquipmentServiceProvider,
         chat_responder: ChatResponder,
     ):
         self._economy_service_factory = economy_service_factory
         self._chat_use_case_provider = chat_use_case_provider
-        self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
+        self._conversation_service_provider = conversation_service_provider
         self._battle_use_case_factory = battle_use_case_factory
-        self._equipment_service_factory = equipment_service_factory
+        self._equipment_service_provider = equipment_service_provider
         self._chat_responder = chat_responder
 
     async def handle(
@@ -157,8 +156,8 @@ class HandleBattleUseCase:
         )
 
         with db_readonly_session_provider() as db:
-            opponent_equipment = self._equipment_service_factory(db).get_user_equipment(battle_dto.channel_name, opponent_display.lower())
-            challenger_equipment = self._equipment_service_factory(db).get_user_equipment(battle_dto.channel_name, challenger_user)
+            opponent_equipment = self._equipment_service_provider.get(db).get_user_equipment(battle_dto.channel_name, opponent_display.lower())
+            challenger_equipment = self._equipment_service_provider.get(db).get_user_equipment(battle_dto.channel_name, challenger_user)
         if opponent_equipment:
             equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in opponent_equipment]
             prompt += f"\nВооружение {opponent_display}: {', '.join(equipment_details)}."
@@ -186,7 +185,7 @@ class HandleBattleUseCase:
                 TransactionType.BATTLE_WIN,
                 f"Победа в битве против {loser}",
             )
-            self._ai_conversation_use_case_factory(db).save_conversation_to_db(battle_dto.channel_name, prompt, result_story)
+            self._conversation_service_provider.get(db).save_conversation_to_db(battle_dto.channel_name, prompt, result_story)
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=battle_dto.channel_name,
                 user_name=bot_nick,
@@ -212,8 +211,8 @@ class HandleBattleUseCase:
 
         base_battle_timeout = 120
         with db_readonly_session_provider() as db:
-            equipment = self._equipment_service_factory(db).get_user_equipment(battle_dto.channel_name, loser.lower())
-            final_timeout, protection_message = self._equipment_service_factory(db).calculate_timeout_with_equipment(
+            equipment = self._equipment_service_provider.get(db).get_user_equipment(battle_dto.channel_name, loser.lower())
+            final_timeout, protection_message = self._equipment_service_provider.get(db).calculate_timeout_with_equipment(
                 base_timeout_seconds=base_battle_timeout,
                 equipment=equipment
             )

@@ -8,6 +8,7 @@ from typing import Callable, Awaitable
 from app.ai.domain.models import AIMessage, Role
 from app.minigame.domain.minigame_service import MinigameService
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from core.db import SessionLocal, db_ro_session
 from app.economy.domain.models import TransactionType
 from app.twitch.application.shared import StreamServiceProvider
@@ -26,7 +27,7 @@ class MinigameOrchestrator:
         stream_service_provider: StreamServiceProvider,
         get_used_words_use_case_factory,
         add_used_word_use_case_factory,
-        ai_conversation_use_case_factory,
+        conversation_service_provider: ConversationServiceProvider,
         llm_client,
         system_prompt: str,
         prefix: str,
@@ -43,7 +44,7 @@ class MinigameOrchestrator:
         self._stream_service_provider = stream_service_provider
         self._get_used_words_use_case_factory = get_used_words_use_case_factory
         self._add_used_word_use_case_factory = add_used_word_use_case_factory
-        self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
+        self._conversation_service_provider = conversation_service_provider
         self._llm_client = llm_client
         self._system_prompt = system_prompt
         self._prefix = prefix
@@ -144,7 +145,7 @@ class MinigameOrchestrator:
         response = self._llm_client.generate_ai_response(ai_messages)
 
         with SessionLocal.begin() as db:
-            self._ai_conversation_use_case_factory(db).save_conversation_to_db(channel_name, prompt, response)
+            self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, response)
 
         data = json.loads(response)
         word = str(data.get("word", "")).strip()

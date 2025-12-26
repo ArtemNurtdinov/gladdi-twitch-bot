@@ -2,20 +2,19 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
-from app.equipment.domain.equipment_service import EquipmentService
 from app.twitch.application.interaction.equipment.dto import EquipmentDTO
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
 
 
 class HandleEquipmentUseCase:
 
     def __init__(
         self,
-        equipment_service_factory: Callable[[Session], EquipmentService],
+        equipment_service_provider: EquipmentServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
-        self._equipment_service_factory = equipment_service_factory
+        self._equipment_service_provider = equipment_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -25,7 +24,7 @@ class HandleEquipmentUseCase:
         dto: EquipmentDTO,
     ) -> str:
         with db_readonly_session_provider() as db:
-            equipment = self._equipment_service_factory(db).get_user_equipment(dto.channel_name, dto.user_name)
+            equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
 
         if not equipment:
             result = (

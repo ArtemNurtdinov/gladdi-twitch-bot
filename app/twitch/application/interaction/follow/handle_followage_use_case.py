@@ -3,11 +3,11 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.ai.application.conversation_service import ConversationService
 from app.ai.application.prompt_service import PromptService
 from app.twitch.application.interaction.follow.dto import FollowageDTO
 from app.twitch.application.shared import ChatResponder
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 
@@ -16,13 +16,13 @@ class HandleFollowageUseCase:
     def __init__(
         self,
         chat_use_case_provider: ChatUseCaseProvider,
-        ai_conversation_use_case_factory: Callable[[Session], ConversationService],
+        conversation_service_provider: ConversationServiceProvider,
         twitch_api_service: TwitchApiService,
         prompt_service: PromptService,
         chat_responder: ChatResponder,
     ):
         self._chat_use_case_provider = chat_use_case_provider
-        self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
+        self._conversation_service_provider = conversation_service_provider
         self._twitch_api_service = twitch_api_service
         self._prompt_service = prompt_service
         self._chat_responder = chat_responder
@@ -62,8 +62,10 @@ class HandleFollowageUseCase:
             result = self._chat_responder.generate_response(prompt, dto.channel_name)
 
             with db_session_provider() as db:
-                self._ai_conversation_use_case_factory(db).save_conversation_to_db(
-                    dto.channel_name, prompt, result
+                self._conversation_service_provider.get(db).save_conversation_to_db(
+                    channel_name=dto.channel_name,
+                    user_message=prompt,
+                    ai_message=result
                 )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=dto.channel_name,

@@ -7,18 +7,18 @@ import telegram
 from sqlalchemy.orm import Session
 
 from app.battle.application.battle_use_case import BattleUseCase
-from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.domain.models import StreamStatistics
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from app.twitch.application.background.stream_status.dto import StreamStatusDTO
 from app.twitch.application.shared import ChatResponder, StreamServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.ai.application.conversation_service import ConversationService
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,9 @@ class HandleStreamStatusUseCase:
         start_new_stream_use_case_factory: Callable[[Session], StartNewStreamUseCase],
         viewer_service_factory: Callable[[Session], ViewerTimeService],
         battle_use_case_factory: Callable[[Session], BattleUseCase],
-        economy_service_factory: Callable[[Session], EconomyService],
+        economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
-        ai_conversation_use_case_factory: Callable[[Session], ConversationService],
+        conversation_service_provider: ConversationServiceProvider,
         minigame_service: MinigameService,
         telegram_bot: telegram.Bot,
         telegram_group_id: int,
@@ -53,9 +53,9 @@ class HandleStreamStatusUseCase:
         self._start_new_stream_use_case_factory = start_new_stream_use_case_factory
         self._viewer_service_factory = viewer_service_factory
         self._battle_use_case_factory = battle_use_case_factory
-        self._economy_service_factory = economy_service_factory
+        self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
-        self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
+        self._conversation_service_provider = conversation_service_provider
         self._minigame_service = minigame_service
         self._telegram_bot = telegram_bot
         self._telegram_group_id = telegram_group_id
@@ -220,7 +220,7 @@ class HandleStreamStatusUseCase:
         if stream_stat.top_user and stream_stat.top_user != "нет":
             reward_amount = 200
             with db_session_provider() as db:
-                user_balance = self._economy_service_factory(db).add_balance(
+                user_balance = self._economy_service_provider.get(db).add_balance(
                     channel_name,
                     stream_stat.top_user,
                     reward_amount,
@@ -243,7 +243,7 @@ class HandleStreamStatusUseCase:
         result = self._chat_responder.generate_response(prompt, channel_name)
 
         with db_session_provider() as db:
-            self._ai_conversation_use_case_factory(db).save_conversation_to_db(channel_name, prompt, result)
+            self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, result)
 
         self._state.current_stream_summaries = []
         self._state.last_chat_summary_time = None

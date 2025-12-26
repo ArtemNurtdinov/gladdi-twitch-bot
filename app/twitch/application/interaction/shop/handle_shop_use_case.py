@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import ShopItems, TransactionType
-from app.equipment.domain.equipment_service import EquipmentService
 from app.twitch.application.interaction.shop.dto import ShopBuyDTO, ShopListDTO
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
 
 
 class HandleShopUseCase:
@@ -14,11 +14,11 @@ class HandleShopUseCase:
     def __init__(
         self,
         economy_service_factory: Callable[[Session], EconomyService],
-        equipment_service_factory: Callable[[Session], EquipmentService],
+        equipment_service_provider: EquipmentServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._economy_service_factory = economy_service_factory
-        self._equipment_service_factory = equipment_service_factory
+        self._equipment_service_provider = equipment_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle_shop(
@@ -79,7 +79,7 @@ class HandleShopUseCase:
         item = ShopItems.get_item(item_type)
 
         with db_readonly_session_provider() as db:
-            equipment_exists = self._equipment_service_factory(db).equipment_exists(dto.channel_name, user_name, item_type)
+            equipment_exists = self._equipment_service_provider.get(db).equipment_exists(dto.channel_name, user_name, item_type)
 
         if equipment_exists:
             result = f"У вас уже есть {item.name}"
@@ -104,7 +104,7 @@ class HandleShopUseCase:
                 transaction_type=TransactionType.SHOP_PURCHASE,
                 description=f"Покупка '{item.name}'",
             )
-            self._equipment_service_factory(db).add_equipment_to_user(dto.channel_name, user_name, item_type)
+            self._equipment_service_provider.get(db).add_equipment_to_user(dto.channel_name, user_name, item_type)
 
         result = f"@{dto.display_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 

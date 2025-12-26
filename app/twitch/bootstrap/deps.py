@@ -31,6 +31,9 @@ from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.stream.domain.stream_service import StreamService
 from app.twitch.application.shared import StreamServiceProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
+from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
+from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.infrastructure.auth import TwitchAuth
@@ -56,27 +59,20 @@ class BotDependencies:
     stream_service_factory: Callable
     stream_service_provider: StreamServiceProvider
     chat_use_case_provider: ChatUseCaseProvider
+    conversation_service_provider: ConversationServiceProvider
+    equipment_service_provider: EquipmentServiceProvider
+    economy_service_provider: EconomyServiceProvider
 
-    chat_use_case_factory: Callable = ChatUseCase
     battle_use_case_factory: Callable = BattleUseCase
-    ai_conversation_use_case_factory: Callable = ConversationService
     betting_service_factory: Callable = BettingService
     economy_service_factory: Callable = EconomyService
-    equipment_service_factory: Callable = EquipmentService
     get_used_words_use_case_factory: Callable = GetUsedWordsUseCase
     add_used_word_use_case_factory: Callable = AddUsedWordsUseCase
     start_new_stream_use_case_factory: Callable = StartNewStreamUseCase
     viewer_service_factory: Callable = ViewerTimeService
 
-    def chat_use_case(self, db) -> ChatUseCase:
-        return self.chat_use_case_factory(ChatRepositoryImpl(db))
-
     def battle_use_case(self, db) -> BattleUseCase:
         return self.battle_use_case_factory(BattleRepositoryImpl(db))
-
-    def ai_conversation_use_case(self, db) -> ConversationService:
-        repo = AIMessageRepositoryImpl(db)
-        return self.ai_conversation_use_case_factory(repo)
 
     def betting_service(self, db) -> BettingService:
         return self.betting_service_factory(BettingRepositoryImpl(db))
@@ -84,17 +80,11 @@ class BotDependencies:
     def economy_service(self, db) -> EconomyService:
         return self.economy_service_factory(EconomyRepositoryImpl(db))
 
-    def equipment_service(self, db) -> EquipmentService:
-        return self.equipment_service_factory(EquipmentRepositoryImpl(db))
-
     def get_used_words_use_case(self, db) -> GetUsedWordsUseCase:
         return self.get_used_words_use_case_factory(WordHistoryRepositoryImpl(db))
 
     def add_used_word_use_case(self, db) -> AddUsedWordsUseCase:
         return self.add_used_word_use_case_factory(WordHistoryRepositoryImpl(db))
-
-    def stream_service(self, db) -> StreamService:
-        return self.stream_service_factory(db)
 
     def start_new_stream_use_case(self, db) -> StartNewStreamUseCase:
         return self.start_new_stream_use_case_factory(StreamRepositoryImpl(db))
@@ -125,6 +115,15 @@ def build_bot_dependencies(
     def chat_use_case(db):
         return ChatUseCase(ChatRepositoryImpl(db))
 
+    def conversation_service(db):
+        return ConversationService(AIMessageRepositoryImpl(db))
+
+    def equipment_service(db):
+        return EquipmentService(EquipmentRepositoryImpl(db))
+
+    def economy_service(db):
+        return EconomyService(EconomyRepositoryImpl(db))
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
@@ -139,7 +138,10 @@ def build_bot_dependencies(
         telegram_bot=telegram_bot,
         stream_service_factory=stream_service,
         stream_service_provider=StreamServiceProvider(stream_service),
-        chat_use_case_provider=ChatUseCaseProvider(chat_use_case)
+        chat_use_case_provider=ChatUseCaseProvider(chat_use_case),
+        conversation_service_provider=ConversationServiceProvider(conversation_service),
+        equipment_service_provider=EquipmentServiceProvider(equipment_service),
+        economy_service_provider=EconomyServiceProvider(economy_service)
     )
     return deps
 
