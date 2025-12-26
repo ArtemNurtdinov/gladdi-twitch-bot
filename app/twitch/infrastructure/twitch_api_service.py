@@ -1,7 +1,7 @@
 import logging
 import httpx
 from typing import Optional, Dict, Any, List
-from app.twitch.presentation.auth import TwitchAuth
+from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.model.stream_info import StreamInfo
 from app.twitch.infrastructure.model.user_info import UserInfo
 from app.twitch.infrastructure.model.follow_info import FollowInfo

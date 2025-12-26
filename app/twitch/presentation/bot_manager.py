@@ -5,7 +5,7 @@ from typing import Optional
 
 from app.twitch.bootstrap.twitch_bot_settings import DEFAULT_SETTINGS
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.twitch.presentation.auth import TwitchAuth
+from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.bootstrap.deps import build_bot_dependencies
 from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.twitch.bootstrap.bot_factory import BotFactory

@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from app.twitch.presentation.auth import TwitchAuth
+from app.twitch.infrastructure.auth import TwitchAuth
 
 logger = logging.getLogger(__name__)
 

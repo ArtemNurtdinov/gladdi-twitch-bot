@@ -9,7 +9,7 @@ from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings, DEFAULT_SETTINGS
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.application.background.state import ChatSummaryState
-from app.twitch.presentation.chat_event_service import ChatEventHandler
+from app.twitch.presentation.interaction.chat_event_handler import ChatEventHandler
 from core.db import db_ro_session
 
 logger = logging.getLogger(__name__)

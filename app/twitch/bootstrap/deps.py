@@ -31,7 +31,7 @@ from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.stream.domain.stream_service import StreamService
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.twitch.presentation.auth import TwitchAuth
+from app.twitch.infrastructure.auth import TwitchAuth
 from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.background_task_runner import BackgroundTaskRunner
