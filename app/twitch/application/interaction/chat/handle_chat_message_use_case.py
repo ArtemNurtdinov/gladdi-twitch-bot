@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 from app.ai.application.intent_use_case import IntentUseCase
 from app.ai.application.prompt_service import PromptService
 from app.ai.domain.models import Intent
-from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.chat.dto import ChatMessageDTO
 from app.twitch.application.shared import StreamServiceProvider
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 
 
@@ -16,7 +16,7 @@ class HandleChatMessageUseCase:
 
     def __init__(
         self,
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider,
         economy_service_factory: Callable[[Session], EconomyService],
         stream_service_provider: StreamServiceProvider,
         viewer_service_factory: Callable[[Session], ViewerTimeService],
@@ -24,7 +24,7 @@ class HandleChatMessageUseCase:
         prompt_service: PromptService,
         generate_response_fn: Callable[[str, str], str],
     ):
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
         self._economy_service_factory = economy_service_factory
         self._stream_service_provider = stream_service_provider
         self._viewer_service_factory = viewer_service_factory
@@ -39,7 +39,7 @@ class HandleChatMessageUseCase:
     ) -> Optional[str]:
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.user_name,
                 content=dto.message,
@@ -74,7 +74,7 @@ class HandleChatMessageUseCase:
         result = self._generate_response_fn(prompt, dto.channel_name)
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.bot_nick.lower(),
                 content=result,

@@ -30,6 +30,7 @@ from app.stream.application.start_new_stream_use_case import StartNewStreamUseCa
 from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.stream.domain.stream_service import StreamService
 from app.twitch.application.shared import StreamServiceProvider
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.infrastructure.auth import TwitchAuth
@@ -54,6 +55,7 @@ class BotDependencies:
     telegram_bot: telegram.Bot
     stream_service_factory: Callable
     stream_service_provider: StreamServiceProvider
+    chat_use_case_provider: ChatUseCaseProvider
 
     chat_use_case_factory: Callable = ChatUseCase
     battle_use_case_factory: Callable = BattleUseCase
@@ -120,6 +122,9 @@ def build_bot_dependencies(
     def stream_service(db):
         return StreamService(StreamRepositoryImpl(db))
 
+    def chat_use_case(db):
+        return ChatUseCase(ChatRepositoryImpl(db))
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
@@ -134,6 +139,7 @@ def build_bot_dependencies(
         telegram_bot=telegram_bot,
         stream_service_factory=stream_service,
         stream_service_provider=StreamServiceProvider(stream_service),
+        chat_use_case_provider=ChatUseCaseProvider(chat_use_case)
     )
     return deps
 

@@ -2,11 +2,11 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import ShopItems, TransactionType
 from app.equipment.domain.equipment_service import EquipmentService
 from app.twitch.application.interaction.shop.dto import ShopBuyDTO, ShopListDTO
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleShopUseCase:
@@ -15,11 +15,11 @@ class HandleShopUseCase:
         self,
         economy_service_factory: Callable[[Session], EconomyService],
         equipment_service_factory: Callable[[Session], EquipmentService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._economy_service_factory = economy_service_factory
         self._equipment_service_factory = equipment_service_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
 
     async def handle_shop(
         self,
@@ -40,7 +40,7 @@ class HandleShopUseCase:
         result = "\n".join(result_parts)
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.bot_nick,
                 content=result,
@@ -65,7 +65,7 @@ class HandleShopUseCase:
                 f"Пример: {dto.command_prefix}{dto.command_buy_name} стул"
             )
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
             return result
 
         try:
@@ -73,7 +73,7 @@ class HandleShopUseCase:
         except ValueError as e:
             result = str(e)
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
             return result
 
         item = ShopItems.get_item(item_type)
@@ -84,7 +84,7 @@ class HandleShopUseCase:
         if equipment_exists:
             result = f"У вас уже есть {item.name}"
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
             return result
 
         with db_session_provider() as db:
@@ -93,7 +93,7 @@ class HandleShopUseCase:
         if user_balance.balance < item.price:
             result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
             return result
 
         with db_session_provider() as db:
@@ -109,6 +109,6 @@ class HandleShopUseCase:
         result = f"@{dto.display_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
+            self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, result, dto.occurred_at)
         return result
 

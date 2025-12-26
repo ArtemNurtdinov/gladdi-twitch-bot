@@ -9,6 +9,7 @@ from app.betting.presentation.betting_schemas import UserBetStats
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.stats.dto import StatsDTO
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleStatsUseCase:
@@ -18,12 +19,12 @@ class HandleStatsUseCase:
         economy_service_factory: Callable[[Session], EconomyService],
         betting_service_factory: Callable[[Session], BettingService],
         battle_use_case_factory: Callable[[Session], BattleUseCase],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._economy_service_factory = economy_service_factory
         self._betting_service_factory = betting_service_factory
         self._battle_use_case_factory = battle_use_case_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
         self,
@@ -64,7 +65,7 @@ class HandleStatsUseCase:
             result += f" ⚔️ Битвы: {battle_stats.total_battles} | Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%)."
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.bot_nick,
                 content=result,

@@ -7,5 +7,5 @@ class HandleMinigameTickUseCase:
     def __init__(self, minigame_orchestrator: MinigameOrchestrator):
         self._minigame_orchestrator = minigame_orchestrator
 
-    async def handle(self, minigameTick: MinigameTickDTO) -> int:
-        return await self._minigame_orchestrator.run_tick(minigameTick.channel_name)
+    async def handle(self, minigame_tick: MinigameTickDTO) -> int:
+        return await self._minigame_orchestrator.run_tick(minigame_tick.channel_name)

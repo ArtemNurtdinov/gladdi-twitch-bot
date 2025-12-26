@@ -4,15 +4,16 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
 from app.twitch.application.interaction.help.dto import HelpDTO
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleHelpUseCase:
 
     def __init__(
         self,
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider
     ):
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
         self,
@@ -25,7 +26,7 @@ class HandleHelpUseCase:
         help_text = " ".join(help_parts)
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.bot_nick,
                 content=help_text,

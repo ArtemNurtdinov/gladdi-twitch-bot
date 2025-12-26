@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from app.betting.domain.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
-from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import (
     JackpotPayoutMultiplierEffect,
@@ -16,6 +15,7 @@ from app.economy.domain.models import (
 )
 from app.equipment.domain.equipment_service import EquipmentService
 from app.twitch.application.interaction.roll.dto import RollDTO, RollUseCaseResult, RollTimeoutAction
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleRollUseCase:
@@ -26,12 +26,12 @@ class HandleRollUseCase:
         economy_service_factory: Callable[[Session], EconomyService],
         betting_service_factory: Callable[[Session], BettingService],
         equipment_service_factory: Callable[[Session], EquipmentService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider
     ):
         self._economy_service_factory = economy_service_factory
         self._betting_service_factory = betting_service_factory
         self._equipment_service_factory = equipment_service_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
         self,
@@ -56,7 +56,7 @@ class HandleRollUseCase:
                 remaining_time = cooldown_seconds - time_since_last
                 result = f"@{dto.display_name}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
                 with db_session_provider() as db:
-                    self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                    self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
                 messages.append(result)
                 return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=dto.last_roll_time)
 
@@ -72,7 +72,7 @@ class HandleRollUseCase:
                     f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{BettingService.MAX_BET_AMOUNT} монет."
                 )
                 with db_session_provider() as db:
-                    self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                    self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
                 messages.append(result)
                 return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=dto.last_roll_time)
 
@@ -81,14 +81,14 @@ class HandleRollUseCase:
         if bet_amount < BettingService.MIN_BET_AMOUNT:
             result = f"Минимальная сумма ставки: {BettingService.MIN_BET_AMOUNT} монет."
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
             messages.append(result)
             return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
 
         if bet_amount > BettingService.MAX_BET_AMOUNT:
             result = f"Максимальная сумма ставки: {BettingService.MAX_BET_AMOUNT} монет."
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
             messages.append(result)
             return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
 
@@ -119,7 +119,7 @@ class HandleRollUseCase:
             )
             if not user_balance:
                 result = f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет."
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
                 messages.append(result)
                 return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
 
@@ -186,7 +186,7 @@ class HandleRollUseCase:
         final_result = f"{slot_result_string} {result_emoji} Баланс: {user_balance.balance} монет ({profit_display})"
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, final_result, dto.occurred_at)
+            self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, final_result, dto.occurred_at)
         messages.append(final_result)
 
         if timeout_seconds is not None and timeout_seconds > 0:
@@ -208,7 +208,7 @@ class HandleRollUseCase:
                     no_timeout_message = f"🛡️ @{dto.display_name}, {protection_message}"
 
                 with db_session_provider() as db:
-                    self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, no_timeout_message, dto.occurred_at)
+                    self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, no_timeout_message, dto.occurred_at)
                 messages.append(no_timeout_message)
             else:
                 if self._is_consolation_prize(result_type, payout):

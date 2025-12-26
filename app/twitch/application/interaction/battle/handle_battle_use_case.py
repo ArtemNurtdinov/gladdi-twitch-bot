@@ -11,6 +11,7 @@ from app.economy.domain.models import TransactionType
 from app.equipment.domain.equipment_service import EquipmentService
 from app.twitch.application.interaction.battle.dto import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
 from app.twitch.application.shared import ChatResponder
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleBattleUseCase:
@@ -18,14 +19,14 @@ class HandleBattleUseCase:
     def __init__(
         self,
         economy_service_factory: Callable[[Session], EconomyService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider,
         ai_conversation_use_case_factory: Callable[[Session], ConversationService],
         battle_use_case_factory: Callable[[Session], BattleUseCase],
         equipment_service_factory: Callable[[Session], EquipmentService],
         chat_responder: ChatResponder,
     ):
         self._economy_service_factory = economy_service_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
         self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
         self._battle_use_case_factory = battle_use_case_factory
         self._equipment_service_factory = equipment_service_factory
@@ -52,7 +53,7 @@ class HandleBattleUseCase:
                 f"Необходимо: {EconomyService.BATTLE_ENTRY_FEE} монет."
             )
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(
+                self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=battle_dto.channel_name,
                     user_name=bot_nick,
                     content=result,
@@ -76,7 +77,7 @@ class HandleBattleUseCase:
                 )
                 if not user_balance:
                     error_result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
-                    self._chat_use_case_factory(db).save_chat_message(
+                    self._chat_use_case_provider.get(db).save_chat_message(
                         channel_name=battle_dto.channel_name,
                         user_name=bot_nick,
                         content=error_result,
@@ -96,7 +97,7 @@ class HandleBattleUseCase:
                 f"Используй {battle_dto.command_call}, чтобы принять вызов."
             )
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(
+                self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=battle_dto.channel_name,
                     user_name=bot_nick,
                     content=result,
@@ -112,7 +113,7 @@ class HandleBattleUseCase:
         if battle_dto.waiting_user == challenger_display:
             result = f"@{challenger_display}, ты не можешь сражаться сам с собой. Подожди достойного противника."
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(
+                self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=battle_dto.channel_name,
                     user_name=bot_nick,
                     content=result,
@@ -135,7 +136,7 @@ class HandleBattleUseCase:
         if not challenger_balance:
             result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(
+                self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=battle_dto.channel_name,
                     user_name=bot_nick,
                     content=result,
@@ -186,7 +187,7 @@ class HandleBattleUseCase:
                 f"Победа в битве против {loser}",
             )
             self._ai_conversation_use_case_factory(db).save_conversation_to_db(battle_dto.channel_name, prompt, result_story)
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=battle_dto.channel_name,
                 user_name=bot_nick,
                 content=result_story,
@@ -202,7 +203,7 @@ class HandleBattleUseCase:
         messages.append(winner_message)
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=battle_dto.channel_name,
                 user_name=bot_nick,
                 content=winner_message,
@@ -224,7 +225,7 @@ class HandleBattleUseCase:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
             messages.append(no_timeout_message)
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(
+                self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=battle_dto.channel_name,
                     user_name=bot_nick,
                     content=no_timeout_message,
@@ -259,4 +260,3 @@ class HandleBattleUseCase:
             timeout_action=timeout_action,
             delay_before_timeout=delay_before_timeout,
         )
-

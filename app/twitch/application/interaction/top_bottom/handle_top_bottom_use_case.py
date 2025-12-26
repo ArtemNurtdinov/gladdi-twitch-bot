@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.top_bottom.dto import BottomDTO, TopDTO
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleTopBottomUseCase:
@@ -12,10 +13,10 @@ class HandleTopBottomUseCase:
     def __init__(
         self,
         economy_service_factory: Callable[[Session], EconomyService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider
     ):
         self._economy_service_factory = economy_service_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
 
     async def handle_top(
         self,
@@ -35,7 +36,7 @@ class HandleTopBottomUseCase:
             result = "\n".join(lines)
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.bot_nick,
                 content=result,
@@ -62,7 +63,7 @@ class HandleTopBottomUseCase:
             result = "\n".join(lines)
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.bot_nick,
                 content=result,

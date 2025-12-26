@@ -12,12 +12,12 @@ from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.domain.models import StreamStatistics
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from app.twitch.application.background.stream_status.dto import StreamStatusDTO
 from app.twitch.application.shared import ChatResponder, StreamServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.chat.application.chat_use_case import ChatUseCase
 from app.ai.application.conversation_service import ConversationService
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class HandleStreamStatusUseCase:
         viewer_service_factory: Callable[[Session], ViewerTimeService],
         battle_use_case_factory: Callable[[Session], BattleUseCase],
         economy_service_factory: Callable[[Session], EconomyService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider,
         ai_conversation_use_case_factory: Callable[[Session], ConversationService],
         minigame_service: MinigameService,
         telegram_bot: telegram.Bot,
@@ -54,7 +54,7 @@ class HandleStreamStatusUseCase:
         self._viewer_service_factory = viewer_service_factory
         self._battle_use_case_factory = battle_use_case_factory
         self._economy_service_factory = economy_service_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
         self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
         self._minigame_service = minigame_service
         self._telegram_bot = telegram_bot
@@ -140,7 +140,7 @@ class HandleStreamStatusUseCase:
             battles = self._battle_use_case_factory(db).get_battles(channel_name, active_stream.started_at)
 
         with db_readonly_session_provider() as db:
-            chat_messages = self._chat_use_case_factory(db).get_chat_messages(
+            chat_messages = self._chat_use_case_provider.get(db).get_chat_messages(
                 channel_name=channel_name,
                 from_time=active_stream.started_at,
                 to_time=finish_time,
@@ -192,7 +192,7 @@ class HandleStreamStatusUseCase:
             self._state.last_chat_summary_time = stream_start_dt
 
         with db_readonly_session_provider() as db:
-            last_messages = self._chat_use_case_factory(db).get_chat_messages(
+            last_messages = self._chat_use_case_provider.get(db).get_chat_messages(
                 channel_name=channel_name,
                 from_time=self._state.last_chat_summary_time,
                 to_time=stream_end_dt,

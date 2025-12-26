@@ -3,12 +3,12 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.models import RPS_CHOICES
 from app.minigame.domain.minigame_service import MinigameService
 from app.twitch.application.interaction.rps.dto import RpsDTO
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleRpsUseCase:
@@ -17,11 +17,11 @@ class HandleRpsUseCase:
         self,
         minigame_service: MinigameService,
         economy_service_factory: Callable[[Session], EconomyService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider
     ):
         self._minigame_service = minigame_service
         self._economy_service_factory = economy_service_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
         self,
@@ -38,7 +38,7 @@ class HandleRpsUseCase:
         if not rps_game_is_active:
             message = "Сейчас нет активной игры 'камень-ножницы-бумага'"
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
             return message
 
         game = self._minigame_service.get_active_rps_game(dto.channel_name)
@@ -67,27 +67,27 @@ class HandleRpsUseCase:
                     f"Банк {game.bank} монет сгорает."
                 )
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
             return message
 
         if not game.is_active:
             message = "Игра уже завершена"
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
             return message
 
         normalized_choice = dto.choice_input.strip().lower()
         if normalized_choice not in RPS_CHOICES:
             message = "Выберите: камень, ножницы или бумага"
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
             return message
 
         if game.user_choices and game.user_choices.get(user_name):
             existing = game.user_choices[user_name]
             message = f"Вы уже выбрали: {existing}. Сменить нельзя в текущей игре"
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
             return message
 
         fee = MinigameService.RPS_ENTRY_FEE_PER_USER
@@ -103,7 +103,7 @@ class HandleRpsUseCase:
         if not user_balance:
             message = f"Недостаточно средств! Требуется {fee} монет"
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
             return message
 
         game.bank += fee
@@ -111,6 +111,6 @@ class HandleRpsUseCase:
 
         message = f"Принято: @{dto.display_name} — {normalized_choice}"
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
+            self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
         return message
 

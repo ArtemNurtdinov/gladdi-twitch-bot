@@ -2,9 +2,9 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.transfer.dto import TransferDTO
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleTransferUseCase:
@@ -12,10 +12,10 @@ class HandleTransferUseCase:
     def __init__(
         self,
         economy_service_factory: Callable[[Session], EconomyService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider
     ):
         self._economy_service_factory = economy_service_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
         self,
@@ -29,7 +29,7 @@ class HandleTransferUseCase:
                 f"Например: {dto.command_prefix}{dto.command_name} @ArtemNeFRiT 100"
             )
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
             return result
 
         try:
@@ -40,13 +40,13 @@ class HandleTransferUseCase:
                 f"Например: {dto.command_prefix}{dto.command_name} {dto.recipient_input} 100"
             )
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
             return result
 
         if transfer_amount <= 0:
             result = f"@{dto.display_name}, сумма должна быть больше 0!"
             with db_session_provider() as db:
-                self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
             return result
 
         recipient = dto.recipient_input.lstrip('@')
@@ -63,6 +63,6 @@ class HandleTransferUseCase:
             result = f"@{dto.display_name}, {transfer_result.message}"
 
         with db_session_provider() as db:
-            self._chat_use_case_factory(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+            self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
 
         return result

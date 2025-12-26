@@ -12,3 +12,4 @@ class StreamServiceProvider:
 
     def get(self, db: Session) -> StreamService:
         return self._stream_service_factory(db)
+

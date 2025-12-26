@@ -7,6 +7,7 @@ from typing import Callable, Awaitable
 
 from app.ai.domain.models import AIMessage, Role
 from app.minigame.domain.minigame_service import MinigameService
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from core.db import SessionLocal, db_ro_session
 from app.economy.domain.models import TransactionType
 from app.twitch.application.shared import StreamServiceProvider
@@ -21,7 +22,7 @@ class MinigameOrchestrator:
         self,
         minigame_service: MinigameService,
         economy_service_factory,
-        chat_use_case_factory,
+        chat_use_case_provider: ChatUseCaseProvider,
         stream_service_provider: StreamServiceProvider,
         get_used_words_use_case_factory,
         add_used_word_use_case_factory,
@@ -38,7 +39,7 @@ class MinigameOrchestrator:
     ):
         self.minigame_service = minigame_service
         self._economy_service_factory = economy_service_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
         self._stream_service_provider = stream_service_provider
         self._get_used_words_use_case_factory = get_used_words_use_case_factory
         self._add_used_word_use_case_factory = add_used_word_use_case_factory
@@ -107,7 +108,7 @@ class MinigameOrchestrator:
             )
 
         with SessionLocal.begin() as db:
-            self._chat_use_case_factory(db).save_chat_message(channel_name, self._bot_name_lower(), message, datetime.utcnow())
+            self._chat_use_case_provider.get(db).save_chat_message(channel_name, self._bot_name_lower(), message, datetime.utcnow())
 
         await self._send_channel_message(channel_name, message)
         await asyncio.sleep(60)
@@ -117,12 +118,12 @@ class MinigameOrchestrator:
         for channel, timeout_message in expired_games.items():
             await self._send_channel_message(channel, timeout_message)
             with SessionLocal.begin() as db:
-                self._chat_use_case_factory(db).save_chat_message(channel, self._bot_name_lower(), timeout_message, datetime.utcnow())
+                self._chat_use_case_provider.get(db).save_chat_message(channel, self._bot_name_lower(), timeout_message, datetime.utcnow())
 
     async def _start_word_game(self, channel_name: str):
         with db_ro_session() as db:
             used_words = self._get_used_words_use_case_factory(db).get_used_words(channel_name, limit=50)
-            last_messages = self._chat_use_case_factory(db).get_last_chat_messages(channel_name, limit=50)
+            last_messages = self._chat_use_case_provider.get(db).get_last_chat_messages(channel_name, limit=50)
 
         chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
         avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words))) if used_words else ""
@@ -166,7 +167,7 @@ class MinigameOrchestrator:
         await self._send_channel_message(channel_name, game_message)
 
         with SessionLocal.begin() as db:
-            self._chat_use_case_factory(db).save_chat_message(channel_name, self._bot_name_lower(), game_message, datetime.utcnow())
+            self._chat_use_case_provider.get(db).save_chat_message(channel_name, self._bot_name_lower(), game_message, datetime.utcnow())
 
     async def _start_number_game(self, channel_name: str):
         game = self.minigame_service.start_guess_number_game(channel_name)
@@ -180,7 +181,7 @@ class MinigameOrchestrator:
 
         await self._send_channel_message(channel_name, game_message)
         with SessionLocal.begin() as db:
-            self._chat_use_case_factory(db).save_chat_message(channel_name, self._bot_name_lower(), game_message, datetime.utcnow())
+            self._chat_use_case_provider.get(db).save_chat_message(channel_name, self._bot_name_lower(), game_message, datetime.utcnow())
 
     async def _start_rps_game(self, channel_name: str):
         self.minigame_service.start_rps_game(channel_name)
@@ -194,4 +195,4 @@ class MinigameOrchestrator:
 
         await self._send_channel_message(channel_name, game_message)
         with SessionLocal.begin() as db:
-            self._chat_use_case_factory(db).save_chat_message(channel_name, self._bot_name_lower(), game_message, datetime.utcnow())
+            self._chat_use_case_provider.get(db).save_chat_message(channel_name, self._bot_name_lower(), game_message, datetime.utcnow())

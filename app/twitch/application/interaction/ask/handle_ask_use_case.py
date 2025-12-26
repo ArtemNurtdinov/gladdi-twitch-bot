@@ -9,6 +9,7 @@ from app.ai.domain.models import Intent
 from app.chat.application.chat_use_case import ChatUseCase
 from app.twitch.application.interaction.ask.dto import AskCommandDTO
 from app.twitch.application.shared import ChatResponder
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleAskUseCase:
@@ -18,13 +19,13 @@ class HandleAskUseCase:
         intent_use_case: IntentUseCase,
         prompt_service: PromptService,
         ai_conversation_use_case_factory: Callable[[Session], ConversationService],
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider,
         chat_responder: ChatResponder,
     ):
         self._intent_use_case = intent_use_case
         self._prompt_service = prompt_service
         self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
         self._chat_responder = chat_responder
 
     async def handle(
@@ -54,7 +55,7 @@ class HandleAskUseCase:
                 user_message=prompt,
                 ai_message=result,
             )
-            self._chat_use_case_factory(db).save_chat_message(
+            self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.bot_nick.lower(),
                 content=result,

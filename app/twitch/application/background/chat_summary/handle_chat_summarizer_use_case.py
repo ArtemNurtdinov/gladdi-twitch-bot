@@ -3,9 +3,9 @@ from typing import Callable, ContextManager, Optional
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
 from app.twitch.application.background.chat_summary.dto import ChatSummarizerDTO
 from app.twitch.application.shared import ChatResponder, StreamServiceProvider
+from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleChatSummarizerUseCase:
@@ -13,11 +13,11 @@ class HandleChatSummarizerUseCase:
     def __init__(
         self,
         stream_service_provider: StreamServiceProvider,
-        chat_use_case_factory: Callable[[Session], ChatUseCase],
+        chat_use_case_provider: ChatUseCaseProvider,
         chat_responder: ChatResponder,
     ):
         self._stream_service_provider = stream_service_provider
-        self._chat_use_case_factory = chat_use_case_factory
+        self._chat_use_case_provider = chat_use_case_provider
         self._chat_responder = chat_responder
 
     async def handle(
@@ -32,7 +32,7 @@ class HandleChatSummarizerUseCase:
 
         since = chat_summarizer.occurred_at - timedelta(minutes=chat_summarizer.interval_minutes)
         with db_readonly_session_provider() as db:
-            messages = self._chat_use_case_factory(db).get_last_chat_messages_since(chat_summarizer.channel_name, since)
+            messages = self._chat_use_case_provider.get(db).get_last_chat_messages_since(chat_summarizer.channel_name, since)
 
         if not messages:
             return None
