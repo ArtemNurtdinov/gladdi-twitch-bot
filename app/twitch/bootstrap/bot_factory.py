@@ -38,10 +38,8 @@ from app.twitch.application.interaction.transfer.handle_transfer_use_case import
 from app.twitch.application.shared import ChatResponder
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
-from app.twitch.infrastructure.unit_of_work import (
-    SqlAlchemyAskUnitOfWorkFactory,
-    SqlAlchemyChatMessageUnitOfWorkFactory,
-)
+from app.twitch.infrastructure.interaction.ask.ask_uow import SqlAlchemyAskUnitOfWorkFactory
+from app.twitch.infrastructure.interaction.chat.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.jobs.chat_summarizer_job import ChatSummarizerJob
 from app.twitch.presentation.background.jobs.minigame_tick_job import MinigameTickJob
