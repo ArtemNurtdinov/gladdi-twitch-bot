@@ -1,7 +1,5 @@
 from typing import Callable, ContextManager, Optional
 
-from sqlalchemy.orm import Session
-
 from app.ai.application.intent_use_case import IntentUseCase
 from app.ai.application.prompt_service import PromptService
 from app.ai.domain.models import Intent
@@ -9,7 +7,7 @@ from app.twitch.application.interaction.chat.dto import ChatMessageDTO
 from app.twitch.application.shared import StreamServiceProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
-from app.viewer.domain.viewer_session_service import ViewerTimeService
+from app.twitch.application.shared.viewer_service_provider import ViewerServiceProvider
 
 
 class HandleChatMessageUseCase:
@@ -19,7 +17,7 @@ class HandleChatMessageUseCase:
         chat_use_case_provider: ChatUseCaseProvider,
         economy_service_provider: EconomyServiceProvider,
         stream_service_provider: StreamServiceProvider,
-        viewer_service_factory: Callable[[Session], ViewerTimeService],
+        viewer_service_provider: ViewerServiceProvider,
         intent_use_case: IntentUseCase,
         prompt_service: PromptService,
         generate_response_fn: Callable[[str, str], str],
@@ -27,7 +25,7 @@ class HandleChatMessageUseCase:
         self._chat_use_case_provider = chat_use_case_provider
         self._economy_service_provider = economy_service_provider
         self._stream_service_provider = stream_service_provider
-        self._viewer_service_factory = viewer_service_factory
+        self._viewer_service_provider = viewer_service_provider
         self._intent_use_case = intent_use_case
         self._prompt_service = prompt_service
         self._generate_response_fn = generate_response_fn
@@ -51,7 +49,7 @@ class HandleChatMessageUseCase:
             )
             active_stream = self._stream_service_provider.get(db).get_active_stream(dto.channel_name)
             if active_stream:
-                self._viewer_service_factory(db).update_viewer_session(
+                self._viewer_service_provider.get(db).update_viewer_session(
                     stream_id=active_stream.id,
                     channel_name=dto.channel_name,
                     user_name=dto.user_name,

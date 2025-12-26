@@ -18,6 +18,3 @@ class StartNewStreamUseCase:
             return
 
         self._repo.start_new_stream(channel_name, started_at, game_name, title)
-
-    def __call__(self, channel_name: str, started_at: datetime, game_name: str | None = None, title: str | None = None):
-        return self.execute(channel_name, started_at, game_name, title)

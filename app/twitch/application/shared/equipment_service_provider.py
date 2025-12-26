@@ -8,7 +8,7 @@ from app.equipment.domain.equipment_service import EquipmentService
 class EquipmentServiceProvider:
 
     def __init__(self, equipment_service_factory: Callable[[Session], EquipmentService]):
-        self.equipment_service_factory = equipment_service_factory
+        self._equipment_service_factory = equipment_service_factory
 
     def get(self, db: Session) -> EquipmentService:
-        return self.equipment_service_factory(db)
+        return self._equipment_service_factory(db)

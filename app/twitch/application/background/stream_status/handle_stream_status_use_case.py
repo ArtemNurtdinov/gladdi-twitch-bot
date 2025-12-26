@@ -9,14 +9,14 @@ from sqlalchemy.orm import Session
 from app.battle.application.battle_use_case import BattleUseCase
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
-from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.domain.models import StreamStatistics
+from app.twitch.application.background.stream_status.dto import StreamStatusDTO
+from app.twitch.application.shared import ChatResponder, StreamServiceProvider
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
-from app.viewer.domain.viewer_session_service import ViewerTimeService
-from app.twitch.application.background.stream_status.dto import StreamStatusDTO
-from app.twitch.application.shared import ChatResponder, StreamServiceProvider
+from app.twitch.application.shared.start_stream_use_case_provider import StartStreamUseCaseProvider
+from app.twitch.application.shared.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
@@ -35,8 +35,8 @@ class HandleStreamStatusUseCase:
         user_cache: UserCacheService,
         twitch_api_service: TwitchApiService,
         stream_service_provider: StreamServiceProvider,
-        start_new_stream_use_case_factory: Callable[[Session], StartNewStreamUseCase],
-        viewer_service_factory: Callable[[Session], ViewerTimeService],
+        start_stream_use_case_provider: StartStreamUseCaseProvider,
+        viewer_service_provider: ViewerServiceProvider,
         battle_use_case_factory: Callable[[Session], BattleUseCase],
         economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
@@ -50,8 +50,8 @@ class HandleStreamStatusUseCase:
         self._user_cache = user_cache
         self._twitch_api_service = twitch_api_service
         self._stream_service_provider = stream_service_provider
-        self._start_new_stream_use_case_factory = start_new_stream_use_case_factory
-        self._viewer_service_factory = viewer_service_factory
+        self._start_stream_use_case_provider = start_stream_use_case_provider
+        self._viewer_service_provider = viewer_service_provider
         self._battle_use_case_factory = battle_use_case_factory
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
@@ -110,8 +110,7 @@ class HandleStreamStatusUseCase:
         started_at = datetime.utcnow()
         try:
             with db_session_provider() as db:
-                start_stream_use_case = self._start_new_stream_use_case_factory(db)
-                start_stream_use_case(channel_name, started_at, game_name, title)
+                self._start_stream_use_case_provider.get(db).execute(channel_name, started_at, game_name, title)
             self._minigame_service.set_stream_start_time(channel_name, started_at)
             await self._stream_announcement(channel_name, game_name, title)
             self._state.current_stream_summaries = []
@@ -129,8 +128,8 @@ class HandleStreamStatusUseCase:
         logger.info("Стрим завершён")
         with db_session_provider() as db:
             self._stream_service_provider.get(db).end_stream(active_stream.id, finish_time)
-            self._viewer_service_factory(db).finish_stream_sessions(active_stream.id, finish_time)
-            total_viewers = self._viewer_service_factory(db).get_unique_viewers_count(active_stream.id)
+            self._viewer_service_provider.get(db).finish_stream_sessions(active_stream.id, finish_time)
+            total_viewers = self._viewer_service_provider.get(db).get_unique_viewers_count(active_stream.id)
             self._stream_service_provider.get(db).update_stream_total_viewers(active_stream.id, total_viewers)
             logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
@@ -149,7 +148,8 @@ class HandleStreamStatusUseCase:
         stats = self._build_stream_statistics(chat_messages, battles)
 
         try:
-            await self._stream_summarize(stats, channel_name, active_stream.started_at, finish_time, db_session_provider, db_readonly_session_provider)
+            await self._stream_summarize(stats, channel_name, active_stream.started_at, finish_time, db_session_provider,
+                                         db_readonly_session_provider)
         except Exception as e:
             logger.error(f"Ошибка при вызове stream_summarize: {e}")
 
@@ -166,7 +166,7 @@ class HandleStreamStatusUseCase:
 
         return StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
 
-    async def _stream_announcement(self,  channel_name: str, game_name: str | None, title: str | None):
+    async def _stream_announcement(self, channel_name: str, game_name: str | None, title: str | None):
         prompt = (
             f"Начался стрим. Категория: {game_name}, название: {title}. "
             f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
@@ -249,4 +249,3 @@ class HandleStreamStatusUseCase:
         self._state.last_chat_summary_time = None
 
         await self._telegram_bot.send_message(chat_id=self._telegram_group_id, text=result)
-

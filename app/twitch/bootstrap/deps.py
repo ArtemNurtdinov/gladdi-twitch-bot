@@ -34,9 +34,11 @@ from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProv
 from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
 from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
+from app.twitch.application.shared.start_stream_use_case_provider import StartStreamUseCaseProvider
+from app.twitch.application.shared.viewer_service_provider import ViewerServiceProvider
+from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.twitch.infrastructure.auth import TwitchAuth
 from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.background_task_runner import BackgroundTaskRunner
@@ -56,18 +58,18 @@ class BotDependencies:
     user_cache: UserCacheService
     background_runner: BackgroundTaskRunner
     telegram_bot: telegram.Bot
-    stream_service_factory: Callable
     stream_service_provider: StreamServiceProvider
     chat_use_case_provider: ChatUseCaseProvider
     conversation_service_provider: ConversationServiceProvider
     equipment_service_provider: EquipmentServiceProvider
     economy_service_provider: EconomyServiceProvider
+    start_stream_use_case_provider: StartStreamUseCaseProvider
+    viewer_service_provider: ViewerServiceProvider
 
     battle_use_case_factory: Callable = BattleUseCase
     betting_service_factory: Callable = BettingService
     get_used_words_use_case_factory: Callable = GetUsedWordsUseCase
     add_used_word_use_case_factory: Callable = AddUsedWordsUseCase
-    start_new_stream_use_case_factory: Callable = StartNewStreamUseCase
     viewer_service_factory: Callable = ViewerTimeService
 
     def battle_use_case(self, db) -> BattleUseCase:
@@ -82,11 +84,9 @@ class BotDependencies:
     def add_used_word_use_case(self, db) -> AddUsedWordsUseCase:
         return self.add_used_word_use_case_factory(WordHistoryRepositoryImpl(db))
 
-    def start_new_stream_use_case(self, db) -> StartNewStreamUseCase:
-        return self.start_new_stream_use_case_factory(StreamRepositoryImpl(db))
-
     def viewer_service(self, db) -> ViewerTimeService:
         return self.viewer_service_factory(ViewerRepositoryImpl(db))
+
 
 def build_bot_dependencies(
     twitch_auth: TwitchAuth,
@@ -120,6 +120,12 @@ def build_bot_dependencies(
     def economy_service(db):
         return EconomyService(EconomyRepositoryImpl(db))
 
+    def start_stream_use_case(db):
+        return StartNewStreamUseCase(StreamRepositoryImpl(db))
+
+    def viewer_service(db):
+        return ViewerTimeService(ViewerRepositoryImpl(db))
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
@@ -132,13 +138,12 @@ def build_bot_dependencies(
         user_cache=user_cache,
         background_runner=background_runner,
         telegram_bot=telegram_bot,
-        stream_service_factory=stream_service,
         stream_service_provider=StreamServiceProvider(stream_service),
         chat_use_case_provider=ChatUseCaseProvider(chat_use_case),
         conversation_service_provider=ConversationServiceProvider(conversation_service),
         equipment_service_provider=EquipmentServiceProvider(equipment_service),
-        economy_service_provider=EconomyServiceProvider(economy_service)
+        economy_service_provider=EconomyServiceProvider(economy_service),
+        start_stream_use_case_provider=StartStreamUseCaseProvider(start_stream_use_case),
+        viewer_service_provider=ViewerServiceProvider(viewer_service)
     )
     return deps
-
-

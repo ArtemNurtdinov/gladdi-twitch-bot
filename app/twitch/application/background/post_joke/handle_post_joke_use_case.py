@@ -2,7 +2,6 @@ from typing import Callable, ContextManager, Optional
 
 from sqlalchemy.orm import Session
 
-from app.ai.application.conversation_service import ConversationService
 from app.joke.domain.joke_service import JokeService
 from app.twitch.application.background.post_joke.dto import PostJokeDTO
 from app.twitch.application.shared import ChatResponder

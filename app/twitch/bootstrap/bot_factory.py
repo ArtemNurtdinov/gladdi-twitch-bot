@@ -142,8 +142,8 @@ class BotFactory:
                         user_cache=self._deps.user_cache,
                         twitch_api_service=self._deps.twitch_api_service,
                         stream_service_provider=self._deps.stream_service_provider,
-                        start_new_stream_use_case_factory=self._deps.start_new_stream_use_case,
-                        viewer_service_factory=self._deps.viewer_service,
+                        start_stream_use_case_provider=self._deps.start_stream_use_case_provider,
+                        viewer_service_provider=self._deps.viewer_service_provider,
                         battle_use_case_factory=self._deps.battle_use_case,
                         economy_service_provider=self._deps.economy_service_provider,
                         chat_use_case_provider=self._deps.chat_use_case_provider,
@@ -179,7 +179,7 @@ class BotFactory:
                 ViewerTimeJob(
                     channel_name=self._settings.channel_name,
                     handle_viewer_time_use_case=HandleViewerTimeUseCase(
-                        viewer_service_factory=self._deps.viewer_service,
+                        viewer_service_provider=self._deps.viewer_service_provider,
                         stream_service_provider=self._deps.stream_service_provider,
                         economy_service_provider=self._deps.economy_service_provider,
                         user_cache=self._deps.user_cache,
