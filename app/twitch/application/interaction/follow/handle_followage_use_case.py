@@ -7,6 +7,7 @@ from app.ai.application.conversation_service import ConversationService
 from app.ai.application.prompt_service import PromptService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.twitch.application.interaction.follow.dto import FollowageDTO
+from app.twitch.application.shared import ChatResponder
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 
@@ -18,13 +19,13 @@ class HandleFollowageUseCase:
         ai_conversation_use_case_factory: Callable[[Session], ConversationService],
         twitch_api_service: TwitchApiService,
         prompt_service: PromptService,
-        generate_response_fn: Callable[[str, str], str],
+        chat_responder: ChatResponder,
     ):
         self._chat_use_case_factory = chat_use_case_factory
         self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
         self._twitch_api_service = twitch_api_service
         self._prompt_service = prompt_service
-        self._generate_response_fn = generate_response_fn
+        self._chat_responder = chat_responder
 
     async def handle(
         self,
@@ -58,7 +59,7 @@ class HandleFollowageUseCase:
                 f"@{dto.display_name} отслеживает канал {dto.channel_name} уже {days} дней, {hours} часов и "
                 f"{minutes} минут. Сообщи ему об этом как-нибудь оригинально."
             )
-            result = self._generate_response_fn(prompt, dto.channel_name)
+            result = self._chat_responder.generate_response(prompt, dto.channel_name)
 
             with db_session_provider() as db:
                 self._ai_conversation_use_case_factory(db).save_conversation_to_db(

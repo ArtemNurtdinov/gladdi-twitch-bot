@@ -10,6 +10,7 @@ from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.equipment.domain.equipment_service import EquipmentService
 from app.twitch.application.interaction.battle.dto import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
+from app.twitch.application.shared import ChatResponder
 
 
 class HandleBattleUseCase:
@@ -21,14 +22,14 @@ class HandleBattleUseCase:
         ai_conversation_use_case_factory: Callable[[Session], ConversationService],
         battle_use_case_factory: Callable[[Session], BattleUseCase],
         equipment_service_factory: Callable[[Session], EquipmentService],
-        generate_response_fn: Callable[[str, str], str],
+        chat_responder: ChatResponder,
     ):
         self._economy_service_factory = economy_service_factory
         self._chat_use_case_factory = chat_use_case_factory
         self._ai_conversation_use_case_factory = ai_conversation_use_case_factory
         self._battle_use_case_factory = battle_use_case_factory
         self._equipment_service_factory = equipment_service_factory
-        self._generate_response_fn = generate_response_fn
+        self._chat_responder = chat_responder
 
     async def handle(
         self,
@@ -173,7 +174,7 @@ class HandleBattleUseCase:
             f"\n\nПроигравший получит таймаут! Победитель получит {EconomyService.BATTLE_WINNER_PRIZE} монет!"
         )
 
-        result_story = self._generate_response_fn(prompt, dto.channel_name)
+        result_story = self._chat_responder.generate_response(prompt, dto.channel_name)
 
         winner_amount = EconomyService.BATTLE_WINNER_PRIZE
         with db_session_provider() as db:

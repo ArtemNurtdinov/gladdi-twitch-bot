@@ -197,7 +197,6 @@ class BotFactory:
         prefix = self._settings.prefix
         bot_nick_provider = lambda: bot.nick
         post_message_fn = bot.post_message_in_twitch_chat
-        generate_response_fn = chat_responder.generate_response
         timeout_fn = bot.timeout_user
         deps = self._deps
         settings = self._settings
@@ -208,7 +207,7 @@ class BotFactory:
                 ai_conversation_use_case_factory=deps.ai_conversation_use_case,
                 twitch_api_service=deps.twitch_api_service,
                 prompt_service=deps.prompt_service,
-                generate_response_fn=generate_response_fn,
+                chat_responder=chat_responder,
             ),
             db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
@@ -222,7 +221,7 @@ class BotFactory:
                 prompt_service=deps.prompt_service,
                 ai_conversation_use_case_factory=deps.ai_conversation_use_case,
                 chat_use_case_factory=deps.chat_use_case,
-                generate_response_fn=generate_response_fn,
+                chat_responder=chat_responder,
             ),
             db_session_provider=SessionLocal.begin,
             post_message_fn=post_message_fn,
@@ -237,7 +236,7 @@ class BotFactory:
                 ai_conversation_use_case_factory=deps.ai_conversation_use_case,
                 battle_use_case_factory=deps.battle_use_case,
                 equipment_service_factory=deps.equipment_service,
-                generate_response_fn=generate_response_fn,
+                chat_responder=chat_responder,
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
