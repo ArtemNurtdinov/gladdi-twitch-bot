@@ -221,9 +221,7 @@ class BotFactory:
                 intent_use_case=self._deps.intent_use_case,
                 prompt_service=self._deps.prompt_service,
                 unit_of_work_factory=ask_uow_factory,
-                conversation_service_provider=self._deps.conversation_service_provider,
                 system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
-                db_readonly_session_provider=lambda: db_ro_session(),
                 chat_responder=chat_responder
             ),
             post_message_fn=post_message_fn,
@@ -420,9 +418,7 @@ class BotFactory:
             unit_of_work_factory=chat_message_uow_factory,
             intent_use_case=self._deps.intent_use_case,
             prompt_service=self._deps.prompt_service,
-            conversation_service_provider=self._deps.conversation_service_provider,
             system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
-            db_readonly_session_provider=lambda: db_ro_session(),
             chat_responder=chat_responder
         )
         return ChatEventHandler(
@@ -458,4 +454,5 @@ class BotFactory:
             economy_service_provider=self._deps.economy_service_provider,
             stream_service_provider=self._deps.stream_service_provider,
             viewer_service_provider=self._deps.viewer_service_provider,
+            conversation_service_provider=self._deps.conversation_service_provider,
         )
