@@ -2,7 +2,6 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
 from app.twitch.application.interaction.help.dto import HelpDTO
 from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
 

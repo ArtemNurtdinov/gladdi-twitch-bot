@@ -52,7 +52,7 @@ class HandleChatMessageUseCase:
                     current_time=dto.occurred_at,
                 )
 
-        intent = self._intent_use_case.get_intent_from_text(dto.message)
+        intent = await self._intent_use_case.get_intent_from_text(dto.message)
 
         prompt = None
         if intent == Intent.JACKBOX:
@@ -70,7 +70,7 @@ class HandleChatMessageUseCase:
                 channel_name=dto.channel_name,
                 system_prompt=self._system_prompt
             )
-        result = self._chat_responder.generate_response_from_history(history, prompt)
+        result = await self._chat_responder.generate_response_from_history(history, prompt)
 
         with self._unit_of_work_factory.create() as uow:
             uow.chat.save_chat_message(

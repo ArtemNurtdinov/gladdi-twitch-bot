@@ -42,7 +42,7 @@ class HandleChatSummarizerUseCase:
             f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
             f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
         )
-        result = self._chat_responder.generate_response(prompt, chat_summarizer.channel_name)
+        result = await self._chat_responder.generate_response(prompt, chat_summarizer.channel_name)
         return result
 
 

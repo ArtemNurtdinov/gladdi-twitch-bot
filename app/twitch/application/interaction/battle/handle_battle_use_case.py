@@ -176,7 +176,7 @@ class HandleBattleUseCase:
             f"\n\nПроигравший получит таймаут! Победитель получит {EconomyService.BATTLE_WINNER_PRIZE} монет!"
         )
 
-        result_story = self._chat_responder.generate_response(prompt, battle_dto.channel_name)
+        result_story = await self._chat_responder.generate_response(prompt, battle_dto.channel_name)
 
         winner_amount = EconomyService.BATTLE_WINNER_PRIZE
         with db_session_provider() as db:

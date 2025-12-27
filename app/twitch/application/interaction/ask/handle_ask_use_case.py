@@ -32,7 +32,7 @@ class HandleAskUseCase:
         self._chat_responder = chat_responder
 
     async def handle(self, dto: AskCommandDTO) -> str:
-        intent = self._intent_use_case.get_intent_from_text(dto.message)
+        intent = await self._intent_use_case.get_intent_from_text(dto.message)
 
         if intent == Intent.JACKBOX:
             prompt = self._prompt_service.get_jackbox_prompt(dto.display_name, dto.message)
@@ -51,7 +51,7 @@ class HandleAskUseCase:
                 system_prompt=self._system_prompt
             )
 
-        assistant_message = self._chat_responder.generate_response_from_history(history, prompt)
+        assistant_message = await self._chat_responder.generate_response_from_history(history, prompt)
 
         with self._unit_of_work_factory.create() as uow:
             uow.conversation.save_conversation_to_db(

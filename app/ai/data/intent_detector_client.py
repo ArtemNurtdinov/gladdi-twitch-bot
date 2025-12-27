@@ -23,7 +23,7 @@ class IntentDetectorClientImpl(IntentDetectorClient):
 
         raise Exception(f"Ошибка запроса: {response.status_code} - {response.text}")
 
-    def validate_intent_via_llm(self, detected_intent: Intent, text: str, llm_client: LLMClient) -> Intent:
+    async def validate_intent_via_llm(self, detected_intent: Intent, text: str, llm_client: LLMClient) -> Intent:
         intent_descriptions = {
             "games_history": "вопросы о прошедших играх, их истории, результатах и т.п.",
             "jackbox": "вопросы о Jackbox, просьбы поиграть, обсуждение этой игры",
@@ -45,7 +45,7 @@ class IntentDetectorClientImpl(IntentDetectorClient):
             "Если intent определён верно, просто напиши его (одно слово, без пояснений). "
             "Если определён неверно — напиши правильный intent (одно слово, без пояснений)."
         )
-        ai_response = llm_client.generate_ai_response([AIMessage(Role.USER, prompt)])
+        ai_response = await llm_client.generate_ai_response([AIMessage(Role.USER, prompt)])
         ai_response = ai_response.strip().lower()
         for intent in Intent:
             if ai_response == intent.value:

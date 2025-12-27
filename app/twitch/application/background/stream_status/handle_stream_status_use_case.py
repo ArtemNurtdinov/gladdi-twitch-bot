@@ -171,7 +171,7 @@ class HandleStreamStatusUseCase:
             f"Начался стрим. Категория: {game_name}, название: {title}. "
             f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
         )
-        result = self._chat_responder.generate_response(prompt, channel_name)
+        result = await self._chat_responder.generate_response(prompt, channel_name)
         try:
             await self._telegram_bot.send_message(chat_id=self._telegram_group_id, text=result)
         except Exception as e:
@@ -203,7 +203,7 @@ class HandleStreamStatusUseCase:
                     f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
                     f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
                 )
-                result = self._chat_responder.generate_response(prompt, channel_name)
+                result = await self._chat_responder.generate_response(prompt, channel_name)
                 self._state.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
@@ -240,7 +240,7 @@ class HandleStreamStatusUseCase:
             prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
 
         prompt += f"\n\nНа основе предоставленной информации подведи краткий итог трансляции"
-        result = self._chat_responder.generate_response(prompt, channel_name)
+        result = await self._chat_responder.generate_response(prompt, channel_name)
 
         with db_session_provider() as db:
             self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, result)

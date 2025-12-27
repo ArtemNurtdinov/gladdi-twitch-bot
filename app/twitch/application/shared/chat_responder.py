@@ -21,7 +21,7 @@ class ChatResponder:
         self._system_prompt = system_prompt
         self._db_readonly_session_provider = db_readonly_session_provider
 
-    def generate_response(self, prompt: str, channel_name: str) -> str:
+    async def generate_response(self, prompt: str, channel_name: str) -> str:
         messages = []
         with self._db_readonly_session_provider() as db:
             history = self._conversation_service_provider.get(db).get_last_messages(
@@ -30,12 +30,12 @@ class ChatResponder:
             )
         messages.extend(history)
         messages.append(AIMessage(Role.USER, prompt))
-        assistant_message = self._llm_client.generate_ai_response(messages)
+        assistant_message = await self._llm_client.generate_ai_response(messages)
         return assistant_message
 
-    def generate_response_from_history(self, history: list[AIMessage], prompt: str) -> str:
+    async def generate_response_from_history(self, history: list[AIMessage], prompt: str) -> str:
         messages = list(history)
         messages.append(AIMessage(Role.USER, prompt))
-        return self._llm_client.generate_ai_response(messages)
+        return await self._llm_client.generate_ai_response(messages)
 
     

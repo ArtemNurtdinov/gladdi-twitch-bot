@@ -45,7 +45,7 @@ class HandlePostJokeUseCase:
         stream_info = await self._twitch_api_service.get_stream_info(broadcaster_id)
         game_name = stream_info.game_name if stream_info else "стрима"
         prompt = f"Придумай анекдот, связанный с категорией трансляции: {game_name}."
-        result = self._chat_responder.generate_response(prompt, post_joke.channel_name)
+        result = await self._chat_responder.generate_response(prompt, post_joke.channel_name)
 
         with db_session_provider() as db:
             self._conversation_service_provider.get(db).save_conversation_to_db(post_joke.channel_name, prompt, result)

@@ -4,6 +4,5 @@ from app.ai.domain.models import AIMessage
 
 
 class LLMClient(Protocol):
-
-    def generate_ai_response(self, user_messages: list[AIMessage]) -> str:
+    async def generate_ai_response(self, user_messages: list[AIMessage]) -> str:
         ...

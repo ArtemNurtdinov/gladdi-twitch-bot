@@ -59,7 +59,7 @@ class HandleFollowageUseCase:
                 f"@{dto.display_name} отслеживает канал {dto.channel_name} уже {days} дней, {hours} часов и "
                 f"{minutes} минут. Сообщи ему об этом как-нибудь оригинально."
             )
-            result = self._chat_responder.generate_response(prompt, dto.channel_name)
+            result = await self._chat_responder.generate_response(prompt, dto.channel_name)
 
             with db_session_provider() as db:
                 self._conversation_service_provider.get(db).save_conversation_to_db(

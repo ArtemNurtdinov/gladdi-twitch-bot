@@ -146,7 +146,7 @@ class MinigameOrchestrator:
         system_prompt = self._system_prompt
         ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
 
-        response = self._llm_client.generate_ai_response(ai_messages)
+        response = await self._llm_client.generate_ai_response(ai_messages)
 
         with SessionLocal.begin() as db:
             self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, response)
