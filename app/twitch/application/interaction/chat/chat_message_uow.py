@@ -31,8 +31,18 @@ class ChatMessageUnitOfWork(Protocol):
     def conversation(self) -> ConversationService:
         ...
 
+class ChatMessageUnitOfWorkRo(Protocol):
+    @property
+    def conversation(self) -> ConversationService:
+        ...
+
 
 class ChatMessageUnitOfWorkFactory(Protocol):
 
     def create(self) -> ContextManager[ChatMessageUnitOfWork]:
+        ...
+
+class ChatMessageUnitOfWorkRoFactory(Protocol):
+
+    def create(self) -> ContextManager[ChatMessageUnitOfWorkRo]:
         ...

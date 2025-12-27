@@ -16,8 +16,19 @@ class AskUnitOfWork(Protocol):
     def conversation(self) -> ConversationService:
         ...
 
+class AskUnitOfWorkRo(Protocol):
+
+    @property
+    def conversation(self) -> ConversationService:
+        ...
+
 class AskUnitOfWorkFactory(Protocol):
 
     def create(self) -> ContextManager[AskUnitOfWork]:
+        ...
+
+class AskUnitOfWorkRoFactory(Protocol):
+
+    def create(self) -> ContextManager[AskUnitOfWorkRo]:
         ...
 

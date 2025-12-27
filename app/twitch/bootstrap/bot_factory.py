@@ -38,8 +38,9 @@ from app.twitch.application.interaction.transfer.handle_transfer_use_case import
 from app.twitch.application.shared import ChatResponder
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
-from app.twitch.infrastructure.interaction.ask.ask_uow import SqlAlchemyAskUnitOfWorkFactory
-from app.twitch.infrastructure.interaction.chat.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
+from app.twitch.infrastructure.interaction.ask.ask_uow import SqlAlchemyAskUnitOfWorkFactory, SqlAlchemyAskUnitOfWorkRoFactory
+from app.twitch.infrastructure.interaction.chat.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory, \
+    SqlAlchemyChatMessageUnitOfWorkRoFactory
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.jobs.chat_summarizer_job import ChatSummarizerJob
 from app.twitch.presentation.background.jobs.minigame_tick_job import MinigameTickJob
@@ -221,6 +222,7 @@ class BotFactory:
                 intent_use_case=self._deps.intent_use_case,
                 prompt_service=self._deps.prompt_service,
                 unit_of_work_factory=ask_uow_factory,
+                unit_of_work_ro_factory=self._build_ask_uow_ro_factory(),
                 system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
                 chat_responder=chat_responder
             ),
@@ -414,8 +416,10 @@ class BotFactory:
 
     def _create_chat_event_handler(self, bot: Bot, chat_responder: ChatResponder) -> ChatEventHandler:
         chat_message_uow_factory = self._build_chat_message_uow_factory()
+        chat_message_uow_ro_factory = self._build_chat_message_uow_ro_factory()
         handle_chat_message = HandleChatMessageUseCase(
             unit_of_work_factory=chat_message_uow_factory,
+            unit_of_work_ro_factory=chat_message_uow_ro_factory,
             intent_use_case=self._deps.intent_use_case,
             prompt_service=self._deps.prompt_service,
             system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
@@ -447,9 +451,25 @@ class BotFactory:
             conversation_service_provider=self._deps.conversation_service_provider,
         )
 
+    def _build_ask_uow_ro_factory(self) -> SqlAlchemyAskUnitOfWorkRoFactory:
+        return SqlAlchemyAskUnitOfWorkRoFactory(
+            read_session_factory=lambda: db_ro_session(),
+            conversation_service_provider=self._deps.conversation_service_provider,
+        )
+
     def _build_chat_message_uow_factory(self) -> SqlAlchemyChatMessageUnitOfWorkFactory:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
             session_factory=SessionLocal.begin,
+            chat_use_case_provider=self._deps.chat_use_case_provider,
+            economy_service_provider=self._deps.economy_service_provider,
+            stream_service_provider=self._deps.stream_service_provider,
+            viewer_service_provider=self._deps.viewer_service_provider,
+            conversation_service_provider=self._deps.conversation_service_provider,
+        )
+
+    def _build_chat_message_uow_ro_factory(self) -> SqlAlchemyChatMessageUnitOfWorkRoFactory:
+        return SqlAlchemyChatMessageUnitOfWorkRoFactory(
+            read_session_factory=lambda: db_ro_session(),
             chat_use_case_provider=self._deps.chat_use_case_provider,
             economy_service_provider=self._deps.economy_service_provider,
             stream_service_provider=self._deps.stream_service_provider,
