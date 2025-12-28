@@ -6,17 +6,18 @@ from typing import Callable, ContextManager, Protocol
 import telegram
 from sqlalchemy.orm import Session
 
+from app.ai.application.chat_responder import ChatResponder
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
+from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.domain.models import StreamStatistics
 from app.twitch.application.background.stream_status.dto import StreamStatusDTO
-from app.twitch.application.shared import ChatResponder, StreamServiceProvider
-from app.twitch.application.shared.battle_use_case_provider import BattleUseCaseProvider
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
-from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
-from app.twitch.application.shared.start_stream_use_case_provider import StartStreamUseCaseProvider
-from app.twitch.application.shared.viewer_service_provider import ViewerServiceProvider
+from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.economy.application.economy_service_provider import EconomyServiceProvider
+from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
+from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 

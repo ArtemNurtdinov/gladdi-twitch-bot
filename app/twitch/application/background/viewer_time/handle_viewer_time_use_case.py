@@ -5,10 +5,10 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.economy.domain.models import TransactionType
+from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.twitch.application.background.viewer_time.dto import ViewerTimeDTO
-from app.twitch.application.shared import StreamServiceProvider
-from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
-from app.twitch.application.shared.viewer_service_provider import ViewerServiceProvider
+from app.economy.application.economy_service_provider import EconomyServiceProvider
+from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 

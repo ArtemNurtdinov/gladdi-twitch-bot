@@ -8,14 +8,14 @@ from typing import Callable, Awaitable
 from app.ai.domain.llm_client import LLMClient
 from app.ai.domain.models import AIMessage, Role
 from app.minigame.domain.minigame_service import MinigameService
-from app.twitch.application.shared.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
-from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
-from app.twitch.application.shared.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
+from app.minigame.application.add_word.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.economy.application.economy_service_provider import EconomyServiceProvider
+from app.minigame.application.get_used_words.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
+from app.stream.application.stream_service_provider import StreamServiceProvider
 from core.db import SessionLocal, db_ro_session
 from app.economy.domain.models import TransactionType
-from app.twitch.application.shared import StreamServiceProvider
 
 logger = logging.getLogger(__name__)
 

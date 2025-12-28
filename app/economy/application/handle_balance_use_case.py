@@ -2,9 +2,9 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.balance.dto import BalanceDTO
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
+from app.economy.application.dto import BalanceDTO
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.economy.application.economy_service_provider import EconomyServiceProvider
 
 
 class HandleBalanceUseCase:
@@ -20,22 +20,22 @@ class HandleBalanceUseCase:
     async def handle(
         self,
         db_session_provider: Callable[[], ContextManager[Session]],
-        dto: BalanceDTO,
+        command_balance_dto: BalanceDTO,
     ) -> str:
         with db_session_provider() as db:
             user_balance = self._economy_service_provider.get(db).get_user_balance(
-                dto.channel_name,
-                dto.user_name,
+                channel_name=command_balance_dto.channel_name,
+                user_name=command_balance_dto.user_name,
             )
 
-        result = f"💰 @{dto.display_name}, твой баланс: {user_balance.balance} монет"
+        result = f"💰 @{command_balance_dto.display_name}, твой баланс: {user_balance.balance} монет"
 
         with db_session_provider() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
-                channel_name=dto.channel_name,
-                user_name=dto.bot_nick,
+                channel_name=command_balance_dto.channel_name,
+                user_name=command_balance_dto.bot_nick,
                 content=result,
-                current_time=dto.occurred_at,
+                current_time=command_balance_dto.occurred_at,
             )
 
         return result

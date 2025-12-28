@@ -2,7 +2,7 @@ from typing import Callable
 
 from sqlalchemy.orm import Session
 
-from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.add_word.add_used_word_use_case import AddUsedWordsUseCase
 
 
 class AddUsedWordsUseCaseProvider:

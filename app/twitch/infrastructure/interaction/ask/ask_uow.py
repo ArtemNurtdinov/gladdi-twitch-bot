@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 from app.ai.application.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.twitch.application.interaction.ask.ask_uow import AskUnitOfWork, AskUnitOfWorkFactory, AskUnitOfWorkRo, AskUnitOfWorkRoFactory
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.ai.application.conversation_service_provider import ConversationServiceProvider
 
 
 class SqlAlchemyAskUnitOfWork(AskUnitOfWork):

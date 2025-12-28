@@ -2,8 +2,6 @@ import logging
 from typing import List
 from datetime import datetime
 
-from sqlalchemy.orm import Session
-
 from app.viewer.domain.models import ViewerSession
 from app.viewer.domain.repo import ViewerRepository
 

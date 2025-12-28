@@ -1,5 +1,6 @@
 import logging
 
+from app.ai.application.chat_responder import ChatResponder
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.twitch.application.background.chat_summary.handle_chat_summarizer_use_case import (
     HandleChatSummarizerUseCase,
@@ -19,23 +20,22 @@ from app.twitch.application.background.token_checker.handle_token_checker_use_ca
 )
 from app.twitch.application.background.viewer_time.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from app.twitch.application.interaction.ask.handle_ask_use_case import HandleAskUseCase
-from app.twitch.application.interaction.balance.handle_balance_use_case import HandleBalanceUseCase
+from app.economy.application.handle_balance_use_case import HandleBalanceUseCase
 from app.twitch.application.interaction.battle.handle_battle_use_case import HandleBattleUseCase
-from app.twitch.application.interaction.bonus.handle_bonus_use_case import HandleBonusUseCase
+from app.economy.application.handle_bonus_use_case import HandleBonusUseCase
 from app.twitch.application.interaction.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.twitch.application.interaction.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 from app.twitch.application.interaction.follow.handle_followage_use_case import HandleFollowageUseCase
 from app.twitch.application.interaction.guess.handle_guess_use_case import HandleGuessUseCase
 from app.twitch.application.interaction.help.handle_help_use_case import HandleHelpUseCase
-from app.twitch.application.interaction.roll.handle_roll_use_case import HandleRollUseCase
-from app.twitch.application.interaction.rps.handle_rps_use_case import HandleRpsUseCase
+from app.betting.application.handle_roll_use_case import HandleRollUseCase
+from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.twitch.application.interaction.shop.handle_shop_use_case import HandleShopUseCase
 from app.twitch.application.interaction.stats.handle_stats_use_case import HandleStatsUseCase
 from app.twitch.application.interaction.top_bottom.handle_top_bottom_use_case import (
     HandleTopBottomUseCase,
 )
 from app.twitch.application.interaction.transfer.handle_transfer_use_case import HandleTransferUseCase
-from app.twitch.application.shared import ChatResponder
 from app.twitch.bootstrap.deps import BotDependencies
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.infrastructure.interaction.ask.ask_uow import SqlAlchemyAskUnitOfWorkFactory, SqlAlchemyAskUnitOfWorkRoFactory

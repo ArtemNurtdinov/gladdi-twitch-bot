@@ -1,11 +1,11 @@
 from typing import Optional
 
+from app.ai.application.chat_responder import ChatResponder
 from app.ai.application.intent_use_case import IntentUseCase
 from app.ai.application.prompt_service import PromptService
 from app.ai.domain.models import Intent
 from app.twitch.application.interaction.chat.chat_message_uow import ChatMessageUnitOfWorkFactory, ChatMessageUnitOfWorkRoFactory
 from app.twitch.application.interaction.chat.dto import ChatMessageDTO
-from app.twitch.application.shared import ChatResponder
 
 
 class HandleChatMessageUseCase:

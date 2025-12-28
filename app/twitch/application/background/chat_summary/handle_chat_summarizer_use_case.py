@@ -3,9 +3,10 @@ from typing import Callable, ContextManager, Optional
 
 from sqlalchemy.orm import Session
 
+from app.ai.application.chat_responder import ChatResponder
+from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.twitch.application.background.chat_summary.dto import ChatSummarizerDTO
-from app.twitch.application.shared import ChatResponder, StreamServiceProvider
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 
 
 class HandleChatSummarizerUseCase:

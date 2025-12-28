@@ -1,9 +1,9 @@
+from app.ai.application.chat_responder import ChatResponder
 from app.ai.application.intent_use_case import IntentUseCase
 from app.ai.application.prompt_service import PromptService
 from app.ai.domain.models import Intent
 from app.twitch.application.interaction.ask.dto import AskCommandDTO
 from app.twitch.application.interaction.ask.ask_uow import AskUnitOfWorkFactory, AskUnitOfWorkRoFactory
-from app.twitch.application.shared import ChatResponder
 
 
 class HandleAskUseCase:

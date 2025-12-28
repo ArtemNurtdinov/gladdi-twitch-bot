@@ -193,6 +193,7 @@ class Bot(commands.Bot):
     async def shop(self, ctx):
         await self._command_registry.shop.handle_shop(
             channel_name=ctx.channel.name,
+            display_name=ctx.author.display_name,
             ctx=ctx
         )
 

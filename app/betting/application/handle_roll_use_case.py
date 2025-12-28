@@ -4,19 +4,15 @@ from typing import Callable, ContextManager, List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.betting.application.betting_service_provider import BettingServiceProvider
+from app.betting.application.dto import RollDTO, RollUseCaseResult, RollTimeoutAction
 from app.betting.domain.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
-from app.economy.domain.models import (
-    JackpotPayoutMultiplierEffect,
-    MissPayoutMultiplierEffect,
-    PartialPayoutMultiplierEffect,
-    TransactionType,
-)
-from app.twitch.application.interaction.roll.dto import RollDTO, RollUseCaseResult, RollTimeoutAction
-from app.twitch.application.shared.betting_service_provider import BettingServiceProvider
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
-from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.economy.application.economy_service_provider import EconomyServiceProvider
+from app.economy.domain.models import JackpotPayoutMultiplierEffect, MissPayoutMultiplierEffect, PartialPayoutMultiplierEffect, \
+    TransactionType
+from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 
 
 class HandleRollUseCase:

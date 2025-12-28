@@ -2,11 +2,11 @@ from typing import Callable, ContextManager, Optional
 
 from sqlalchemy.orm import Session
 
+from app.ai.application.chat_responder import ChatResponder
 from app.joke.domain.joke_service import JokeService
 from app.twitch.application.background.post_joke.dto import PostJokeDTO
-from app.twitch.application.shared import ChatResponder
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.ai.application.conversation_service_provider import ConversationServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 

@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 from app.battle.domain.models import UserBattleStats
 from app.betting.presentation.betting_schemas import UserBetStats
 from app.twitch.application.interaction.stats.dto import StatsDTO
-from app.twitch.application.shared.battle_use_case_provider import BattleUseCaseProvider
-from app.twitch.application.shared.betting_service_provider import BettingServiceProvider
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
+from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
+from app.betting.application.betting_service_provider import BettingServiceProvider
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.economy.application.economy_service_provider import EconomyServiceProvider
 
 
 class HandleStatsUseCase:

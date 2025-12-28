@@ -3,7 +3,7 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.shop.dto import ShopBuyDTO, ShopListDTO
+from app.twitch.application.interaction.shop.dto import CommandBuyDTO, CommandShopDTO
 from app.twitch.application.interaction.shop.handle_shop_use_case import HandleShopUseCase
 
 
@@ -29,22 +29,23 @@ class ShopCommandHandler:
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
-    async def handle_shop(self, channel_name: str, ctx):
+    async def handle_shop(self, channel_name: str, display_name: str, ctx):
         bot_nick = self.bot_nick_provider().lower()
 
-        dto = ShopListDTO(
+        dto = CommandShopDTO(
             channel_name=channel_name,
-            display_name="",
-            user_name="",
+            display_name=display_name,
+            user_name=display_name.lower(),
             bot_nick=bot_nick,
             occurred_at=datetime.utcnow(),
             command_prefix=self.command_prefix,
+            command_name=self.command_shop_name,
             command_buy_name=self.command_buy_name,
         )
 
         result = await self._handle_shop_use_case.handle_shop(
             db_session_provider=self._db_session_provider,
-            dto=dto,
+            command_shop_dto=dto,
         )
 
         await self.post_message_fn(result, ctx)
@@ -52,21 +53,21 @@ class ShopCommandHandler:
     async def handle_buy(self, channel_name: str, display_name: str, ctx, item_name: str | None):
         bot_nick = self.bot_nick_provider().lower()
 
-        dto = ShopBuyDTO(
+        dto = CommandBuyDTO(
+            command_prefix=self.command_prefix,
+            command_name=self.command_buy_name,
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
             bot_nick=bot_nick,
             occurred_at=datetime.utcnow(),
             item_name_input=item_name,
-            command_prefix=self.command_prefix,
-            command_buy_name=self.command_buy_name,
         )
 
         result = await self._handle_shop_use_case.handle_buy(
             db_session_provider=self._db_session_provider,
             db_readonly_session_provider=self._db_readonly_session_provider,
-            dto=dto,
+            command_buy_dto=dto,
         )
 
         await self.post_message_fn(result, ctx)

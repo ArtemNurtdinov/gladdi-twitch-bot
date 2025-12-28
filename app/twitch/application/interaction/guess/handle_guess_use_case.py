@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.twitch.application.interaction.guess.dto import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.economy.application.economy_service_provider import EconomyServiceProvider
 
 
 class HandleGuessUseCase:

@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.bonus.dto import BonusDTO
-from app.twitch.application.interaction.bonus.handle_bonus_use_case import HandleBonusUseCase
+from app.economy.application.dto import BonusDTO
+from app.economy.application.handle_bonus_use_case import HandleBonusUseCase
 
 
 class BonusCommandHandler:
@@ -41,7 +41,7 @@ class BonusCommandHandler:
         result = await self._handle_bonus_use_case.handle(
             db_session_provider=self._db_session_provider,
             db_readonly_session_provider=self._db_readonly_session_provider,
-            bonus=bonus,
+            chat_context_dto=bonus,
         )
 
         await self.post_message_fn(result, ctx)

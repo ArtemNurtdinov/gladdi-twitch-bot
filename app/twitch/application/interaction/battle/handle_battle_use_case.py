@@ -3,16 +3,15 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.battle.application.battle_use_case import BattleUseCase
+from app.ai.application.chat_responder import ChatResponder
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.twitch.application.interaction.battle.dto import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
-from app.twitch.application.shared import ChatResponder
-from app.twitch.application.shared.battle_use_case_provider import BattleUseCaseProvider
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.conversation_service_provider import ConversationServiceProvider
-from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
-from app.twitch.application.shared.equipment_service_provider import EquipmentServiceProvider
+from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.economy.application.economy_service_provider import EconomyServiceProvider
+from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 
 
 class HandleBattleUseCase:

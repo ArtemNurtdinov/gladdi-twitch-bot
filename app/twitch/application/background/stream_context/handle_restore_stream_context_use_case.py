@@ -3,7 +3,7 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.minigame.domain.minigame_service import MinigameService
-from app.twitch.application.shared import StreamServiceProvider
+from app.stream.application.stream_service_provider import StreamServiceProvider
 
 
 class HandleRestoreStreamContextUseCase:

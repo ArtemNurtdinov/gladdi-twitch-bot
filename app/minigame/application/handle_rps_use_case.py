@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.models import RPS_CHOICES
 from app.minigame.domain.minigame_service import MinigameService
-from app.twitch.application.interaction.rps.dto import RpsDTO
-from app.twitch.application.shared.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.shared.economy_service_provider import EconomyServiceProvider
+from app.minigame.application.dto import RpsDTO
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.economy.application.economy_service_provider import EconomyServiceProvider
 
 
 class HandleRpsUseCase:
