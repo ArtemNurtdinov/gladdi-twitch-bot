@@ -1,8 +1,8 @@
 import httpx
 
 from core.config import config
-from app.ai.domain.llm_client import LLMClient
-from app.ai.domain.models import AIMessage
+from app.ai.gen.domain.llm_client import LLMClient
+from app.ai.gen.domain.models import AIMessage
 
 
 class LLMClientImpl(LLMClient):
@@ -21,8 +21,3 @@ class LLMClientImpl(LLMClient):
             return response_data["assistant_message"]
 
         raise Exception(f"Ошибка запроса: {response.status_code} - {response.text}")
-
-
-
-
-

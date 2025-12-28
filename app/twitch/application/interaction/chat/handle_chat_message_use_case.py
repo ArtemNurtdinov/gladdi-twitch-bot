@@ -1,9 +1,9 @@
 from typing import Optional
 
-from app.ai.application.chat_responder import ChatResponder
-from app.ai.application.intent_use_case import IntentUseCase
-from app.ai.application.prompt_service import PromptService
-from app.ai.domain.models import Intent
+from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
+from app.ai.gen.domain.prompt_service import PromptService
+from app.ai.intent.domain.models import Intent
 from app.twitch.application.interaction.chat.chat_message_uow import ChatMessageUnitOfWorkFactory, ChatMessageUnitOfWorkRoFactory
 from app.twitch.application.interaction.chat.dto import ChatMessageDTO
 
@@ -14,20 +14,20 @@ class HandleChatMessageUseCase:
         self,
         unit_of_work_factory: ChatMessageUnitOfWorkFactory,
         unit_of_work_ro_factory: ChatMessageUnitOfWorkRoFactory,
-        intent_use_case: IntentUseCase,
+        get_intent_from_text_use_case: GetIntentFromTextUseCase,
         prompt_service: PromptService,
         system_prompt: str,
-        chat_responder: ChatResponder
+        chat_response_use_case: ChatResponseUseCase
     ):
         self._unit_of_work_factory = unit_of_work_factory
         self._unit_of_work_ro_factory = unit_of_work_ro_factory
-        self._intent_use_case = intent_use_case
+        self._get_intent_from_text_use_case = get_intent_from_text_use_case
         self._prompt_service = prompt_service
         self._system_prompt = system_prompt
-        self._chat_responder = chat_responder
+        self._chat_response_use_case = chat_response_use_case
 
     async def handle(self, dto: ChatMessageDTO) -> Optional[str]:
-        intent = await self._intent_use_case.get_intent_from_text(dto.message)
+        intent = await self._get_intent_from_text_use_case.get_intent_from_text(dto.message)
 
         prompt = None
         if intent == Intent.JACKBOX:
@@ -66,7 +66,7 @@ class HandleChatMessageUseCase:
                 system_prompt=self._system_prompt,
             )
 
-        result = await self._chat_responder.generate_response_from_history(history, prompt)
+        result = await self._chat_response_use_case.generate_response_from_history(history, prompt)
 
         with self._unit_of_work_factory.create() as uow:
             uow.conversation.save_conversation_to_db(

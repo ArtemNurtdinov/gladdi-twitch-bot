@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from core.db import engine, db_ro_session, SessionLocal
-from app.ai.data.db.ai_message import AIMessage
+from app.ai.gen.data.db.ai_message import AIMessage
 from app.auth.domain.auth_service import AuthService
 from app.auth.data.auth_repository import AuthRepositoryImpl
 from app.auth.data.db.access_token import AccessToken

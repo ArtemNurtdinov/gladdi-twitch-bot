@@ -35,9 +35,3 @@ class PromptService:
 
     def get_default_prompt(self, nickname: str, message: str) -> str:
         return f"Ответь пользователю с никнеймом {nickname} на его сообщение: {message}."
-
-
-
-
-
-

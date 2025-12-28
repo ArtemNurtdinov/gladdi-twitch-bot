@@ -2,12 +2,12 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.ai.domain.llm_client import LLMClient
-from app.ai.domain.models import AIMessage, Role
-from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.llm_client import LLMClient
+from app.ai.gen.domain.models import AIMessage, Role
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 
 
-class ChatResponder:
+class ChatResponseUseCase:
 
     def __init__(
         self,

@@ -2,7 +2,7 @@ from typing import Callable
 
 from sqlalchemy.orm import Session
 
-from app.betting.domain.betting_service import BettingService
+from app.betting.application.betting_service import BettingService
 
 
 class BettingServiceProvider:

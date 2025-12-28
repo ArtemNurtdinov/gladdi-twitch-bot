@@ -1,6 +1,6 @@
 import logging
 
-from app.ai.application.chat_responder import ChatResponder
+from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.twitch.application.background.chat_summary.handle_chat_summarizer_use_case import (
     HandleChatSummarizerUseCase,
@@ -20,15 +20,15 @@ from app.twitch.application.background.token_checker.handle_token_checker_use_ca
 )
 from app.twitch.application.background.viewer_time.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from app.twitch.application.interaction.ask.handle_ask_use_case import HandleAskUseCase
-from app.economy.application.handle_balance_use_case import HandleBalanceUseCase
+from app.twitch.application.interaction.balance.handle_balance_use_case import HandleBalanceUseCase
 from app.twitch.application.interaction.battle.handle_battle_use_case import HandleBattleUseCase
-from app.economy.application.handle_bonus_use_case import HandleBonusUseCase
+from app.twitch.application.interaction.bonus.handle_bonus_use_case import HandleBonusUseCase
 from app.twitch.application.interaction.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.twitch.application.interaction.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 from app.twitch.application.interaction.follow.handle_followage_use_case import HandleFollowageUseCase
 from app.twitch.application.interaction.guess.handle_guess_use_case import HandleGuessUseCase
 from app.twitch.application.interaction.help.handle_help_use_case import HandleHelpUseCase
-from app.betting.application.handle_roll_use_case import HandleRollUseCase
+from app.twitch.application.interaction.roll.handle_roll_use_case import HandleRollUseCase
 from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.twitch.application.interaction.shop.handle_shop_use_case import HandleShopUseCase
 from app.twitch.application.interaction.stats.handle_stats_use_case import HandleStatsUseCase
@@ -71,23 +71,24 @@ logger = logging.getLogger(__name__)
 
 
 class BotFactory:
+
     def __init__(self, deps: BotDependencies, settings: TwitchBotSettings):
         self._deps = deps
         self._settings = settings
 
     def create(self) -> Bot:
         bot = Bot(self._deps, self._settings)
-        chat_responder = self._create_chat_responder(bot)
+        chat_response_use_case = self._create_chat_response_use_case(bot)
 
         bot.set_minigame_orchestrator(self._create_minigame(bot))
-        bot.set_background_tasks(self._create_background_tasks(bot, chat_responder))
-        bot.set_command_registry(self._create_command_registry(bot, chat_responder))
-        bot.set_chat_event_handler(self._create_chat_event_handler(bot, chat_responder))
+        bot.set_background_tasks(self._create_background_tasks(bot, chat_response_use_case))
+        bot.set_command_registry(self._create_command_registry(bot, chat_response_use_case))
+        bot.set_chat_event_handler(self._create_chat_event_handler(bot, chat_response_use_case))
         self._restore_stream_context()
         return bot
 
-    def _create_chat_responder(self, bot: Bot) -> ChatResponder:
-        return ChatResponder(
+    def _create_chat_response_use_case(self, bot: Bot) -> ChatResponseUseCase:
+        return ChatResponseUseCase(
             conversation_service_provider=self._deps.conversation_service_provider,
             llm_client=self._deps.llm_client,
             system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
@@ -114,7 +115,7 @@ class BotFactory:
             conversation_service_provider=self._deps.conversation_service_provider
         )
 
-    def _create_background_tasks(self, bot: Bot, chat_responder: ChatResponder) -> BotBackgroundTasks:
+    def _create_background_tasks(self, bot: Bot, chat_response_use_case: ChatResponseUseCase) -> BotBackgroundTasks:
         return BotBackgroundTasks(
             runner=self._deps.background_runner,
             jobs=[
@@ -124,7 +125,7 @@ class BotFactory:
                         joke_service=self._deps.joke_service,
                         user_cache=self._deps.user_cache,
                         twitch_api_service=self._deps.twitch_api_service,
-                        chat_responder=chat_responder,
+                        chat_response_use_case=chat_response_use_case,
                         conversation_service_provider=self._deps.conversation_service_provider,
                         chat_use_case_provider=self._deps.chat_use_case_provider
                     ),
@@ -153,7 +154,7 @@ class BotFactory:
                         minigame_service=self._deps.minigame_service,
                         telegram_bot=self._deps.telegram_bot,
                         telegram_group_id=self._settings.group_id,
-                        chat_responder=chat_responder,
+                        chat_response_use_case=chat_response_use_case,
                         state=bot.chat_summary_state,
                     ),
                     db_session_provider=SessionLocal.begin,
@@ -167,7 +168,7 @@ class BotFactory:
                     handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
                         stream_service_provider=self._deps.stream_service_provider,
                         chat_use_case_provider=self._deps.chat_use_case_provider,
-                        chat_responder=chat_responder,
+                        chat_response_use_case=chat_response_use_case,
                     ),
                     db_readonly_session_provider=lambda: db_ro_session(),
                     state=bot.chat_summary_state,
@@ -195,7 +196,7 @@ class BotFactory:
             ],
         )
 
-    def _create_command_registry(self, bot: Bot, chat_responder: ChatResponder) -> CommandRegistry:
+    def _create_command_registry(self, bot: Bot, chat_response_use_case: ChatResponseUseCase) -> CommandRegistry:
         prefix = self._settings.prefix
         bot_nick_provider = lambda: bot.nick
         post_message_fn = bot.post_message_in_twitch_chat
@@ -209,7 +210,7 @@ class BotFactory:
                 conversation_service_provider=self._deps.conversation_service_provider,
                 twitch_api_service=self._deps.twitch_api_service,
                 prompt_service=self._deps.prompt_service,
-                chat_responder=chat_responder,
+                chat_responder=chat_response_use_case,
             ),
             db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
@@ -219,12 +220,12 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_gladdi,
             handle_ask_use_case=HandleAskUseCase(
-                intent_use_case=self._deps.intent_use_case,
+                get_intent_from_text_use_case=self._deps.intent_use_case,
                 prompt_service=self._deps.prompt_service,
                 unit_of_work_factory=ask_uow_factory,
                 unit_of_work_ro_factory=self._build_ask_uow_ro_factory(),
                 system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
-                chat_responder=chat_responder
+                chat_response_use_case=chat_response_use_case
             ),
             post_message_fn=post_message_fn,
             bot_nick_provider=bot_nick_provider,
@@ -238,7 +239,7 @@ class BotFactory:
                 conversation_service_provider=self._deps.conversation_service_provider,
                 battle_use_case_provider=self._deps.battle_use_case_provider,
                 equipment_service_provider=self._deps.equipment_service_provider,
-                chat_responder=chat_responder,
+                chat_response_use_case=chat_response_use_case,
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
@@ -414,16 +415,16 @@ class BotFactory:
             rps=rps,
         )
 
-    def _create_chat_event_handler(self, bot: Bot, chat_responder: ChatResponder) -> ChatEventHandler:
+    def _create_chat_event_handler(self, bot: Bot, chat_response_use_case: ChatResponseUseCase) -> ChatEventHandler:
         chat_message_uow_factory = self._build_chat_message_uow_factory()
         chat_message_uow_ro_factory = self._build_chat_message_uow_ro_factory()
         handle_chat_message = HandleChatMessageUseCase(
             unit_of_work_factory=chat_message_uow_factory,
             unit_of_work_ro_factory=chat_message_uow_ro_factory,
-            intent_use_case=self._deps.intent_use_case,
+            get_intent_from_text_use_case=self._deps.intent_use_case,
             prompt_service=self._deps.prompt_service,
             system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
-            chat_responder=chat_responder
+            chat_response_use_case=chat_response_use_case
         )
         return ChatEventHandler(
             handle_chat_message_use_case=handle_chat_message,

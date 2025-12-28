@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Enum, DateTime, Integer
 from datetime import datetime
 from core.db import Base
-from app.ai.domain.models import Role
+from app.ai.gen.domain.models import Role
 
 
 class AIMessage(Base):

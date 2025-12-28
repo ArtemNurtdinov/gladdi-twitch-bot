@@ -2,7 +2,7 @@ from typing import Callable
 
 from sqlalchemy.orm import Session
 
-from app.ai.application.conversation_service import ConversationService
+from app.ai.gen.domain.conversation_service import ConversationService
 
 
 class ConversationServiceProvider:

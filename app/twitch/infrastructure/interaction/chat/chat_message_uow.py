@@ -5,7 +5,7 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.ai.application.conversation_service import ConversationService
+from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.stream.domain.stream_service import StreamService
@@ -19,7 +19,7 @@ from app.twitch.application.interaction.chat.chat_message_uow import (
     ChatMessageUnitOfWorkRoFactory,
 )
 from app.viewer.application.viewer_service_provider import ViewerServiceProvider
-from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 
 

@@ -1,12 +1,12 @@
 from sqlalchemy import case
 from sqlalchemy.orm import Session
 
-from app.ai.domain.message_repository import AIMessageRepository
-from app.ai.domain.models import AIMessage, Role
-from app.ai.data.db.ai_message import AIMessage as AIDbMessage
+from app.ai.gen.domain.conversation_repository import ConversationRepository
+from app.ai.gen.domain.models import AIMessage, Role
+from app.ai.gen.data.db.ai_message import AIMessage as AIDbMessage
 
 
-class AIMessageRepositoryImpl(AIMessageRepository):
+class ConversationRepositoryImpl(ConversationRepository):
     def __init__(self, db: Session):
         self._db = db
 
@@ -33,8 +33,3 @@ class AIMessageRepositoryImpl(AIMessageRepository):
         ai_message = AIDbMessage(channel_name=channel_name, role=Role.ASSISTANT, content=ai_message)
         self._db.add(user_message)
         self._db.add(ai_message)
-
-
-
-
-

@@ -6,7 +6,7 @@ from typing import Callable, ContextManager, Protocol
 import telegram
 from sqlalchemy.orm import Session
 
-from app.ai.application.chat_responder import ChatResponder
+from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.stream_service_provider import StreamServiceProvider
@@ -14,7 +14,7 @@ from app.stream.domain.models import StreamStatistics
 from app.twitch.application.background.stream_status.dto import StreamStatusDTO
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
 from app.viewer.application.viewer_service_provider import ViewerServiceProvider
@@ -45,7 +45,7 @@ class HandleStreamStatusUseCase:
         minigame_service: MinigameService,
         telegram_bot: telegram.Bot,
         telegram_group_id: int,
-        chat_responder: ChatResponder,
+        chat_response_use_case: ChatResponseUseCase,
         state: ChatSummaryStateProtocol,
     ):
         self._user_cache = user_cache
@@ -60,7 +60,7 @@ class HandleStreamStatusUseCase:
         self._minigame_service = minigame_service
         self._telegram_bot = telegram_bot
         self._telegram_group_id = telegram_group_id
-        self._chat_responder = chat_responder
+        self._chat_response_use_case = chat_response_use_case
         self._state = state
 
     async def handle(
@@ -172,7 +172,7 @@ class HandleStreamStatusUseCase:
             f"Начался стрим. Категория: {game_name}, название: {title}. "
             f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
         )
-        result = await self._chat_responder.generate_response(prompt, channel_name)
+        result = await self._chat_response_use_case.generate_response(prompt, channel_name)
         try:
             await self._telegram_bot.send_message(chat_id=self._telegram_group_id, text=result)
         except Exception as e:
@@ -204,7 +204,7 @@ class HandleStreamStatusUseCase:
                     f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
                     f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
                 )
-                result = await self._chat_responder.generate_response(prompt, channel_name)
+                result = await self._chat_response_use_case.generate_response(prompt, channel_name)
                 self._state.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
@@ -222,11 +222,11 @@ class HandleStreamStatusUseCase:
             reward_amount = 200
             with db_session_provider() as db:
                 user_balance = self._economy_service_provider.get(db).add_balance(
-                    channel_name,
-                    stream_stat.top_user,
-                    reward_amount,
-                    TransactionType.SPECIAL_EVENT,
-                    "Награда за самую высокую активность в стриме",
+                    channel_name=channel_name,
+                    user_name=stream_stat.top_user,
+                    amount=reward_amount,
+                    transaction_type=TransactionType.SPECIAL_EVENT,
+                    description="Награда за самую высокую активность в стриме",
                 )
                 stream_stat_message += (
                     f"{stream_stat.top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
@@ -241,7 +241,7 @@ class HandleStreamStatusUseCase:
             prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
 
         prompt += f"\n\nНа основе предоставленной информации подведи краткий итог трансляции"
-        result = await self._chat_responder.generate_response(prompt, channel_name)
+        result = await self._chat_response_use_case.generate_response(prompt, channel_name)
 
         with db_session_provider() as db:
             self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, result)

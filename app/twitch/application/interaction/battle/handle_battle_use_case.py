@@ -3,13 +3,13 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.ai.application.chat_responder import ChatResponder
+from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.twitch.application.interaction.battle.dto import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 
@@ -23,14 +23,14 @@ class HandleBattleUseCase:
         conversation_service_provider: ConversationServiceProvider,
         battle_use_case_provider: BattleUseCaseProvider,
         equipment_service_provider: EquipmentServiceProvider,
-        chat_responder: ChatResponder,
+        chat_response_use_case: ChatResponseUseCase,
     ):
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
         self._battle_use_case_provider = battle_use_case_provider
         self._equipment_service_provider = equipment_service_provider
-        self._chat_responder = chat_responder
+        self._chat_response_use_case = chat_response_use_case
 
     async def handle(
         self,
@@ -175,7 +175,7 @@ class HandleBattleUseCase:
             f"\n\nПроигравший получит таймаут! Победитель получит {EconomyService.BATTLE_WINNER_PRIZE} монет!"
         )
 
-        result_story = await self._chat_responder.generate_response(prompt, battle_dto.channel_name)
+        result_story = await self._chat_response_use_case.generate_response(prompt, battle_dto.channel_name)
 
         winner_amount = EconomyService.BATTLE_WINNER_PRIZE
         with db_session_provider() as db:

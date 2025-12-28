@@ -2,9 +2,9 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.economy.application.dto import BalanceDTO
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
+from app.twitch.application.interaction.balance.dto import BalanceDTO
 
 
 class HandleBalanceUseCase:
@@ -35,7 +35,7 @@ class HandleBalanceUseCase:
                 channel_name=command_balance_dto.channel_name,
                 user_name=command_balance_dto.bot_nick,
                 content=result,
-                current_time=command_balance_dto.occurred_at,
+                current_time=command_balance_dto.occurred_at
             )
 
         return result

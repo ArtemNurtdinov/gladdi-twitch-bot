@@ -3,17 +3,17 @@ from dataclasses import dataclass
 import telegram
 from telegram.request import HTTPXRequest
 
-from app.ai.application.conversation_service import ConversationService
-from app.ai.application.intent_use_case import IntentUseCase
-from app.ai.application.prompt_service import PromptService
-from app.ai.data.intent_detector_client import IntentDetectorClientImpl
-from app.ai.data.llm_client import LLMClientImpl
-from app.ai.data.message_repository import AIMessageRepositoryImpl
-from app.ai.domain.llm_client import LLMClient
+from app.ai.gen.domain.conversation_service import ConversationService
+from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
+from app.ai.gen.domain.prompt_service import PromptService
+from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
+from app.ai.gen.infrastructure.llm_client import LLMClientImpl
+from app.ai.gen.data.message_repository import ConversationRepositoryImpl
+from app.ai.gen.domain.llm_client import LLMClient
 from app.battle.application.battle_use_case import BattleUseCase
 from app.battle.data.battle_repository import BattleRepositoryImpl
 from app.betting.data.betting_repository import BettingRepositoryImpl
-from app.betting.domain.betting_service import BettingService
+from app.betting.application.betting_service import BettingService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.chat.data.chat_repository import ChatRepositoryImpl
 from app.economy.data.economy_repository import EconomyRepositoryImpl
@@ -34,7 +34,7 @@ from app.minigame.application.add_word.add_used_words_use_case_provider import A
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.betting.application.betting_service_provider import BettingServiceProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 from app.minigame.application.get_used_words.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
@@ -55,7 +55,7 @@ class BotDependencies:
     twitch_api_service: TwitchApiService
     llm_client: LLMClient
     intent_detector: IntentDetectorClientImpl
-    intent_use_case: IntentUseCase
+    get_intent_use_case: GetIntentFromTextUseCase
     prompt_service: PromptService
     joke_service: JokeService
     minigame_service: MinigameService
@@ -81,7 +81,7 @@ def build_bot_dependencies(
 ) -> BotDependencies:
     llm_client = LLMClientImpl()
     intent_detector = IntentDetectorClientImpl()
-    intent_use_case = IntentUseCase(intent_detector, llm_client)
+    get_intent_from_text_use_case = GetIntentFromTextUseCase(intent_detector, llm_client)
     prompt_service = PromptService()
 
     joke_service = JokeService(FileJokeSettingsRepository())
@@ -99,7 +99,7 @@ def build_bot_dependencies(
         return ChatUseCase(ChatRepositoryImpl(db))
 
     def conversation_service(db):
-        return ConversationService(AIMessageRepositoryImpl(db))
+        return ConversationService(ConversationRepositoryImpl(db))
 
     def equipment_service(db):
         return EquipmentService(EquipmentRepositoryImpl(db))
@@ -130,7 +130,7 @@ def build_bot_dependencies(
         twitch_api_service=twitch_api_service,
         llm_client=llm_client,
         intent_detector=intent_detector,
-        intent_use_case=intent_use_case,
+        get_intent_use_case=get_intent_from_text_use_case,
         prompt_service=prompt_service,
         joke_service=joke_service,
         minigame_service=minigame_service,

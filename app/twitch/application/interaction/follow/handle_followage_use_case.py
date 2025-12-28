@@ -3,11 +3,11 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.ai.application.chat_responder import ChatResponder
-from app.ai.application.prompt_service import PromptService
+from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.domain.prompt_service import PromptService
 from app.twitch.application.interaction.follow.dto import FollowageDTO
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 
@@ -19,13 +19,13 @@ class HandleFollowageUseCase:
         conversation_service_provider: ConversationServiceProvider,
         twitch_api_service: TwitchApiService,
         prompt_service: PromptService,
-        chat_responder: ChatResponder,
+        chat_response_use_case: ChatResponseUseCase,
     ):
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
         self._twitch_api_service = twitch_api_service
         self._prompt_service = prompt_service
-        self._chat_responder = chat_responder
+        self._chat_response_use_case = chat_response_use_case
 
     async def handle(
         self,
@@ -59,7 +59,7 @@ class HandleFollowageUseCase:
                 f"@{dto.display_name} отслеживает канал {dto.channel_name} уже {days} дней, {hours} часов и "
                 f"{minutes} минут. Сообщи ему об этом как-нибудь оригинально."
             )
-            result = await self._chat_responder.generate_response(prompt, dto.channel_name)
+            result = await self._chat_response_use_case.generate_response(prompt, dto.channel_name)
 
             with db_session_provider() as db:
                 self._conversation_service_provider.get(db).save_conversation_to_db(
@@ -84,4 +84,3 @@ class HandleFollowageUseCase:
                 current_time=dto.occurred_at,
             )
         return result
-

@@ -1,8 +1,10 @@
 import requests
+
+from app.ai.intent.domain.models import Intent
 from core.config import config
-from app.ai.domain.intent_detector import IntentDetectorClient
-from app.ai.domain.llm_client import LLMClient
-from app.ai.domain.models import Intent, AIMessage, Role
+from app.ai.intent.domain.intent_detector import IntentDetectorClient
+from app.ai.gen.domain.llm_client import LLMClient
+from app.ai.gen.domain.models import AIMessage, Role
 
 
 class IntentDetectorClientImpl(IntentDetectorClient):

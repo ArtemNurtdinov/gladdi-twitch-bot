@@ -5,12 +5,12 @@ import random
 from datetime import datetime
 from typing import Callable, Awaitable
 
-from app.ai.domain.llm_client import LLMClient
-from app.ai.domain.models import AIMessage, Role
+from app.ai.gen.domain.llm_client import LLMClient
+from app.ai.gen.domain.models import AIMessage, Role
 from app.minigame.domain.minigame_service import MinigameService
 from app.minigame.application.add_word.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.ai.application.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.minigame.application.get_used_words.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
