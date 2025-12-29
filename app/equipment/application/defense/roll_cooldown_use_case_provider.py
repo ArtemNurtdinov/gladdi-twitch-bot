@@ -1,6 +1,6 @@
 from typing import Callable
 
-from app.equipment.application.defence.roll_cooldown_use_case import RollCooldownUseCase
+from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 
 
 class RollCooldownUseCaseProvider:

@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.economy.domain.models import ShopItems, TransactionType
-from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
+from app.equipment.application.add_equipment_use_case_provider import AddEquipmentUseCaseProvider
+from app.equipment.application.equipment_exists_use_case_provider import EquipmentExistsUseCaseProvider
 from app.twitch.application.interaction.shop.model import CommandBuyDTO, CommandShopDTO
 
 
@@ -14,11 +15,13 @@ class HandleShopUseCase:
     def __init__(
         self,
         economy_service_provider: EconomyServiceProvider,
-        equipment_service_provider: EquipmentServiceProvider,
+        add_equipment_use_case_provider: AddEquipmentUseCaseProvider,
+        equipment_exists_use_case_provider: EquipmentExistsUseCaseProvider,
         chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._economy_service_provider = economy_service_provider
-        self._equipment_service_provider = equipment_service_provider
+        self._add_equipment_use_case_provider = add_equipment_use_case_provider
+        self._equipment_exists_use_case_provider = equipment_exists_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle_shop(
@@ -87,7 +90,7 @@ class HandleShopUseCase:
         item = ShopItems.get_item(item_type)
 
         with db_readonly_session_provider() as db:
-            equipment_exists = self._equipment_service_provider.get(db).equipment_exists(
+            equipment_exists = self._equipment_exists_use_case_provider.get(db).check_equipment_exists(
                 channel_name=command_buy.channel_name,
                 user_name=user_name,
                 item_type=item_type
@@ -129,7 +132,7 @@ class HandleShopUseCase:
                 transaction_type=TransactionType.SHOP_PURCHASE,
                 description=f"Покупка '{item.name}'",
             )
-            self._equipment_service_provider.get(db).add_equipment_to_user(
+            self._add_equipment_use_case_provider.get(db).add(
                 channel_name=command_buy.channel_name,
                 user_name=user_name,
                 item_type=item_type

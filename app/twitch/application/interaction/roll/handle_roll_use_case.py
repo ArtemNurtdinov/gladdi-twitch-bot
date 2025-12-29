@@ -5,7 +5,7 @@ from typing import Callable, ContextManager, List, Optional
 from sqlalchemy.orm import Session
 
 from app.betting.application.betting_service_provider import BettingServiceProvider
-from app.equipment.application.defence.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
+from app.equipment.application.defense.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
 from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
 from app.twitch.application.interaction.roll.model import RollDTO, RollUseCaseResult, RollTimeoutAction
 from app.betting.application.betting_service import BettingService

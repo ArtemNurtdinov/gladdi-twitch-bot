@@ -313,7 +313,8 @@ class BotFactory:
             command_buy_name=settings.command_buy,
             handle_shop_use_case=HandleShopUseCase(
                 economy_service_provider=self._deps.economy_service_provider,
-                equipment_service_provider=self._deps.equipment_service_provider,
+                add_equipment_use_case_provider=self._deps.add_equipment_use_case_provider,
+                equipment_exists_use_case_provider=self._deps.equipment_exists_use_case_provider,
                 chat_use_case_provider=self._deps.chat_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,

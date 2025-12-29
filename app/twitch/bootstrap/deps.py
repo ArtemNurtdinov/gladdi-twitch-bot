@@ -23,8 +23,12 @@ from app.chat.data.chat_repository import ChatRepositoryImpl
 from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.economy.data.economy_repository import EconomyRepositoryImpl
 from app.economy.domain.economy_service import EconomyService
-from app.equipment.application.defence.roll_cooldown_use_case import RollCooldownUseCase
-from app.equipment.application.defence.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
+from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
+from app.equipment.application.add_equipment_use_case_provider import AddEquipmentUseCaseProvider
+from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
+from app.equipment.application.defense.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
+from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
+from app.equipment.application.equipment_exists_use_case_provider import EquipmentExistsUseCaseProvider
 from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
@@ -79,6 +83,8 @@ class BotDependencies:
     add_used_words_use_case_provider: AddUsedWordsUseCaseProvider
     get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider
     roll_cooldown_use_case_provider: RollCooldownUseCaseProvider
+    equipment_exists_use_case_provider: EquipmentExistsUseCaseProvider
+    add_equipment_use_case_provider: AddEquipmentUseCaseProvider
 
 
 def build_bot_dependencies(
@@ -137,6 +143,12 @@ def build_bot_dependencies(
     def roll_use_case():
         return RollCooldownUseCase()
 
+    def equipment_use_case(db):
+        return EquipmentExistsUseCase(EquipmentRepositoryImpl(db))
+
+    def add_equipment_use_case(db):
+        return AddEquipmentUseCase(EquipmentRepositoryImpl(db))
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
@@ -161,6 +173,8 @@ def build_bot_dependencies(
         get_used_words_use_case_provider=GetUsedWordsUseCaseProvider(get_used_words_use_case),
         add_used_words_use_case_provider=AddUsedWordsUseCaseProvider(add_used_word_use_case),
         get_user_equipment_use_case_provider=GetUserEquipmentUseCaseProvider(get_user_equipment_use_case),
-        roll_cooldown_use_case_provider=RollCooldownUseCaseProvider(roll_use_case)
+        roll_cooldown_use_case_provider=RollCooldownUseCaseProvider(roll_use_case),
+        equipment_exists_use_case_provider=EquipmentExistsUseCaseProvider(equipment_use_case),
+        add_equipment_use_case_provider=AddEquipmentUseCaseProvider(add_equipment_use_case)
     )
     return deps
