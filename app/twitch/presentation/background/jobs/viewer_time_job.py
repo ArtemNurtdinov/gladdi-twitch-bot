@@ -31,7 +31,7 @@ class ViewerTimeJob:
         self._bot_nick_provider = bot_nick_provider
         self._interval_seconds = check_interval_seconds
 
-    def register(self, runner: BackgroundTaskRunner) -> None:
+    def register(self, runner: BackgroundTaskRunner):
         runner.register(self.name, self.run)
 
     async def run(self):
@@ -40,13 +40,13 @@ class ViewerTimeJob:
                 viewer_time_dto = ViewerTimeDTO(
                     bot_nick=self._bot_nick_provider().lower(),
                     channel_name=self._channel_name,
-                    occurred_at=datetime.utcnow(),
+                    occurred_at=datetime.utcnow()
                 )
 
                 await self._handle_viewer_time_use_case.handle(
                     db_session_provider=self._db_session_provider,
                     db_readonly_session_provider=self._db_readonly_session_provider,
-                    viewer_time_dto=viewer_time_dto,
+                    viewer_time_dto=viewer_time_dto
                 )
             except asyncio.CancelledError:
                 logger.info("ViewerTimeJob cancelled")

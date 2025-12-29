@@ -27,6 +27,7 @@ from app.twitch.application.interaction.battle.handle_battle_use_case import Han
 from app.twitch.application.interaction.bonus.handle_bonus_use_case import HandleBonusUseCase
 from app.twitch.application.interaction.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.twitch.application.interaction.equipment.handle_equipment_use_case import HandleEquipmentUseCase
+from app.twitch.application.interaction.follow.get_followage_use_case import GetFollowageUseCase
 from app.twitch.application.interaction.follow.handle_followage_use_case import HandleFollowAgeUseCase
 from app.twitch.application.interaction.guess.handle_guess_use_case import HandleGuessUseCase
 from app.twitch.application.interaction.help.handle_help_use_case import HandleHelpUseCase
@@ -211,7 +212,9 @@ class BotFactory:
             handle_follow_age_use_case=HandleFollowAgeUseCase(
                 chat_use_case_provider=self._deps.chat_use_case_provider,
                 conversation_service_provider=self._deps.conversation_service_provider,
-                twitch_api_service=self._deps.twitch_api_service,
+                get_followage_use_case=GetFollowageUseCase(
+                    followage_provider=self._deps.twitch_api_service,
+                ),
                 prompt_service=self._deps.prompt_service,
                 chat_response_use_case=chat_response_use_case,
                 unit_of_work_ro_factory=self._build_follow_age_uow_ro_factory(),

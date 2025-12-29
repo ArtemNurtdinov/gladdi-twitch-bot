@@ -5,9 +5,9 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.ai.gen.domain.prompt_service import PromptService
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.interaction.follow.dto import FollowageDTO
+from app.twitch.application.interaction.follow.dto import FollowageDTO, FollowageInfo
+from app.twitch.application.interaction.follow.get_followage_use_case import GetFollowageUseCase
 from app.twitch.application.interaction.follow.uow import FollowAgeUnitOfWorkRoFactory, FollowAgeUnitOfWorkRwFactory
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 
 class HandleFollowAgeUseCase:
@@ -16,7 +16,7 @@ class HandleFollowAgeUseCase:
         self,
         chat_use_case_provider: ChatUseCaseProvider,
         conversation_service_provider: ConversationServiceProvider,
-        twitch_api_service: TwitchApiService,
+        get_followage_use_case: GetFollowageUseCase,
         prompt_service: PromptService,
         chat_response_use_case: ChatResponseUseCase,
         unit_of_work_ro_factory: FollowAgeUnitOfWorkRoFactory,
@@ -25,7 +25,7 @@ class HandleFollowAgeUseCase:
     ):
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
-        self._twitch_api_service = twitch_api_service
+        self._get_followage_use_case = get_followage_use_case
         self._prompt_service = prompt_service
         self._chat_response_use_case = chat_response_use_case
         self._unit_of_work_ro_factory = unit_of_work_ro_factory
@@ -35,15 +35,9 @@ class HandleFollowAgeUseCase:
     async def handle(self, command_follow_age: FollowageDTO) -> Optional[str]:
         channel_name = command_follow_age.channel_name
 
-        broadcaster = await self._twitch_api_service.get_user_by_login(channel_name)
-        broadcaster_id = None if broadcaster is None else broadcaster.id
-
-        if not broadcaster_id:
-            return None
-
-        follow_info = await self._twitch_api_service.get_user_followage(
-            broadcaster_id=broadcaster_id,
-            user_id=command_follow_age.user_id
+        follow_info: Optional[FollowageInfo] = await self._get_followage_use_case.get_followage(
+            channel_login=channel_name,
+            user_id=command_follow_age.user_id,
         )
 
         if not follow_info:
@@ -57,9 +51,7 @@ class HandleFollowAgeUseCase:
                 )
             return result
 
-        follow_dt = datetime.fromisoformat(follow_info.followed_at.replace("Z", "+00:00"))
-        follow_dt_naive = follow_dt.replace(tzinfo=None)
-        follow_duration = command_follow_age.occurred_at - follow_dt_naive
+        follow_duration = command_follow_age.occurred_at - follow_info.followed_at
 
         days = follow_duration.days
         hours, remainder = divmod(follow_duration.seconds, 3600)

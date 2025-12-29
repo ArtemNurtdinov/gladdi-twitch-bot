@@ -6,10 +6,10 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.ai.gen.domain.conversation_service import ConversationService
-from app.chat.application.chat_use_case import ChatUseCase
-from app.twitch.application.interaction.ask.ask_uow import AskUnitOfWork, AskUnitOfWorkFactory, AskUnitOfWorkRo, AskUnitOfWorkRoFactory
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
+from app.chat.application.chat_use_case import ChatUseCase
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.interaction.ask.ask_uow import AskUnitOfWork, AskUnitOfWorkFactory, AskUnitOfWorkRo, AskUnitOfWorkRoFactory
 
 
 class SqlAlchemyAskUnitOfWork(AskUnitOfWork):

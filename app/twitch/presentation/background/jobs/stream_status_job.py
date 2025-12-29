@@ -31,7 +31,7 @@ class StreamStatusJob:
         self._state = state
         self._interval_seconds = stream_status_interval_seconds
 
-    def register(self, runner: BackgroundTaskRunner) -> None:
+    def register(self, runner: BackgroundTaskRunner):
         runner.register(self.name, self.run)
 
     async def run(self):

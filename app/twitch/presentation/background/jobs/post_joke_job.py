@@ -26,7 +26,7 @@ class PostJokeJob:
         self._send_channel_message = send_channel_message
         self._bot_nick_provider = bot_nick_provider
 
-    def register(self, runner: BackgroundTaskRunner) -> None:
+    def register(self, runner: BackgroundTaskRunner):
         runner.register(self.name, self.run)
 
     async def run(self):

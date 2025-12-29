@@ -17,7 +17,7 @@ class MinigameTickJob:
         self._handle_minigame_tick_use_case = handle_minigame_tick_use_case
         self._default_delay = default_delay
 
-    def register(self, runner: BackgroundTaskRunner) -> None:
+    def register(self, runner: BackgroundTaskRunner):
         runner.register(self.name, self.run)
 
     async def run(self):

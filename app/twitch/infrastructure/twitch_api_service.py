@@ -1,6 +1,10 @@
 import logging
+from datetime import datetime
 import httpx
 from typing import Optional, Dict, Any, List
+
+from app.twitch.application.interaction.follow.followage_provider import FollowageProvider
+from app.twitch.application.interaction.follow.dto import FollowageInfo
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.model.stream_info import StreamInfo
 from app.twitch.infrastructure.model.user_info import UserInfo
@@ -11,7 +15,7 @@ from app.twitch.infrastructure.model.channel_info import ChannelInfo
 logger = logging.getLogger(__name__)
 
 
-class TwitchApiService:
+class TwitchApiService(FollowageProvider):
 
     def __init__(self, twitch_auth: TwitchAuth):
         self.twitch_auth = twitch_auth
@@ -109,6 +113,25 @@ class TwitchApiService:
         else:
             logger.debug(f"Пользователь {user_id} не подписан на канал {broadcaster_id}")
             return None
+
+    async def get_followage(self, channel_login: str, user_id: str) -> Optional[FollowageInfo]:
+        user = await self.get_user_by_login(channel_login)
+        broadcaster_id = None if user is None else user.id
+        if not broadcaster_id:
+            return None
+
+        follow_info = await self.get_user_followage(broadcaster_id=broadcaster_id, user_id=user_id)
+        if not follow_info:
+            return None
+
+        follow_dt = datetime.fromisoformat(follow_info.followed_at.replace("Z", "+00:00")).replace(tzinfo=None)
+
+        return FollowageInfo(
+            user_id=follow_info.user_id,
+            user_name=follow_info.user_name,
+            user_login=follow_info.user_login,
+            followed_at=follow_dt,
+        )
 
     async def get_stream_info(self, broadcaster_id: str) -> StreamInfo:
         channel_info = await self.get_channel_info(broadcaster_id)
