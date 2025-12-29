@@ -2,15 +2,15 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Tuple
 
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.twitch.application.common.user_info_provider import UserInfoProvider
 
 logger = logging.getLogger(__name__)
 
 
 class UserCacheService:
 
-    def __init__(self, twitch_api_service: TwitchApiService, ttl_minutes: int = 30):
-        self._twitch_api_service = twitch_api_service
+    def __init__(self, user_info_provider: UserInfoProvider, ttl_minutes: int = 30):
+        self._user_info_provider = user_info_provider
         self._ttl = timedelta(minutes=ttl_minutes)
         self._cache: Dict[str, Tuple[str, datetime]] = {}
 
@@ -22,7 +22,7 @@ class UserCacheService:
             if now - cached_at < self._ttl:
                 return user_id
 
-        user_info = await self._twitch_api_service.get_user_by_login(login)
+        user_info = await self._user_info_provider.get_user_by_login(login)
         user_id = None if user_info is None else user_info.id
         if user_id:
             self._cache[login] = (user_id, now)

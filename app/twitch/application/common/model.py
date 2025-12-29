@@ -25,3 +25,10 @@ class StreamDataDTO:
 class StreamStatusDTO:
     is_online: bool
     stream_data: Optional[StreamDataDTO] = None
+
+
+@dataclass(frozen=True)
+class UserInfoDTO:
+    id: str
+    login: str
+    display_name: str

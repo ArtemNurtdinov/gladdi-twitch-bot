@@ -3,20 +3,25 @@ from datetime import datetime
 import httpx
 from typing import Optional, Dict, Any, List
 
-from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO
+from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO
 from app.twitch.application.interaction.follow.followage_provider import FollowageProvider
 from app.twitch.application.interaction.follow.dto import FollowageInfo
 from app.twitch.application.common.stream_info_provider import StreamInfoProvider
 from app.twitch.application.common.stream_status_provider import StreamStatusProvider
+from app.twitch.application.common.user_info_provider import UserInfoProvider
 from app.twitch.infrastructure.auth import TwitchAuth
-from app.twitch.infrastructure.model.user_info import UserInfo
 from app.twitch.infrastructure.model.follow_info import FollowInfo
 from app.twitch.infrastructure.model.channel_info import ChannelInfo
 
 logger = logging.getLogger(__name__)
 
 
-class TwitchApiService(FollowageProvider, StreamInfoProvider, StreamStatusProvider):
+class TwitchApiService(
+    FollowageProvider,
+    StreamInfoProvider,
+    StreamStatusProvider,
+    UserInfoProvider,
+):
 
     def __init__(self, twitch_auth: TwitchAuth):
         self.twitch_auth = twitch_auth
@@ -44,7 +49,7 @@ class TwitchApiService(FollowageProvider, StreamInfoProvider, StreamStatusProvid
             logger.error(f"Ошибка в API операции '{operation}': {response.status_code}, {response.text}")
             raise Exception(f"API операция '{operation}' завершилась с ошибкой: {response.status_code}")
 
-    async def get_user_by_login(self, login: str) -> Optional[UserInfo]:
+    async def get_user_by_login(self, login: str) -> Optional[UserInfoDTO]:
         logger.debug(f"Получение информации о пользователе для логина: {login}")
 
         url = '/users'
@@ -71,18 +76,10 @@ class TwitchApiService(FollowageProvider, StreamInfoProvider, StreamStatusProvid
             user_data = data['data'][0]
             logger.debug(f"Информация о пользователе {login} получена")
 
-            return UserInfo(
+            return UserInfoDTO(
                 id=user_data['id'],
                 login=user_data['login'],
                 display_name=user_data['display_name'],
-                type=user_data.get('type', ''),
-                broadcaster_type=user_data.get('broadcaster_type', ''),
-                description=user_data.get('description', ''),
-                profile_image_url=user_data.get('profile_image_url', ''),
-                offline_image_url=user_data.get('offline_image_url', ''),
-                view_count=user_data.get('view_count', 0),
-                email=user_data.get('email'),
-                created_at=user_data.get('created_at')
             )
         except httpx.TimeoutException:
             logger.error(f"Таймаут при получении пользователя {login}")
@@ -140,23 +137,11 @@ class TwitchApiService(FollowageProvider, StreamInfoProvider, StreamStatusProvid
         if not broadcaster_id:
             return None
 
-        channel_info = await self.get_channel_info(broadcaster_id)
-        return StreamDataDTO(
-            id=None,
-            user_id=broadcaster_id,
-            user_login=channel_login,
-            user_name=channel_info.broadcaster_name,
-            game_id=channel_info.game_id,
-            game_name=channel_info.game_name,
-            type=None,
-            title=channel_info.title,
-            viewer_count=None,
-            started_at=None,
-            language=channel_info.broadcaster_language,
-            thumbnail_url=None,
-            tag_ids=[],
-            is_mature=None,
-        )
+        stream_status = await self.get_stream_status(broadcaster_id)
+        if not stream_status or not stream_status.is_online or not stream_status.stream_data:
+            return None
+
+        return stream_status.stream_data
 
     async def get_stream_status(self, broadcaster_id: str) -> Optional[StreamStatusDTO]:
         url = '/streams'
