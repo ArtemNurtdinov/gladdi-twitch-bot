@@ -3,7 +3,7 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.balance.dto import BalanceDTO
+from app.twitch.application.interaction.balance.model import BalanceDTO
 from app.twitch.application.interaction.balance.handle_balance_use_case import HandleBalanceUseCase
 
 

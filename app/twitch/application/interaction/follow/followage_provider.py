@@ -1,6 +1,6 @@
 from typing import Optional, Protocol
 
-from app.twitch.application.interaction.follow.dto import FollowageInfo
+from app.twitch.application.interaction.follow.model import FollowageInfo
 
 
 class FollowageProvider(Protocol):

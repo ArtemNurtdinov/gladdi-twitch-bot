@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.battle.domain.models import UserBattleStats
 from app.betting.presentation.betting_schemas import UserBetStats
-from app.twitch.application.interaction.stats.dto import StatsDTO
+from app.twitch.application.interaction.stats.model import StatsDTO
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.betting.application.betting_service_provider import BettingServiceProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider

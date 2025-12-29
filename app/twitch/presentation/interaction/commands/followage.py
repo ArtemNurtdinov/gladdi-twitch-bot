@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Awaitable, Callable
 
-from app.twitch.application.interaction.follow.dto import FollowageDTO
+from app.twitch.application.interaction.follow.model import FollowageDTO
 from app.twitch.application.interaction.follow.handle_followage_use_case import HandleFollowAgeUseCase
 
 

@@ -2,7 +2,7 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.gen.domain.prompt_service import PromptService
 from app.ai.intent.domain.models import Intent
-from app.twitch.application.interaction.ask.dto import AskCommandDTO
+from app.twitch.application.interaction.ask.model import AskCommandDTO
 from app.twitch.application.interaction.ask.ask_uow import AskUnitOfWorkFactory, AskUnitOfWorkRoFactory
 
 

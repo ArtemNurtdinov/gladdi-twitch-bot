@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, List
 
 from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO
 from app.twitch.application.interaction.follow.followage_provider import FollowageProvider
-from app.twitch.application.interaction.follow.dto import FollowageInfo
+from app.twitch.application.interaction.follow.model import FollowageInfo
 from app.twitch.application.common.stream_info_provider import StreamInfoProvider
 from app.twitch.application.common.stream_status_provider import StreamStatusProvider
 from app.twitch.application.common.user_info_provider import UserInfoProvider

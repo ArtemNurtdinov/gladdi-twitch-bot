@@ -10,7 +10,7 @@ from app.twitch.application.background.minigame_tick.handle_minigame_tick_use_ca
     HandleMinigameTickUseCase,
 )
 from app.twitch.application.background.post_joke.handle_post_joke_use_case import HandlePostJokeUseCase
-from app.twitch.application.background.stream_context.dto import RestoreStreamJobDTO
+from app.twitch.application.background.stream_context.model import RestoreStreamJobDTO
 from app.twitch.application.background.stream_context.handle_restore_stream_context_use_case import (
     HandleRestoreStreamContextUseCase,
 )

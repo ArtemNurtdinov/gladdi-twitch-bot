@@ -2,7 +2,7 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.equipment.dto import EquipmentDTO
+from app.twitch.application.interaction.equipment.model import EquipmentDTO
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 

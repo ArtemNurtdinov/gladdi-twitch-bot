@@ -6,7 +6,7 @@ from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.economy.domain.models import ShopItems, TransactionType
 from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
-from app.twitch.application.interaction.shop.dto import CommandBuyDTO, CommandShopDTO
+from app.twitch.application.interaction.shop.model import CommandBuyDTO, CommandShopDTO
 
 
 class HandleShopUseCase:

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.stream_service_provider import StreamServiceProvider
-from app.twitch.application.background.stream_context.dto import RestoreStreamJobDTO
+from app.twitch.application.background.stream_context.model import RestoreStreamJobDTO
 
 
 class HandleRestoreStreamContextUseCase:

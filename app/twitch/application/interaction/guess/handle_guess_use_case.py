@@ -7,7 +7,7 @@ from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
-from app.twitch.application.interaction.guess.dto import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
+from app.twitch.application.interaction.guess.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
 
 
 class HandleGuessUseCase:

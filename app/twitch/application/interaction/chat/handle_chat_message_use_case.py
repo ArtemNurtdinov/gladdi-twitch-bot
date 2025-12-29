@@ -5,7 +5,7 @@ from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCa
 from app.ai.gen.domain.prompt_service import PromptService
 from app.ai.intent.domain.models import Intent
 from app.twitch.application.interaction.chat.chat_message_uow import ChatMessageUnitOfWorkFactory, ChatMessageUnitOfWorkRoFactory
-from app.twitch.application.interaction.chat.dto import ChatMessageDTO
+from app.twitch.application.interaction.chat.model import ChatMessageDTO
 
 
 class HandleChatMessageUseCase:

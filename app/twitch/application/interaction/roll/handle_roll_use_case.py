@@ -5,7 +5,7 @@ from typing import Callable, ContextManager, List, Optional
 from sqlalchemy.orm import Session
 
 from app.betting.application.betting_service_provider import BettingServiceProvider
-from app.twitch.application.interaction.roll.dto import RollDTO, RollUseCaseResult, RollTimeoutAction
+from app.twitch.application.interaction.roll.model import RollDTO, RollUseCaseResult, RollTimeoutAction
 from app.betting.application.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider

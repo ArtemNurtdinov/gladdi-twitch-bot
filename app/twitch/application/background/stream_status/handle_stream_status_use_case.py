@@ -12,7 +12,7 @@ from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.domain.models import StreamStatistics, StreamInfo
 from app.twitch.application.common.stream_status_provider import StreamStatusProvider
-from app.twitch.application.background.stream_status.dto import StatusJobDTO
+from app.twitch.application.background.stream_status.model import StatusJobDTO
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider

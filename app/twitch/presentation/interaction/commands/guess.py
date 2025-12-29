@@ -3,7 +3,7 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.guess.dto import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
+from app.twitch.application.interaction.guess.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
 from app.twitch.application.interaction.guess.handle_guess_use_case import HandleGuessUseCase
 
 

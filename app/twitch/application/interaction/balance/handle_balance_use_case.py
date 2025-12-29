@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
-from app.twitch.application.interaction.balance.dto import BalanceDTO
+from app.twitch.application.interaction.balance.model import BalanceDTO
 
 
 class HandleBalanceUseCase:

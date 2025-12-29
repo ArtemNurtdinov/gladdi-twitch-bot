@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.joke.domain.joke_service import JokeService
-from app.twitch.application.background.post_joke.dto import PostJokeDTO
+from app.twitch.application.background.post_joke.model import PostJokeDTO
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.common.stream_info_provider import StreamInfoProvider

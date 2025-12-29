@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
-from app.twitch.application.interaction.battle.dto import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
+from app.twitch.application.interaction.battle.model import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider

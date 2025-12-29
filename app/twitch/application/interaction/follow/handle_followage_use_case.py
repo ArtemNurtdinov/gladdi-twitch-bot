@@ -5,7 +5,7 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.ai.gen.domain.prompt_service import PromptService
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.twitch.application.interaction.follow.dto import FollowageDTO, FollowageInfo
+from app.twitch.application.interaction.follow.model import FollowageDTO, FollowageInfo
 from app.twitch.application.interaction.follow.get_followage_use_case import GetFollowageUseCase
 from app.twitch.application.interaction.follow.uow import FollowAgeUnitOfWorkRoFactory, FollowAgeUnitOfWorkRwFactory
 
