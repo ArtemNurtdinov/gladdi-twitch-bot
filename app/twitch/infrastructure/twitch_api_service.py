@@ -3,20 +3,20 @@ from datetime import datetime
 import httpx
 from typing import Optional, Dict, Any, List
 
-from app.twitch.application.common.model import StreamInfoDTO
+from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO
 from app.twitch.application.interaction.follow.followage_provider import FollowageProvider
 from app.twitch.application.interaction.follow.dto import FollowageInfo
 from app.twitch.application.common.stream_info_provider import StreamInfoProvider
+from app.twitch.application.common.stream_status_provider import StreamStatusProvider
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.model.user_info import UserInfo
 from app.twitch.infrastructure.model.follow_info import FollowInfo
-from app.twitch.infrastructure.model.stream_status import StreamStatus, StreamData
 from app.twitch.infrastructure.model.channel_info import ChannelInfo
 
 logger = logging.getLogger(__name__)
 
 
-class TwitchApiService(FollowageProvider, StreamInfoProvider):
+class TwitchApiService(FollowageProvider, StreamInfoProvider, StreamStatusProvider):
 
     def __init__(self, twitch_auth: TwitchAuth):
         self.twitch_auth = twitch_auth
@@ -134,16 +134,31 @@ class TwitchApiService(FollowageProvider, StreamInfoProvider):
             followed_at=follow_dt,
         )
 
-    async def get_stream_info(self, channel_login: str) -> Optional[StreamInfoDTO]:
+    async def get_stream_info(self, channel_login: str) -> Optional[StreamDataDTO]:
         user = await self.get_user_by_login(channel_login)
         broadcaster_id = None if user is None else user.id
         if not broadcaster_id:
             return None
 
         channel_info = await self.get_channel_info(broadcaster_id)
-        return StreamInfoDTO(channel_info.game_name, channel_info.title)
+        return StreamDataDTO(
+            id=None,
+            user_id=broadcaster_id,
+            user_login=channel_login,
+            user_name=channel_info.broadcaster_name,
+            game_id=channel_info.game_id,
+            game_name=channel_info.game_name,
+            type=None,
+            title=channel_info.title,
+            viewer_count=None,
+            started_at=None,
+            language=channel_info.broadcaster_language,
+            thumbnail_url=None,
+            tag_ids=[],
+            is_mature=None,
+        )
 
-    async def get_stream_status(self, broadcaster_id: str) -> Optional[StreamStatus]:
+    async def get_stream_status(self, broadcaster_id: str) -> Optional[StreamStatusDTO]:
         url = '/streams'
         headers = self._get_headers()
         params = {'user_id': broadcaster_id}
@@ -160,7 +175,10 @@ class TwitchApiService(FollowageProvider, StreamInfoProvider):
             data = response.json()
             if data.get('data'):
                 stream_raw = data['data'][0]
-                stream_data = StreamData(
+                started_at_raw = stream_raw['started_at']
+                started_at = datetime.fromisoformat(started_at_raw.replace("Z", "+00:00")).replace(tzinfo=None)
+
+                stream_data = StreamDataDTO(
                     id=stream_raw['id'],
                     user_id=stream_raw['user_id'],
                     user_login=stream_raw['user_login'],
@@ -170,17 +188,17 @@ class TwitchApiService(FollowageProvider, StreamInfoProvider):
                     type=stream_raw['type'],
                     title=stream_raw['title'],
                     viewer_count=stream_raw['viewer_count'],
-                    started_at=stream_raw['started_at'],
+                    started_at=started_at,
                     language=stream_raw['language'],
                     thumbnail_url=stream_raw['thumbnail_url'],
                     tag_ids=stream_raw.get('tag_ids', []),
                     is_mature=stream_raw.get('is_mature', False)
                 )
                 logger.debug(f"Стрим для {broadcaster_id}: онлайн")
-                return StreamStatus(is_online=True, stream_data=stream_data)
+                return StreamStatusDTO(is_online=True, stream_data=stream_data)
             else:
                 logger.debug(f"Стрим для {broadcaster_id}: офлайн")
-                return StreamStatus(is_online=False, stream_data=None)
+                return StreamStatusDTO(is_online=False, stream_data=None)
         except httpx.TimeoutException:
             logger.error(f"Таймаут при получении статуса стрима {broadcaster_id}")
             return None

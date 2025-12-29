@@ -147,7 +147,7 @@ class BotFactory:
                     channel_name=self._settings.channel_name,
                     handle_stream_status_use_case=HandleStreamStatusUseCase(
                         user_cache=self._deps.user_cache,
-                        twitch_api_service=self._deps.twitch_api_service,
+                        stream_status_provider=self._deps.twitch_api_service,
                         stream_service_provider=self._deps.stream_service_provider,
                         start_stream_use_case_provider=self._deps.start_stream_use_case_provider,
                         viewer_service_provider=self._deps.viewer_service_provider,

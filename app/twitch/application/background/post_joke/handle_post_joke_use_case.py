@@ -43,18 +43,25 @@ class HandlePostJokeUseCase:
             return None
 
         stream_info = await self._stream_info_provider.get_stream_info(post_joke.channel_name)
-        game_name = stream_info.game_name if stream_info else "стрима"
-        prompt = f"Придумай анекдот, связанный с категорией трансляции: {game_name}."
-        result = await self._chat_response_use_case.generate_response(prompt, post_joke.channel_name)
+
+        if not stream_info or not stream_info.game_name:
+            return None
+
+        prompt = f"Придумай анекдот, связанный с категорией трансляции: {stream_info.game_name}."
+        joke_text = await self._chat_response_use_case.generate_response(prompt, post_joke.channel_name)
 
         with db_session_provider() as db:
-            self._conversation_service_provider.get(db).save_conversation_to_db(post_joke.channel_name, prompt, result)
+            self._conversation_service_provider.get(db).save_conversation_to_db(
+                channel_name=post_joke.channel_name,
+                user_message=prompt,
+                ai_message=joke_text
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=post_joke.channel_name,
                 user_name=post_joke.bot_nick,
-                content=result,
+                content=joke_text,
                 current_time=post_joke.occurred_at,
             )
 
         self._joke_service.mark_joke_generated()
-        return result
+        return joke_text

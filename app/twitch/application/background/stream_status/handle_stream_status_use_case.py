@@ -11,6 +11,7 @@ from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.domain.models import StreamStatistics, StreamInfo
+from app.twitch.application.common.stream_status_provider import StreamStatusProvider
 from app.twitch.application.background.stream_status.dto import StatusJobDTO
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
@@ -19,7 +20,6 @@ from app.economy.application.economy_service_provider import EconomyServiceProvi
 from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
 from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class HandleStreamStatusUseCase:
     def __init__(
         self,
         user_cache: UserCacheService,
-        twitch_api_service: TwitchApiService,
+        stream_status_provider: StreamStatusProvider,
         stream_service_provider: StreamServiceProvider,
         start_stream_use_case_provider: StartStreamUseCaseProvider,
         viewer_service_provider: ViewerServiceProvider,
@@ -49,7 +49,7 @@ class HandleStreamStatusUseCase:
         state: ChatSummaryStateProtocol,
     ):
         self._user_cache = user_cache
-        self._twitch_api_service = twitch_api_service
+        self._stream_status_provider = stream_status_provider
         self._stream_service_provider = stream_service_provider
         self._start_stream_use_case_provider = start_stream_use_case_provider
         self._viewer_service_provider = viewer_service_provider
@@ -75,7 +75,7 @@ class HandleStreamStatusUseCase:
             logger.error(f"Не удалось получить ID канала {status_job_dto.channel_name}. Пропускаем проверку.")
             return
 
-        stream_status = await self._twitch_api_service.get_stream_status(broadcaster_id)
+        stream_status = await self._stream_status_provider.get_stream_status(broadcaster_id)
         if stream_status is None:
             logger.error(f"Не удалось получить статус стрима для канала {status_job_dto.channel_name}")
             return
