@@ -25,16 +25,14 @@ class HelpCommandHandler:
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str, ctx):
+    async def handle(self, channel_name: str, ctx):
         bot_nick = self.bot_nick_provider().lower()
 
         dto = HelpDTO(
+            command_prefix=self.command_prefix,
             channel_name=channel_name,
-            display_name=display_name,
-            user_name=display_name.lower(),
             bot_nick=bot_nick,
             occurred_at=datetime.utcnow(),
-            command_prefix=self.command_prefix,
             commands=self.commands,
         )
 

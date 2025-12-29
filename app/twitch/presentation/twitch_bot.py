@@ -232,7 +232,6 @@ class Bot(commands.Bot):
     async def list_commands(self, ctx):
         await self._command_registry.help.handle(
             channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
             ctx=ctx
         )
 
