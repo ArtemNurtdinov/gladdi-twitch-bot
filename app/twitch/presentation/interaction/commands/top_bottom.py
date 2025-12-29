@@ -8,6 +8,8 @@ from app.twitch.application.interaction.top_bottom.handle_top_bottom_use_case im
 
 
 class TopBottomCommandHandler:
+    _TOP_LIMIT = 7
+    _BOTTOM_LIMIT = 10
 
     def __init__(
         self,
@@ -26,23 +28,23 @@ class TopBottomCommandHandler:
         self.command_bottom = command_bottom
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
+        self.top_limit = self._TOP_LIMIT
+        self.bottom_limit = self._BOTTOM_LIMIT
 
     async def handle_top(self, channel_name: str, ctx):
         bot_nick = self.bot_nick_provider().lower()
 
         dto = TopDTO(
             channel_name=channel_name,
-            display_name="",
-            user_name="",
             bot_nick=bot_nick,
             occurred_at=datetime.utcnow(),
-            limit=7,
+            limit=self.top_limit,
         )
 
         result = await self._handle_top_bottom_use_case.handle_top(
             db_readonly_session_provider=self._db_readonly_session_provider,
             db_session_provider=self._db_session_provider,
-            dto=dto,
+            command_top=dto
         )
 
         await self.post_message_fn(result, ctx)
@@ -52,17 +54,15 @@ class TopBottomCommandHandler:
 
         dto = BottomDTO(
             channel_name=channel_name,
-            display_name="",
-            user_name="",
             bot_nick=bot_nick,
             occurred_at=datetime.utcnow(),
-            limit=10,
+            limit=self.bottom_limit
         )
 
         result = await self._handle_top_bottom_use_case.handle_bottom(
             db_readonly_session_provider=self._db_readonly_session_provider,
             db_session_provider=self._db_session_provider,
-            dto=dto,
+            command_bottom=dto
         )
 
         await self.post_message_fn(result, ctx)

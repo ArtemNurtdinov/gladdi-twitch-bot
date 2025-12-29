@@ -21,10 +21,10 @@ class HandleTopBottomUseCase:
         self,
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
         db_session_provider: Callable[[], ContextManager[Session]],
-        dto: TopDTO,
+        command_top: TopDTO,
     ) -> str:
         with db_readonly_session_provider() as db:
-            top_users = self._economy_service_provider.get(db).get_top_users(dto.channel_name, limit=dto.limit)
+            top_users = self._economy_service_provider.get(db).get_top_users(command_top.channel_name, limit=command_top.limit)
 
         if not top_users:
             result = "Нет данных для отображения топа."
@@ -36,10 +36,10 @@ class HandleTopBottomUseCase:
 
         with db_session_provider() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
-                channel_name=dto.channel_name,
-                user_name=dto.bot_nick,
+                channel_name=command_top.channel_name,
+                user_name=command_top.bot_nick,
                 content=result,
-                current_time=dto.occurred_at,
+                current_time=command_top.occurred_at,
             )
 
         return result
@@ -48,10 +48,10 @@ class HandleTopBottomUseCase:
         self,
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
         db_session_provider: Callable[[], ContextManager[Session]],
-        dto: BottomDTO,
+        command_bottom: BottomDTO,
     ) -> str:
         with db_readonly_session_provider() as db:
-            bottom_users = self._economy_service_provider.get(db).get_bottom_users(dto.channel_name, limit=dto.limit)
+            bottom_users = self._economy_service_provider.get(db).get_bottom_users(command_bottom.channel_name, limit=command_bottom.limit)
 
         if not bottom_users:
             result = "Нет данных для отображения бомжей."
@@ -63,10 +63,10 @@ class HandleTopBottomUseCase:
 
         with db_session_provider() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
-                channel_name=dto.channel_name,
-                user_name=dto.bot_nick,
+                channel_name=command_bottom.channel_name,
+                user_name=command_bottom.bot_nick,
                 content=result,
-                current_time=dto.occurred_at,
+                current_time=command_bottom.occurred_at,
             )
 
         return result
