@@ -36,34 +36,34 @@ class RollCommandHandler:
         current_time = datetime.now()
         cleanup_threshold = self.CLEANUP_THRESHOLD_SECONDS
 
-        old_nicknames = [
+        nicknames = [
             nickname
             for nickname, last_time in self.roll_cooldowns.items()
             if (current_time - last_time).total_seconds() > cleanup_threshold
         ]
 
-        for nickname in old_nicknames:
+        for nickname in nicknames:
             del self.roll_cooldowns[nickname]
 
     async def handle(self, ctx, channel_name: str, display_name: str, amount: str | None = None):
         self._cleanup_old_cooldowns()
 
         dto = RollDTO(
+            command_prefix=self.command_prefix,
+            command_name=self.command_name,
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
             bot_nick=self.bot_nick_provider().lower(),
             occurred_at=datetime.utcnow(),
             amount_input=amount,
-            command_prefix=self.command_prefix,
-            command_name=self.command_name,
             last_roll_time=self.roll_cooldowns.get(display_name),
         )
 
         result = await self._handle_roll_use_case.handle(
             db_session_provider=self._db_session_provider,
             db_readonly_session_provider=self._db_readonly_session_provider,
-            dto=dto
+            command_roll=dto
         )
 
         if result.new_last_roll_time:

@@ -6,10 +6,15 @@ from app.twitch.application.interaction.dto import ChatContextDTO
 
 
 @dataclass(frozen=True)
-class RollDTO(ChatContextDTO):
-    amount_input: Optional[str]
+class RollDTO:
     command_prefix: str
     command_name: str
+    channel_name: str
+    display_name: str
+    user_name: str
+    bot_nick: str
+    occurred_at: datetime
+    amount_input: Optional[str]
     last_roll_time: Optional[datetime]
 
 

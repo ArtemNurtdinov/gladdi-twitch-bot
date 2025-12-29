@@ -34,58 +34,77 @@ class HandleRollUseCase:
         self,
         db_session_provider: Callable[[], ContextManager[Session]],
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
-        dto: RollDTO,
+        command_roll: RollDTO,
     ) -> RollUseCaseResult:
         messages: List[str] = []
         timeout_action: Optional[RollTimeoutAction] = None
         current_time = datetime.now()
 
         with db_readonly_session_provider() as db:
-            equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
+            equipment = self._equipment_service_provider.get(db).get_user_equipment(command_roll.channel_name, command_roll.user_name)
             cooldown_seconds = self._equipment_service_provider.get(db).calculate_roll_cooldown_seconds(
                 default_cooldown_seconds=HandleRollUseCase.DEFAULT_COOLDOWN_SECONDS,
-                equipment=equipment,
+                equipment=equipment
             )
 
-        if dto.last_roll_time:
-            time_since_last = (current_time - dto.last_roll_time).total_seconds()
+        if command_roll.last_roll_time:
+            time_since_last = (current_time - command_roll.last_roll_time).total_seconds()
             if time_since_last < cooldown_seconds:
                 remaining_time = cooldown_seconds - time_since_last
-                result = f"@{dto.display_name}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
+                result = f"@{command_roll.display_name}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
                 with db_session_provider() as db:
-                    self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                    self._chat_use_case_provider.get(db).save_chat_message(
+                        channel_name=command_roll.channel_name,
+                        user_name=command_roll.bot_nick,
+                        content=result,
+                        current_time=command_roll.occurred_at
+                    )
                 messages.append(result)
-                return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=dto.last_roll_time)
+                return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=command_roll.last_roll_time)
 
         bet_amount = BettingService.BET_COST
-        if dto.amount_input:
+        if command_roll.amount_input:
             try:
-                bet_amount = int(dto.amount_input)
+                bet_amount = int(command_roll.amount_input)
             except ValueError:
                 result = (
-                    f"@{dto.display_name}, неверная сумма ставки! Используй: "
-                    f"{dto.command_prefix}{dto.command_name} [сумма] "
-                    f"(например: {dto.command_prefix}{dto.command_name} 100). "
+                    f"@{command_roll.display_name}, неверная сумма ставки! Используй: "
+                    f"{command_roll.command_prefix}{command_roll.command_name} [сумма] "
+                    f"(например: {command_roll.command_prefix}{command_roll.command_name} 100). "
                     f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{BettingService.MAX_BET_AMOUNT} монет."
                 )
                 with db_session_provider() as db:
-                    self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                    self._chat_use_case_provider.get(db).save_chat_message(
+                        channel_name=command_roll.channel_name,
+                        user_name=command_roll.bot_nick,
+                        content=result, current_time=command_roll.occurred_at
+                    )
                 messages.append(result)
-                return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=dto.last_roll_time)
+                return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=command_roll.last_roll_time)
 
         new_last_roll_time = current_time
 
         if bet_amount < BettingService.MIN_BET_AMOUNT:
             result = f"Минимальная сумма ставки: {BettingService.MIN_BET_AMOUNT} монет."
             with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_roll.channel_name,
+                    user_name=command_roll.bot_nick,
+                    content=result,
+                    current_time=command_roll.occurred_at
+                )
             messages.append(result)
             return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
 
         if bet_amount > BettingService.MAX_BET_AMOUNT:
             result = f"Максимальная сумма ставки: {BettingService.MAX_BET_AMOUNT} монет."
             with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_roll.channel_name,
+                    user_name=command_roll.bot_nick,
+                    content=result,
+                    current_time=command_roll.occurred_at
+                )
             messages.append(result)
             return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
 
@@ -103,20 +122,27 @@ class HandleRollUseCase:
             result_type = "miss"
 
         with db_readonly_session_provider() as db:
-            rarity_level = self._betting_service_provider.get(db).determine_correct_rarity(slot_result_string, result_type)
-            equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
+            rarity_level = self._betting_service_provider.get(db).determine_correct_rarity(
+                slot_result=slot_result_string,
+                result_type=result_type
+            )
 
         with db_session_provider() as db:
             user_balance = self._economy_service_provider.get(db).subtract_balance(
-                dto.channel_name,
-                dto.user_name,
-                bet_amount,
-                TransactionType.BET_LOSS,
-                f"Ставка в слот-машине: {slot_result_string}",
+                channel_name=command_roll.channel_name,
+                user_name=command_roll.user_name,
+                amount=bet_amount,
+                transaction_type=TransactionType.BET_LOSS,
+                description=f"Ставка в слот-машине: {slot_result_string}",
             )
             if not user_balance:
                 result = f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет."
-                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_roll.channel_name,
+                    user_name=command_roll.bot_nick,
+                    content=result,
+                    current_time=command_roll.occurred_at
+                )
                 messages.append(result)
                 return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
 
@@ -173,9 +199,19 @@ class HandleRollUseCase:
                     else f"Консольный приз: {slot_result_string}"
                 )
                 user_balance = self._economy_service_provider.get(db).add_balance(
-                    dto.channel_name, dto.user_name, payout, transaction_type, description
+                    channel_name=command_roll.channel_name,
+                    user_name=command_roll.user_name,
+                    amount=payout,
+                    transaction_type=transaction_type,
+                    description=description
                 )
-            self._betting_service_provider.get(db).save_bet(dto.channel_name, dto.user_name, slot_result_string, result_type, rarity_level)
+            self._betting_service_provider.get(db).save_bet(
+                channel_name=command_roll.channel_name,
+                user_name=command_roll.user_name,
+                slot_result=slot_result_string,
+                result_type=result_type,
+                rarity_level=rarity_level
+            )
 
         result_emoji = self._get_result_emoji(result_type, payout)
         profit = payout - bet_amount
@@ -183,36 +219,40 @@ class HandleRollUseCase:
         final_result = f"{slot_result_string} {result_emoji} Баланс: {user_balance.balance} монет ({profit_display})"
 
         with db_session_provider() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, final_result, dto.occurred_at)
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_roll.channel_name,
+                user_name=command_roll.bot_nick,
+                content=final_result,
+                current_time=command_roll.occurred_at
+            )
         messages.append(final_result)
 
         if timeout_seconds is not None and timeout_seconds > 0:
             base_timeout_duration = timeout_seconds if timeout_seconds else 0
 
             with db_readonly_session_provider() as db:
-                equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
                 final_timeout, protection_message = self._equipment_service_provider.get(db).calculate_timeout_with_equipment(
-                    base_timeout_duration,
-                    equipment,
+                    base_timeout_seconds=base_timeout_duration,
+                    equipment=equipment,
                 )
 
             if final_timeout == 0:
                 if self._is_consolation_prize(result_type, payout):
-                    no_timeout_message = (
-                        f"🎁 @{dto.display_name}, {protection_message} Консольный приз: {payout} монет"
-                    )
+                    no_timeout_message = f"🎁 @{command_roll.display_name}, {protection_message} Консольный приз: {payout} монет"
                 else:
-                    no_timeout_message = f"🛡️ @{dto.display_name}, {protection_message}"
+                    no_timeout_message = f"🛡️ @{command_roll.display_name}, {protection_message}"
 
                 with db_session_provider() as db:
-                    self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, no_timeout_message,
-                                                                           dto.occurred_at)
+                    self._chat_use_case_provider.get(db).save_chat_message(
+                        channel_name=command_roll.channel_name,
+                        user_name=command_roll.bot_nick,
+                        content=no_timeout_message,
+                        current_time=command_roll.occurred_at
+                    )
                 messages.append(no_timeout_message)
             else:
                 if self._is_consolation_prize(result_type, payout):
-                    reason = (
-                        f"Промах с редким эмодзи! Консольный приз: {payout} монет. Таймаут: {final_timeout} сек ⏰"
-                    )
+                    reason = f"Промах с редким эмодзи! Консольный приз: {payout} монет. Таймаут: {final_timeout} сек ⏰"
                 else:
                     reason = f"Промах в слот-машине! Время на размышления: {final_timeout} сек ⏰"
 
@@ -220,17 +260,16 @@ class HandleRollUseCase:
                     reason += f" {protection_message}"
 
                 timeout_action = RollTimeoutAction(
-                    user_name=dto.display_name,
+                    user_name=command_roll.display_name,
                     duration_seconds=final_timeout,
                     reason=reason,
                 )
         elif self._is_miss(result_type):
             if self._is_consolation_prize(result_type, payout):
-                no_timeout_message = (
-                    f"🎁 @{dto.display_name}, повезло! Редкий эмодзи спас от таймаута! Консольный приз: {payout} монет"
-                )
+                no_timeout_message = (f"🎁 @{command_roll.display_name}, повезло! Редкий эмодзи спас от таймаута! "
+                                      f"Консольный приз: {payout} монет")
             else:
-                no_timeout_message = f"✨ @{dto.display_name}, редкий эмодзи спас от таймаута!"
+                no_timeout_message = f"✨ @{command_roll.display_name}, редкий эмодзи спас от таймаута!"
 
             messages.append(no_timeout_message)
 
