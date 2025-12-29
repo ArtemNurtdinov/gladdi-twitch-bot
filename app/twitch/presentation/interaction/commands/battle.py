@@ -44,7 +44,7 @@ class BattleCommandHandler:
         result = await self._handle_battle_use_case.handle(
             db_session_provider=self._db_session_provider,
             db_readonly_session_provider=self._db_readonly_session_provider,
-            battle_dto=battle_dto,
+            command_battle=battle_dto,
         )
 
         battle_waiting_user_ref["value"] = result.new_waiting_user

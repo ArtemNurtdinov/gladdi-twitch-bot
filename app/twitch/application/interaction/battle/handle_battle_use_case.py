@@ -36,16 +36,19 @@ class HandleBattleUseCase:
         self,
         db_session_provider: Callable[[], ContextManager[Session]],
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
-        battle_dto: BattleDTO,
+        command_battle: BattleDTO,
     ) -> BattleUseCaseResult:
-        challenger_display = battle_dto.display_name
-        challenger_user = battle_dto.user_name
-        bot_nick = battle_dto.bot_nick
+        challenger_display = command_battle.display_name
+        challenger_user = command_battle.user_name
+        bot_nick = command_battle.bot_nick
 
         fee = EconomyService.BATTLE_ENTRY_FEE
 
         with db_session_provider() as db:
-            user_balance = self._economy_service_provider.get(db).get_user_balance(battle_dto.channel_name, challenger_user)
+            user_balance = self._economy_service_provider.get(db).get_user_balance(
+                channel_name=command_battle.channel_name,
+                user_name=challenger_user
+            )
 
         if user_balance.balance < fee:
             result = (
@@ -54,22 +57,22 @@ class HandleBattleUseCase:
             )
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    channel_name=battle_dto.channel_name,
+                    channel_name=command_battle.channel_name,
                     user_name=bot_nick,
                     content=result,
-                    current_time=battle_dto.occurred_at,
+                    current_time=command_battle.occurred_at,
                 )
             return BattleUseCaseResult(
                 messages=[result],
-                new_waiting_user=battle_dto.waiting_user,
+                new_waiting_user=command_battle.waiting_user,
                 timeout_action=None,
             )
 
-        if not battle_dto.waiting_user:
+        if not command_battle.waiting_user:
             error_result = None
             with db_session_provider() as db:
                 user_balance = self._economy_service_provider.get(db).subtract_balance(
-                    channel_name=battle_dto.channel_name,
+                    channel_name=command_battle.channel_name,
                     user_name=challenger_user,
                     amount=fee,
                     transaction_type=TransactionType.BATTLE_PARTICIPATION,
@@ -78,30 +81,30 @@ class HandleBattleUseCase:
                 if not user_balance:
                     error_result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
                     self._chat_use_case_provider.get(db).save_chat_message(
-                        channel_name=battle_dto.channel_name,
+                        channel_name=command_battle.channel_name,
                         user_name=bot_nick,
                         content=error_result,
-                        current_time=battle_dto.occurred_at,
+                        current_time=command_battle.occurred_at,
                     )
 
             if error_result:
                 return BattleUseCaseResult(
                     messages=[error_result],
-                    new_waiting_user=battle_dto.waiting_user,
+                    new_waiting_user=command_battle.waiting_user,
                     timeout_action=None,
                 )
 
             result = (
                 f"@{challenger_display} ищет себе оппонента для эпичной битвы! "
                 f"Взнос: {EconomyService.BATTLE_ENTRY_FEE} монет. "
-                f"Используй {battle_dto.command_call}, чтобы принять вызов."
+                f"Используй {command_battle.command_call}, чтобы принять вызов."
             )
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    channel_name=battle_dto.channel_name,
+                    channel_name=command_battle.channel_name,
                     user_name=bot_nick,
                     content=result,
-                    current_time=battle_dto.occurred_at,
+                    current_time=command_battle.occurred_at,
                 )
 
             return BattleUseCaseResult(
@@ -110,24 +113,24 @@ class HandleBattleUseCase:
                 timeout_action=None,
             )
 
-        if battle_dto.waiting_user == challenger_display:
+        if command_battle.waiting_user == challenger_display:
             result = f"@{challenger_display}, ты не можешь сражаться сам с собой. Подожди достойного противника."
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    channel_name=battle_dto.channel_name,
+                    channel_name=command_battle.channel_name,
                     user_name=bot_nick,
                     content=result,
-                    current_time=battle_dto.occurred_at,
+                    current_time=command_battle.occurred_at,
                 )
             return BattleUseCaseResult(
                 messages=[result],
-                new_waiting_user=battle_dto.waiting_user,
+                new_waiting_user=command_battle.waiting_user,
                 timeout_action=None,
             )
 
         with db_session_provider() as db:
             challenger_balance = self._economy_service_provider.get(db).subtract_balance(
-                channel_name=battle_dto.channel_name,
+                channel_name=command_battle.channel_name,
                 user_name=challenger_user,
                 amount=fee,
                 transaction_type=TransactionType.BATTLE_PARTICIPATION,
@@ -137,68 +140,55 @@ class HandleBattleUseCase:
             result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    channel_name=battle_dto.channel_name,
+                    channel_name=command_battle.channel_name,
                     user_name=bot_nick,
                     content=result,
-                    current_time=battle_dto.occurred_at,
+                    current_time=command_battle.occurred_at,
                 )
             return BattleUseCaseResult(
                 messages=[result],
-                new_waiting_user=battle_dto.waiting_user,
-                timeout_action=None,
+                new_waiting_user=command_battle.waiting_user,
+                timeout_action=None
             )
 
-        opponent_display = battle_dto.waiting_user
+        opponent_display = command_battle.waiting_user
         new_waiting_user = None
-
-        prompt = (
-            f"На арене сражаются два героя: {opponent_display} и {challenger_display}."
-            "\nСимулируй юмористическую и эпичную битву между ними, с абсурдом и неожиданными поворотами."
-        )
-
-        with db_readonly_session_provider() as db:
-            opponent_equipment = self._equipment_service_provider.get(db).get_user_equipment(battle_dto.channel_name, opponent_display.lower())
-            challenger_equipment = self._equipment_service_provider.get(db).get_user_equipment(battle_dto.channel_name, challenger_user)
-        if opponent_equipment:
-            equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in opponent_equipment]
-            prompt += f"\nВооружение {opponent_display}: {', '.join(equipment_details)}."
-        if challenger_equipment:
-            equipment_details = [f"{item.shop_item.name} ({item.shop_item.description})" for item in challenger_equipment]
-            prompt += f"\nВооружение {challenger_display}: {', '.join(equipment_details)}."
 
         winner = random.choice([opponent_display, challenger_display])
         loser = challenger_display if winner == opponent_display else opponent_display
 
-        prompt += (
+        prompt = (
+            f"На арене сражаются два героя: {opponent_display} и {challenger_display}."
+            "\nСимулируй юмористическую и эпичную битву между ними, с абсурдом и неожиданными поворотами."
             "\nБитва должна быть короткой, но эпичной и красочной."
             f"\nПобедить в битве должен {winner}, проигравший: {loser}"
             f"\n\nПроигравший получит таймаут! Победитель получит {EconomyService.BATTLE_WINNER_PRIZE} монет!"
         )
 
-        result_story = await self._chat_response_use_case.generate_response(prompt, battle_dto.channel_name)
+        result_story = await self._chat_response_use_case.generate_response(prompt, command_battle.channel_name)
 
         winner_amount = EconomyService.BATTLE_WINNER_PRIZE
         with db_session_provider() as db:
             self._economy_service_provider.get(db).add_balance(
-                channel_name=battle_dto.channel_name,
+                channel_name=command_battle.channel_name,
                 user_name=winner,
                 amount=winner_amount,
                 transaction_type=TransactionType.BATTLE_WIN,
                 description=f"Победа в битве против {loser}"
             )
             self._conversation_service_provider.get(db).save_conversation_to_db(
-                channel_name=battle_dto.channel_name,
+                channel_name=command_battle.channel_name,
                 user_message=prompt,
                 ai_message=result_story
             )
             self._chat_use_case_provider.get(db).save_chat_message(
-                channel_name=battle_dto.channel_name,
+                channel_name=command_battle.channel_name,
                 user_name=bot_nick,
                 content=result_story,
-                current_time=battle_dto.occurred_at
+                current_time=command_battle.occurred_at
             )
             self._battle_use_case_provider.get(db).save_battle_history(
-                channel_name=battle_dto.channel_name,
+                channel_name=command_battle.channel_name,
                 opponent_1=opponent_display,
                 opponent_2=challenger_display,
                 winner=winner,
@@ -212,15 +202,15 @@ class HandleBattleUseCase:
 
         with db_session_provider() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
-                channel_name=battle_dto.channel_name,
+                channel_name=command_battle.channel_name,
                 user_name=bot_nick,
                 content=winner_message,
-                current_time=battle_dto.occurred_at,
+                current_time=command_battle.occurred_at
             )
 
         base_battle_timeout = 120
         with db_readonly_session_provider() as db:
-            equipment = self._equipment_service_provider.get(db).get_user_equipment(battle_dto.channel_name, loser.lower())
+            equipment = self._equipment_service_provider.get(db).get_user_equipment(command_battle.channel_name, loser.lower())
             final_timeout, protection_message = self._equipment_service_provider.get(db).calculate_timeout_with_equipment(
                 base_timeout_seconds=base_battle_timeout,
                 equipment=equipment
@@ -234,10 +224,10 @@ class HandleBattleUseCase:
             messages.append(no_timeout_message)
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    channel_name=battle_dto.channel_name,
+                    channel_name=command_battle.channel_name,
                     user_name=bot_nick,
                     content=no_timeout_message,
-                    current_time=battle_dto.occurred_at,
+                    current_time=command_battle.occurred_at
                 )
         else:
             timeout_minutes = final_timeout // 60
@@ -259,7 +249,7 @@ class HandleBattleUseCase:
             timeout_action = BattleTimeoutAction(
                 user_name=loser,
                 duration_seconds=final_timeout,
-                reason=reason,
+                reason=reason
             )
 
         return BattleUseCaseResult(
