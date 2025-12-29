@@ -4,14 +4,15 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.economy.domain.economy_service import EconomyService
-from app.economy.domain.models import TransactionType
-from app.twitch.application.interaction.battle.model import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
+from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.models import TransactionType
 from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
+from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
+from app.twitch.application.interaction.battle.model import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
 
 
 class HandleBattleUseCase:
@@ -22,12 +23,14 @@ class HandleBattleUseCase:
         chat_use_case_provider: ChatUseCaseProvider,
         conversation_service_provider: ConversationServiceProvider,
         battle_use_case_provider: BattleUseCaseProvider,
+        get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider,
         equipment_service_provider: EquipmentServiceProvider,
         chat_response_use_case: ChatResponseUseCase,
     ):
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
+        self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
         self._battle_use_case_provider = battle_use_case_provider
         self._equipment_service_provider = equipment_service_provider
         self._chat_response_use_case = chat_response_use_case
@@ -210,7 +213,10 @@ class HandleBattleUseCase:
 
         base_battle_timeout = 120
         with db_readonly_session_provider() as db:
-            equipment = self._equipment_service_provider.get(db).get_user_equipment(command_battle.channel_name, loser.lower())
+            equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
+                channel_name=command_battle.channel_name,
+                user_name=loser.lower()
+            )
             final_timeout, protection_message = self._equipment_service_provider.get(db).calculate_timeout_with_equipment(
                 base_timeout_seconds=base_battle_timeout,
                 equipment=equipment

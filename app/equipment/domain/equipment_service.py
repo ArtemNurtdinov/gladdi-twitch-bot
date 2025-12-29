@@ -10,9 +10,6 @@ class EquipmentService:
     def __init__(self, repo: EquipmentRepository):
         self._repo = repo
 
-    def get_user_equipment(self, channel_name: str, user_name: str) -> list[UserEquipmentItem]:
-        return self._repo.list_user_equipment(channel_name, user_name)
-
     def calculate_timeout_with_equipment(self, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
         if base_timeout_seconds <= 0:
             return 0, ""

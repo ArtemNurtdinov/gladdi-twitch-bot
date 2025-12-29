@@ -3,46 +3,50 @@ from dataclasses import dataclass
 import telegram
 from telegram.request import HTTPXRequest
 
-from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
-from app.ai.gen.domain.prompt_service import PromptService
-from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
-from app.ai.gen.infrastructure.llm_client import LLMClientImpl
 from app.ai.gen.data.message_repository import ConversationRepositoryImpl
+from app.ai.gen.domain.conversation_service import ConversationService
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.ai.gen.domain.llm_client import LLMClient
+from app.ai.gen.domain.prompt_service import PromptService
+from app.ai.gen.infrastructure.llm_client import LLMClientImpl
+from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
+from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
 from app.battle.application.battle_use_case import BattleUseCase
+from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.battle.data.battle_repository import BattleRepositoryImpl
-from app.betting.data.betting_repository import BettingRepositoryImpl
 from app.betting.application.betting_service import BettingService
+from app.betting.application.betting_service_provider import BettingServiceProvider
+from app.betting.data.betting_repository import BettingRepositoryImpl
 from app.chat.application.chat_use_case import ChatUseCase
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.chat.data.chat_repository import ChatRepositoryImpl
+from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.economy.data.economy_repository import EconomyRepositoryImpl
 from app.economy.domain.economy_service import EconomyService
+from app.equipment.application.defence.roll_cooldown_use_case import RollCooldownUseCase
+from app.equipment.application.defence.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
+from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
+from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
+from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
 from app.equipment.data.equipment_repository import EquipmentRepositoryImpl
 from app.equipment.domain.equipment_service import EquipmentService
 from app.joke.data.settings_repository import FileJokeSettingsRepository
 from app.joke.domain.joke_service import JokeService
 from app.minigame.application.add_word.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.add_word.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
 from app.minigame.application.get_used_words.get_used_words_use_case import GetUsedWordsUseCase
+from app.minigame.application.get_used_words.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
 from app.minigame.data.db.word_history_repository import WordHistoryRepositoryImpl
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
+from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.stream.domain.stream_service import StreamService
-from app.minigame.application.add_word.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
-from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
-from app.betting.application.betting_service_provider import BettingServiceProvider
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
-from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
-from app.minigame.application.get_used_words.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
-from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
-from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.background_task_runner import BackgroundTaskRunner
@@ -73,6 +77,8 @@ class BotDependencies:
     betting_service_provider: BettingServiceProvider
     get_used_words_use_case_provider: GetUsedWordsUseCaseProvider
     add_used_words_use_case_provider: AddUsedWordsUseCaseProvider
+    get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider
+    roll_cooldown_use_case_provider: RollCooldownUseCaseProvider
 
 
 def build_bot_dependencies(
@@ -125,6 +131,12 @@ def build_bot_dependencies(
     def add_used_word_use_case(db):
         return AddUsedWordsUseCase(WordHistoryRepositoryImpl(db))
 
+    def get_user_equipment_use_case(db):
+        return GetUserEquipmentUseCase(EquipmentRepositoryImpl(db))
+
+    def roll_use_case():
+        return RollCooldownUseCase()
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
@@ -147,6 +159,8 @@ def build_bot_dependencies(
         battle_use_case_provider=BattleUseCaseProvider(battle_use_case),
         betting_service_provider=BettingServiceProvider(betting_service),
         get_used_words_use_case_provider=GetUsedWordsUseCaseProvider(get_used_words_use_case),
-        add_used_words_use_case_provider=AddUsedWordsUseCaseProvider(add_used_word_use_case)
+        add_used_words_use_case_provider=AddUsedWordsUseCaseProvider(add_used_word_use_case),
+        get_user_equipment_use_case_provider=GetUserEquipmentUseCaseProvider(get_user_equipment_use_case),
+        roll_cooldown_use_case_provider=RollCooldownUseCaseProvider(roll_use_case)
     )
     return deps

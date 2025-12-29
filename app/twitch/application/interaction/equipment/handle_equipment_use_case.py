@@ -2,19 +2,19 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
+from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
 from app.twitch.application.interaction.equipment.model import EquipmentDTO
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 
 
 class HandleEquipmentUseCase:
 
     def __init__(
         self,
-        equipment_service_provider: EquipmentServiceProvider,
+        get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
-        self._equipment_service_provider = equipment_service_provider
+        self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -24,7 +24,10 @@ class HandleEquipmentUseCase:
         dto: EquipmentDTO,
     ) -> str:
         with db_readonly_session_provider() as db:
-            equipment = self._equipment_service_provider.get(db).get_user_equipment(dto.channel_name, dto.user_name)
+            equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
+                channel_name=dto.channel_name,
+                user_name=dto.user_name
+            )
 
         if not equipment:
             result = (
@@ -35,7 +38,7 @@ class HandleEquipmentUseCase:
             lines = [f"Экипировка @{dto.display_name}:"]
             for item in equipment:
                 expires_date = item.expires_at.strftime("%d.%m.%Y")
-                lines.append(f"{item.shop_item.emoji} {item.shop_item.name} до {expires_date}")
+                lines.append(f" {item.shop_item.emoji} {item.shop_item.name} до {expires_date}")
             result = "\n".join(lines)
 
         with db_session_provider() as db:

@@ -10,10 +10,10 @@ from app.twitch.application.background.minigame_tick.handle_minigame_tick_use_ca
     HandleMinigameTickUseCase,
 )
 from app.twitch.application.background.post_joke.handle_post_joke_use_case import HandlePostJokeUseCase
-from app.twitch.application.background.stream_context.model import RestoreStreamJobDTO
 from app.twitch.application.background.stream_context.handle_restore_stream_context_use_case import (
     HandleRestoreStreamContextUseCase,
 )
+from app.twitch.application.background.stream_context.model import RestoreStreamJobDTO
 from app.twitch.application.background.stream_status.handle_stream_status_use_case import (
     HandleStreamStatusUseCase,
 )
@@ -219,10 +219,10 @@ class BotFactory:
                 chat_response_use_case=chat_response_use_case,
                 unit_of_work_ro_factory=self._build_follow_age_uow_ro_factory(),
                 unit_of_work_rw_factory=self._build_follow_age_uow_rw_factory(),
-                system_prompt = bot.SYSTEM_PROMPT_FOR_GROUP
-        ),
-        bot_nick_provider = bot_nick_provider,
-        post_message_fn = post_message_fn,
+                system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP
+            ),
+            bot_nick_provider=bot_nick_provider,
+            post_message_fn=post_message_fn,
         )
         ask = AskCommandHandler(
             command_prefix=prefix,
@@ -246,6 +246,7 @@ class BotFactory:
                 chat_use_case_provider=self._deps.chat_use_case_provider,
                 conversation_service_provider=self._deps.conversation_service_provider,
                 battle_use_case_provider=self._deps.battle_use_case_provider,
+                get_user_equipment_use_case_provider=self._deps.get_user_equipment_use_case_provider,
                 equipment_service_provider=self._deps.equipment_service_provider,
                 chat_response_use_case=chat_response_use_case,
             ),
@@ -262,6 +263,8 @@ class BotFactory:
                 economy_service_provider=self._deps.economy_service_provider,
                 betting_service_provider=self._deps.betting_service_provider,
                 equipment_service_provider=self._deps.equipment_service_provider,
+                roll_cooldown_use_case_provider=self._deps.roll_cooldown_use_case_provider,
+                get_user_equipment_use_case_provider=self._deps.get_user_equipment_use_case_provider,
                 chat_use_case_provider=self._deps.chat_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,
@@ -284,7 +287,7 @@ class BotFactory:
             command_name=settings.command_bonus,
             handle_bonus_use_case=HandleBonusUseCase(
                 stream_service_provider=self._deps.stream_service_provider,
-                equipment_service_provider=self._deps.equipment_service_provider,
+                get_user_equipment_use_case_provider=self._deps.get_user_equipment_use_case_provider,
                 economy_service_provider=self._deps.economy_service_provider,
                 chat_use_case_provider=self._deps.chat_use_case_provider,
             ),
@@ -323,7 +326,7 @@ class BotFactory:
             command_name=settings.command_equipment,
             command_shop=settings.command_shop,
             handle_equipment_use_case=HandleEquipmentUseCase(
-                equipment_service_provider=self._deps.equipment_service_provider,
+                get_user_equipment_use_case_provider=self._deps.get_user_equipment_use_case_provider,
                 chat_use_case_provider=self._deps.chat_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,

@@ -5,6 +5,8 @@ from typing import Callable, ContextManager, List, Optional
 from sqlalchemy.orm import Session
 
 from app.betting.application.betting_service_provider import BettingServiceProvider
+from app.equipment.application.defence.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
+from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
 from app.twitch.application.interaction.roll.model import RollDTO, RollUseCaseResult, RollTimeoutAction
 from app.betting.application.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
@@ -23,11 +25,15 @@ class HandleRollUseCase:
         economy_service_provider: EconomyServiceProvider,
         betting_service_provider: BettingServiceProvider,
         equipment_service_provider: EquipmentServiceProvider,
+        roll_cooldown_use_case_provider: RollCooldownUseCaseProvider,
+        get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
         self._economy_service_provider = economy_service_provider
         self._betting_service_provider = betting_service_provider
         self._equipment_service_provider = equipment_service_provider
+        self._roll_cooldown_use_case_provider = roll_cooldown_use_case_provider
+        self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -41,8 +47,11 @@ class HandleRollUseCase:
         current_time = datetime.now()
 
         with db_readonly_session_provider() as db:
-            equipment = self._equipment_service_provider.get(db).get_user_equipment(command_roll.channel_name, command_roll.user_name)
-            cooldown_seconds = self._equipment_service_provider.get(db).calculate_roll_cooldown_seconds(
+            equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
+                channel_name=command_roll.channel_name,
+                user_name=command_roll.user_name
+            )
+            cooldown_seconds = self._roll_cooldown_use_case_provider.get().calc_seconds(
                 default_cooldown_seconds=HandleRollUseCase.DEFAULT_COOLDOWN_SECONDS,
                 equipment=equipment
             )

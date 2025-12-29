@@ -2,10 +2,10 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
+from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
-from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 from app.twitch.application.interaction.dto import ChatContextDTO
 
 
@@ -14,12 +14,12 @@ class HandleBonusUseCase:
     def __init__(
         self,
         stream_service_provider: StreamServiceProvider,
-        equipment_service_provider: EquipmentServiceProvider,
+        get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider,
         economy_service_provider: EconomyServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._stream_service_provider = stream_service_provider
-        self._equipment_service_provider = equipment_service_provider
+        self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
@@ -36,7 +36,10 @@ class HandleBonusUseCase:
             result = f"🚫 @{chat_context_dto.display_name}, бонус доступен только во время стрима!"
         else:
             with db_session_provider() as db:
-                user_equipment = self._equipment_service_provider.get(db).get_user_equipment(chat_context_dto.channel_name, chat_context_dto.user_name)
+                user_equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
+                    channel_name=chat_context_dto.channel_name,
+                    user_name=chat_context_dto.user_name
+                )
                 bonus_result = self._economy_service_provider.get(db).claim_daily_bonus(
                     active_stream_id=active_stream.id,
                     channel_name=chat_context_dto.channel_name,
