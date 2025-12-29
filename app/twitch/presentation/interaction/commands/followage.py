@@ -2,14 +2,14 @@ from datetime import datetime
 from typing import Any, Awaitable, Callable
 
 from app.twitch.application.interaction.follow.dto import FollowageDTO
-from app.twitch.application.interaction.follow.handle_followage_use_case import HandleFollowageUseCase
+from app.twitch.application.interaction.follow.handle_followage_use_case import HandleFollowAgeUseCase
 
 
 class FollowageCommandHandler:
 
     def __init__(
         self,
-        handle_follow_age_use_case: HandleFollowageUseCase,
+        handle_follow_age_use_case: HandleFollowAgeUseCase,
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):

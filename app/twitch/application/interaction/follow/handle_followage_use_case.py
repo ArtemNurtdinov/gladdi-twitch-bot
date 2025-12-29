@@ -10,7 +10,7 @@ from app.twitch.application.interaction.follow.uow import FollowAgeUnitOfWorkRoF
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 
-class HandleFollowageUseCase:
+class HandleFollowAgeUseCase:
 
     def __init__(
         self,
@@ -32,8 +32,8 @@ class HandleFollowageUseCase:
         self._unit_of_work_rw_factory = unit_of_work_rw_factory
         self._system_prompt = system_prompt
 
-    async def handle(self, command_followage: FollowageDTO) -> Optional[str]:
-        channel_name = command_followage.channel_name
+    async def handle(self, command_follow_age: FollowageDTO) -> Optional[str]:
+        channel_name = command_follow_age.channel_name
 
         broadcaster = await self._twitch_api_service.get_user_by_login(channel_name)
         broadcaster_id = None if broadcaster is None else broadcaster.id
@@ -43,36 +43,36 @@ class HandleFollowageUseCase:
 
         follow_info = await self._twitch_api_service.get_user_followage(
             broadcaster_id=broadcaster_id,
-            user_id=command_followage.user_id
+            user_id=command_follow_age.user_id
         )
 
         if not follow_info:
-            result = f"@{command_followage.display_name}, вы не отслеживаете канал {channel_name}."
+            result = f"@{command_follow_age.display_name}, вы не отслеживаете канал {channel_name}."
             with self._unit_of_work_rw_factory.create() as uow:
                 uow.chat.save_chat_message(
                     channel_name=channel_name,
-                    user_name=command_followage.bot_nick.lower(),
+                    user_name=command_follow_age.bot_nick.lower(),
                     content=result,
-                    current_time=command_followage.occurred_at,
+                    current_time=command_follow_age.occurred_at,
                 )
             return result
 
         follow_dt = datetime.fromisoformat(follow_info.followed_at.replace("Z", "+00:00"))
         follow_dt_naive = follow_dt.replace(tzinfo=None)
-        follow_duration = command_followage.occurred_at - follow_dt_naive
+        follow_duration = command_follow_age.occurred_at - follow_dt_naive
 
         days = follow_duration.days
         hours, remainder = divmod(follow_duration.seconds, 3600)
         minutes, _ = divmod(remainder, 60)
 
         prompt = (
-            f"@{command_followage.display_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и "
+            f"@{command_follow_age.display_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и "
             f"{minutes} минут. Сообщи ему об этом кратко и оригинально."
         )
 
         with self._unit_of_work_ro_factory.create() as uow:
             history = uow.conversation.get_last_messages(
-                channel_name=command_followage.channel_name,
+                channel_name=command_follow_age.channel_name,
                 system_prompt=self._system_prompt
             )
 
@@ -89,8 +89,8 @@ class HandleFollowageUseCase:
             )
             uow.chat.save_chat_message(
                 channel_name=channel_name,
-                user_name=command_followage.bot_nick.lower(),
+                user_name=command_follow_age.bot_nick.lower(),
                 content=assistant_message,
-                current_time=command_followage.occurred_at
+                current_time=command_follow_age.occurred_at
             )
         return assistant_message
