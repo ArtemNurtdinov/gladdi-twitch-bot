@@ -41,7 +41,7 @@ class StreamStatusJob:
                 await self._handle_stream_status_use_case.handle(
                     db_session_provider=self._db_session_provider,
                     db_readonly_session_provider=self._db_readonly_session_provider,
-                    dto=handle_stream_status
+                    status_job_dto=handle_stream_status
                 )
             except asyncio.CancelledError:
                 logger.info("StreamStatusJob cancelled")

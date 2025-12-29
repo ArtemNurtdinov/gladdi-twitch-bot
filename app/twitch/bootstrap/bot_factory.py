@@ -1,6 +1,7 @@
 import logging
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.twitch.application.background.chat_summary.handle_chat_summarizer_use_case import (
     HandleChatSummarizerUseCase,
@@ -30,7 +31,6 @@ from app.twitch.application.interaction.follow.handle_followage_use_case import 
 from app.twitch.application.interaction.guess.handle_guess_use_case import HandleGuessUseCase
 from app.twitch.application.interaction.help.handle_help_use_case import HandleHelpUseCase
 from app.twitch.application.interaction.roll.handle_roll_use_case import HandleRollUseCase
-from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.twitch.application.interaction.shop.handle_shop_use_case import HandleShopUseCase
 from app.twitch.application.interaction.stats.handle_stats_use_case import HandleStatsUseCase
 from app.twitch.application.interaction.top_bottom.handle_top_bottom_use_case import (
@@ -42,6 +42,8 @@ from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
 from app.twitch.infrastructure.interaction.ask.ask_uow import SqlAlchemyAskUnitOfWorkFactory, SqlAlchemyAskUnitOfWorkRoFactory
 from app.twitch.infrastructure.interaction.chat.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory, \
     SqlAlchemyChatMessageUnitOfWorkRoFactory
+from app.twitch.infrastructure.interaction.follow.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkRoFactory, \
+    SqlAlchemyFollowAgeUnitOfWorkRwFactory
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.jobs.chat_summarizer_job import ChatSummarizerJob
 from app.twitch.presentation.background.jobs.minigame_tick_job import MinigameTickJob
@@ -205,17 +207,19 @@ class BotFactory:
         settings = self._settings
         ask_uow_factory = self._build_ask_uow_factory()
 
-        followage = FollowageCommandHandler(
-            handle_followage_use_case=HandleFollowageUseCase(
+        follow_age = FollowageCommandHandler(
+            handle_follow_age_use_case=HandleFollowageUseCase(
                 chat_use_case_provider=self._deps.chat_use_case_provider,
                 conversation_service_provider=self._deps.conversation_service_provider,
                 twitch_api_service=self._deps.twitch_api_service,
                 prompt_service=self._deps.prompt_service,
-                chat_response_use_case=chat_response_use_case
-            ),
-            db_session_provider=SessionLocal.begin,
-            bot_nick_provider=bot_nick_provider,
-            post_message_fn=post_message_fn,
+                chat_response_use_case=chat_response_use_case,
+                unit_of_work_ro_factory=self._build_follow_age_uow_ro_factory(),
+                unit_of_work_rw_factory=self._build_follow_age_uow_rw_factory(),
+                system_prompt = bot.SYSTEM_PROMPT_FOR_GROUP
+        ),
+        bot_nick_provider = bot_nick_provider,
+        post_message_fn = post_message_fn,
         )
         ask = AskCommandHandler(
             command_prefix=prefix,
@@ -400,7 +404,7 @@ class BotFactory:
         )
 
         return CommandRegistry(
-            followage=followage,
+            followage=follow_age,
             ask=ask,
             battle=battle,
             roll=roll,
@@ -476,4 +480,17 @@ class BotFactory:
             stream_service_provider=self._deps.stream_service_provider,
             viewer_service_provider=self._deps.viewer_service_provider,
             conversation_service_provider=self._deps.conversation_service_provider,
+        )
+
+    def _build_follow_age_uow_ro_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkRoFactory:
+        return SqlAlchemyFollowAgeUnitOfWorkRoFactory(
+            read_session_factory=lambda: db_ro_session(),
+            conversation_service_provider=self._deps.conversation_service_provider
+        )
+
+    def _build_follow_age_uow_rw_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkRwFactory:
+        return SqlAlchemyFollowAgeUnitOfWorkRwFactory(
+            session_factory=SessionLocal.begin,
+            chat_use_case_provider=self._deps.chat_use_case_provider,
+            conversation_service_provider=self._deps.conversation_service_provider
         )

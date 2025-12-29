@@ -1,13 +1,12 @@
 from datetime import datetime
-from typing import Callable, ContextManager
-
-from sqlalchemy.orm import Session
+from typing import Optional
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.domain.prompt_service import PromptService
 from app.twitch.application.interaction.follow.dto import FollowageDTO
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
+from app.twitch.application.interaction.follow.uow import FollowAgeUnitOfWorkRoFactory, FollowAgeUnitOfWorkRwFactory
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 
@@ -20,67 +19,80 @@ class HandleFollowageUseCase:
         twitch_api_service: TwitchApiService,
         prompt_service: PromptService,
         chat_response_use_case: ChatResponseUseCase,
+        unit_of_work_ro_factory: FollowAgeUnitOfWorkRoFactory,
+        unit_of_work_rw_factory: FollowAgeUnitOfWorkRwFactory,
+        system_prompt: str
     ):
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
         self._twitch_api_service = twitch_api_service
         self._prompt_service = prompt_service
         self._chat_response_use_case = chat_response_use_case
+        self._unit_of_work_ro_factory = unit_of_work_ro_factory
+        self._unit_of_work_rw_factory = unit_of_work_rw_factory
+        self._system_prompt = system_prompt
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        followage_dto: FollowageDTO,
-    ) -> str:
-        broadcaster = await self._twitch_api_service.get_user_by_login(followage_dto.channel_name)
+        command_followage: FollowageDTO
+    ) -> Optional[str]:
+        channel_name = command_followage.channel_name
+
+        broadcaster = await self._twitch_api_service.get_user_by_login(channel_name)
         broadcaster_id = None if broadcaster is None else broadcaster.id
 
         if not broadcaster_id:
-            result = f"@{followage_dto.display_name}, произошла ошибка при получении информации о канале {followage_dto.channel_name}."
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
-                    channel_name=followage_dto.channel_name,
-                    user_name=followage_dto.bot_nick.lower(),
+            return None
+
+        follow_info = await self._twitch_api_service.get_user_followage(
+            broadcaster_id=broadcaster_id,
+            user_id=command_followage.user_id
+        )
+
+        if not follow_info:
+            result = f"@{command_followage.display_name}, вы не отслеживаете канал {channel_name}."
+            with self._unit_of_work_rw_factory.create() as uow:
+                uow.chat.save_chat_message(
+                    channel_name=channel_name,
+                    user_name=command_followage.bot_nick.lower(),
                     content=result,
-                    current_time=followage_dto.occurred_at
+                    current_time=command_followage.occurred_at,
                 )
             return result
 
-        follow_info = await self._twitch_api_service.get_user_followage(broadcaster_id, followage_dto.user_id)
+        follow_dt = datetime.fromisoformat(follow_info.followed_at.replace("Z", "+00:00"))
+        follow_dt_naive = follow_dt.replace(tzinfo=None)
+        follow_duration = command_followage.occurred_at - follow_dt_naive
 
-        if follow_info:
-            follow_dt = datetime.fromisoformat(follow_info.followed_at.replace("Z", "+00:00"))
-            follow_duration = followage_dto.occurred_at - follow_dt
+        days = follow_duration.days
+        hours, remainder = divmod(follow_duration.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        prompt = (
+            f"@{command_followage.display_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и "
+            f"{minutes} минут. Сообщи ему об этом кратко и оригинально."
+        )
 
-            days = follow_duration.days
-            hours, remainder = divmod(follow_duration.seconds, 3600)
-            minutes, _ = divmod(remainder, 60)
-            prompt = (
-                f"@{followage_dto.display_name} отслеживает канал {followage_dto.channel_name} уже {days} дней, {hours} часов и "
-                f"{minutes} минут. Сообщи ему об этом как-нибудь оригинально."
+        with self._unit_of_work_ro_factory.create() as uow:
+            history = uow.conversation.get_last_messages(
+                channel_name=command_followage.channel_name,
+                system_prompt=self._system_prompt
             )
-            result = await self._chat_response_use_case.generate_response(prompt, followage_dto.channel_name)
 
-            with db_session_provider() as db:
-                self._conversation_service_provider.get(db).save_conversation_to_db(
-                    channel_name=followage_dto.channel_name,
-                    user_message=prompt,
-                    ai_message=result
-                )
-                self._chat_use_case_provider.get(db).save_chat_message(
-                    channel_name=followage_dto.channel_name,
-                    user_name=followage_dto.bot_nick.lower(),
-                    content=result,
-                    current_time=followage_dto.occurred_at,
-                )
-            return result
+        assistant_message = await self._chat_response_use_case.generate_response_from_history(
+            history=history,
+            prompt=prompt
+        )
 
-        result = f"@{followage_dto.display_name}, вы не отслеживаете канал {followage_dto.channel_name}."
-        with db_session_provider() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
-                channel_name=followage_dto.channel_name,
-                user_name=followage_dto.bot_nick.lower(),
-                content=result,
-                current_time=followage_dto.occurred_at,
+        with self._unit_of_work_rw_factory.create() as uow:
+            uow.conversation.save_conversation_to_db(
+                channel_name=channel_name,
+                user_message=prompt,
+                ai_message=assistant_message
             )
-        return result
+            uow.chat.save_chat_message(
+                channel_name=channel_name,
+                user_name=command_followage.bot_nick.lower(),
+                content=assistant_message,
+                current_time=command_followage.occurred_at
+            )
+        return assistant_message

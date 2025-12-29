@@ -31,4 +31,3 @@ class AskUnitOfWorkRoFactory(Protocol):
 
     def create(self) -> ContextManager[AskUnitOfWorkRo]:
         ...
-
