@@ -180,21 +180,29 @@ class HandleBattleUseCase:
         winner_amount = EconomyService.BATTLE_WINNER_PRIZE
         with db_session_provider() as db:
             self._economy_service_provider.get(db).add_balance(
-                battle_dto.channel_name,
-                winner,
-                winner_amount,
-                TransactionType.BATTLE_WIN,
-                f"Победа в битве против {loser}",
+                channel_name=battle_dto.channel_name,
+                user_name=winner,
+                amount=winner_amount,
+                transaction_type=TransactionType.BATTLE_WIN,
+                description=f"Победа в битве против {loser}"
             )
-            self._conversation_service_provider.get(db).save_conversation_to_db(battle_dto.channel_name, prompt, result_story)
+            self._conversation_service_provider.get(db).save_conversation_to_db(
+                channel_name=battle_dto.channel_name,
+                user_message=prompt,
+                ai_message=result_story
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=battle_dto.channel_name,
                 user_name=bot_nick,
                 content=result_story,
-                current_time=battle_dto.occurred_at,
+                current_time=battle_dto.occurred_at
             )
             self._battle_use_case_provider.get(db).save_battle_history(
-                battle_dto.channel_name, opponent_display, challenger_display, winner, result_story
+                channel_name=battle_dto.channel_name,
+                opponent_1=opponent_display,
+                opponent_2=challenger_display,
+                winner=winner,
+                result_text=result_story
             )
 
         messages = [result_story]

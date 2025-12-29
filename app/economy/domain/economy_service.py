@@ -98,7 +98,7 @@ class EconomyService:
         user_name: str,
         amount: int,
         transaction_type: TransactionType,
-        description: str = None
+        description: str
     ) -> UserBalanceInfo:
         normalized_user_name = user_name.lower()
 

@@ -31,19 +31,19 @@ class GuessCommandHandler:
 
     async def handle_guess_number(self, channel_name: str, display_name: str, ctx, number: str | None):
         dto = GuessNumberDTO(
+            command_prefix=self.command_prefix,
+            command_guess=self.command_guess,
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
             bot_nick=self.bot_nick_provider().lower(),
             occurred_at=datetime.utcnow(),
-            guess_input=number,
-            command_prefix=self.command_prefix,
-            command_guess=self.command_guess,
+            guess_input=number
         )
 
         message = await self._handle_guess_use_case.handle_number(
             db_session_provider=self._db_session_provider,
-            dto=dto,
+            guess_number=dto,
         )
         await self.post_message_fn(message, ctx)
 
@@ -59,7 +59,7 @@ class GuessCommandHandler:
 
         message = await self._handle_guess_use_case.handle_letter(
             db_session_provider=self._db_session_provider,
-            dto=dto,
+            guess_letter_dto=dto,
         )
         await self.post_message_fn(message, ctx)
 
@@ -70,11 +70,11 @@ class GuessCommandHandler:
             user_name=display_name.lower(),
             bot_nick=self.bot_nick_provider().lower(),
             occurred_at=datetime.utcnow(),
-            word_input=word,
+            word_input=word
         )
 
         message = await self._handle_guess_use_case.handle_word(
             db_session_provider=self._db_session_provider,
-            dto=dto,
+            guess_word_dto=dto
         )
         await self.post_message_fn(message, ctx)
