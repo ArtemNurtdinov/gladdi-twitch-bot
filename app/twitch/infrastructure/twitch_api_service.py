@@ -3,10 +3,11 @@ from datetime import datetime
 import httpx
 from typing import Optional, Dict, Any, List
 
+from app.twitch.application.common.model import StreamInfoDTO
 from app.twitch.application.interaction.follow.followage_provider import FollowageProvider
 from app.twitch.application.interaction.follow.dto import FollowageInfo
+from app.twitch.application.common.stream_info_provider import StreamInfoProvider
 from app.twitch.infrastructure.auth import TwitchAuth
-from app.twitch.infrastructure.model.stream_info import StreamInfo
 from app.twitch.infrastructure.model.user_info import UserInfo
 from app.twitch.infrastructure.model.follow_info import FollowInfo
 from app.twitch.infrastructure.model.stream_status import StreamStatus, StreamData
@@ -15,7 +16,7 @@ from app.twitch.infrastructure.model.channel_info import ChannelInfo
 logger = logging.getLogger(__name__)
 
 
-class TwitchApiService(FollowageProvider):
+class TwitchApiService(FollowageProvider, StreamInfoProvider):
 
     def __init__(self, twitch_auth: TwitchAuth):
         self.twitch_auth = twitch_auth
@@ -133,9 +134,14 @@ class TwitchApiService(FollowageProvider):
             followed_at=follow_dt,
         )
 
-    async def get_stream_info(self, broadcaster_id: str) -> StreamInfo:
+    async def get_stream_info(self, channel_login: str) -> Optional[StreamInfoDTO]:
+        user = await self.get_user_by_login(channel_login)
+        broadcaster_id = None if user is None else user.id
+        if not broadcaster_id:
+            return None
+
         channel_info = await self.get_channel_info(broadcaster_id)
-        return StreamInfo(channel_info.game_name, channel_info.title)
+        return StreamInfoDTO(channel_info.game_name, channel_info.title)
 
     async def get_stream_status(self, broadcaster_id: str) -> Optional[StreamStatus]:
         url = '/streams'

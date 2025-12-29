@@ -128,7 +128,7 @@ class BotFactory:
                     handle_post_joke_use_case=HandlePostJokeUseCase(
                         joke_service=self._deps.joke_service,
                         user_cache=self._deps.user_cache,
-                        twitch_api_service=self._deps.twitch_api_service,
+                        stream_info_provider=self._deps.twitch_api_service,
                         chat_response_use_case=chat_response_use_case,
                         conversation_service_provider=self._deps.conversation_service_provider,
                         chat_use_case_provider=self._deps.chat_use_case_provider

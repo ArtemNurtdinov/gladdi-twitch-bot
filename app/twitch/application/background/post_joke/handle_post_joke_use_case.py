@@ -7,8 +7,8 @@ from app.joke.domain.joke_service import JokeService
 from app.twitch.application.background.post_joke.dto import PostJokeDTO
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
+from app.twitch.application.common.stream_info_provider import StreamInfoProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 
 class HandlePostJokeUseCase:
@@ -17,14 +17,14 @@ class HandlePostJokeUseCase:
         self,
         joke_service: JokeService,
         user_cache: UserCacheService,
-        twitch_api_service: TwitchApiService,
+        stream_info_provider: StreamInfoProvider,
         chat_response_use_case: ChatResponseUseCase,
         conversation_service_provider: ConversationServiceProvider,
         chat_use_case_provider: ChatUseCaseProvider
     ):
         self._joke_service = joke_service
         self._user_cache = user_cache
-        self._twitch_api_service = twitch_api_service
+        self._stream_info_provider = stream_info_provider
         self._chat_response_use_case = chat_response_use_case
         self._conversation_service_provider = conversation_service_provider
         self._chat_use_case_provider = chat_use_case_provider
@@ -42,7 +42,7 @@ class HandlePostJokeUseCase:
         if not broadcaster_id:
             return None
 
-        stream_info = await self._twitch_api_service.get_stream_info(broadcaster_id)
+        stream_info = await self._stream_info_provider.get_stream_info(post_joke.channel_name)
         game_name = stream_info.game_name if stream_info else "стрима"
         prompt = f"Придумай анекдот, связанный с категорией трансляции: {game_name}."
         result = await self._chat_response_use_case.generate_response(prompt, post_joke.channel_name)
