@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import Optional
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.domain.prompt_service import PromptService
-from app.twitch.application.interaction.follow.dto import FollowageDTO
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.prompt_service import PromptService
+from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.twitch.application.interaction.follow.dto import FollowageDTO
 from app.twitch.application.interaction.follow.uow import FollowAgeUnitOfWorkRoFactory, FollowAgeUnitOfWorkRwFactory
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
@@ -32,10 +32,7 @@ class HandleFollowageUseCase:
         self._unit_of_work_rw_factory = unit_of_work_rw_factory
         self._system_prompt = system_prompt
 
-    async def handle(
-        self,
-        command_followage: FollowageDTO
-    ) -> Optional[str]:
+    async def handle(self, command_followage: FollowageDTO) -> Optional[str]:
         channel_name = command_followage.channel_name
 
         broadcaster = await self._twitch_api_service.get_user_by_login(channel_name)
@@ -67,6 +64,7 @@ class HandleFollowageUseCase:
         days = follow_duration.days
         hours, remainder = divmod(follow_duration.seconds, 3600)
         minutes, _ = divmod(remainder, 60)
+
         prompt = (
             f"@{command_followage.display_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и "
             f"{minutes} минут. Сообщи ему об этом кратко и оригинально."

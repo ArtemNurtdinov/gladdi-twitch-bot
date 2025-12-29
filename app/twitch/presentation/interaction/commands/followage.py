@@ -13,7 +13,7 @@ class FollowageCommandHandler:
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
-        self._handle_followage_use_case = handle_follow_age_use_case
+        self._handle_follow_age_use_case = handle_follow_age_use_case
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
@@ -30,6 +30,6 @@ class FollowageCommandHandler:
             user_id=str(ctx.author.id)
         )
 
-        result = await self._handle_followage_use_case.handle(dto)
+        result = await self._handle_follow_age_use_case.handle(dto)
         if result:
             await self.post_message_fn(result, ctx)
