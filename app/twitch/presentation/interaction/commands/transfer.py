@@ -35,12 +35,12 @@ class TransferCommandHandler:
             recipient_input=recipient,
             amount_input=amount,
             command_prefix=self.command_prefix,
-            command_name=self.command_name,
+            command_name=self.command_name
         )
 
         result = await self._handle_transfer_use_case.handle(
             db_session_provider=self._db_session_provider,
-            dto=dto,
+            command_transfer=dto
         )
 
         await self.post_message_fn(result, ctx)

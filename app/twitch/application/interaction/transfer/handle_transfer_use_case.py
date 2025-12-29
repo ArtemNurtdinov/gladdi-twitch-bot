@@ -20,49 +20,74 @@ class HandleTransferUseCase:
     async def handle(
         self,
         db_session_provider: Callable[[], ContextManager[Session]],
-        dto: TransferDTO,
+        command_transfer: TransferDTO,
     ) -> str:
+        command_prefix = command_transfer.command_prefix
+        command_name = command_transfer.channel_name
 
-        if not dto.recipient_input or not dto.amount_input:
+        if not command_transfer.recipient_input or not command_transfer.amount_input:
             result = (
-                f"@{dto.display_name}, используй: {dto.command_prefix}{dto.command_name} [никнейм] [сумма]. "
-                f"Например: {dto.command_prefix}{dto.command_name} @ArtemNeFRiT 100"
+                f"@{command_transfer.display_name}, используй: {command_prefix}{command_name} [никнейм] [сумма]. "
+                f"Например: {command_transfer.command_prefix}{command_transfer.command_name} @ArtemNeFRiT 100"
             )
             with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_transfer.channel_name,
+                    user_name=command_transfer.bot_nick,
+                    content=result,
+                    current_time=command_transfer.occurred_at
+                )
             return result
 
         try:
-            transfer_amount = int(dto.amount_input)
+            transfer_amount = int(command_transfer.amount_input)
         except ValueError:
             result = (
-                f"@{dto.display_name}, неверная сумма! Укажи число. "
-                f"Например: {dto.command_prefix}{dto.command_name} {dto.recipient_input} 100"
+                f"@{command_transfer.display_name}, неверная сумма! Укажи число. "
+                f"Например: {command_transfer.command_prefix}{command_transfer.command_name} {command_transfer.recipient_input} 100"
             )
             with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_transfer.channel_name,
+                    user_name=command_transfer.bot_nick,
+                    content=result,
+                    current_time=command_transfer.occurred_at
+                )
             return result
 
         if transfer_amount <= 0:
-            result = f"@{dto.display_name}, сумма должна быть больше 0!"
+            result = f"@{command_transfer.display_name}, сумма должна быть больше 0!"
             with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_transfer.channel_name,
+                    user_name=command_transfer.bot_nick,
+                    content=result,
+                    current_time=command_transfer.occurred_at
+                )
             return result
 
-        recipient = dto.recipient_input.lstrip('@')
+        recipient = command_transfer.recipient_input.lstrip('@')
         normalized_receiver_name = recipient.lower()
 
         with db_session_provider() as db:
             transfer_result = self._economy_service_provider.get(db).transfer_money(
-                dto.channel_name, dto.user_name, normalized_receiver_name, transfer_amount
+                channel_name=command_transfer.channel_name,
+                sender_name=command_transfer.user_name,
+                receiver_name=normalized_receiver_name,
+                amount=transfer_amount
             )
 
         if transfer_result.success:
-            result = f"@{dto.display_name} перевел {transfer_amount} монет пользователю @{recipient}! "
+            result = f"@{command_transfer.display_name} перевел {transfer_amount} монет пользователю @{recipient}! "
         else:
-            result = f"@{dto.display_name}, {transfer_result.message}"
+            result = f"@{command_transfer.display_name}, {transfer_result.message}"
 
         with db_session_provider() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, dto.bot_nick, result, dto.occurred_at)
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_transfer.channel_name,
+                user_name=command_transfer.bot_nick,
+                content=result,
+                current_time=command_transfer.occurred_at
+            )
 
         return result
