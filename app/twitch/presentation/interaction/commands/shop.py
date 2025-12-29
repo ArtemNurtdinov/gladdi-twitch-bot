@@ -45,7 +45,7 @@ class ShopCommandHandler:
 
         result = await self._handle_shop_use_case.handle_shop(
             db_session_provider=self._db_session_provider,
-            command_shop_dto=dto,
+            command_shop=dto,
         )
 
         await self.post_message_fn(result, ctx)
@@ -67,7 +67,7 @@ class ShopCommandHandler:
         result = await self._handle_shop_use_case.handle_buy(
             db_session_provider=self._db_session_provider,
             db_readonly_session_provider=self._db_readonly_session_provider,
-            command_buy_dto=dto,
+            command_buy=dto,
         )
 
         await self.post_message_fn(result, ctx)
