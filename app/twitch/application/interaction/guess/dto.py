@@ -2,8 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from app.twitch.application.interaction.dto import ChatContextDTO
-
 
 @dataclass(frozen=True)
 class GuessNumberDTO:

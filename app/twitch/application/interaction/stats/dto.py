@@ -1,9 +1,12 @@
 from dataclasses import dataclass
-
-from app.twitch.application.interaction.dto import ChatContextDTO
+from datetime import datetime
 
 
 @dataclass(frozen=True)
-class StatsDTO(ChatContextDTO):
-    pass
+class StatsDTO:
+    channel_name: str
+    display_name: str
+    user_name: str
+    bot_nick: str
+    occurred_at: datetime
 

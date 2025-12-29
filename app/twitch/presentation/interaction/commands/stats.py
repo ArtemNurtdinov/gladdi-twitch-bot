@@ -31,13 +31,13 @@ class StatsCommandHandler:
             display_name=display_name,
             user_name=display_name.lower(),
             bot_nick=self.bot_nick_provider().lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.utcnow()
         )
 
         result = await self._handle_stats_use_case.handle(
             db_session_provider=self._db_session_provider,
             db_readonly_session_provider=self._db_readonly_session_provider,
-            dto=dto,
+            command_stats=dto
         )
 
         await self.post_message_fn(result, ctx)
