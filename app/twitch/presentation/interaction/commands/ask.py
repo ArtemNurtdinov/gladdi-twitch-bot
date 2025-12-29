@@ -28,9 +28,9 @@ class AskCommandHandler:
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
-            message=user_message,
             bot_nick=self.bot_nick_provider(),
             occurred_at=datetime.utcnow(),
+            message=user_message
         )
 
         result = await self._handle_ask_use_case.handle(dto)
