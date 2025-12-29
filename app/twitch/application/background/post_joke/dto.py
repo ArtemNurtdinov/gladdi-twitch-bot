@@ -7,5 +7,3 @@ class PostJokeDTO:
     channel_name: str
     bot_nick: str
     occurred_at: datetime
-
-

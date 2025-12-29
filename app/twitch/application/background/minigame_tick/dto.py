@@ -8,5 +8,3 @@ from app.twitch.application.interaction.dto import ChatContextDTO
 class MinigameTickDTO:
     channel_name: str
     occurred_at: datetime
-
-

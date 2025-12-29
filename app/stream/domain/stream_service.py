@@ -1,11 +1,8 @@
-import logging
 from datetime import datetime
 from typing import Optional
 
 from app.stream.domain.models import StreamInfo, StreamDetail
 from app.stream.domain.repo import StreamRepository
-
-logger = logging.getLogger(__name__)
 
 
 class StreamService:

@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 from typing import Callable, ContextManager
 
@@ -11,8 +10,6 @@ from app.economy.application.economy_service_provider import EconomyServiceProvi
 from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-
-logger = logging.getLogger(__name__)
 
 
 class HandleViewerTimeUseCase:
@@ -36,7 +33,7 @@ class HandleViewerTimeUseCase:
         db_session_provider: Callable[[], ContextManager[Session]],
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
         viewer_time_dto: ViewerTimeDTO,
-    ) -> None:
+    ):
         with db_readonly_session_provider() as db:
             active_stream = self._stream_service_provider.get(db).get_active_stream(viewer_time_dto.channel_name)
 
@@ -74,13 +71,14 @@ class HandleViewerTimeUseCase:
                     claimed_list.append(minutes_threshold)
                     rewards = ",".join(map(str, sorted(claimed_list)))
                     self._viewer_service_provider.get(db).update_session_rewards(
-                        session.id, rewards, viewer_time_dto.occurred_at or datetime.utcnow()
+                        session_id=session.id,
+                        rewards=rewards,
+                        current_time=viewer_time_dto.occurred_at or datetime.utcnow()
                     )
-                    description = f"Награда за {minutes_threshold} минут просмотра стрима"
                     self._economy_service_provider.get(db).add_balance(
-                        viewer_time_dto.channel_name,
-                        session.user_name,
-                        reward_amount,
-                        TransactionType.VIEWER_TIME_REWARD,
-                        description,
+                        channel_name=viewer_time_dto.channel_name,
+                        user_name=session.user_name,
+                        amount=reward_amount,
+                        transaction_type=TransactionType.VIEWER_TIME_REWARD,
+                        description=f"Награда за {minutes_threshold} минут просмотра стрима"
                     )

@@ -3,9 +3,7 @@ from datetime import datetime
 
 
 @dataclass(frozen=True)
-class ChatSummarizerDTO:
+class SummarizerJobDTO:
     channel_name: str
     occurred_at: datetime
     interval_minutes: int
-
-

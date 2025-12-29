@@ -7,7 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class HandleTokenCheckerUseCase:
-    def __init__(self, twitch_auth: TwitchAuth, interval_seconds: int = 1000):
+
+    def __init__(self, twitch_auth: TwitchAuth, interval_seconds: int):
         self._twitch_auth = twitch_auth
         self._interval_seconds = interval_seconds
 
@@ -23,4 +24,3 @@ class HandleTokenCheckerUseCase:
             logger.info("Токен обновлён")
             return "token_refreshed"
         return None
-

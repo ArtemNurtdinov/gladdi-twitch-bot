@@ -10,8 +10,8 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.stream_service_provider import StreamServiceProvider
-from app.stream.domain.models import StreamStatistics
-from app.twitch.application.background.stream_status.dto import StreamStatusDTO
+from app.stream.domain.models import StreamStatistics, StreamInfo
+from app.twitch.application.background.stream_status.dto import StatusJobDTO
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
@@ -67,17 +67,17 @@ class HandleStreamStatusUseCase:
         self,
         db_session_provider: Callable[[], ContextManager[Session]],
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
-        dto: StreamStatusDTO,
+        status_job_dto: StatusJobDTO,
     ) -> None:
-        broadcaster_id = await self._user_cache.get_user_id(dto.channel_name)
+        broadcaster_id = await self._user_cache.get_user_id(status_job_dto.channel_name)
 
         if not broadcaster_id:
-            logger.error(f"Не удалось получить ID канала {dto.channel_name}. Пропускаем проверку.")
+            logger.error(f"Не удалось получить ID канала {status_job_dto.channel_name}. Пропускаем проверку.")
             return
 
         stream_status = await self._twitch_api_service.get_stream_status(broadcaster_id)
         if stream_status is None:
-            logger.error(f"Не удалось получить статус стрима для канала {dto.channel_name}")
+            logger.error(f"Не удалось получить статус стрима для канала {status_job_dto.channel_name}")
             return
 
         game_name = stream_status.stream_data.game_name if stream_status.is_online and stream_status.stream_data else None
@@ -86,14 +86,19 @@ class HandleStreamStatusUseCase:
         logger.info(f"Статус стрима: {stream_status}")
 
         with db_readonly_session_provider() as db:
-            active_stream = self._stream_service_provider.get(db).get_active_stream(dto.channel_name)
+            active_stream = self._stream_service_provider.get(db).get_active_stream(status_job_dto.channel_name)
 
         if stream_status.is_online and active_stream is None:
             logger.info(f"Стрим начался: {game_name} - {title}")
-            await self._handle_stream_start(dto.channel_name, game_name, title, db_session_provider)
+            await self._handle_stream_start(status_job_dto.channel_name, game_name, title, db_session_provider)
 
         elif not stream_status.is_online and active_stream is not None:
-            await self._handle_stream_end(dto.channel_name, active_stream, db_session_provider, db_readonly_session_provider)
+            await self._handle_stream_end(
+                channel_name=status_job_dto.channel_name,
+                active_stream=active_stream,
+                db_session_provider=db_session_provider,
+                db_readonly_session_provider=db_readonly_session_provider
+            )
 
         elif stream_status.is_online and active_stream:
             if active_stream.game_name != game_name or active_stream.title != title:
@@ -121,7 +126,7 @@ class HandleStreamStatusUseCase:
     async def _handle_stream_end(
         self,
         channel_name: str,
-        active_stream,
+        active_stream: StreamInfo,
         db_session_provider: Callable[[], ContextManager[Session]],
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
     ):
@@ -149,8 +154,14 @@ class HandleStreamStatusUseCase:
         stats = self._build_stream_statistics(chat_messages, battles)
 
         try:
-            await self._stream_summarize(stats, channel_name, active_stream.started_at, finish_time, db_session_provider,
-                                         db_readonly_session_provider)
+            await self._stream_summarize(
+                stream_stat=stats,
+                channel_name=channel_name,
+                stream_start_dt=active_stream.started_at,
+                stream_end_dt=finish_time,
+                db_session_provider=db_session_provider,
+                db_readonly_session_provider=db_readonly_session_provider
+            )
         except Exception as e:
             logger.error(f"Ошибка при вызове stream_summarize: {e}")
 

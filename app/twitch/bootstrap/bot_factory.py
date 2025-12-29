@@ -9,6 +9,7 @@ from app.twitch.application.background.minigame_tick.handle_minigame_tick_use_ca
     HandleMinigameTickUseCase,
 )
 from app.twitch.application.background.post_joke.handle_post_joke_use_case import HandlePostJokeUseCase
+from app.twitch.application.background.stream_context.dto import RestoreStreamJobDTO
 from app.twitch.application.background.stream_context.handle_restore_stream_context_use_case import (
     HandleRestoreStreamContextUseCase,
 )
@@ -136,7 +137,7 @@ class BotFactory:
                 TokenCheckerJob(
                     handle_token_checker_use_case=HandleTokenCheckerUseCase(
                         twitch_auth=self._deps.twitch_auth,
-                        interval_seconds=1000,
+                        interval_seconds=1000
                     ),
                 ),
                 StreamStatusJob(
@@ -210,7 +211,7 @@ class BotFactory:
                 conversation_service_provider=self._deps.conversation_service_provider,
                 twitch_api_service=self._deps.twitch_api_service,
                 prompt_service=self._deps.prompt_service,
-                chat_responder=chat_response_use_case,
+                chat_response_use_case=chat_response_use_case
             ),
             db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
@@ -220,7 +221,7 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_gladdi,
             handle_ask_use_case=HandleAskUseCase(
-                get_intent_from_text_use_case=self._deps.intent_use_case,
+                get_intent_from_text_use_case=self._deps.get_intent_use_case,
                 prompt_service=self._deps.prompt_service,
                 unit_of_work_factory=ask_uow_factory,
                 unit_of_work_ro_factory=self._build_ask_uow_ro_factory(),
@@ -421,7 +422,7 @@ class BotFactory:
         handle_chat_message = HandleChatMessageUseCase(
             unit_of_work_factory=chat_message_uow_factory,
             unit_of_work_ro_factory=chat_message_uow_ro_factory,
-            get_intent_from_text_use_case=self._deps.intent_use_case,
+            get_intent_from_text_use_case=self._deps.get_intent_use_case,
             prompt_service=self._deps.prompt_service,
             system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
             chat_response_use_case=chat_response_use_case
@@ -431,19 +432,18 @@ class BotFactory:
             send_channel_message=bot.send_channel_message,
         )
 
-    def _restore_stream_context(self) -> None:
+    def _restore_stream_context(self):
         if not self._settings.channel_name:
             logger.warning("Список каналов пуст при восстановлении контекста стрима")
             return
 
-        try:
-            HandleRestoreStreamContextUseCase(
-                stream_service_provider=self._deps.stream_service_provider,
-                minigame_service=self._deps.minigame_service,
-                db_readonly_session_provider=lambda: db_ro_session(),
-            ).handle(self._settings.channel_name)
-        except Exception as e:
-            logger.error(f"Ошибка при восстановлении состояния стрима: {e}")
+        restore_stream_job_dto = RestoreStreamJobDTO(self._settings.channel_name)
+
+        HandleRestoreStreamContextUseCase(
+            stream_service_provider=self._deps.stream_service_provider,
+            minigame_service=self._deps.minigame_service,
+            db_readonly_session_provider=lambda: db_ro_session(),
+        ).handle(restore_stream_job_dto)
 
     def _build_ask_uow_factory(self) -> SqlAlchemyAskUnitOfWorkFactory:
         return SqlAlchemyAskUnitOfWorkFactory(

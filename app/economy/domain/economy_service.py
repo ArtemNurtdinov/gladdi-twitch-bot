@@ -92,7 +92,14 @@ class EconomyService:
 
         return user_balance
 
-    def add_balance(self, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None) -> UserBalanceInfo:
+    def add_balance(
+        self,
+        channel_name: str,
+        user_name: str,
+        amount: int,
+        transaction_type: TransactionType,
+        description: str = None
+    ) -> UserBalanceInfo:
         normalized_user_name = user_name.lower()
 
         user_balance = self.get_user_balance(channel_name, normalized_user_name)

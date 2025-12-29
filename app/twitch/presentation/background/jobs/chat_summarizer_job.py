@@ -5,7 +5,7 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.background.chat_summary.dto import ChatSummarizerDTO
+from app.twitch.application.background.chat_summary.dto import SummarizerJobDTO
 from app.twitch.application.background.chat_summary.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.twitch.presentation.background.model.state import ChatSummaryState
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
@@ -39,19 +39,20 @@ class ChatSummarizerJob:
             try:
                 await asyncio.sleep(20 * 60)
 
-                chat_summarizer_dto = ChatSummarizerDTO(
+                summarizer_job_dto = SummarizerJobDTO(
                     channel_name=self._channel_name,
                     occurred_at=datetime.utcnow(),
-                    interval_minutes=20,
+                    interval_minutes=20
                 )
 
                 result = await self._handle_chat_summarizer_use_case.handle(
                     db_readonly_session_provider=self._db_readonly_session_provider,
-                    chat_summarizer=chat_summarizer_dto
+                    summarizer_job=summarizer_job_dto
                 )
                 if result is None:
                     logger.debug("Нет данных для анализа или стрим не активен")
                     continue
+
                 self._state.current_stream_summaries.append(result)
                 self._state.last_chat_summary_time = datetime.utcnow()
                 logger.info(f"Создан периодический анализ чата: {result}")
@@ -60,4 +61,3 @@ class ChatSummarizerJob:
                 break
             except Exception as e:
                 logger.error(f"Ошибка в ChatSummarizerJob: {e}")
-
