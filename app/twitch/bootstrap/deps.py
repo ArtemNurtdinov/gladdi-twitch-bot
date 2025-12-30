@@ -27,10 +27,8 @@ from app.equipment.application.get_user_equipment_use_case import GetUserEquipme
 from app.equipment.data.equipment_repository import EquipmentRepositoryImpl
 from app.joke.data.settings_repository import FileJokeSettingsRepository
 from app.joke.domain.joke_service import JokeService
-from app.minigame.application.add_word.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.application.add_word.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
-from app.minigame.application.get_used_words.get_used_words_use_case import GetUsedWordsUseCase
-from app.minigame.application.get_used_words.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
+from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.data.db.word_history_repository import WordHistoryRepositoryImpl
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
@@ -70,8 +68,8 @@ class BotDependencies:
     viewer_service_provider: ViewerServiceProvider
     battle_use_case_provider: Provider[BattleUseCase]
     betting_service_provider: Provider[BettingService]
-    get_used_words_use_case_provider: GetUsedWordsUseCaseProvider
-    add_used_words_use_case_provider: AddUsedWordsUseCaseProvider
+    get_used_words_use_case_provider: Provider[GetUsedWordsUseCase]
+    add_used_words_use_case_provider: Provider[AddUsedWordsUseCase]
     get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase]
     roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase]
     equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase]
@@ -161,8 +159,8 @@ def build_bot_dependencies(
         viewer_service_provider=ViewerServiceProvider(viewer_service),
         battle_use_case_provider=Provider(battle_use_case),
         betting_service_provider=Provider(betting_service),
-        get_used_words_use_case_provider=GetUsedWordsUseCaseProvider(get_used_words_use_case),
-        add_used_words_use_case_provider=AddUsedWordsUseCaseProvider(add_used_word_use_case),
+        get_used_words_use_case_provider=Provider(get_used_words_use_case),
+        add_used_words_use_case_provider=Provider(add_used_word_use_case),
         get_user_equipment_use_case_provider=Provider(get_user_equipment_use_case),
         roll_cooldown_use_case_provider=SingletonProvider(roll_use_case),
         equipment_exists_use_case_provider=Provider(equipment_use_case),

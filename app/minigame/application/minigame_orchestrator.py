@@ -5,17 +5,17 @@ import random
 from datetime import datetime
 from typing import Callable, Awaitable
 
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.ai.gen.domain.llm_client import LLMClient
 from app.ai.gen.domain.models import AIMessage, Role
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.models import TransactionType
+from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.minigame_service import MinigameService
-from app.minigame.application.add_word.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
-from app.minigame.application.get_used_words.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from core.db import SessionLocal, db_ro_session
-from app.economy.domain.models import TransactionType
 from core.provider import Provider
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,8 @@ class MinigameOrchestrator:
         economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: Provider[ChatUseCase],
         stream_service_provider: StreamServiceProvider,
-        get_used_words_use_case_provider: GetUsedWordsUseCaseProvider,
-        add_used_words_use_case_provider: AddUsedWordsUseCaseProvider,
+        get_used_words_use_case_provider: Provider[GetUsedWordsUseCase],
+        add_used_words_use_case_provider: Provider[AddUsedWordsUseCase],
         conversation_service_provider: ConversationServiceProvider,
         llm_client: LLMClient,
         system_prompt: str,
