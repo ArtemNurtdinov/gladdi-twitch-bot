@@ -2,10 +2,10 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
+from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.stream.application.stream_service_provider import StreamServiceProvider
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.twitch.application.interaction.dto import ChatContextDTO
 from core.provider import Provider
 
@@ -17,7 +17,7 @@ class HandleBonusUseCase:
         stream_service_provider: StreamServiceProvider,
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
         economy_service_provider: Provider[EconomyService],
-        chat_use_case_provider: ChatUseCaseProvider,
+        chat_use_case_provider: Provider[ChatUseCase],
     ):
         self._stream_service_provider = stream_service_provider
         self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider

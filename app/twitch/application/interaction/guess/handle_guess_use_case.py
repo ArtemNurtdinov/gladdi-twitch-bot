@@ -3,7 +3,7 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
@@ -17,7 +17,7 @@ class HandleGuessUseCase:
         self,
         minigame_service: MinigameService,
         economy_service_provider: Provider[EconomyService],
-        chat_use_case_provider: ChatUseCaseProvider,
+        chat_use_case_provider: Provider[ChatUseCase],
     ):
         self._minigame_service = minigame_service
         self._economy_service_provider = economy_service_provider

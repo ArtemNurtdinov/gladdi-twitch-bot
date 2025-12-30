@@ -5,6 +5,7 @@ from typing import Callable, ContextManager, List, Optional
 from sqlalchemy.orm import Session
 
 from app.betting.application.betting_service_provider import BettingServiceProvider
+from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
@@ -12,7 +13,6 @@ from app.equipment.application.get_user_equipment_use_case import GetUserEquipme
 from app.twitch.application.interaction.roll.model import RollDTO, RollUseCaseResult, RollTimeoutAction
 from app.betting.application.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from core.provider import SingletonProvider, Provider
 from app.economy.domain.models import JackpotPayoutMultiplierEffect, MissPayoutMultiplierEffect, PartialPayoutMultiplierEffect, \
     TransactionType
@@ -27,7 +27,7 @@ class HandleRollUseCase:
         betting_service_provider: BettingServiceProvider,
         roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase],
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
-        chat_use_case_provider: ChatUseCaseProvider,
+        chat_use_case_provider: Provider[ChatUseCase],
         calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase],
     ):
         self._economy_service_provider = economy_service_provider

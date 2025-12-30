@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
@@ -20,7 +20,7 @@ class HandleBattleUseCase:
     def __init__(
         self,
         economy_service_provider: Provider[EconomyService],
-        chat_use_case_provider: ChatUseCaseProvider,
+        chat_use_case_provider: Provider[ChatUseCase],
         conversation_service_provider: ConversationServiceProvider,
         battle_use_case_provider: BattleUseCaseProvider,
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],

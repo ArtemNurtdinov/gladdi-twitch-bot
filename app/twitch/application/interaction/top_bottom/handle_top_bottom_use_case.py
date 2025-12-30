@@ -2,9 +2,9 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
+from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.top_bottom.model import BottomDTO, TopDTO
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from core.provider import Provider
 
 
@@ -13,7 +13,7 @@ class HandleTopBottomUseCase:
     def __init__(
         self,
         economy_service_provider: Provider[EconomyService],
-        chat_use_case_provider: ChatUseCaseProvider
+        chat_use_case_provider: Provider[ChatUseCase]
     ):
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
@@ -71,4 +71,3 @@ class HandleTopBottomUseCase:
             )
 
         return result
-

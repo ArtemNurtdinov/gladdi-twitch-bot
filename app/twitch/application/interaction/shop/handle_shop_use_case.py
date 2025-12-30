@@ -2,7 +2,7 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import ShopItems, TransactionType
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
@@ -18,7 +18,7 @@ class HandleShopUseCase:
         economy_service_provider: Provider[EconomyService],
         add_equipment_use_case_provider: Provider[AddEquipmentUseCase],
         equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase],
-        chat_use_case_provider: ChatUseCaseProvider,
+        chat_use_case_provider: Provider[ChatUseCase],
     ):
         self._economy_service_provider = economy_service_provider
         self._add_equipment_use_case_provider = add_equipment_use_case_provider

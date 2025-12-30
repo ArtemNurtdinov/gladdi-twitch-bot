@@ -2,9 +2,9 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
+from app.chat.application.chat_use_case import ChatUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.twitch.application.interaction.equipment.model import EquipmentDTO
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from core.provider import Provider
 
 
@@ -13,7 +13,7 @@ class HandleEquipmentUseCase:
     def __init__(
         self,
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
-        chat_use_case_provider: ChatUseCaseProvider
+        chat_use_case_provider: Provider[ChatUseCase]
     ):
         self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider

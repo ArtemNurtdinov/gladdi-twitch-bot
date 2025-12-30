@@ -7,10 +7,10 @@ from typing import Callable, Awaitable
 
 from app.ai.gen.domain.llm_client import LLMClient
 from app.ai.gen.domain.models import AIMessage, Role
+from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.minigame.domain.minigame_service import MinigameService
 from app.minigame.application.add_word.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.minigame.application.get_used_words.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
@@ -28,7 +28,7 @@ class MinigameOrchestrator:
         self,
         minigame_service: MinigameService,
         economy_service_provider: Provider[EconomyService],
-        chat_use_case_provider: ChatUseCaseProvider,
+        chat_use_case_provider: Provider[ChatUseCase],
         stream_service_provider: StreamServiceProvider,
         get_used_words_use_case_provider: GetUsedWordsUseCaseProvider,
         add_used_words_use_case_provider: AddUsedWordsUseCaseProvider,

@@ -18,7 +18,6 @@ from app.betting.application.betting_service import BettingService
 from app.betting.application.betting_service_provider import BettingServiceProvider
 from app.betting.data.betting_repository import BettingRepositoryImpl
 from app.chat.application.chat_use_case import ChatUseCase
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.chat.data.chat_repository import ChatRepositoryImpl
 from app.economy.data.economy_repository import EconomyRepositoryImpl
 from app.economy.domain.economy_service import EconomyService
@@ -66,7 +65,7 @@ class BotDependencies:
     background_runner: BackgroundTaskRunner
     telegram_bot: telegram.Bot
     stream_service_provider: StreamServiceProvider
-    chat_use_case_provider: ChatUseCaseProvider
+    chat_use_case_provider: Provider[ChatUseCase]
     conversation_service_provider: ConversationServiceProvider
     economy_service_provider: Provider[EconomyService]
     start_stream_use_case_provider: StartStreamUseCaseProvider
@@ -157,7 +156,7 @@ def build_bot_dependencies(
         background_runner=background_runner,
         telegram_bot=telegram_bot,
         stream_service_provider=StreamServiceProvider(stream_service),
-        chat_use_case_provider=ChatUseCaseProvider(chat_use_case),
+        chat_use_case_provider=Provider(chat_use_case),
         conversation_service_provider=ConversationServiceProvider(conversation_service),
         economy_service_provider=Provider(economy_service),
         start_stream_use_case_provider=StartStreamUseCaseProvider(start_stream_use_case),

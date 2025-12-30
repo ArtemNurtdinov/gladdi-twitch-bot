@@ -2,13 +2,14 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
+from app.chat.application.chat_use_case import ChatUseCase
 from app.twitch.application.interaction.help.model import HelpDTO
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
+from core.provider import Provider
 
 
 class HandleHelpUseCase:
 
-    def __init__(self, chat_use_case_provider: ChatUseCaseProvider):
+    def __init__(self, chat_use_case_provider: Provider[ChatUseCase]):
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(

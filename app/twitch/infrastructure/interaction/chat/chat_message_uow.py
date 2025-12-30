@@ -6,11 +6,11 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.ai.gen.domain.conversation_service import ConversationService
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
-from app.stream.domain.stream_service import StreamService
-from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
+from app.stream.domain.stream_service import StreamService
 from app.twitch.application.interaction.chat.chat_message_uow import (
     ChatMessageUnitOfWork,
     ChatMessageUnitOfWorkFactory,
@@ -18,7 +18,6 @@ from app.twitch.application.interaction.chat.chat_message_uow import (
     ChatMessageUnitOfWorkRoFactory,
 )
 from app.viewer.application.viewer_service_provider import ViewerServiceProvider
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
 
@@ -64,7 +63,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
     def __init__(
         self,
         session_factory: Callable[[], ContextManager[Session]],
-        chat_use_case_provider: ChatUseCaseProvider,
+        chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: StreamServiceProvider,
         viewer_service_provider: ViewerServiceProvider,
@@ -92,11 +91,12 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
 
         return _ctx()
 
+
 class SqlAlchemyChatMessageUnitOfWorkRoFactory(ChatMessageUnitOfWorkRoFactory):
     def __init__(
         self,
         read_session_factory: Callable[[], ContextManager[Session]],
-        chat_use_case_provider: ChatUseCaseProvider,
+        chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: StreamServiceProvider,
         viewer_service_provider: ViewerServiceProvider,
