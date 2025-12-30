@@ -82,24 +82,25 @@ class BotFactory:
 
     def create(self) -> Bot:
         bot = Bot(self._deps, self._settings)
-        chat_response_use_case = self._create_chat_response_use_case(bot)
+        system_prompt = self._deps.prompt_service.get_system_prompt_for_group()
+        chat_response_use_case = self._create_chat_response_use_case(system_prompt)
 
-        bot.set_minigame_orchestrator(self._create_minigame(bot))
+        bot.set_minigame_orchestrator(self._create_minigame(bot, system_prompt))
         bot.set_background_tasks(self._create_background_tasks(bot, chat_response_use_case))
-        bot.set_command_registry(self._create_command_registry(bot, chat_response_use_case))
-        bot.set_chat_event_handler(self._create_chat_event_handler(bot, chat_response_use_case))
+        bot.set_command_registry(self._create_command_registry(bot, chat_response_use_case, system_prompt))
+        bot.set_chat_event_handler(self._create_chat_event_handler(bot, chat_response_use_case, system_prompt))
         self._restore_stream_context()
         return bot
 
-    def _create_chat_response_use_case(self, bot: Bot) -> ChatResponseUseCase:
+    def _create_chat_response_use_case(self, system_prompt: str) -> ChatResponseUseCase:
         return ChatResponseUseCase(
             conversation_service_provider=self._deps.conversation_service_provider,
             llm_client=self._deps.llm_client,
-            system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
+            system_prompt=system_prompt,
             db_readonly_session_provider=lambda: db_ro_session(),
         )
 
-    def _create_minigame(self, bot: Bot) -> MinigameOrchestrator:
+    def _create_minigame(self, bot: Bot, system_prompt: str) -> MinigameOrchestrator:
         return MinigameOrchestrator(
             minigame_service=self._deps.minigame_service,
             economy_service_provider=self._deps.economy_service_provider,
@@ -108,7 +109,7 @@ class BotFactory:
             get_used_words_use_case_provider=self._deps.get_used_words_use_case_provider,
             add_used_words_use_case_provider=self._deps.add_used_words_use_case_provider,
             llm_client=self._deps.llm_client,
-            system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
+            system_prompt=system_prompt,
             prefix=self._settings.prefix,
             command_guess_letter=self._settings.command_guess_letter,
             command_guess_word=self._settings.command_guess_word,
@@ -174,7 +175,7 @@ class BotFactory:
                         chat_response_use_case=chat_response_use_case,
                     ),
                     db_readonly_session_provider=lambda: db_ro_session(),
-                    state=bot.chat_summary_state,
+                    chat_summary_state=bot.chat_summary_state,
                 ),
                 MinigameTickJob(
                     channel_name=self._settings.channel_name,
@@ -199,7 +200,7 @@ class BotFactory:
             ],
         )
 
-    def _create_command_registry(self, bot: Bot, chat_response_use_case: ChatResponseUseCase) -> CommandRegistry:
+    def _create_command_registry(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str) -> CommandRegistry:
         prefix = self._settings.prefix
         bot_nick_provider = lambda: bot.nick
         post_message_fn = bot.post_message_in_twitch_chat
@@ -218,7 +219,7 @@ class BotFactory:
                 chat_response_use_case=chat_response_use_case,
                 unit_of_work_ro_factory=self._build_follow_age_uow_ro_factory(),
                 unit_of_work_rw_factory=self._build_follow_age_uow_rw_factory(),
-                system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP
+                system_prompt=system_prompt
             ),
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
@@ -231,7 +232,7 @@ class BotFactory:
                 prompt_service=self._deps.prompt_service,
                 unit_of_work_factory=ask_uow_factory,
                 unit_of_work_ro_factory=self._build_ask_uow_ro_factory(),
-                system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
+                system_prompt=system_prompt,
                 chat_response_use_case=chat_response_use_case
             ),
             post_message_fn=post_message_fn,
@@ -426,7 +427,7 @@ class BotFactory:
             rps=rps,
         )
 
-    def _create_chat_event_handler(self, bot: Bot, chat_response_use_case: ChatResponseUseCase) -> ChatEventHandler:
+    def _create_chat_event_handler(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str) -> ChatEventHandler:
         chat_message_uow_factory = self._build_chat_message_uow_factory()
         chat_message_uow_ro_factory = self._build_chat_message_uow_ro_factory()
         handle_chat_message = HandleChatMessageUseCase(
@@ -434,7 +435,7 @@ class BotFactory:
             unit_of_work_ro_factory=chat_message_uow_ro_factory,
             get_intent_from_text_use_case=self._deps.get_intent_use_case,
             prompt_service=self._deps.prompt_service,
-            system_prompt=bot.SYSTEM_PROMPT_FOR_GROUP,
+            system_prompt=system_prompt,
             chat_response_use_case=chat_response_use_case
         )
         return ChatEventHandler(

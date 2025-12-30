@@ -21,12 +21,12 @@ class ChatSummarizerJob:
         channel_name: str,
         handle_chat_summarizer_use_case: HandleChatSummarizerUseCase,
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
-        state: ChatSummaryState,
+        chat_summary_state: ChatSummaryState,
     ):
         self._channel_name = channel_name
         self._handle_chat_summarizer_use_case = handle_chat_summarizer_use_case
         self._db_readonly_session_provider = db_readonly_session_provider
-        self._state = state
+        self._chat_summary_state = chat_summary_state
 
     def register(self, runner: BackgroundTaskRunner) -> None:
         runner.register(self.name, self.run)
@@ -50,8 +50,8 @@ class ChatSummarizerJob:
                     logger.debug("Нет данных для анализа или стрим не активен")
                     continue
 
-                self._state.current_stream_summaries.append(result)
-                self._state.last_chat_summary_time = datetime.utcnow()
+                self._chat_summary_state.current_stream_summaries.append(result)
+                self._chat_summary_state.last_chat_summary_time = datetime.utcnow()
                 logger.info(f"Создан периодический анализ чата: {result}")
             except asyncio.CancelledError:
                 logger.info("ChatSummarizerJob cancelled")
