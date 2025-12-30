@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.chat_use_case import ChatUseCase
-from app.stream.application.stream_service_provider import StreamServiceProvider
+from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.chat_summary.model import SummarizerJobDTO
 from core.provider import Provider
 
@@ -14,7 +14,7 @@ class HandleChatSummarizerUseCase:
 
     def __init__(
         self,
-        stream_service_provider: StreamServiceProvider,
+        stream_service_provider: Provider[StreamService],
         chat_use_case_provider: Provider[ChatUseCase],
         chat_response_use_case: ChatResponseUseCase,
     ):

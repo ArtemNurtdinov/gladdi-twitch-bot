@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
-from app.stream.application.stream_service_provider import StreamServiceProvider
+from app.stream.domain.stream_service import StreamService
 from app.twitch.application.interaction.dto import ChatContextDTO
 from core.provider import Provider
 
@@ -14,7 +14,7 @@ class HandleBonusUseCase:
 
     def __init__(
         self,
-        stream_service_provider: StreamServiceProvider,
+        stream_service_provider: Provider[StreamService],
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
         economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: Provider[ChatUseCase],
@@ -51,7 +51,7 @@ class HandleBonusUseCase:
                     if bonus_result.bonus_message:
                         result = f"🎁 @{chat_context_dto.display_name} получил бонус {bonus_result.bonus_amount} монет! {bonus_result.bonus_message}"
                     else:
-                        result =  f"🎁 @{chat_context_dto.display_name} получил бонус {bonus_result.bonus_amount} монет!"
+                        result = f"🎁 @{chat_context_dto.display_name} получил бонус {bonus_result.bonus_amount} монет!"
                 else:
                     if bonus_result.failure_reason == "already_claimed":
                         result = f"⏰ @{chat_context_dto.display_name}, бонус уже получен на этом стриме!"

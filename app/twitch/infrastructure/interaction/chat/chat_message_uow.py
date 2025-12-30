@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
-from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.domain.stream_service import StreamService
 from app.twitch.application.interaction.chat.chat_message_uow import (
     ChatMessageUnitOfWork,
@@ -64,7 +63,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
         session_factory: Callable[[], ContextManager[Session]],
         chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
-        stream_service_provider: StreamServiceProvider,
+        stream_service_provider: Provider[StreamService],
         viewer_service_provider: ViewerServiceProvider,
         conversation_service_provider: Provider[ConversationService],
     ):
@@ -97,7 +96,7 @@ class SqlAlchemyChatMessageUnitOfWorkRoFactory(ChatMessageUnitOfWorkRoFactory):
         read_session_factory: Callable[[], ContextManager[Session]],
         chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
-        stream_service_provider: StreamServiceProvider,
+        stream_service_provider: Provider[StreamService],
         viewer_service_provider: ViewerServiceProvider,
         conversation_service_provider: Provider[ConversationService],
     ):

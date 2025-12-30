@@ -3,15 +3,16 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.minigame.domain.minigame_service import MinigameService
-from app.stream.application.stream_service_provider import StreamServiceProvider
+from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.stream_context.model import RestoreStreamJobDTO
+from core.provider import Provider
 
 
 class HandleRestoreStreamContextUseCase:
 
     def __init__(
         self,
-        stream_service_provider: StreamServiceProvider,
+        stream_service_provider: Provider[StreamService],
         minigame_service: MinigameService,
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
     ):

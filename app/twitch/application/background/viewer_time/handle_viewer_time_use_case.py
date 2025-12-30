@@ -5,11 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
-from app.stream.application.stream_service_provider import StreamServiceProvider
+from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.viewer_time.model import ViewerTimeDTO
-from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from core.provider import Provider
 
 
@@ -18,7 +18,7 @@ class HandleViewerTimeUseCase:
     def __init__(
         self,
         viewer_service_provider: ViewerServiceProvider,
-        stream_service_provider: StreamServiceProvider,
+        stream_service_provider: Provider[StreamService],
         economy_service_provider: Provider[EconomyService],
         user_cache: UserCacheService,
         twitch_api_service: TwitchApiService,

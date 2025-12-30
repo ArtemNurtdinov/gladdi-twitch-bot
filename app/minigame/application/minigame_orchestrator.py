@@ -14,7 +14,7 @@ from app.economy.domain.models import TransactionType
 from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.minigame_service import MinigameService
-from app.stream.application.stream_service_provider import StreamServiceProvider
+from app.stream.domain.stream_service import StreamService
 from core.db import SessionLocal, db_ro_session
 from core.provider import Provider
 
@@ -29,7 +29,7 @@ class MinigameOrchestrator:
         minigame_service: MinigameService,
         economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: Provider[ChatUseCase],
-        stream_service_provider: StreamServiceProvider,
+        stream_service_provider: Provider[StreamService],
         get_used_words_use_case_provider: Provider[GetUsedWordsUseCase],
         add_used_words_use_case_provider: Provider[AddUsedWordsUseCase],
         conversation_service_provider: Provider[ConversationService],

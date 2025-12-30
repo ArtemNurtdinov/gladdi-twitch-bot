@@ -31,7 +31,6 @@ from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.data.db.word_history_repository import WordHistoryRepositoryImpl
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
-from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.stream.domain.stream_service import StreamService
 from app.twitch.infrastructure.auth import TwitchAuth
@@ -58,7 +57,7 @@ class BotDependencies:
     user_cache: UserCacheService
     background_runner: BackgroundTaskRunner
     telegram_bot: telegram.Bot
-    stream_service_provider: StreamServiceProvider
+    stream_service_provider: Provider[StreamService]
     chat_use_case_provider: Provider[ChatUseCase]
     conversation_service_provider: Provider[ConversationService]
     economy_service_provider: Provider[EconomyService]
@@ -149,7 +148,7 @@ def build_bot_dependencies(
         user_cache=user_cache,
         background_runner=background_runner,
         telegram_bot=telegram_bot,
-        stream_service_provider=StreamServiceProvider(stream_service),
+        stream_service_provider=Provider(stream_service),
         chat_use_case_provider=Provider(chat_use_case),
         conversation_service_provider=Provider(conversation_service),
         economy_service_provider=Provider(economy_service),

@@ -14,8 +14,8 @@ from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
-from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.domain.models import StreamStatistics, StreamInfo
+from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.stream_status.model import StatusJobDTO
 from app.twitch.application.common.stream_status_provider import StreamStatusProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
@@ -36,7 +36,7 @@ class HandleStreamStatusUseCase:
         self,
         user_cache: UserCacheService,
         stream_status_provider: StreamStatusProvider,
-        stream_service_provider: StreamServiceProvider,
+        stream_service_provider: Provider[StreamService],
         start_stream_use_case_provider: Provider[StartNewStreamUseCase],
         viewer_service_provider: ViewerServiceProvider,
         battle_use_case_provider: Provider[BattleUseCase],
