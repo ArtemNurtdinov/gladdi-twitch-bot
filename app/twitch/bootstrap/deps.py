@@ -25,15 +25,15 @@ from app.economy.data.economy_repository import EconomyRepositoryImpl
 from app.economy.domain.economy_service import EconomyService
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.add_equipment_use_case_provider import AddEquipmentUseCaseProvider
+from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
+from app.equipment.application.defense.calculate_timeout_use_case_provider import CalculateTimeoutUseCaseProvider
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 from app.equipment.application.defense.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.equipment_exists_use_case_provider import EquipmentExistsUseCaseProvider
-from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
 from app.equipment.data.equipment_repository import EquipmentRepositoryImpl
-from app.equipment.domain.equipment_service import EquipmentService
 from app.joke.data.settings_repository import FileJokeSettingsRepository
 from app.joke.domain.joke_service import JokeService
 from app.minigame.application.add_word.add_used_word_use_case import AddUsedWordsUseCase
@@ -73,7 +73,6 @@ class BotDependencies:
     stream_service_provider: StreamServiceProvider
     chat_use_case_provider: ChatUseCaseProvider
     conversation_service_provider: ConversationServiceProvider
-    equipment_service_provider: EquipmentServiceProvider
     economy_service_provider: EconomyServiceProvider
     start_stream_use_case_provider: StartStreamUseCaseProvider
     viewer_service_provider: ViewerServiceProvider
@@ -85,6 +84,7 @@ class BotDependencies:
     roll_cooldown_use_case_provider: RollCooldownUseCaseProvider
     equipment_exists_use_case_provider: EquipmentExistsUseCaseProvider
     add_equipment_use_case_provider: AddEquipmentUseCaseProvider
+    calculate_timeout_use_case_provider: CalculateTimeoutUseCaseProvider
 
 
 def build_bot_dependencies(
@@ -112,9 +112,6 @@ def build_bot_dependencies(
 
     def conversation_service(db):
         return ConversationService(ConversationRepositoryImpl(db))
-
-    def equipment_service(db):
-        return EquipmentService(EquipmentRepositoryImpl(db))
 
     def economy_service(db):
         return EconomyService(EconomyRepositoryImpl(db))
@@ -149,6 +146,9 @@ def build_bot_dependencies(
     def add_equipment_use_case(db):
         return AddEquipmentUseCase(EquipmentRepositoryImpl(db))
 
+    def calculate_timeout_use_case():
+        return CalculateTimeoutUseCase()
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
@@ -164,7 +164,6 @@ def build_bot_dependencies(
         stream_service_provider=StreamServiceProvider(stream_service),
         chat_use_case_provider=ChatUseCaseProvider(chat_use_case),
         conversation_service_provider=ConversationServiceProvider(conversation_service),
-        equipment_service_provider=EquipmentServiceProvider(equipment_service),
         economy_service_provider=EconomyServiceProvider(economy_service),
         start_stream_use_case_provider=StartStreamUseCaseProvider(start_stream_use_case),
         viewer_service_provider=ViewerServiceProvider(viewer_service),
@@ -175,6 +174,7 @@ def build_bot_dependencies(
         get_user_equipment_use_case_provider=GetUserEquipmentUseCaseProvider(get_user_equipment_use_case),
         roll_cooldown_use_case_provider=RollCooldownUseCaseProvider(roll_use_case),
         equipment_exists_use_case_provider=EquipmentExistsUseCaseProvider(equipment_use_case),
-        add_equipment_use_case_provider=AddEquipmentUseCaseProvider(add_equipment_use_case)
+        add_equipment_use_case_provider=AddEquipmentUseCaseProvider(add_equipment_use_case),
+        calculate_timeout_use_case_provider=CalculateTimeoutUseCaseProvider(calculate_timeout_use_case)
     )
     return deps

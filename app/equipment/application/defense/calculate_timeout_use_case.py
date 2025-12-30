@@ -1,12 +1,8 @@
 from app.economy.domain.models import TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect
 from app.equipment.domain.models import UserEquipmentItem
-from app.equipment.domain.repo import EquipmentRepository
 
 
-class EquipmentService:
-
-    def __init__(self, repo: EquipmentRepository):
-        self._repo = repo
+class CalculateTimeoutUseCase:
 
     def calculate_timeout_with_equipment(self, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
         if base_timeout_seconds <= 0:

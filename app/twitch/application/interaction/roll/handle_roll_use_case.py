@@ -5,6 +5,7 @@ from typing import Callable, ContextManager, List, Optional
 from sqlalchemy.orm import Session
 
 from app.betting.application.betting_service_provider import BettingServiceProvider
+from app.equipment.application.defense.calculate_timeout_use_case_provider import CalculateTimeoutUseCaseProvider
 from app.equipment.application.defense.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
 from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
 from app.twitch.application.interaction.roll.model import RollDTO, RollUseCaseResult, RollTimeoutAction
@@ -14,7 +15,6 @@ from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.economy.domain.models import JackpotPayoutMultiplierEffect, MissPayoutMultiplierEffect, PartialPayoutMultiplierEffect, \
     TransactionType
-from app.equipment.application.equipment_service_provider import EquipmentServiceProvider
 
 
 class HandleRollUseCase:
@@ -24,17 +24,17 @@ class HandleRollUseCase:
         self,
         economy_service_provider: EconomyServiceProvider,
         betting_service_provider: BettingServiceProvider,
-        equipment_service_provider: EquipmentServiceProvider,
         roll_cooldown_use_case_provider: RollCooldownUseCaseProvider,
         get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider,
-        chat_use_case_provider: ChatUseCaseProvider
+        chat_use_case_provider: ChatUseCaseProvider,
+        calculate_timeout_use_case_provider: CalculateTimeoutUseCaseProvider
     ):
         self._economy_service_provider = economy_service_provider
         self._betting_service_provider = betting_service_provider
-        self._equipment_service_provider = equipment_service_provider
         self._roll_cooldown_use_case_provider = roll_cooldown_use_case_provider
         self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider
+        self._calculate_timeout_use_case_provider = calculate_timeout_use_case_provider
 
     async def handle(
         self,
@@ -239,11 +239,10 @@ class HandleRollUseCase:
         if timeout_seconds is not None and timeout_seconds > 0:
             base_timeout_duration = timeout_seconds if timeout_seconds else 0
 
-            with db_readonly_session_provider() as db:
-                final_timeout, protection_message = self._equipment_service_provider.get(db).calculate_timeout_with_equipment(
-                    base_timeout_seconds=base_timeout_duration,
-                    equipment=equipment,
-                )
+            final_timeout, protection_message = self._calculate_timeout_use_case_provider.get().calculate_timeout_with_equipment(
+                base_timeout_seconds=base_timeout_duration,
+                equipment=equipment
+            )
 
             if final_timeout == 0:
                 if self._is_consolation_prize(result_type, payout):

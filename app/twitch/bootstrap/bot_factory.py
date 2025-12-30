@@ -247,8 +247,8 @@ class BotFactory:
                 conversation_service_provider=self._deps.conversation_service_provider,
                 battle_use_case_provider=self._deps.battle_use_case_provider,
                 get_user_equipment_use_case_provider=self._deps.get_user_equipment_use_case_provider,
-                equipment_service_provider=self._deps.equipment_service_provider,
                 chat_response_use_case=chat_response_use_case,
+                calculate_timeout_use_case_provider=self._deps.calculate_timeout_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
@@ -262,10 +262,10 @@ class BotFactory:
             handle_roll_use_case=HandleRollUseCase(
                 economy_service_provider=self._deps.economy_service_provider,
                 betting_service_provider=self._deps.betting_service_provider,
-                equipment_service_provider=self._deps.equipment_service_provider,
                 roll_cooldown_use_case_provider=self._deps.roll_cooldown_use_case_provider,
                 get_user_equipment_use_case_provider=self._deps.get_user_equipment_use_case_provider,
-                chat_use_case_provider=self._deps.chat_use_case_provider
+                chat_use_case_provider=self._deps.chat_use_case_provider,
+                calculate_timeout_use_case_provider=self._deps.calculate_timeout_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
