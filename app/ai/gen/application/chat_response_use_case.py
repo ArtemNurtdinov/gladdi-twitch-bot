@@ -38,5 +38,3 @@ class ChatResponseUseCase:
         messages = list(history)
         messages.append(AIMessage(Role.USER, prompt))
         return await self._llm_client.generate_ai_response(messages)
-
-    

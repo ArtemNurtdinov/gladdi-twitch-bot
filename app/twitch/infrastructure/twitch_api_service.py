@@ -24,10 +24,10 @@ class TwitchApiService(
 ):
 
     def __init__(self, twitch_auth: TwitchAuth):
-        self.twitch_auth = twitch_auth
-        self.base_url = 'https://api.twitch.tv/helix'
+        self._twitch_auth = twitch_auth
+        self._base_url = 'https://api.twitch.tv/helix'
         self._client = httpx.AsyncClient(
-            base_url=self.base_url,
+            base_url=self._base_url,
             timeout=httpx.Timeout(10.0),
             limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
         )
@@ -37,8 +37,8 @@ class TwitchApiService(
 
     def _get_headers(self) -> Dict[str, str]:
         return {
-            'Client-ID': self.twitch_auth.client_id,
-            'Authorization': f'Bearer {self.twitch_auth.access_token}'
+            'Client-ID': self._twitch_auth.client_id,
+            'Authorization': f'Bearer {self._twitch_auth.access_token}'
         }
 
     async def _handle_api_response(self, response: httpx.Response, operation: str) -> Dict[str, Any]:

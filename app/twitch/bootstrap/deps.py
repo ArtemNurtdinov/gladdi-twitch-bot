@@ -36,6 +36,16 @@ from app.stream.domain.stream_service import StreamService
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.twitch.infrastructure.adapters.followage_adapter import FollowageAdapter
+from app.twitch.infrastructure.adapters.stream_chatters_adapter import StreamChattersAdapter
+from app.twitch.infrastructure.adapters.stream_info_adapter import StreamInfoAdapter
+from app.twitch.infrastructure.adapters.stream_status_adapter import StreamStatusAdapter
+from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoAdapter
+from app.twitch.application.interaction.follow.followage_port import FollowagePort
+from app.twitch.application.common.stream_info_port import StreamInfoPort
+from app.twitch.application.common.stream_status_port import StreamStatusPort
+from app.twitch.application.common.stream_chatters_port import StreamChattersPort
+from app.twitch.application.common.user_info_port import UserInfoPort
 from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.background_task_runner import BackgroundTaskRunner
@@ -47,6 +57,11 @@ from core.provider import Provider, SingletonProvider
 class BotDependencies:
     twitch_auth: TwitchAuth
     twitch_api_service: TwitchApiService
+    followage_port: FollowagePort
+    stream_info_port: StreamInfoPort
+    stream_status_port: StreamStatusPort
+    stream_chatters_port: StreamChattersPort
+    user_info_port: UserInfoPort
     llm_client: LLMClient
     intent_detector: IntentDetectorClientImpl
     get_intent_use_case: GetIntentFromTextUseCase
@@ -82,9 +97,15 @@ def build_bot_dependencies(
     get_intent_from_text_use_case = GetIntentFromTextUseCase(intent_detector, llm_client)
     prompt_service = PromptService()
 
+    followage_port = FollowageAdapter(twitch_api_service)
+    stream_info_port = StreamInfoAdapter(twitch_api_service)
+    stream_status_port = StreamStatusAdapter(twitch_api_service)
+    stream_chatters_port = StreamChattersAdapter(twitch_api_service)
+    user_info_port = UserInfoAdapter(twitch_api_service)
+
     joke_service = JokeService(FileJokeSettingsRepository())
     minigame_service = MinigameService()
-    user_cache = UserCacheService(twitch_api_service)
+    user_cache = UserCacheService(user_info_port)
     background_runner = BackgroundTaskRunner()
 
     http_request = HTTPXRequest(connection_pool_size=10, pool_timeout=10)
@@ -138,6 +159,11 @@ def build_bot_dependencies(
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
+        followage_port=followage_port,
+        stream_info_port=stream_info_port,
+        stream_status_port=stream_status_port,
+        stream_chatters_port=stream_chatters_port,
+        user_info_port=user_info_port,
         llm_client=llm_client,
         intent_detector=intent_detector,
         get_intent_use_case=get_intent_from_text_use_case,
