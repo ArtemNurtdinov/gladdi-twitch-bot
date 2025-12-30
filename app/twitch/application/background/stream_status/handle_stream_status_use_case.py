@@ -7,6 +7,7 @@ import telegram
 from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.stream_service_provider import StreamServiceProvider
@@ -16,10 +17,10 @@ from app.twitch.application.background.stream_status.model import StatusJobDTO
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
 from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
+from core.provider import Provider
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class HandleStreamStatusUseCase:
         start_stream_use_case_provider: StartStreamUseCaseProvider,
         viewer_service_provider: ViewerServiceProvider,
         battle_use_case_provider: BattleUseCaseProvider,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: ChatUseCaseProvider,
         conversation_service_provider: ConversationServiceProvider,
         minigame_service: MinigameService,

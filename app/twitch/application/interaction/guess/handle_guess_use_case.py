@@ -4,10 +4,11 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
+from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.twitch.application.interaction.guess.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
+from core.provider import Provider
 
 
 class HandleGuessUseCase:
@@ -15,7 +16,7 @@ class HandleGuessUseCase:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._minigame_service = minigame_service

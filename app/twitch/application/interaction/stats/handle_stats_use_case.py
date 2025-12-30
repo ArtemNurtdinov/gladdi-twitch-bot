@@ -4,18 +4,19 @@ from sqlalchemy.orm import Session
 
 from app.battle.domain.models import UserBattleStats
 from app.betting.presentation.betting_schemas import UserBetStats
+from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.stats.model import StatsDTO
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.betting.application.betting_service_provider import BettingServiceProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
+from core.provider import Provider
 
 
 class HandleStatsUseCase:
 
     def __init__(
         self,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         betting_service_provider: BettingServiceProvider,
         battle_use_case_provider: BattleUseCaseProvider,
         chat_use_case_provider: ChatUseCaseProvider,

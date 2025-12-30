@@ -10,7 +10,6 @@ from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.stream.domain.stream_service import StreamService
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.twitch.application.interaction.chat.chat_message_uow import (
     ChatMessageUnitOfWork,
@@ -21,6 +20,7 @@ from app.twitch.application.interaction.chat.chat_message_uow import (
 from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.viewer.domain.viewer_session_service import ViewerTimeService
+from core.provider import Provider
 
 
 class SqlAlchemyChatMessageUnitOfWork(ChatMessageUnitOfWork):
@@ -65,7 +65,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
         self,
         session_factory: Callable[[], ContextManager[Session]],
         chat_use_case_provider: ChatUseCaseProvider,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         stream_service_provider: StreamServiceProvider,
         viewer_service_provider: ViewerServiceProvider,
         conversation_service_provider: ConversationServiceProvider,
@@ -97,7 +97,7 @@ class SqlAlchemyChatMessageUnitOfWorkRoFactory(ChatMessageUnitOfWorkRoFactory):
         self,
         read_session_factory: Callable[[], ContextManager[Session]],
         chat_use_case_provider: ChatUseCaseProvider,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         stream_service_provider: StreamServiceProvider,
         viewer_service_provider: ViewerServiceProvider,
         conversation_service_provider: ConversationServiceProvider,

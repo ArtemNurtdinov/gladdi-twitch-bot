@@ -2,16 +2,17 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
+from app.economy.domain.economy_service import EconomyService
 from app.twitch.application.interaction.transfer.model import TransferDTO
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
+from core.provider import Provider
 
 
 class HandleTransferUseCase:
 
     def __init__(
         self,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: ChatUseCaseProvider
     ):
         self._economy_service_provider = economy_service_provider

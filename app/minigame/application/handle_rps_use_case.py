@@ -3,12 +3,13 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
+from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.models import RPS_CHOICES
 from app.minigame.domain.minigame_service import MinigameService
 from app.minigame.application.dto import RpsDTO
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
+from core.provider import Provider
 
 
 class HandleRpsUseCase:
@@ -16,7 +17,7 @@ class HandleRpsUseCase:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: ChatUseCaseProvider
     ):
         self._minigame_service = minigame_service

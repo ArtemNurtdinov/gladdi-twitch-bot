@@ -7,15 +7,16 @@ from typing import Callable, Awaitable
 
 from app.ai.gen.domain.llm_client import LLMClient
 from app.ai.gen.domain.models import AIMessage, Role
+from app.economy.domain.economy_service import EconomyService
 from app.minigame.domain.minigame_service import MinigameService
 from app.minigame.application.add_word.add_used_words_use_case_provider import AddUsedWordsUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.minigame.application.get_used_words.get_used_words_use_case_provider import GetUsedWordsUseCaseProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from core.db import SessionLocal, db_ro_session
 from app.economy.domain.models import TransactionType
+from core.provider import Provider
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class MinigameOrchestrator:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: ChatUseCaseProvider,
         stream_service_provider: StreamServiceProvider,
         get_used_words_use_case_provider: GetUsedWordsUseCaseProvider,

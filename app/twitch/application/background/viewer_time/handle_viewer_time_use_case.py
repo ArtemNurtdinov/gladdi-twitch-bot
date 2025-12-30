@@ -3,13 +3,14 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
+from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.twitch.application.background.viewer_time.model import ViewerTimeDTO
-from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from core.provider import Provider
 
 
 class HandleViewerTimeUseCase:
@@ -18,7 +19,7 @@ class HandleViewerTimeUseCase:
         self,
         viewer_service_provider: ViewerServiceProvider,
         stream_service_provider: StreamServiceProvider,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         user_cache: UserCacheService,
         twitch_api_service: TwitchApiService,
     ):

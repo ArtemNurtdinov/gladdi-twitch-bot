@@ -5,14 +5,15 @@ from typing import Callable, ContextManager, List, Optional
 from sqlalchemy.orm import Session
 
 from app.betting.application.betting_service_provider import BettingServiceProvider
-from app.equipment.application.defense.calculate_timeout_use_case_provider import CalculateTimeoutUseCaseProvider
-from app.equipment.application.defense.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
-from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
+from app.economy.domain.economy_service import EconomyService
+from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
+from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
+from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.twitch.application.interaction.roll.model import RollDTO, RollUseCaseResult, RollTimeoutAction
 from app.betting.application.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
+from core.provider import SingletonProvider, Provider
 from app.economy.domain.models import JackpotPayoutMultiplierEffect, MissPayoutMultiplierEffect, PartialPayoutMultiplierEffect, \
     TransactionType
 
@@ -22,12 +23,12 @@ class HandleRollUseCase:
 
     def __init__(
         self,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         betting_service_provider: BettingServiceProvider,
-        roll_cooldown_use_case_provider: RollCooldownUseCaseProvider,
-        get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider,
+        roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase],
+        get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
         chat_use_case_provider: ChatUseCaseProvider,
-        calculate_timeout_use_case_provider: CalculateTimeoutUseCaseProvider
+        calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase],
     ):
         self._economy_service_provider = economy_service_provider
         self._betting_service_provider = betting_service_provider

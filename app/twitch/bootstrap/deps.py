@@ -20,19 +20,13 @@ from app.betting.data.betting_repository import BettingRepositoryImpl
 from app.chat.application.chat_use_case import ChatUseCase
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
 from app.chat.data.chat_repository import ChatRepositoryImpl
-from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.economy.data.economy_repository import EconomyRepositoryImpl
 from app.economy.domain.economy_service import EconomyService
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
-from app.equipment.application.add_equipment_use_case_provider import AddEquipmentUseCaseProvider
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
-from app.equipment.application.defense.calculate_timeout_use_case_provider import CalculateTimeoutUseCaseProvider
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
-from app.equipment.application.defense.roll_cooldown_use_case_provider import RollCooldownUseCaseProvider
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
-from app.equipment.application.equipment_exists_use_case_provider import EquipmentExistsUseCaseProvider
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
-from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
 from app.equipment.data.equipment_repository import EquipmentRepositoryImpl
 from app.joke.data.settings_repository import FileJokeSettingsRepository
 from app.joke.domain.joke_service import JokeService
@@ -55,6 +49,7 @@ from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.background_task_runner import BackgroundTaskRunner
 from core.config import config
+from core.provider import Provider, SingletonProvider
 
 
 @dataclass
@@ -73,18 +68,18 @@ class BotDependencies:
     stream_service_provider: StreamServiceProvider
     chat_use_case_provider: ChatUseCaseProvider
     conversation_service_provider: ConversationServiceProvider
-    economy_service_provider: EconomyServiceProvider
+    economy_service_provider: Provider[EconomyService]
     start_stream_use_case_provider: StartStreamUseCaseProvider
     viewer_service_provider: ViewerServiceProvider
     battle_use_case_provider: BattleUseCaseProvider
     betting_service_provider: BettingServiceProvider
     get_used_words_use_case_provider: GetUsedWordsUseCaseProvider
     add_used_words_use_case_provider: AddUsedWordsUseCaseProvider
-    get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider
-    roll_cooldown_use_case_provider: RollCooldownUseCaseProvider
-    equipment_exists_use_case_provider: EquipmentExistsUseCaseProvider
-    add_equipment_use_case_provider: AddEquipmentUseCaseProvider
-    calculate_timeout_use_case_provider: CalculateTimeoutUseCaseProvider
+    get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase]
+    roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase]
+    equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase]
+    add_equipment_use_case_provider: Provider[AddEquipmentUseCase]
+    calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase]
 
 
 def build_bot_dependencies(
@@ -164,17 +159,17 @@ def build_bot_dependencies(
         stream_service_provider=StreamServiceProvider(stream_service),
         chat_use_case_provider=ChatUseCaseProvider(chat_use_case),
         conversation_service_provider=ConversationServiceProvider(conversation_service),
-        economy_service_provider=EconomyServiceProvider(economy_service),
+        economy_service_provider=Provider(economy_service),
         start_stream_use_case_provider=StartStreamUseCaseProvider(start_stream_use_case),
         viewer_service_provider=ViewerServiceProvider(viewer_service),
         battle_use_case_provider=BattleUseCaseProvider(battle_use_case),
         betting_service_provider=BettingServiceProvider(betting_service),
         get_used_words_use_case_provider=GetUsedWordsUseCaseProvider(get_used_words_use_case),
         add_used_words_use_case_provider=AddUsedWordsUseCaseProvider(add_used_word_use_case),
-        get_user_equipment_use_case_provider=GetUserEquipmentUseCaseProvider(get_user_equipment_use_case),
-        roll_cooldown_use_case_provider=RollCooldownUseCaseProvider(roll_use_case),
-        equipment_exists_use_case_provider=EquipmentExistsUseCaseProvider(equipment_use_case),
-        add_equipment_use_case_provider=AddEquipmentUseCaseProvider(add_equipment_use_case),
-        calculate_timeout_use_case_provider=CalculateTimeoutUseCaseProvider(calculate_timeout_use_case)
+        get_user_equipment_use_case_provider=Provider(get_user_equipment_use_case),
+        roll_cooldown_use_case_provider=SingletonProvider(roll_use_case),
+        equipment_exists_use_case_provider=Provider(equipment_use_case),
+        add_equipment_use_case_provider=Provider(add_equipment_use_case),
+        calculate_timeout_use_case_provider=SingletonProvider(calculate_timeout_use_case)
     )
     return deps

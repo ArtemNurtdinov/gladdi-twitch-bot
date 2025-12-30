@@ -3,20 +3,21 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
+from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import ShopItems, TransactionType
-from app.equipment.application.add_equipment_use_case_provider import AddEquipmentUseCaseProvider
-from app.equipment.application.equipment_exists_use_case_provider import EquipmentExistsUseCaseProvider
+from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
+from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.twitch.application.interaction.shop.model import CommandBuyDTO, CommandShopDTO
+from core.provider import Provider
 
 
 class HandleShopUseCase:
 
     def __init__(
         self,
-        economy_service_provider: EconomyServiceProvider,
-        add_equipment_use_case_provider: AddEquipmentUseCaseProvider,
-        equipment_exists_use_case_provider: EquipmentExistsUseCaseProvider,
+        economy_service_provider: Provider[EconomyService],
+        add_equipment_use_case_provider: Provider[AddEquipmentUseCase],
+        equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase],
         chat_use_case_provider: ChatUseCaseProvider,
     ):
         self._economy_service_provider = economy_service_provider

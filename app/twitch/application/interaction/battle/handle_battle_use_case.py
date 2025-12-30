@@ -7,25 +7,25 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.chat.application.chat_use_case_provider import ChatUseCaseProvider
-from app.economy.application.economy_service_provider import EconomyServiceProvider
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
-from app.equipment.application.defense.calculate_timeout_use_case_provider import CalculateTimeoutUseCaseProvider
-from app.equipment.application.get_user_equipment_use_case_provider import GetUserEquipmentUseCaseProvider
+from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
+from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.twitch.application.interaction.battle.model import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
+from core.provider import SingletonProvider, Provider
 
 
 class HandleBattleUseCase:
 
     def __init__(
         self,
-        economy_service_provider: EconomyServiceProvider,
+        economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: ChatUseCaseProvider,
         conversation_service_provider: ConversationServiceProvider,
         battle_use_case_provider: BattleUseCaseProvider,
-        get_user_equipment_use_case_provider: GetUserEquipmentUseCaseProvider,
+        get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
         chat_response_use_case: ChatResponseUseCase,
-        calculate_timeout_use_case_provider: CalculateTimeoutUseCaseProvider
+        calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase]
     ):
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
