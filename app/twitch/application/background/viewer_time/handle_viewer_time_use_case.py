@@ -7,8 +7,8 @@ from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.viewer_time.model import ViewerTimeDTO
+from app.twitch.application.common.stream_chatters_port import StreamChattersPort
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
 
@@ -21,13 +21,13 @@ class HandleViewerTimeUseCase:
         stream_service_provider: Provider[StreamService],
         economy_service_provider: Provider[EconomyService],
         user_cache: UserCacheService,
-        twitch_api_service: TwitchApiService,
+        stream_chatters_port: StreamChattersPort,
     ):
         self._viewer_service_provider = viewer_service_provider
         self._stream_service_provider = stream_service_provider
         self._economy_service_provider = economy_service_provider
         self._user_cache = user_cache
-        self._twitch_api_service = twitch_api_service
+        self._stream_chatters_port = stream_chatters_port
 
     async def handle(
         self,
@@ -46,7 +46,7 @@ class HandleViewerTimeUseCase:
 
         broadcaster_id = await self._user_cache.get_user_id(viewer_time_dto.channel_name)
         moderator_id = await self._user_cache.get_user_id(viewer_time_dto.bot_nick or viewer_time_dto.channel_name)
-        chatters = await self._twitch_api_service.get_stream_chatters(broadcaster_id, moderator_id)
+        chatters = await self._stream_chatters_port.get_stream_chatters(broadcaster_id, moderator_id)
         if chatters:
             with db_session_provider() as db:
                 self._viewer_service_provider.get(db).update_viewers(

@@ -128,7 +128,7 @@ class BotFactory:
                     handle_post_joke_use_case=HandlePostJokeUseCase(
                         joke_service=self._deps.joke_service,
                         user_cache=self._deps.user_cache,
-                        stream_info_provider=self._deps.twitch_api_service,
+                        stream_info=self._deps.twitch_api_service,
                         chat_response_use_case=chat_response_use_case,
                         conversation_service_provider=self._deps.conversation_service_provider,
                         chat_use_case_provider=self._deps.chat_use_case_provider
@@ -147,7 +147,7 @@ class BotFactory:
                     channel_name=self._settings.channel_name,
                     handle_stream_status_use_case=HandleStreamStatusUseCase(
                         user_cache=self._deps.user_cache,
-                        stream_status_provider=self._deps.twitch_api_service,
+                        stream_status_port=self._deps.twitch_api_service,
                         stream_service_provider=self._deps.stream_service_provider,
                         start_stream_use_case_provider=self._deps.start_stream_use_case_provider,
                         viewer_service_provider=self._deps.viewer_service_provider,
@@ -189,7 +189,7 @@ class BotFactory:
                         stream_service_provider=self._deps.stream_service_provider,
                         economy_service_provider=self._deps.economy_service_provider,
                         user_cache=self._deps.user_cache,
-                        twitch_api_service=self._deps.twitch_api_service,
+                        stream_chatters_port=self._deps.twitch_api_service,
                     ),
                     db_session_provider=SessionLocal.begin,
                     db_readonly_session_provider=lambda: db_ro_session(),
@@ -212,7 +212,7 @@ class BotFactory:
                 chat_use_case_provider=self._deps.chat_use_case_provider,
                 conversation_service_provider=self._deps.conversation_service_provider,
                 get_followage_use_case=GetFollowageUseCase(
-                    followage_provider=self._deps.twitch_api_service,
+                    followage_port=self._deps.twitch_api_service,
                 ),
                 prompt_service=self._deps.prompt_service,
                 chat_response_use_case=chat_response_use_case,
