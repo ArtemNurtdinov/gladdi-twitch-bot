@@ -41,7 +41,7 @@ class HandleFollowAgeUseCase:
         )
 
         if not follow_info:
-            result = f"@{command_follow_age.display_name}, вы не отслеживаете канал {channel_name}."
+            result = f"@{command_follow_age.display_name}, вы не отслеживаете канал."
             with self._unit_of_work_rw_factory.create() as uow:
                 uow.chat.save_chat_message(
                     channel_name=channel_name,
@@ -58,8 +58,8 @@ class HandleFollowAgeUseCase:
         minutes, _ = divmod(remainder, 60)
 
         prompt = (
-            f"@{command_follow_age.display_name} отслеживает канал {channel_name} уже {days} дней, {hours} часов и "
-            f"{minutes} минут. Сообщи ему об этом кратко и оригинально."
+            f"Пользователь @{command_follow_age.display_name} отслеживает канал уже {days} дней, {hours} часов и {minutes} минут. "
+            f"Сообщи ему об этом кратко и оригинально."
         )
 
         with self._unit_of_work_ro_factory.create() as uow:
