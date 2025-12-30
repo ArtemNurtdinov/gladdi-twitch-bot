@@ -7,7 +7,7 @@ from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.joke.domain.joke_service import JokeService
 from app.twitch.application.background.post_joke.model import PostJokeDTO
-from app.twitch.application.common.stream_info_provider import StreamInfoProvider
+from app.twitch.application.common.stream_info_port import StreamInfoPort
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from core.provider import Provider
 
@@ -18,14 +18,14 @@ class HandlePostJokeUseCase:
         self,
         joke_service: JokeService,
         user_cache: UserCacheService,
-        stream_info_provider: StreamInfoProvider,
+        stream_info: StreamInfoPort,
         chat_response_use_case: ChatResponseUseCase,
         conversation_service_provider: Provider[ConversationService],
         chat_use_case_provider: Provider[ChatUseCase]
     ):
         self._joke_service = joke_service
         self._user_cache = user_cache
-        self._stream_info_provider = stream_info_provider
+        self._stream_info = stream_info
         self._chat_response_use_case = chat_response_use_case
         self._conversation_service_provider = conversation_service_provider
         self._chat_use_case_provider = chat_use_case_provider
@@ -43,7 +43,7 @@ class HandlePostJokeUseCase:
         if not broadcaster_id:
             return None
 
-        stream_info = await self._stream_info_provider.get_stream_info(post_joke.channel_name)
+        stream_info = await self._stream_info.get_stream_info(post_joke.channel_name)
 
         if not stream_info or not stream_info.game_name:
             return None
