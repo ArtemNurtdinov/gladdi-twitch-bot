@@ -19,7 +19,7 @@ from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.stream_status.model import StatusJobDTO
 from app.twitch.application.common.stream_status_provider import StreamStatusProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
-from app.viewer.application.viewer_service_provider import ViewerServiceProvider
+from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class HandleStreamStatusUseCase:
         stream_status_provider: StreamStatusProvider,
         stream_service_provider: Provider[StreamService],
         start_stream_use_case_provider: Provider[StartNewStreamUseCase],
-        viewer_service_provider: ViewerServiceProvider,
+        viewer_service_provider: Provider[ViewerTimeService],
         battle_use_case_provider: Provider[BattleUseCase],
         economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: Provider[ChatUseCase],

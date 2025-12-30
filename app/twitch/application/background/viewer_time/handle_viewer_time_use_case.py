@@ -9,7 +9,7 @@ from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.viewer_time.model import ViewerTimeDTO
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.viewer.application.viewer_service_provider import ViewerServiceProvider
+from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
 
 
@@ -17,7 +17,7 @@ class HandleViewerTimeUseCase:
 
     def __init__(
         self,
-        viewer_service_provider: ViewerServiceProvider,
+        viewer_service_provider: Provider[ViewerTimeService],
         stream_service_provider: Provider[StreamService],
         economy_service_provider: Provider[EconomyService],
         user_cache: UserCacheService,

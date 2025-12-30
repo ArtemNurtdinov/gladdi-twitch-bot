@@ -36,7 +36,6 @@ from app.stream.domain.stream_service import StreamService
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.background_task_runner import BackgroundTaskRunner
@@ -62,7 +61,7 @@ class BotDependencies:
     conversation_service_provider: Provider[ConversationService]
     economy_service_provider: Provider[EconomyService]
     start_stream_use_case_provider: Provider[StartNewStreamUseCase]
-    viewer_service_provider: ViewerServiceProvider
+    viewer_service_provider: Provider[ViewerTimeService]
     battle_use_case_provider: Provider[BattleUseCase]
     betting_service_provider: Provider[BettingService]
     get_used_words_use_case_provider: Provider[GetUsedWordsUseCase]
@@ -153,7 +152,7 @@ def build_bot_dependencies(
         conversation_service_provider=Provider(conversation_service),
         economy_service_provider=Provider(economy_service),
         start_stream_use_case_provider=Provider(start_stream_use_case),
-        viewer_service_provider=ViewerServiceProvider(viewer_service),
+        viewer_service_provider=Provider(viewer_service),
         battle_use_case_provider=Provider(battle_use_case),
         betting_service_provider=Provider(betting_service),
         get_used_words_use_case_provider=Provider(get_used_words_use_case),

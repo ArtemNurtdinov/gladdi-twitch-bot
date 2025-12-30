@@ -15,7 +15,6 @@ from app.twitch.application.interaction.chat.chat_message_uow import (
     ChatMessageUnitOfWorkRo,
     ChatMessageUnitOfWorkRoFactory,
 )
-from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
 
@@ -64,7 +63,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
         chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: Provider[StreamService],
-        viewer_service_provider: ViewerServiceProvider,
+        viewer_service_provider: Provider[ViewerTimeService],
         conversation_service_provider: Provider[ConversationService],
     ):
         self._session_factory = session_factory
@@ -97,7 +96,7 @@ class SqlAlchemyChatMessageUnitOfWorkRoFactory(ChatMessageUnitOfWorkRoFactory):
         chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: Provider[StreamService],
-        viewer_service_provider: ViewerServiceProvider,
+        viewer_service_provider: Provider[ViewerTimeService],
         conversation_service_provider: Provider[ConversationService],
     ):
         self._read_session_factory = read_session_factory
