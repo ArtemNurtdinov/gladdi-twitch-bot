@@ -12,7 +12,6 @@ from app.ai.gen.infrastructure.llm_client import LLMClientImpl
 from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
 from app.battle.application.battle_use_case import BattleUseCase
-from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.battle.data.battle_repository import BattleRepositoryImpl
 from app.betting.application.betting_service import BettingService
 from app.betting.data.betting_repository import BettingRepositoryImpl
@@ -69,7 +68,7 @@ class BotDependencies:
     economy_service_provider: Provider[EconomyService]
     start_stream_use_case_provider: StartStreamUseCaseProvider
     viewer_service_provider: ViewerServiceProvider
-    battle_use_case_provider: BattleUseCaseProvider
+    battle_use_case_provider: Provider[BattleUseCase]
     betting_service_provider: Provider[BettingService]
     get_used_words_use_case_provider: GetUsedWordsUseCaseProvider
     add_used_words_use_case_provider: AddUsedWordsUseCaseProvider
@@ -160,7 +159,7 @@ def build_bot_dependencies(
         economy_service_provider=Provider(economy_service),
         start_stream_use_case_provider=StartStreamUseCaseProvider(start_stream_use_case),
         viewer_service_provider=ViewerServiceProvider(viewer_service),
-        battle_use_case_provider=BattleUseCaseProvider(battle_use_case),
+        battle_use_case_provider=Provider(battle_use_case),
         betting_service_provider=Provider(betting_service),
         get_used_words_use_case_provider=GetUsedWordsUseCaseProvider(get_used_words_use_case),
         add_used_words_use_case_provider=AddUsedWordsUseCaseProvider(add_used_word_use_case),

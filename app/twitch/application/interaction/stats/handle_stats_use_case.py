@@ -2,7 +2,7 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
+from app.battle.application.battle_use_case import BattleUseCase
 from app.battle.domain.models import UserBattleStats
 from app.betting.application.betting_service import BettingService
 from app.betting.presentation.betting_schemas import UserBetStats
@@ -18,7 +18,7 @@ class HandleStatsUseCase:
         self,
         economy_service_provider: Provider[EconomyService],
         betting_service_provider: Provider[BettingService],
-        battle_use_case_provider: BattleUseCaseProvider,
+        battle_use_case_provider: Provider[BattleUseCase],
         chat_use_case_provider: Provider[ChatUseCase],
     ):
         self._economy_service_provider = economy_service_provider

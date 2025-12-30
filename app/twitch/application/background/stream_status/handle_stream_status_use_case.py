@@ -7,19 +7,19 @@ import telegram
 from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
+from app.battle.application.battle_use_case import BattleUseCase
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
+from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.domain.models import StreamStatistics, StreamInfo
-from app.twitch.application.common.stream_status_provider import StreamStatusProvider
 from app.twitch.application.background.stream_status.model import StatusJobDTO
-from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
-from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
-from app.viewer.application.viewer_service_provider import ViewerServiceProvider
+from app.twitch.application.common.stream_status_provider import StreamStatusProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
+from app.viewer.application.viewer_service_provider import ViewerServiceProvider
 from core.provider import Provider
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class HandleStreamStatusUseCase:
         stream_service_provider: StreamServiceProvider,
         start_stream_use_case_provider: StartStreamUseCaseProvider,
         viewer_service_provider: ViewerServiceProvider,
-        battle_use_case_provider: BattleUseCaseProvider,
+        battle_use_case_provider: Provider[BattleUseCase],
         economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: Provider[ChatUseCase],
         conversation_service_provider: ConversationServiceProvider,
