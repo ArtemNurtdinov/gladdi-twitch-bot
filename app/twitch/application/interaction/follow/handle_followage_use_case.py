@@ -1,11 +1,11 @@
 from typing import Optional
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service import ConversationService
 from app.ai.gen.domain.prompt_service import PromptService
 from app.chat.application.chat_use_case import ChatUseCase
-from app.twitch.application.interaction.follow.model import FollowageDTO, FollowageInfo
 from app.twitch.application.interaction.follow.get_followage_use_case import GetFollowageUseCase
+from app.twitch.application.interaction.follow.model import FollowageDTO, FollowageInfo
 from app.twitch.application.interaction.follow.uow import FollowAgeUnitOfWorkRoFactory, FollowAgeUnitOfWorkRwFactory
 from core.provider import Provider
 
@@ -15,7 +15,7 @@ class HandleFollowAgeUseCase:
     def __init__(
         self,
         chat_use_case_provider: Provider[ChatUseCase],
-        conversation_service_provider: ConversationServiceProvider,
+        conversation_service_provider: Provider[ConversationService],
         get_followage_use_case: GetFollowageUseCase,
         prompt_service: PromptService,
         chat_response_use_case: ChatResponseUseCase,

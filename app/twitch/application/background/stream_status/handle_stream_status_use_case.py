@@ -7,7 +7,7 @@ import telegram
 from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service import ConversationService
 from app.battle.application.battle_use_case import BattleUseCase
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
@@ -42,7 +42,7 @@ class HandleStreamStatusUseCase:
         battle_use_case_provider: Provider[BattleUseCase],
         economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: Provider[ChatUseCase],
-        conversation_service_provider: ConversationServiceProvider,
+        conversation_service_provider: Provider[ConversationService],
         minigame_service: MinigameService,
         telegram_bot: telegram.Bot,
         telegram_group_id: int,

@@ -5,7 +5,7 @@ import random
 from datetime import datetime
 from typing import Callable, Awaitable
 
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service import ConversationService
 from app.ai.gen.domain.llm_client import LLMClient
 from app.ai.gen.domain.models import AIMessage, Role
 from app.chat.application.chat_use_case import ChatUseCase
@@ -32,7 +32,7 @@ class MinigameOrchestrator:
         stream_service_provider: StreamServiceProvider,
         get_used_words_use_case_provider: Provider[GetUsedWordsUseCase],
         add_used_words_use_case_provider: Provider[AddUsedWordsUseCase],
-        conversation_service_provider: ConversationServiceProvider,
+        conversation_service_provider: Provider[ConversationService],
         llm_client: LLMClient,
         system_prompt: str,
         prefix: str,

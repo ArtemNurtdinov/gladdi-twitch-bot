@@ -3,10 +3,10 @@ from typing import Callable, ContextManager, Optional
 from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.joke.domain.joke_service import JokeService
 from app.twitch.application.background.post_joke.model import PostJokeDTO
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.twitch.application.common.stream_info_provider import StreamInfoProvider
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from core.provider import Provider
@@ -20,7 +20,7 @@ class HandlePostJokeUseCase:
         user_cache: UserCacheService,
         stream_info_provider: StreamInfoProvider,
         chat_response_use_case: ChatResponseUseCase,
-        conversation_service_provider: ConversationServiceProvider,
+        conversation_service_provider: Provider[ConversationService],
         chat_use_case_provider: Provider[ChatUseCase]
     ):
         self._joke_service = joke_service

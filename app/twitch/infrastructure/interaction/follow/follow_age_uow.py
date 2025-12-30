@@ -6,7 +6,6 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.chat.application.chat_use_case import ChatUseCase
 from app.twitch.application.interaction.ask.ask_uow import AskUnitOfWorkRo
 from app.twitch.application.interaction.follow.uow import FollowAgeUnitOfWorkRo, FollowAgeUnitOfWorkRoFactory, FollowAgeUnitOfWorkRw, \
@@ -29,7 +28,7 @@ class SqlAlchemyFollowAgeUnitOfWorkRoFactory(FollowAgeUnitOfWorkRoFactory):
     def __init__(
         self,
         read_session_factory: Callable[[], ContextManager[Session]],
-        conversation_service_provider: ConversationServiceProvider,
+        conversation_service_provider: Provider[ConversationService],
     ):
         self._read_session_factory = read_session_factory
         self._conversation_service_provider = conversation_service_provider
@@ -67,7 +66,7 @@ class SqlAlchemyFollowAgeUnitOfWorkRwFactory(FollowAgeUnitOfWorkRwFactory):
         self,
         session_factory: Callable[[], ContextManager[Session]],
         chat_use_case_provider: Provider[ChatUseCase],
-        conversation_service_provider: ConversationServiceProvider,
+        conversation_service_provider: Provider[ConversationService],
     ):
         self._session_factory = session_factory
         self._chat_use_case_provider = chat_use_case_provider

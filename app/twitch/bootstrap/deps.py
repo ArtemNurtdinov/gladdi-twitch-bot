@@ -5,7 +5,6 @@ from telegram.request import HTTPXRequest
 
 from app.ai.gen.data.message_repository import ConversationRepositoryImpl
 from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.ai.gen.domain.llm_client import LLMClient
 from app.ai.gen.domain.prompt_service import PromptService
 from app.ai.gen.infrastructure.llm_client import LLMClientImpl
@@ -61,7 +60,7 @@ class BotDependencies:
     telegram_bot: telegram.Bot
     stream_service_provider: StreamServiceProvider
     chat_use_case_provider: Provider[ChatUseCase]
-    conversation_service_provider: ConversationServiceProvider
+    conversation_service_provider: Provider[ConversationService]
     economy_service_provider: Provider[EconomyService]
     start_stream_use_case_provider: Provider[StartNewStreamUseCase]
     viewer_service_provider: ViewerServiceProvider
@@ -152,7 +151,7 @@ def build_bot_dependencies(
         telegram_bot=telegram_bot,
         stream_service_provider=StreamServiceProvider(stream_service),
         chat_use_case_provider=Provider(chat_use_case),
-        conversation_service_provider=ConversationServiceProvider(conversation_service),
+        conversation_service_provider=Provider(conversation_service),
         economy_service_provider=Provider(economy_service),
         start_stream_use_case_provider=Provider(start_stream_use_case),
         viewer_service_provider=ViewerServiceProvider(viewer_service),

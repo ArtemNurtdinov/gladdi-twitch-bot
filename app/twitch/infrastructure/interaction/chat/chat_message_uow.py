@@ -6,7 +6,6 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.stream.application.stream_service_provider import StreamServiceProvider
@@ -67,7 +66,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: StreamServiceProvider,
         viewer_service_provider: ViewerServiceProvider,
-        conversation_service_provider: ConversationServiceProvider,
+        conversation_service_provider: Provider[ConversationService],
     ):
         self._session_factory = session_factory
         self._chat_use_case_provider = chat_use_case_provider
@@ -100,7 +99,7 @@ class SqlAlchemyChatMessageUnitOfWorkRoFactory(ChatMessageUnitOfWorkRoFactory):
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: StreamServiceProvider,
         viewer_service_provider: ViewerServiceProvider,
-        conversation_service_provider: ConversationServiceProvider,
+        conversation_service_provider: Provider[ConversationService],
     ):
         self._read_session_factory = read_session_factory
         self._chat_use_case_provider = chat_use_case_provider

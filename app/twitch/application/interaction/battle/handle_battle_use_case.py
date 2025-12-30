@@ -4,7 +4,7 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.domain.conversation_service_provider import ConversationServiceProvider
+from app.ai.gen.domain.conversation_service import ConversationService
 from app.battle.application.battle_use_case import BattleUseCase
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
@@ -21,7 +21,7 @@ class HandleBattleUseCase:
         self,
         economy_service_provider: Provider[EconomyService],
         chat_use_case_provider: Provider[ChatUseCase],
-        conversation_service_provider: ConversationServiceProvider,
+        conversation_service_provider: Provider[ConversationService],
         battle_use_case_provider: Provider[BattleUseCase],
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
         chat_response_use_case: ChatResponseUseCase,
