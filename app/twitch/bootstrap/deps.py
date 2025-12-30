@@ -32,7 +32,6 @@ from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.data.db.word_history_repository import WordHistoryRepositoryImpl
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
-from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.data.stream_repository import StreamRepositoryImpl
 from app.stream.domain.stream_service import StreamService
@@ -64,7 +63,7 @@ class BotDependencies:
     chat_use_case_provider: Provider[ChatUseCase]
     conversation_service_provider: ConversationServiceProvider
     economy_service_provider: Provider[EconomyService]
-    start_stream_use_case_provider: StartStreamUseCaseProvider
+    start_stream_use_case_provider: Provider[StartNewStreamUseCase]
     viewer_service_provider: ViewerServiceProvider
     battle_use_case_provider: Provider[BattleUseCase]
     betting_service_provider: Provider[BettingService]
@@ -155,7 +154,7 @@ def build_bot_dependencies(
         chat_use_case_provider=Provider(chat_use_case),
         conversation_service_provider=ConversationServiceProvider(conversation_service),
         economy_service_provider=Provider(economy_service),
-        start_stream_use_case_provider=StartStreamUseCaseProvider(start_stream_use_case),
+        start_stream_use_case_provider=Provider(start_stream_use_case),
         viewer_service_provider=ViewerServiceProvider(viewer_service),
         battle_use_case_provider=Provider(battle_use_case),
         betting_service_provider=Provider(betting_service),

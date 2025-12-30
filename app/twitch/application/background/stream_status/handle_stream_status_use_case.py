@@ -13,7 +13,7 @@ from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
-from app.stream.application.start_stream_use_case_provider import StartStreamUseCaseProvider
+from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.application.stream_service_provider import StreamServiceProvider
 from app.stream.domain.models import StreamStatistics, StreamInfo
 from app.twitch.application.background.stream_status.model import StatusJobDTO
@@ -37,7 +37,7 @@ class HandleStreamStatusUseCase:
         user_cache: UserCacheService,
         stream_status_provider: StreamStatusProvider,
         stream_service_provider: StreamServiceProvider,
-        start_stream_use_case_provider: StartStreamUseCaseProvider,
+        start_stream_use_case_provider: Provider[StartNewStreamUseCase],
         viewer_service_provider: ViewerServiceProvider,
         battle_use_case_provider: Provider[BattleUseCase],
         economy_service_provider: Provider[EconomyService],
