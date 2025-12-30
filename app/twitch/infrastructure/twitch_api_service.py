@@ -4,7 +4,7 @@ import httpx
 from typing import Optional, Dict, Any, List
 
 from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO
-from app.twitch.application.interaction.follow.followage_provider import FollowageProvider
+from app.twitch.application.interaction.follow.followage_port import FollowagePort
 from app.twitch.application.interaction.follow.model import FollowageInfo
 from app.twitch.application.common.stream_info_port import StreamInfoPort
 from app.twitch.application.common.stream_status_port import StreamStatusPort
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class TwitchApiService(
-    FollowageProvider,
+    FollowagePort,
     StreamInfoPort,
     StreamStatusPort,
     UserInfoPort,
