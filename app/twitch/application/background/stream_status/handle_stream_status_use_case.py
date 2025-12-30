@@ -17,7 +17,7 @@ from app.stream.application.start_new_stream_use_case import StartNewStreamUseCa
 from app.stream.domain.models import StreamStatistics, StreamInfo
 from app.stream.domain.stream_service import StreamService
 from app.twitch.application.background.stream_status.model import StatusJobDTO
-from app.twitch.application.common.stream_status_provider import StreamStatusProvider
+from app.twitch.application.common.stream_status_port import StreamStatusPort
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
@@ -35,7 +35,7 @@ class HandleStreamStatusUseCase:
     def __init__(
         self,
         user_cache: UserCacheService,
-        stream_status_provider: StreamStatusProvider,
+        stream_status_port: StreamStatusPort,
         stream_service_provider: Provider[StreamService],
         start_stream_use_case_provider: Provider[StartNewStreamUseCase],
         viewer_service_provider: Provider[ViewerTimeService],
@@ -50,7 +50,7 @@ class HandleStreamStatusUseCase:
         state: ChatSummaryStateProtocol,
     ):
         self._user_cache = user_cache
-        self._stream_status_provider = stream_status_provider
+        self._stream_status_port = stream_status_port
         self._stream_service_provider = stream_service_provider
         self._start_stream_use_case_provider = start_stream_use_case_provider
         self._viewer_service_provider = viewer_service_provider
@@ -76,7 +76,7 @@ class HandleStreamStatusUseCase:
             logger.error(f"Не удалось получить ID канала {status_job_dto.channel_name}. Пропускаем проверку.")
             return
 
-        stream_status = await self._stream_status_provider.get_stream_status(broadcaster_id)
+        stream_status = await self._stream_status_port.get_stream_status(broadcaster_id)
         if stream_status is None:
             logger.error(f"Не удалось получить статус стрима для канала {status_job_dto.channel_name}")
             return
