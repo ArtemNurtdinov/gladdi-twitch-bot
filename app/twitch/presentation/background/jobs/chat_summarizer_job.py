@@ -5,10 +5,9 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.background.chat_summary.model import SummarizerJobDTO
 from app.twitch.application.background.chat_summary.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
+from app.twitch.application.background.chat_summary.model import SummarizerJobDTO
 from app.twitch.presentation.background.model.state import ChatSummaryState
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
@@ -20,13 +19,11 @@ class ChatSummarizerJob:
     def __init__(
         self,
         channel_name: str,
-        twitch_api_service: TwitchApiService,
         handle_chat_summarizer_use_case: HandleChatSummarizerUseCase,
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
         state: ChatSummaryState,
     ):
         self._channel_name = channel_name
-        self._twitch_api_service = twitch_api_service
         self._handle_chat_summarizer_use_case = handle_chat_summarizer_use_case
         self._db_readonly_session_provider = db_readonly_session_provider
         self._state = state

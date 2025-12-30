@@ -168,7 +168,6 @@ class BotFactory:
                 ),
                 ChatSummarizerJob(
                     channel_name=self._settings.channel_name,
-                    twitch_api_service=self._deps.twitch_api_service,
                     handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
                         stream_service_provider=self._deps.stream_service_provider,
                         chat_use_case_provider=self._deps.chat_use_case_provider,
