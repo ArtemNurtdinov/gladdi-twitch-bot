@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.battle.domain.models import UserBattleStats
-from app.betting.application.betting_service_provider import BettingServiceProvider
+from app.betting.application.betting_service import BettingService
 from app.betting.presentation.betting_schemas import UserBetStats
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
@@ -17,7 +17,7 @@ class HandleStatsUseCase:
     def __init__(
         self,
         economy_service_provider: Provider[EconomyService],
-        betting_service_provider: BettingServiceProvider,
+        betting_service_provider: Provider[BettingService],
         battle_use_case_provider: BattleUseCaseProvider,
         chat_use_case_provider: Provider[ChatUseCase],
     ):

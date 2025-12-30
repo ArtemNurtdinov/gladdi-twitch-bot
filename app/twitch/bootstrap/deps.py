@@ -15,7 +15,6 @@ from app.battle.application.battle_use_case import BattleUseCase
 from app.battle.application.battle_use_case_provider import BattleUseCaseProvider
 from app.battle.data.battle_repository import BattleRepositoryImpl
 from app.betting.application.betting_service import BettingService
-from app.betting.application.betting_service_provider import BettingServiceProvider
 from app.betting.data.betting_repository import BettingRepositoryImpl
 from app.chat.application.chat_use_case import ChatUseCase
 from app.chat.data.chat_repository import ChatRepositoryImpl
@@ -71,7 +70,7 @@ class BotDependencies:
     start_stream_use_case_provider: StartStreamUseCaseProvider
     viewer_service_provider: ViewerServiceProvider
     battle_use_case_provider: BattleUseCaseProvider
-    betting_service_provider: BettingServiceProvider
+    betting_service_provider: Provider[BettingService]
     get_used_words_use_case_provider: GetUsedWordsUseCaseProvider
     add_used_words_use_case_provider: AddUsedWordsUseCaseProvider
     get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase]
@@ -162,7 +161,7 @@ def build_bot_dependencies(
         start_stream_use_case_provider=StartStreamUseCaseProvider(start_stream_use_case),
         viewer_service_provider=ViewerServiceProvider(viewer_service),
         battle_use_case_provider=BattleUseCaseProvider(battle_use_case),
-        betting_service_provider=BettingServiceProvider(betting_service),
+        betting_service_provider=Provider(betting_service),
         get_used_words_use_case_provider=GetUsedWordsUseCaseProvider(get_used_words_use_case),
         add_used_words_use_case_provider=AddUsedWordsUseCaseProvider(add_used_word_use_case),
         get_user_equipment_use_case_provider=Provider(get_user_equipment_use_case),
