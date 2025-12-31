@@ -2,8 +2,8 @@ import asyncio
 import json
 import logging
 import random
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Callable, Awaitable
 
 from app.ai.gen.domain.conversation_service import ConversationService
 from app.ai.gen.domain.llm_client import LLMClient
@@ -108,10 +108,7 @@ class MinigameOrchestrator:
                 f"Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
             )
         else:
-            message = (
-                f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. "
-                f"Победителей нет. Банк {game.bank} монет сгорает."
-            )
+            message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
 
         with SessionLocal.begin() as db:
             self._chat_use_case_provider.get(db).save_chat_message(channel_name, self._bot_name_lower(), message, datetime.utcnow())
@@ -139,9 +136,8 @@ class MinigameOrchestrator:
             " связанное по смыслу с обсуждаемыми темами. Придумай короткую подсказку-описание к нему. Не повторяйся в загаданных словах."
             + avoid_clause
             + '\nОтвет верни строго в JSON без дополнительного текста: {"word": "слово", "hint": "краткая подсказка"}.'
-              "\nТребования: слово только из букв, без пробелов и дефисов; подсказка до 100 символов."
-              "\n\nВот сообщения чата (ник: текст):\n"
-            + chat_text
+            "\nТребования: слово только из букв, без пробелов и дефисов; подсказка до 100 символов."
+            "\n\nВот сообщения чата (ник: текст):\n" + chat_text
         )
 
         system_prompt = self._system_prompt
@@ -165,7 +161,8 @@ class MinigameOrchestrator:
         game_message = (
             f"НОВАЯ ИГРА 'поле чудес'! Слово из {len(game.target_word)} букв. Подсказка: {hint}. "
             f"Слово: {masked}. Приз: до {self.minigame_service.WORD_GAME_MAX_PRIZE} монет. "
-            f"Угадывайте буквы: {self._prefix}{self._command_guess_letter} <буква> или слово: {self._prefix}{self._command_guess_word} <слово>. "
+            f"Угадывайте буквы: {self._prefix}{self._command_guess_letter} <буква> "
+            f"или слово: {self._prefix}{self._command_guess_word} <слово>. "
             f"Время на игру: {self.minigame_service.WORD_GAME_DURATION_MINUTES} минут"
         )
         logger.info(f"Запущена новая игра 'поле чудес' в канале {channel_name}")
@@ -194,7 +191,8 @@ class MinigameOrchestrator:
         game_message = (
             f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {MinigameService.RPS_BASE_BANK} монет + {MinigameService.RPS_ENTRY_FEE_PER_USER}"
             f" за каждого участника. "
-            f"Участвовать: {self._prefix}{self._command_rps} <камень/ножницы/бумага> — взнос {MinigameService.RPS_ENTRY_FEE_PER_USER} монет. "
+            f"Участвовать: {self._prefix}{self._command_rps} <камень/ножницы/бумага> — "
+            f"взнос {MinigameService.RPS_ENTRY_FEE_PER_USER} монет. "
             f"Время на голосование: {MinigameService.RPS_GAME_DURATION_MINUTES} минуты ⏰"
         )
         logger.info(f"Запущена новая игра КНБ в канале {channel_name}")

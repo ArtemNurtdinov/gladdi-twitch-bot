@@ -1,13 +1,13 @@
 from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, UniqueConstraint
 
 from core.db import Base
 
 
 class ChannelFollowerRow(Base):
-    __tablename__ = 'channel_follower'
-    __table_args__ = (UniqueConstraint('channel_name', 'user_id', name='uq_channel_follower_user'),)
+    __tablename__ = "channel_follower"
+    __table_args__ = (UniqueConstraint("channel_name", "user_id", name="uq_channel_follower_user"),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     channel_name = Column(String, nullable=False)

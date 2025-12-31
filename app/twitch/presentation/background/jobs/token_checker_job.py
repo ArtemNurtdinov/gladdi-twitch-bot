@@ -27,4 +27,3 @@ class TokenCheckerJob:
                 break
             except Exception as e:
                 logger.error(f"Ошибка в TokenCheckerJob: {e}")
-

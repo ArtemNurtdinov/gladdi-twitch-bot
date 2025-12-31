@@ -1,10 +1,11 @@
-from datetime import datetime
 from dataclasses import asdict
-from fastapi import APIRouter, HTTPException, Query, Depends
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.stream.bootstrap import get_stream_service_ro
-from app.stream.presentation.stream_schemas import StreamListResponse, StreamDetailResponse, StreamResponse
 from app.stream.domain.stream_service import StreamService
+from app.stream.presentation.stream_schemas import StreamDetailResponse, StreamListResponse, StreamResponse
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ async def get_streams(
     limit: int = Query(20, ge=1, le=100, description="Количество записей в ответе"),
     date_from: datetime | None = Query(None, description="Начало диапазона даты начала стрима (UTC)"),
     date_to: datetime | None = Query(None, description="Конец диапазона даты начала стрима (UTC)"),
-    stream_service: StreamService = Depends(get_stream_service_ro)
+    stream_service: StreamService = Depends(get_stream_service_ro),
 ) -> StreamListResponse:
     if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
@@ -42,10 +43,7 @@ async def get_streams(
     summary="Детали стрима",
     description="Получить детальную информацию о стриме",
 )
-async def get_stream_detail(
-    stream_id: int,
-    stream_service: StreamService = Depends(get_stream_service_ro)
-) -> StreamDetailResponse:
+async def get_stream_detail(stream_id: int, stream_service: StreamService = Depends(get_stream_service_ro)) -> StreamDetailResponse:
     dto = stream_service.get_stream_detail(stream_id)
     if not dto:
         raise HTTPException(status_code=404, detail="Стрим не найден")

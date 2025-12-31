@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class StartNewStreamUseCase:
-
     def __init__(self, repo: StreamRepository):
         self._repo = repo
 

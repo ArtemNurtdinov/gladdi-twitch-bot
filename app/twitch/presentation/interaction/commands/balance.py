@@ -1,18 +1,19 @@
+from collections.abc import Awaitable, Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any, Awaitable, Callable, ContextManager
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.commands.balance.model import BalanceDTO
 from app.commands.balance.handle_balance_use_case import HandleBalanceUseCase
+from app.commands.balance.model import BalanceDTO
 
 
 class BalanceCommandHandler:
-
     def __init__(
         self,
         handle_balance_use_case: HandleBalanceUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):

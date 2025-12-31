@@ -1,11 +1,12 @@
 import logging
-from fastapi import APIRouter, HTTPException
+from urllib.parse import urlencode
+
 import httpx
+from fastapi import APIRouter, HTTPException
 
 from app.twitch.presentation.bot_manager import BotManager
-from core.config import config
 from app.twitch.presentation.twitch_schemas import AuthStartResponse, BotActionResult, BotStatus
-from urllib.parse import urlencode
+from core.config import config
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -31,7 +32,9 @@ async def start_authorization() -> AuthStartResponse:
         "scope": PERMISSIONS_SCOPE,
     }
     auth_url = f"{AUTH_URL}?{urlencode(params)}"
-    return AuthStartResponse(auth_url=auth_url, message="Откройте ссылку, авторизуйтесь — Twitch вернёт вас на redirect_uri, где бот заберёт code")
+    return AuthStartResponse(
+        auth_url=auth_url, message="Откройте ссылку, авторизуйтесь — Twitch вернёт вас на redirect_uri, где бот заберёт code"
+    )
 
 
 @router.get(

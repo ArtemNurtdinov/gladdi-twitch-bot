@@ -10,4 +10,3 @@ class BackgroundProviders:
 
 def build_background_providers() -> BackgroundProviders:
     return BackgroundProviders(background_runner=BackgroundTaskRunner())
-

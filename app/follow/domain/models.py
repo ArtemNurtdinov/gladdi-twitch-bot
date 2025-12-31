@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass
@@ -10,10 +9,10 @@ class ChannelFollower:
     user_id: str
     user_name: str
     display_name: str
-    followed_at: Optional[datetime]
+    followed_at: datetime | None
     first_seen_at: datetime
     last_seen_at: datetime
-    unfollowed_at: Optional[datetime]
+    unfollowed_at: datetime | None
     is_active: bool
     created_at: datetime
     updated_at: datetime

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ViewerSessionResponse(BaseModel):
@@ -37,4 +37,3 @@ class ViewerSessionWithStreamResponse(ViewerSessionResponse):
 
 class ViewerSessionsResponse(BaseModel):
     sessions: list[ViewerSessionWithStreamResponse] = Field(..., description="Список пользовательских сессий")
-

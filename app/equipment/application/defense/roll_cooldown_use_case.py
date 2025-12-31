@@ -3,7 +3,6 @@ from app.equipment.domain.models import UserEquipmentItem
 
 
 class RollCooldownUseCase:
-
     def calc_seconds(self, default_cooldown_seconds: int, equipment: list[UserEquipmentItem]) -> int:
         min_cooldown = default_cooldown_seconds
         for item in equipment:

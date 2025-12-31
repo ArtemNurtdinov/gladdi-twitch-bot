@@ -16,4 +16,3 @@ class BottomDTO:
     bot_nick: str
     occurred_at: datetime
     limit: int
-

@@ -1,7 +1,9 @@
 import logging
 from collections import Counter
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Callable, ContextManager, Protocol
+from typing import Protocol
 
 import telegram
 from sqlalchemy.orm import Session
@@ -15,9 +17,9 @@ from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.model import StatusJobDTO
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
-from app.stream.domain.models import StreamStatistics, StreamInfo
-from app.stream.domain.stream_service import StreamService
 from app.stream.application.stream_status_port import StreamStatusPort
+from app.stream.domain.models import StreamInfo, StreamStatistics
+from app.stream.domain.stream_service import StreamService
 from app.user.infrastructure.cache.user_cache_service import UserCacheService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
@@ -31,7 +33,6 @@ class ChatSummaryStateProtocol(Protocol):
 
 
 class HandleStreamStatusUseCase:
-
     def __init__(
         self,
         user_cache: UserCacheService,
@@ -66,8 +67,8 @@ class HandleStreamStatusUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         status_job_dto: StatusJobDTO,
     ) -> None:
         broadcaster_id = await self._user_cache.get_user_id(status_job_dto.channel_name)
@@ -98,7 +99,7 @@ class HandleStreamStatusUseCase:
                 channel_name=status_job_dto.channel_name,
                 active_stream=active_stream,
                 db_session_provider=db_session_provider,
-                db_readonly_session_provider=db_readonly_session_provider
+                db_readonly_session_provider=db_readonly_session_provider,
             )
 
         elif stream_status.is_online and active_stream:
@@ -112,7 +113,7 @@ class HandleStreamStatusUseCase:
         channel_name: str,
         game_name: str | None,
         title: str | None,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
     ):
         started_at = datetime.utcnow()
         try:
@@ -128,8 +129,8 @@ class HandleStreamStatusUseCase:
         self,
         channel_name: str,
         active_stream: StreamInfo,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
     ):
         finish_time = datetime.utcnow()
         logger.info("Стрим завершён")
@@ -161,7 +162,7 @@ class HandleStreamStatusUseCase:
                 stream_start_dt=active_stream.started_at,
                 stream_end_dt=finish_time,
                 db_session_provider=db_session_provider,
-                db_readonly_session_provider=db_readonly_session_provider
+                db_readonly_session_provider=db_readonly_session_provider,
             )
         except Exception as e:
             logger.error(f"Ошибка при вызове stream_summarize: {e}")
@@ -196,8 +197,8 @@ class HandleStreamStatusUseCase:
         channel_name: str,
         stream_start_dt,
         stream_end_dt,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
     ):
         logger.info("Создание итогового отчёта о стриме")
 
@@ -225,7 +226,9 @@ class HandleStreamStatusUseCase:
         duration_str = f"{hours:02}:{minutes:02}:{seconds:02}"
         top_user = stream_stat.top_user if stream_stat.top_user else "нет"
 
-        stream_stat_message = f"Длительность: {duration_str}. Сообщений: {stream_stat.total_messages}. Самый активный пользователь: {top_user}."
+        stream_stat_message = (
+            f"Длительность: {duration_str}. Сообщений: {stream_stat.total_messages}. Самый активный пользователь: {top_user}."
+        )
 
         if stream_stat.total_battles > 0:
             stream_stat_message += f" Битв за стрим: {stream_stat.total_battles}. Главный победитель: {stream_stat.top_winner}"
@@ -252,7 +255,7 @@ class HandleStreamStatusUseCase:
             summary_text = "\n".join(self._state.current_stream_summaries)
             prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
 
-        prompt += f"\n\nНа основе предоставленной информации подведи краткий итог трансляции"
+        prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции"
         result = await self._chat_response_use_case.generate_response(prompt, channel_name)
 
         with db_session_provider() as db:

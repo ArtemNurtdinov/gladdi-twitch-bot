@@ -11,10 +11,7 @@ class EconomyProviders:
 
 
 def build_economy_providers() -> EconomyProviders:
-
     def economy_service(db):
         return EconomyService(EconomyRepositoryImpl(db))
 
-    return EconomyProviders(
-        economy_service_provider=Provider(economy_service)
-    )
+    return EconomyProviders(economy_service_provider=Provider(economy_service))

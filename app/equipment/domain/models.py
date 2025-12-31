@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from app.economy.domain.models import ShopItemType, ShopItem
 from datetime import datetime
+
+from app.economy.domain.models import ShopItem, ShopItemType
 
 
 @dataclass

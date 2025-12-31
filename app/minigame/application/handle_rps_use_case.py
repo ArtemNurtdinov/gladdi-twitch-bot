@@ -1,5 +1,6 @@
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
@@ -7,18 +8,17 @@ from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.minigame.application.model import RpsDTO
-from app.minigame.domain.models import RPS_CHOICES
 from app.minigame.domain.minigame_service import MinigameService
+from app.minigame.domain.models import RPS_CHOICES
 from core.provider import Provider
 
 
 class HandleRpsUseCase:
-
     def __init__(
         self,
         minigame_service: MinigameService,
         economy_service_provider: Provider[EconomyService],
-        chat_use_case_provider: Provider[ChatUseCase]
+        chat_use_case_provider: Provider[ChatUseCase],
     ):
         self._minigame_service = minigame_service
         self._economy_service_provider = economy_service_provider
@@ -26,7 +26,7 @@ class HandleRpsUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         dto: RpsDTO,
     ) -> str:
         bot_nick = dto.bot_nick
@@ -63,10 +63,7 @@ class HandleRpsUseCase:
                     f"Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
                 )
             else:
-                message = (
-                    f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. "
-                    f"Банк {game.bank} монет сгорает."
-                )
+                message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
             return message
@@ -114,4 +111,3 @@ class HandleRpsUseCase:
         with db_session_provider() as db:
             self._chat_use_case_provider.get(db).save_chat_message(dto.channel_name, bot_nick, message, dto.occurred_at)
         return message
-

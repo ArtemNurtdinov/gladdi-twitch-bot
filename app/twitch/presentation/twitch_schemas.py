@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -11,8 +10,8 @@ class BotStatusEnum(str, Enum):
 
 class BotStatus(BaseModel):
     status: BotStatusEnum = Field(..., description="Текущее состояние бота")
-    started_at: Optional[str] = Field(None, description="Время запуска в ISO формате")
-    last_error: Optional[str] = Field(None, description="Последняя ошибка, если была")
+    started_at: str | None = Field(None, description="Время запуска в ISO формате")
+    last_error: str | None = Field(None, description="Последняя ошибка, если была")
 
 
 class BotActionResult(BotStatus):

@@ -10,7 +10,6 @@ from core.provider import Provider
 
 
 class ChatResponseUseCase:
-
     def __init__(
         self,
         conversation_service_provider: Provider[ConversationService],
@@ -27,8 +26,7 @@ class ChatResponseUseCase:
         messages = []
         with self._db_readonly_session_provider() as db:
             history = self._conversation_service_provider.get(db).get_last_messages(
-                channel_name=channel_name,
-                system_prompt=self._system_prompt
+                channel_name=channel_name, system_prompt=self._system_prompt
             )
         messages.extend(history)
         messages.append(AIMessage(Role.USER, prompt))

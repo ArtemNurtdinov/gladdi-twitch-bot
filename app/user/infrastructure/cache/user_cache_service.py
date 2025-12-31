@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Tuple
 
 from app.user.application.user_info_port import UserInfoPort
 
@@ -8,11 +7,10 @@ logger = logging.getLogger(__name__)
 
 
 class UserCacheService:
-
     def __init__(self, user_info_port: UserInfoPort, ttl_minutes: int = 30):
         self._user_info_port = user_info_port
         self._ttl = timedelta(minutes=ttl_minutes)
-        self._cache: Dict[str, Tuple[str, datetime]] = {}
+        self._cache: dict[str, tuple[str, datetime]] = {}
 
     async def get_user_id(self, login: str) -> str | None:
         now = datetime.utcnow()

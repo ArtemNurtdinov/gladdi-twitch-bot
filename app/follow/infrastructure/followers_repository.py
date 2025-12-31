@@ -1,15 +1,13 @@
 from datetime import datetime
-from typing import List
 
 from sqlalchemy.orm import Session
 
-from app.follow.infrastructure.db.follower import ChannelFollowerRow
 from app.follow.domain.models import ChannelFollower
 from app.follow.domain.repo import FollowersRepository
+from app.follow.infrastructure.db.follower import ChannelFollowerRow
 
 
 class FollowersRepositoryImpl(FollowersRepository):
-
     def __init__(self, db: Session):
         self._db = db
 
@@ -29,23 +27,19 @@ class FollowersRepositoryImpl(FollowersRepository):
             updated_at=row.updated_at,
         )
 
-    def list_by_channel(self, channel_name: str) -> List[ChannelFollower]:
+    def list_by_channel(self, channel_name: str) -> list[ChannelFollower]:
         rows = self._db.query(ChannelFollowerRow).filter_by(channel_name=channel_name).all()
         return [self._to_domain(row) for row in rows]
 
-    def list_active(self, channel_name: str) -> List[ChannelFollower]:
-        rows = (
-            self._db.query(ChannelFollowerRow)
-            .filter_by(channel_name=channel_name, is_active=True)
-            .all()
-        )
+    def list_active(self, channel_name: str) -> list[ChannelFollower]:
+        rows = self._db.query(ChannelFollowerRow).filter_by(channel_name=channel_name, is_active=True).all()
         return [self._to_domain(row) for row in rows]
 
-    def list_new_since(self, channel_name: str, since: datetime, until: datetime | None = None) -> List[ChannelFollower]:
+    def list_new_since(self, channel_name: str, since: datetime, until: datetime | None = None) -> list[ChannelFollower]:
         query = (
             self._db.query(ChannelFollowerRow)
             .filter_by(channel_name=channel_name, is_active=True)
-            .filter(ChannelFollowerRow.followed_at != None)
+            .filter(ChannelFollowerRow.followed_at is not None)
             .filter(ChannelFollowerRow.followed_at >= since)
         )
         if until:
@@ -53,11 +47,11 @@ class FollowersRepositoryImpl(FollowersRepository):
         rows = query.all()
         return [self._to_domain(row) for row in rows]
 
-    def list_unfollowed_since(self, channel_name: str, since: datetime, until: datetime | None = None) -> List[ChannelFollower]:
+    def list_unfollowed_since(self, channel_name: str, since: datetime, until: datetime | None = None) -> list[ChannelFollower]:
         query = (
             self._db.query(ChannelFollowerRow)
             .filter_by(channel_name=channel_name, is_active=False)
-            .filter(ChannelFollowerRow.unfollowed_at != None)
+            .filter(ChannelFollowerRow.unfollowed_at is not None)
             .filter(ChannelFollowerRow.unfollowed_at >= since)
         )
         if until:
@@ -66,11 +60,7 @@ class FollowersRepositoryImpl(FollowersRepository):
         return [self._to_domain(row) for row in rows]
 
     def get_by_user_name(self, channel_name: str, user_name: str) -> ChannelFollower | None:
-        row = (
-            self._db.query(ChannelFollowerRow)
-            .filter_by(channel_name=channel_name, user_name=user_name)
-            .first()
-        )
+        row = self._db.query(ChannelFollowerRow).filter_by(channel_name=channel_name, user_name=user_name).first()
         return None if not row else self._to_domain(row)
 
     def upsert_active(
@@ -82,11 +72,7 @@ class FollowersRepositoryImpl(FollowersRepository):
         followed_at: datetime | None,
         seen_at: datetime,
     ):
-        row = (
-            self._db.query(ChannelFollowerRow)
-            .filter_by(channel_name=channel_name, user_id=user_id)
-            .first()
-        )
+        row = self._db.query(ChannelFollowerRow).filter_by(channel_name=channel_name, user_id=user_id).first()
         if row:
             row.user_name = user_name
             row.display_name = display_name
@@ -113,11 +99,16 @@ class FollowersRepositoryImpl(FollowersRepository):
     def mark_unfollowed(self, channel_name: str, user_ids: list[str], unfollowed_at: datetime):
         if not user_ids:
             return
-        (self._db.query(ChannelFollowerRow)
-        .filter(ChannelFollowerRow.channel_name == channel_name, ChannelFollowerRow.user_id.in_(user_ids))
-        .update({
-            ChannelFollowerRow.is_active: False,
-            ChannelFollowerRow.unfollowed_at: unfollowed_at,
-            ChannelFollowerRow.last_seen_at: unfollowed_at,
-            ChannelFollowerRow.updated_at: unfollowed_at,
-        }, synchronize_session=False))
+        (
+            self._db.query(ChannelFollowerRow)
+            .filter(ChannelFollowerRow.channel_name == channel_name, ChannelFollowerRow.user_id.in_(user_ids))
+            .update(
+                {
+                    ChannelFollowerRow.is_active: False,
+                    ChannelFollowerRow.unfollowed_at: unfollowed_at,
+                    ChannelFollowerRow.last_seen_at: unfollowed_at,
+                    ChannelFollowerRow.updated_at: unfollowed_at,
+                },
+                synchronize_session=False,
+            )
+        )

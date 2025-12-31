@@ -1,10 +1,10 @@
+
 from pydantic import BaseModel, Field
-from typing import Optional
 
 
 class NextJoke(BaseModel):
-    next_joke_time: Optional[str] = Field(None, description="Время следующего анекдота")
-    minutes_until_next: Optional[int] = Field(None, description="Осталось времени до следующего анекдота")
+    next_joke_time: str | None = Field(None, description="Время следующего анекдота")
+    minutes_until_next: int | None = Field(None, description="Осталось времени до следующего анекдота")
 
 
 class JokeInterval(BaseModel):
@@ -17,7 +17,7 @@ class JokesStatus(BaseModel):
     enabled: bool = Field(..., description="Статус анекдотов (включены/отключены)")
     message: str = Field(..., description="Описание статуса")
     interval: JokeInterval = Field(..., description="Интервал между анекдотами")
-    next_joke: Optional[NextJoke] = Field(..., description="Информация о следующем анекдоте")
+    next_joke: NextJoke | None = Field(..., description="Информация о следующем анекдоте")
 
 
 class JokesResponse(BaseModel):
@@ -27,7 +27,7 @@ class JokesResponse(BaseModel):
 
 class JokesIntervalResponse(JokeInterval):
     success: bool = Field(..., description="Успешность операции")
-    next_joke: Optional[NextJoke] = Field(..., description="Информация о следующем анекдоте")
+    next_joke: NextJoke | None = Field(..., description="Информация о следующем анекдоте")
 
 
 class JokesIntervalRequest(BaseModel):

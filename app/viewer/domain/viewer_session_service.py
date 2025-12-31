@@ -1,5 +1,4 @@
 import logging
-from typing import List
 from datetime import datetime
 
 from app.viewer.domain.models import ViewerSession
@@ -9,14 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class ViewerTimeService:
-    STREAM_TIME_REWARDS = {
-        30: 25,
-        60: 50,
-        90: 100,
-        120: 150,
-        150: 250,
-        180: 350
-    }
+    STREAM_TIME_REWARDS = {30: 25, 60: 50, 90: 100, 120: 150, 150: 250, 180: 350}
 
     def __init__(self, repo: ViewerRepository):
         self._repo = repo
@@ -52,7 +44,7 @@ class ViewerTimeService:
     def get_stream_viewer_sessions(self, stream_id: int) -> list[ViewerSession]:
         return self._repo.get_viewer_sessions(stream_id)
 
-    def get_user_sessions(self, channel_name: str, user_name: str) -> List[ViewerSession]:
+    def get_user_sessions(self, channel_name: str, user_name: str) -> list[ViewerSession]:
         return self._repo.get_user_sessions(channel_name, user_name)
 
     def get_available_rewards(self, session: ViewerSession) -> list[tuple]:

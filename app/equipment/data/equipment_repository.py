@@ -2,10 +2,10 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app.economy.domain.models import ShopItems, ShopItemType
+from app.equipment.data.db.user_equipment import UserEquipment as OrmUserEquipment
 from app.equipment.domain.models import UserEquipmentItem
 from app.equipment.domain.repo import EquipmentRepository
-from app.equipment.data.db.user_equipment import UserEquipment as OrmUserEquipment
-from app.economy.domain.models import ShopItems, ShopItemType
 
 
 def _to_domain_item(row: OrmUserEquipment) -> UserEquipmentItem:
@@ -14,7 +14,6 @@ def _to_domain_item(row: OrmUserEquipment) -> UserEquipmentItem:
 
 
 class EquipmentRepositoryImpl(EquipmentRepository):
-
     def __init__(self, db: Session):
         self._db = db
 

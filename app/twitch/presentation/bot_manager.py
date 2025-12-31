@@ -1,43 +1,41 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional
 
-from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.twitch.infrastructure.auth import TwitchAuth
-from app.twitch.bootstrap.twitch import build_twitch_providers
-from app.stream.bootstrap import build_stream_providers
-from app.economy.bootstrap import build_economy_providers
-from app.equipment.bootstrap import build_equipment_providers
-from app.minigame.bootstrap import build_minigame_providers
 from app.ai.bootstrap import build_ai_providers
 from app.battle.bootstrap import build_battle_providers
 from app.betting.bootstrap import build_betting_providers
 from app.chat.bootstrap import build_chat_providers
+from app.economy.bootstrap import build_economy_providers
+from app.equipment.bootstrap import build_equipment_providers
 from app.follow.bootstrap import build_follow_providers
 from app.joke.bootstrap import build_joke_providers
+from app.minigame.bootstrap import build_minigame_providers
+from app.stream.bootstrap import build_stream_providers
+from app.twitch.bootstrap.bot_factory import BotFactory
+from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS
+from app.twitch.bootstrap.twitch import build_twitch_providers
+from app.twitch.infrastructure.auth import TwitchAuth
+from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.twitch.presentation.twitch_bot import Bot as TwitchBot
+from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.user.bootstrap import build_user_providers
 from app.viewer.bootstrap import build_viewer_providers
 from core.bootstrap.background import build_background_providers
 from core.bootstrap.telegram import build_telegram_providers
-from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
-from app.twitch.bootstrap.bot_factory import BotFactory
-from app.twitch.presentation.twitch_bot import Bot as TwitchBot
 
 logger = logging.getLogger(__name__)
 
 
 class BotManager:
-
     def __init__(self):
-        self._bot: Optional[TwitchBot] = None
-        self._task: Optional[asyncio.Task] = None
+        self._bot: TwitchBot | None = None
+        self._task: asyncio.Task | None = None
         self._status: BotStatusEnum = BotStatusEnum.STOPPED
-        self._started_at: Optional[datetime] = None
-        self._last_error: Optional[str] = None
+        self._started_at: datetime | None = None
+        self._last_error: str | None = None
         self._lock = asyncio.Lock()
-        self._twitch_api_service: Optional[TwitchApiService] = None
+        self._twitch_api_service: TwitchApiService | None = None
 
     def _ensure_credentials(self, auth: TwitchAuth) -> None:
         missing = []
@@ -117,7 +115,7 @@ class BotManager:
                 betting_providers,
                 background_providers,
                 telegram_providers,
-                DEFAULT_SETTINGS
+                DEFAULT_SETTINGS,
             ).create()
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()

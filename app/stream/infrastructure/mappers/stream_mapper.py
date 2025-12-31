@@ -1,5 +1,5 @@
-from app.stream.infrastructure.db.stream import Stream
 from app.stream.domain.models import StreamInfo
+from app.stream.infrastructure.db.stream import Stream
 
 
 def map_stream_row(row: Stream) -> StreamInfo:
@@ -16,4 +16,3 @@ def map_stream_row(row: Stream) -> StreamInfo:
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
-

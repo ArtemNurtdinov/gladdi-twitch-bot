@@ -5,7 +5,6 @@ from app.battle.domain.repo import BattleRepository
 
 
 class BattleUseCase:
-
     def __init__(self, repo: BattleRepository):
         self._repo = repo
 

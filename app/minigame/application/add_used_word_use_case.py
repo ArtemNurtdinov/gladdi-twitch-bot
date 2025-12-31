@@ -2,7 +2,6 @@ from app.minigame.domain.repo import WordHistoryRepository
 
 
 class AddUsedWordsUseCase:
-
     def __init__(self, repo: WordHistoryRepository):
         self._repo = repo
 

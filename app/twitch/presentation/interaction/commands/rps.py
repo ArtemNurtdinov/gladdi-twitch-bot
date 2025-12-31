@@ -1,5 +1,7 @@
+from collections.abc import Awaitable, Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any, Awaitable, Callable, ContextManager
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -8,11 +10,10 @@ from app.minigame.application.model import RpsDTO
 
 
 class RpsCommandHandler:
-
     def __init__(
         self,
         handle_rps_use_case: HandleRpsUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):

@@ -1,19 +1,19 @@
-from typing import Callable, ContextManager, Optional
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
-from app.joke.domain.joke_service import JokeService
 from app.joke.application.model import PostJokeDTO
+from app.joke.domain.joke_service import JokeService
 from app.stream.application.stream_info_port import StreamInfoPort
 from app.user.infrastructure.cache.user_cache_service import UserCacheService
 from core.provider import Provider
 
 
 class HandlePostJokeUseCase:
-
     def __init__(
         self,
         joke_service: JokeService,
@@ -21,7 +21,7 @@ class HandlePostJokeUseCase:
         stream_info: StreamInfoPort,
         chat_response_use_case: ChatResponseUseCase,
         conversation_service_provider: Provider[ConversationService],
-        chat_use_case_provider: Provider[ChatUseCase]
+        chat_use_case_provider: Provider[ChatUseCase],
     ):
         self._joke_service = joke_service
         self._user_cache = user_cache
@@ -32,9 +32,9 @@ class HandlePostJokeUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         post_joke: PostJokeDTO,
-    ) -> Optional[str]:
+    ) -> str | None:
         if not self._joke_service.should_generate_jokes():
             return None
 
@@ -53,9 +53,7 @@ class HandlePostJokeUseCase:
 
         with db_session_provider() as db:
             self._conversation_service_provider.get(db).save_conversation_to_db(
-                channel_name=post_joke.channel_name,
-                user_message=prompt,
-                ai_message=joke_text
+                channel_name=post_joke.channel_name, user_message=prompt, ai_message=joke_text
             )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=post_joke.channel_name,

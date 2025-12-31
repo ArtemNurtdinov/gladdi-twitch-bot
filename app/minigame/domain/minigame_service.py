@@ -1,9 +1,8 @@
-import random
 import logging
-from typing import Optional, Dict
+import random
 from datetime import datetime, timedelta
 
-from app.minigame.domain.models import GuessNumberGame, WordGuessGame, RPSGame, RPS_CHOICES
+from app.minigame.domain.models import RPS_CHOICES, GuessNumberGame, RPSGame, WordGuessGame
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +30,11 @@ class MinigameService:
     GAME_START_INTERVAL_MAX = 60
 
     def __init__(self):
-        self.active_guess_games: Dict[str, GuessNumberGame] = {}
-        self.active_word_games: Dict[str, WordGuessGame] = {}
-        self.active_rps_games: Dict[str, RPSGame] = {}
-        self.last_game_time: Dict[str, datetime] = {}
-        self.stream_start_time: Dict[str, datetime] = {}
+        self.active_guess_games: dict[str, GuessNumberGame] = {}
+        self.active_word_games: dict[str, WordGuessGame] = {}
+        self.active_rps_games: dict[str, RPSGame] = {}
+        self.last_game_time: dict[str, datetime] = {}
+        self.stream_start_time: dict[str, datetime] = {}
 
     def set_stream_start_time(self, channel_name: str, start_time: datetime):
         self.stream_start_time[channel_name] = start_time
@@ -93,7 +92,7 @@ class MinigameService:
             end_time=end_time,
             min_number=self.GUESS_MIN_NUMBER,
             max_number=self.GUESS_MAX_NUMBER,
-            prize_amount=self.GUESS_GAME_PRIZE
+            prize_amount=self.GUESS_GAME_PRIZE,
         )
 
         self.active_guess_games[channel_name] = game
@@ -138,8 +137,8 @@ class MinigameService:
 
         return False
 
-    def check_expired_games(self) -> Dict[str, str]:
-        expired_messages: Dict[str, str] = {}
+    def check_expired_games(self) -> dict[str, str]:
+        expired_messages: dict[str, str] = {}
 
         for channel_name in list(self.active_guess_games.keys()):
             game = self.active_guess_games.get(channel_name)
@@ -173,7 +172,7 @@ class MinigameService:
     def get_active_word_game(self, channel_name: str) -> WordGuessGame:
         return self.active_word_games[channel_name]
 
-    def get_word_game_status(self, channel_name: str) -> Optional[str]:
+    def get_word_game_status(self, channel_name: str) -> str | None:
         if channel_name not in self.active_word_games:
             return None
         game = self.active_word_games[channel_name]

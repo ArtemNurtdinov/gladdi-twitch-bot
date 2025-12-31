@@ -1,16 +1,15 @@
 import logging
 from datetime import datetime
-from typing import Optional
 
 from app.joke.domain.models import (
     BotSettings,
-    JokesResponseDto,
-    JokesIntervalDto,
-    JokesStatusDto,
     JokeIntervalInfo,
+    JokesIntervalDto,
+    JokesResponseDto,
+    JokesStatusDto,
     NextJokeInfo,
 )
-from app.joke.domain.policies import validate_interval, plan_next_joke_time, should_generate_now
+from app.joke.domain.policies import plan_next_joke_time, should_generate_now, validate_interval
 from app.joke.domain.repo import JokeSettingsRepository
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,7 @@ class JokeService:
         settings.last_updated = datetime.now().isoformat()
         return settings
 
-    def _build_next_joke(self, settings: BotSettings) -> Optional[NextJokeInfo]:
+    def _build_next_joke(self, settings: BotSettings) -> NextJokeInfo | None:
         if not settings.jokes_enabled:
             return None
 
@@ -122,6 +121,6 @@ class JokeService:
         logger.info("Анекдот сгенерирован, следующий запланирован на %s", settings.next_joke_time)
         return True
 
-    def get_next_joke_info(self) -> Optional[NextJokeInfo]:
+    def get_next_joke_info(self) -> NextJokeInfo | None:
         settings = self.settings_repo.load()
         return self._build_next_joke(settings)

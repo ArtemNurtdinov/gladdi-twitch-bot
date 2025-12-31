@@ -1,14 +1,15 @@
+from collections.abc import Awaitable, Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any, Awaitable, Callable, ContextManager
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.commands.guess.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
 from app.commands.guess.handle_guess_use_case import HandleGuessUseCase
+from app.commands.guess.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
 
 
 class GuessCommandHandler:
-
     def __init__(
         self,
         command_prefix: str,
@@ -16,9 +17,9 @@ class GuessCommandHandler:
         command_guess_letter: str,
         command_guess_word: str,
         handle_guess_use_case: HandleGuessUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick_provider: Callable[[], str],
-        post_message_fn: Callable[[str, Any], Awaitable[None]]
+        post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_guess = command_guess
@@ -38,7 +39,7 @@ class GuessCommandHandler:
             user_name=display_name.lower(),
             bot_nick=self.bot_nick_provider().lower(),
             occurred_at=datetime.utcnow(),
-            guess_input=number
+            guess_input=number,
         )
 
         message = await self._handle_guess_use_case.handle_number(
@@ -70,11 +71,8 @@ class GuessCommandHandler:
             user_name=display_name.lower(),
             bot_nick=self.bot_nick_provider().lower(),
             occurred_at=datetime.utcnow(),
-            word_input=word
+            word_input=word,
         )
 
-        message = await self._handle_guess_use_case.handle_word(
-            db_session_provider=self._db_session_provider,
-            guess_word_dto=dto
-        )
+        message = await self._handle_guess_use_case.handle_word(db_session_provider=self._db_session_provider, guess_word_dto=dto)
         await self.post_message_fn(message, ctx)

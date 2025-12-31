@@ -19,7 +19,6 @@ class EquipmentProviders:
 
 
 def build_equipment_providers() -> EquipmentProviders:
-
     def get_user_equipment_use_case(db):
         return GetUserEquipmentUseCase(EquipmentRepositoryImpl(db))
 
@@ -42,4 +41,3 @@ def build_equipment_providers() -> EquipmentProviders:
         roll_cooldown_use_case_provider=SingletonProvider(roll_cooldown_use_case),
         calculate_timeout_use_case_provider=SingletonProvider(calculate_timeout_use_case),
     )
-

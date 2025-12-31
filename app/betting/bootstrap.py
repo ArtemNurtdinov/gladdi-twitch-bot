@@ -11,11 +11,9 @@ class BettingProviders:
 
 
 def build_betting_providers() -> BettingProviders:
-
     def betting_service(db):
         return BettingService(BettingRepositoryImpl(db))
 
     return BettingProviders(
         betting_service_provider=Provider(betting_service),
     )
-

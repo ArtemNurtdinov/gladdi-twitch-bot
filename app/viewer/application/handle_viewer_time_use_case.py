@@ -1,20 +1,20 @@
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.stream.domain.stream_service import StreamService
+from app.user.infrastructure.cache.user_cache_service import UserCacheService
 from app.viewer.application.model import ViewerTimeDTO
 from app.viewer.application.stream_chatters_port import StreamChattersPort
-from app.user.infrastructure.cache.user_cache_service import UserCacheService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
 
 
 class HandleViewerTimeUseCase:
-
     def __init__(
         self,
         viewer_service_provider: Provider[ViewerTimeService],
@@ -31,8 +31,8 @@ class HandleViewerTimeUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         viewer_time_dto: ViewerTimeDTO,
     ):
         with db_readonly_session_provider() as db:
@@ -53,7 +53,7 @@ class HandleViewerTimeUseCase:
                     active_stream_id=active_stream.id,
                     channel_name=viewer_time_dto.channel_name,
                     chatters=chatters,
-                    current_time=viewer_time_dto.occurred_at
+                    current_time=viewer_time_dto.occurred_at,
                 )
 
         with db_readonly_session_provider() as db:
@@ -72,14 +72,12 @@ class HandleViewerTimeUseCase:
                     claimed_list.append(minutes_threshold)
                     rewards = ",".join(map(str, sorted(claimed_list)))
                     self._viewer_service_provider.get(db).update_session_rewards(
-                        session_id=session.id,
-                        rewards=rewards,
-                        current_time=viewer_time_dto.occurred_at or datetime.utcnow()
+                        session_id=session.id, rewards=rewards, current_time=viewer_time_dto.occurred_at or datetime.utcnow()
                     )
                     self._economy_service_provider.get(db).add_balance(
                         channel_name=viewer_time_dto.channel_name,
                         user_name=session.user_name,
                         amount=reward_amount,
                         transaction_type=TransactionType.VIEWER_TIME_REWARD,
-                        description=f"Награда за {minutes_threshold} минут просмотра стрима"
+                        description=f"Награда за {minutes_threshold} минут просмотра стрима",
                     )

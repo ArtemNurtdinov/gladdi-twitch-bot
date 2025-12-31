@@ -33,9 +33,3 @@ def should_generate_now(settings: BotSettings, now: datetime | None = None) -> b
         return now >= next_time
     except ValueError:
         return True
-
-
-
-
-
-

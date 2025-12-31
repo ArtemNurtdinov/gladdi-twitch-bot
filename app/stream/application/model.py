@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -15,23 +14,23 @@ class StatusJobDTO:
 
 @dataclass(frozen=True)
 class StreamDataDTO:
-    id: Optional[str]
-    user_id: Optional[str]
-    user_login: Optional[str]
-    user_name: Optional[str]
-    game_id: Optional[str]
-    game_name: Optional[str]
-    type: Optional[str]
-    title: Optional[str]
-    viewer_count: Optional[int]
-    started_at: Optional[datetime]
-    language: Optional[str]
-    thumbnail_url: Optional[str]
+    id: str | None
+    user_id: str | None
+    user_login: str | None
+    user_name: str | None
+    game_id: str | None
+    game_name: str | None
+    type: str | None
+    title: str | None
+    viewer_count: int | None
+    started_at: datetime | None
+    language: str | None
+    thumbnail_url: str | None
     tag_ids: list[str]
-    is_mature: Optional[bool]
+    is_mature: bool | None
 
 
 @dataclass(frozen=True)
 class StreamStatusDTO:
     is_online: bool
-    stream_data: Optional[StreamDataDTO] = None
+    stream_data: StreamDataDTO | None = None

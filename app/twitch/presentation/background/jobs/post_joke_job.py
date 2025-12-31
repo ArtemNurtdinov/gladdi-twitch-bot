@@ -1,11 +1,12 @@
 import asyncio
+from collections.abc import Awaitable, Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Callable, Awaitable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.joke.application.model import PostJokeDTO
 from app.joke.application.handle_post_joke_use_case import HandlePostJokeUseCase
+from app.joke.application.model import PostJokeDTO
 from core.background_task_runner import BackgroundTaskRunner
 
 
@@ -16,7 +17,7 @@ class PostJokeJob:
         self,
         channel_name: str,
         handle_post_joke_use_case: HandlePostJokeUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         send_channel_message: Callable[[str, str], Awaitable[None]],
         bot_nick_provider: Callable[[], str],
     ):

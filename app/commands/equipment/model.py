@@ -7,4 +7,3 @@ from app.commands.dto import ChatContextDTO
 class EquipmentDTO(ChatContextDTO):
     command_prefix: str
     command_shop: str
-

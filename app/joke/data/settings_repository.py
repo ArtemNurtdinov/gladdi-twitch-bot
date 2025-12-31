@@ -4,23 +4,22 @@ import os
 import threading
 import time
 from dataclasses import asdict
-from typing import Dict, Any, Optional
+from typing import Any
 
 from app.joke.domain.models import BotSettings
 from app.joke.domain.repo import JokeSettingsRepository
 
 
 class FileJokeSettingsRepository(JokeSettingsRepository):
-
-    def __init__(self, config_path: Optional[str] = None, cache_ttl: int = 30):
+    def __init__(self, config_path: str | None = None, cache_ttl: int = 30):
         self.logger = logging.getLogger(__name__)
         default_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "bot_settings.json")
         self.settings_file = os.path.abspath(config_path or default_path)
 
         self._file_lock = threading.Lock()
         self._cache_lock = threading.Lock()
-        self._cached_settings: Optional[BotSettings] = None
-        self._cache_timestamp: Optional[float] = None
+        self._cached_settings: BotSettings | None = None
+        self._cache_timestamp: float | None = None
         self._cache_ttl = cache_ttl
 
         self._ensure_settings_file_exists()
@@ -41,9 +40,9 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
             return False
         return (time.time() - self._cache_timestamp) < self._cache_ttl
 
-    def _read_settings_from_file(self) -> Dict[str, Any]:
+    def _read_settings_from_file(self) -> dict[str, Any]:
         try:
-            with open(self.settings_file, "r", encoding="utf-8") as f:
+            with open(self.settings_file, encoding="utf-8") as f:
                 settings_dict = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             self.logger.error("Ошибка чтения настроек: %s", e)
@@ -64,7 +63,7 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
 
         return settings_dict
 
-    def _write_settings_to_file(self, settings: Dict[str, Any]) -> None:
+    def _write_settings_to_file(self, settings: dict[str, Any]) -> None:
         with self._file_lock:
             with open(self.settings_file, "w", encoding="utf-8") as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)

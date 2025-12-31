@@ -1,12 +1,12 @@
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Any, Awaitable, Callable
+from typing import Any
 
-from app.commands.follow.model import FollowageDTO
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
+from app.commands.follow.model import FollowageDTO
 
 
 class FollowageCommandHandler:
-
     def __init__(
         self,
         handle_follow_age_use_case: HandleFollowAgeUseCase,
@@ -27,7 +27,7 @@ class FollowageCommandHandler:
             user_name=display_name.lower(),
             bot_nick=self.bot_nick_provider(),
             occurred_at=datetime.utcnow(),
-            user_id=str(ctx.author.id)
+            user_id=str(ctx.author.id),
         )
 
         result = await self._handle_follow_age_use_case.handle(dto)

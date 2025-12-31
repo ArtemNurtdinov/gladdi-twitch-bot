@@ -1,4 +1,5 @@
-from typing import Callable, Generic, Optional, TypeVar
+from collections.abc import Callable
+from typing import Generic, TypeVar
 
 from sqlalchemy.orm import Session
 
@@ -6,7 +7,6 @@ T = TypeVar("T")
 
 
 class Provider(Generic[T]):
-
     def __init__(self, factory: Callable[[Session], T]):
         self._factory = factory
 
@@ -15,10 +15,9 @@ class Provider(Generic[T]):
 
 
 class SingletonProvider(Generic[T]):
-
     def __init__(self, factory: Callable[[], T]):
         self._factory = factory
-        self._instance: Optional[T] = None
+        self._instance: T | None = None
 
     def get(self) -> T:
         if self._instance is None:

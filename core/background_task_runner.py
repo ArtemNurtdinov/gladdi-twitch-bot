@@ -1,12 +1,11 @@
 import asyncio
-from typing import Callable, Awaitable, Dict
+from collections.abc import Awaitable, Callable
 
 
 class BackgroundTaskRunner:
-
     def __init__(self):
         self._registry: list[tuple[str, Callable[[], Awaitable[None]]]] = []
-        self._tasks: Dict[str, asyncio.Task] = {}
+        self._tasks: dict[str, asyncio.Task] = {}
 
     def register(self, name: str, coro_factory: Callable[[], Awaitable[None]]):
         self._registry.append((name, coro_factory))
@@ -31,4 +30,3 @@ class BackgroundTaskRunner:
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
         self._tasks.clear()
-
