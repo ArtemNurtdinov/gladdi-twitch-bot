@@ -2,7 +2,7 @@ import calendar
 import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 import bcrypt
@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 from jose import exceptions as jose_exceptions
 from sqlalchemy.orm import Session
 
-from app.auth.domain.models import (AccessToken, User, UserCreateData, UserUpdateData)
+from app.auth.domain.models import AccessToken, User, UserCreateData, UserUpdateData
 from app.auth.domain.repo import AuthRepository
 from core.config import config
 
@@ -50,13 +50,11 @@ class AuthService:
         token = jwt.encode(payload, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return token
 
-    def validate_access_token(self, db: Session, token: str) -> Optional[User]:
+    def validate_access_token(self, db: Session, token: str) -> User | None:
         current_time = datetime.utcnow()
 
         try:
-            payload_no_verify = jwt.decode(
-                token, self.SECRET_KEY, algorithms=[self.ALGORITHM], options={"verify_exp": False}
-            )
+            payload_no_verify = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM], options={"verify_exp": False})
 
             exp_timestamp = payload_no_verify.get("exp", 0)
             current_timestamp_utc = calendar.timegm(current_time.timetuple())
@@ -70,9 +68,7 @@ class AuthService:
             if time_diff_utc <= 0:
                 raise jose_exceptions.ExpiredSignatureError("Signature has expired")
 
-            payload = jwt.decode(
-                token, self.SECRET_KEY, algorithms=[self.ALGORITHM], options={"verify_exp": False}
-            )
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM], options={"verify_exp": False})
             user_id = uuid.UUID(payload.get("sub"))
 
             logger.info("JWT валидация прошла успешно (UTC проверка)")
@@ -111,16 +107,16 @@ class AuthService:
 
         return self._repo.create_user(db, user_data, hashed_password)
 
-    def get_user_by_email(self, db: Session, email: str) -> Optional[User]:
+    def get_user_by_email(self, db: Session, email: str) -> User | None:
         return self._repo.get_user_by_email(db, email)
 
-    def get_user_by_id(self, db: Session, user_id: UUID) -> Optional[User]:
+    def get_user_by_id(self, db: Session, user_id: UUID) -> User | None:
         return self._repo.get_user_by_id(db, user_id)
 
-    def get_users(self, db: Session, skip: int = 0, limit: int = 100) -> List[User]:
+    def get_users(self, db: Session, skip: int = 0, limit: int = 100) -> list[User]:
         return self._repo.list_users(db, skip, limit)
 
-    def update_user(self, db: Session, user_id: UUID, user_data: UserUpdateData) -> Optional[User]:
+    def update_user(self, db: Session, user_id: UUID, user_data: UserUpdateData) -> User | None:
         updates = UserUpdateData(
             email=user_data.email,
             first_name=user_data.first_name,
@@ -134,7 +130,7 @@ class AuthService:
     def delete_user(self, db: Session, user_id: UUID) -> bool:
         return self._repo.delete_user(db, user_id)
 
-    def authenticate_user(self, db: Session, email: str, password: str) -> Optional[User]:
+    def authenticate_user(self, db: Session, email: str, password: str) -> User | None:
         user = self.get_user_by_email(db, email)
         if not user:
             return None
@@ -153,17 +149,17 @@ class AuthService:
         logger.info(f"Токен сохранен с ID: {access_token.id}")
         return access_token
 
-    def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
+    def verify_token(self, token: str) -> dict[str, Any] | None:
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             return payload
         except JWTError:
             return None
 
-    def get_tokens(self, db: Session, skip: int = 0, limit: int = 100) -> List[AccessToken]:
+    def get_tokens(self, db: Session, skip: int = 0, limit: int = 100) -> list[AccessToken]:
         return self._repo.list_tokens(db, skip, limit)
 
-    def get_token_by_id(self, db: Session, token_id: UUID) -> Optional[AccessToken]:
+    def get_token_by_id(self, db: Session, token_id: UUID) -> AccessToken | None:
         return self._repo.get_token_by_id(db, token_id)
 
     def deactivate_token(self, db: Session, token_id: UUID) -> bool:
