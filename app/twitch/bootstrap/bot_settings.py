@@ -4,7 +4,7 @@ from core.config import config
 
 
 @dataclass(frozen=True)
-class TwitchBotSettings:
+class BotSettings:
     channel_name: str = "artemnefrit"
     prefix: str = "!"
     group_id: int = config.telegram.group_id
@@ -31,4 +31,4 @@ class TwitchBotSettings:
     command_help: str = "команды"
 
 
-DEFAULT_SETTINGS = TwitchBotSettings()
+DEFAULT_SETTINGS = BotSettings()

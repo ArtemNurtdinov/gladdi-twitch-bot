@@ -5,7 +5,6 @@ from typing import Callable, ContextManager
 from sqlalchemy.orm import Session
 
 from app.stream.application.model import StatusJobDTO
-from app.twitch.presentation.background.model.state import ChatSummaryState
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
 from core.background_task_runner import BackgroundTaskRunner
 
@@ -21,14 +20,12 @@ class StreamStatusJob:
         handle_stream_status_use_case: HandleStreamStatusUseCase,
         db_session_provider: Callable[[], ContextManager[Session]],
         db_readonly_session_provider: Callable[[], ContextManager[Session]],
-        state: ChatSummaryState,
         stream_status_interval_seconds: int,
     ):
         self._channel_name = channel_name
         self._handle_stream_status_use_case = handle_stream_status_use_case
         self._db_session_provider = db_session_provider
         self._db_readonly_session_provider = db_readonly_session_provider
-        self._state = state
         self._interval_seconds = stream_status_interval_seconds
 
     def register(self, runner: BackgroundTaskRunner):
