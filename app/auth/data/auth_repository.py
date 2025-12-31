@@ -1,13 +1,19 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.auth.domain.models import User as DomainUser, AccessToken as DomainAccessToken, UserCreateData, UserUpdateData, UserRole
-from app.auth.domain.repo import AuthRepository
-from app.auth.data.db.user import User as OrmUser
 from app.auth.data.db.access_token import AccessToken as OrmAccessToken
+from app.auth.data.db.user import User as OrmUser
+from app.auth.domain.models import (
+    AccessToken as DomainAccessToken,
+    User as DomainUser,
+    UserCreateData,
+    UserRole,
+    UserUpdateData,
+)
+from app.auth.domain.repo import AuthRepository
 
 
 def _to_domain_user(orm_user: OrmUser) -> DomainUser:

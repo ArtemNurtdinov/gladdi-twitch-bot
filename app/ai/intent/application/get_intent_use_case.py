@@ -1,5 +1,5 @@
-from app.ai.intent.domain.intent_detector import IntentDetectorClient
 from app.ai.gen.domain.llm_client import LLMClient
+from app.ai.intent.domain.intent_detector import IntentDetectorClient
 from app.ai.intent.domain.models import Intent
 
 
