@@ -1,8 +1,8 @@
 import httpx
 
-from core.config import config
 from app.ai.gen.domain.llm_client import LLMClient
 from app.ai.gen.domain.models import AIMessage
+from core.config import config
 
 
 class LLMClientImpl(LLMClient):

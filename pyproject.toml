@@ -1,0 +1,13 @@
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+extend-exclude = ["gladdi-twitch-bot.log"]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "I",  # import sorting
+    "UP", # pyupgrade
+]
+

@@ -1,10 +1,10 @@
 import requests
 
-from app.ai.intent.domain.models import Intent
-from core.config import config
-from app.ai.intent.domain.intent_detector import IntentDetectorClient
 from app.ai.gen.domain.llm_client import LLMClient
 from app.ai.gen.domain.models import AIMessage, Role
+from app.ai.intent.domain.intent_detector import IntentDetectorClient
+from app.ai.intent.domain.models import Intent
+from core.config import config
 
 
 class IntentDetectorClientImpl(IntentDetectorClient):
@@ -53,8 +53,3 @@ class IntentDetectorClientImpl(IntentDetectorClient):
             if ai_response == intent.value:
                 return intent
         return detected_intent
-
-
-
-
-

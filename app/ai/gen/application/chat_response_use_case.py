@@ -1,4 +1,5 @@
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
@@ -15,7 +16,7 @@ class ChatResponseUseCase:
         conversation_service_provider: Provider[ConversationService],
         llm_client: LLMClient,
         system_prompt: str,
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
     ):
         self._conversation_service_provider = conversation_service_provider
         self._llm_client = llm_client
