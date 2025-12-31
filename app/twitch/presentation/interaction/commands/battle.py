@@ -4,8 +4,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.battle.model import BattleDTO
-from app.twitch.application.interaction.battle.handle_battle_use_case import HandleBattleUseCase
+from app.commands.battle.model import BattleDTO
+from app.commands.battle.handle_battle_use_case import HandleBattleUseCase
 
 
 class BattleCommandHandler:

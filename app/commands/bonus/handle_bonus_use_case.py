@@ -1,0 +1,71 @@
+from typing import Callable, ContextManager
+
+from sqlalchemy.orm import Session
+
+from app.chat.application.chat_use_case import ChatUseCase
+from app.economy.domain.economy_service import EconomyService
+from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
+from app.stream.domain.stream_service import StreamService
+from app.commands.dto import ChatContextDTO
+from core.provider import Provider
+
+
+class HandleBonusUseCase:
+
+    def __init__(
+        self,
+        stream_service_provider: Provider[StreamService],
+        get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
+        economy_service_provider: Provider[EconomyService],
+        chat_use_case_provider: Provider[ChatUseCase],
+    ):
+        self._stream_service_provider = stream_service_provider
+        self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
+        self._economy_service_provider = economy_service_provider
+        self._chat_use_case_provider = chat_use_case_provider
+
+    async def handle(
+        self,
+        db_session_provider: Callable[[], ContextManager[Session]],
+        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        chat_context_dto: ChatContextDTO,
+    ) -> str:
+        with db_readonly_session_provider() as db:
+            active_stream = self._stream_service_provider.get(db).get_active_stream(chat_context_dto.channel_name)
+
+        if not active_stream:
+            result = f"🚫 @{chat_context_dto.display_name}, бонус доступен только во время стрима!"
+        else:
+            with db_session_provider() as db:
+                user_equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
+                    channel_name=chat_context_dto.channel_name,
+                    user_name=chat_context_dto.user_name
+                )
+                bonus_result = self._economy_service_provider.get(db).claim_daily_bonus(
+                    active_stream_id=active_stream.id,
+                    channel_name=chat_context_dto.channel_name,
+                    user_name=chat_context_dto.user_name,
+                    user_equipment=user_equipment
+                )
+                if bonus_result.success:
+                    if bonus_result.bonus_message:
+                        result = f"🎁 @{chat_context_dto.display_name} получил бонус {bonus_result.bonus_amount} монет! {bonus_result.bonus_message}"
+                    else:
+                        result = f"🎁 @{chat_context_dto.display_name} получил бонус {bonus_result.bonus_amount} монет!"
+                else:
+                    if bonus_result.failure_reason == "already_claimed":
+                        result = f"⏰ @{chat_context_dto.display_name}, бонус уже получен на этом стриме!"
+                    elif bonus_result.failure_reason == "error":
+                        result = f"❌ @{chat_context_dto.display_name}, произошла ошибка при получении бонуса. Попробуй позже!"
+                    else:
+                        result = f"❌ @{chat_context_dto.display_name}, бонус недоступен!"
+
+        with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=chat_context_dto.channel_name,
+                user_name=chat_context_dto.bot_nick,
+                content=result,
+                current_time=chat_context_dto.occurred_at,
+            )
+
+        return result

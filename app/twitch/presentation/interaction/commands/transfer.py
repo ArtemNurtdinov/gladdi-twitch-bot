@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.transfer.model import TransferDTO
-from app.twitch.application.interaction.transfer.handle_transfer_use_case import HandleTransferUseCase
+from app.commands.transfer.model import TransferDTO
+from app.commands.transfer.handle_transfer_use_case import HandleTransferUseCase
 
 
 class TransferCommandHandler:

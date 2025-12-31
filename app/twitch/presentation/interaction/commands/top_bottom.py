@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.top_bottom.model import BottomDTO, TopDTO
-from app.twitch.application.interaction.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
+from app.commands.top_bottom.model import BottomDTO, TopDTO
+from app.commands.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
 
 
 class TopBottomCommandHandler:

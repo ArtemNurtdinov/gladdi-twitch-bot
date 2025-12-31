@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
+from app.minigame.application.model import RpsDTO
 from app.minigame.domain.models import RPS_CHOICES
 from app.minigame.domain.minigame_service import MinigameService
-from app.minigame.application.dto import RpsDTO
 from core.provider import Provider
 
 

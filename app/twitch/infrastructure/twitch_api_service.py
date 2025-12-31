@@ -7,13 +7,14 @@ from typing import Optional, Dict, Any, List
 from pydantic import ValidationError
 
 from app.follow.application.model import ChannelFollowerDTO
-from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO
-from app.twitch.application.interaction.follow.followage_port import FollowagePort
-from app.twitch.application.interaction.follow.model import FollowageInfo
-from app.twitch.application.common.stream_info_port import StreamInfoPort
-from app.twitch.application.common.stream_status_port import StreamStatusPort
-from app.twitch.application.common.user_info_port import UserInfoPort
-from app.twitch.application.common.stream_chatters_port import StreamChattersPort
+from app.stream.application.model import StreamDataDTO, StreamStatusDTO
+from app.user.application.model import UserInfoDTO
+from app.commands.follow.application.followage_port import FollowagePort
+from app.commands.follow.model import FollowageInfo
+from app.stream.application.stream_info_port import StreamInfoPort
+from app.stream.application.stream_status_port import StreamStatusPort
+from app.user.application.user_info_port import UserInfoPort
+from app.viewer.application.stream_chatters_port import StreamChattersPort
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.twitch_api_models import (
     UsersResponse,
