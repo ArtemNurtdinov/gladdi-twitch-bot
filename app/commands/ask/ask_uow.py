@@ -1,33 +1,28 @@
 from __future__ import annotations
 
-from typing import ContextManager, Protocol
+from contextlib import AbstractContextManager
+from typing import Protocol
 
 from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
 
 
 class AskUnitOfWork(Protocol):
+    @property
+    def chat(self) -> ChatUseCase: ...
 
     @property
-    def chat(self) -> ChatUseCase:
-        ...
+    def conversation(self) -> ConversationService: ...
 
-    @property
-    def conversation(self) -> ConversationService:
-        ...
 
 class AskUnitOfWorkRo(Protocol):
-
     @property
-    def conversation(self) -> ConversationService:
-        ...
+    def conversation(self) -> ConversationService: ...
+
 
 class AskUnitOfWorkFactory(Protocol):
+    def create(self) -> AbstractContextManager[AskUnitOfWork]: ...
 
-    def create(self) -> ContextManager[AskUnitOfWork]:
-        ...
 
 class AskUnitOfWorkRoFactory(Protocol):
-
-    def create(self) -> ContextManager[AskUnitOfWorkRo]:
-        ...
+    def create(self) -> AbstractContextManager[AskUnitOfWorkRo]: ...

@@ -1,4 +1,5 @@
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
@@ -7,13 +8,12 @@ from app.battle.domain.models import UserBattleStats
 from app.betting.application.betting_service import BettingService
 from app.betting.presentation.betting_schemas import UserBetStats
 from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
 from app.commands.stats.model import StatsDTO
+from app.economy.domain.economy_service import EconomyService
 from core.provider import Provider
 
 
 class HandleStatsUseCase:
-
     def __init__(
         self,
         economy_service_provider: Provider[EconomyService],
@@ -28,8 +28,8 @@ class HandleStatsUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         command_stats: StatsDTO,
     ) -> str:
         with db_session_provider() as db:
@@ -46,8 +46,7 @@ class HandleStatsUseCase:
 
         with db_readonly_session_provider() as db:
             battles = self._battle_use_case_provider.get(db).get_user_battles(
-                channel_name=command_stats.channel_name,
-                user_name=command_stats.display_name
+                channel_name=command_stats.channel_name, user_name=command_stats.display_name
             )
 
         if not battles:

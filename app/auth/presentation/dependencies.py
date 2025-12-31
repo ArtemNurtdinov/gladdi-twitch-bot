@@ -1,13 +1,11 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Optional
-
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from app.auth.domain.auth_service import AuthService
 from app.auth.data.auth_repository import AuthRepositoryImpl
+from app.auth.domain.auth_service import AuthService
 from app.auth.domain.models import User, UserRole
+from core.db import get_db
 
 security = HTTPBearer()
 security_optional = HTTPBearer(auto_error=False)
@@ -35,10 +33,10 @@ def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
 
 
 def get_optional_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
     auth_service: AuthService = Depends(get_auth_service),
     db: Session = Depends(get_db),
-) -> Optional[User]:
+) -> User | None:
     if credentials is None:
         return None
     user = auth_service.validate_access_token(db, credentials.credentials)

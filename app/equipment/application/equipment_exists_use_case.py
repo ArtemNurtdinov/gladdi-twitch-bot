@@ -3,7 +3,6 @@ from app.equipment.domain.repo import EquipmentRepository
 
 
 class EquipmentExistsUseCase:
-
     def __init__(self, repo: EquipmentRepository):
         self._repo = repo
 

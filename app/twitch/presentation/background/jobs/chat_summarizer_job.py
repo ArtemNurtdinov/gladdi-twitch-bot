@@ -1,7 +1,8 @@
 import asyncio
 import logging
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
@@ -20,7 +21,7 @@ class ChatSummarizerJob:
         self,
         channel_name: str,
         handle_chat_summarizer_use_case: HandleChatSummarizerUseCase,
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         chat_summary_state: ChatSummaryState,
     ):
         self._channel_name = channel_name
@@ -36,15 +37,10 @@ class ChatSummarizerJob:
             try:
                 await asyncio.sleep(20 * 60)
 
-                summarizer_job_dto = SummarizerJobDTO(
-                    channel_name=self._channel_name,
-                    occurred_at=datetime.utcnow(),
-                    interval_minutes=20
-                )
+                summarizer_job_dto = SummarizerJobDTO(channel_name=self._channel_name, occurred_at=datetime.utcnow(), interval_minutes=20)
 
                 result = await self._handle_chat_summarizer_use_case.handle(
-                    db_readonly_session_provider=self._db_readonly_session_provider,
-                    summarizer_job=summarizer_job_dto
+                    db_readonly_session_provider=self._db_readonly_session_provider, summarizer_job=summarizer_job_dto
                 )
                 if result is None:
                     logger.debug("Нет данных для анализа или стрим не активен")

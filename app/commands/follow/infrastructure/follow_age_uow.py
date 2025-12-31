@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager, contextmanager
 
 from sqlalchemy.orm import Session
 
 from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.ask.ask_uow import AskUnitOfWorkRo
-from app.commands.follow.uow import FollowAgeUnitOfWorkRo, FollowAgeUnitOfWorkRoFactory, FollowAgeUnitOfWorkRw, \
-    FollowAgeUnitOfWorkRwFactory
+from app.commands.follow.uow import FollowAgeUnitOfWorkRo, FollowAgeUnitOfWorkRoFactory, FollowAgeUnitOfWorkRw, FollowAgeUnitOfWorkRwFactory
 from core.provider import Provider
 
 
 class SqlAlchemyFollowAgeUnitOfWorkRo(FollowAgeUnitOfWorkRo):
-
     def __init__(self, conversation: ConversationService):
         self._conversation = conversation
 
@@ -24,16 +22,15 @@ class SqlAlchemyFollowAgeUnitOfWorkRo(FollowAgeUnitOfWorkRo):
 
 
 class SqlAlchemyFollowAgeUnitOfWorkRoFactory(FollowAgeUnitOfWorkRoFactory):
-
     def __init__(
         self,
-        read_session_factory: Callable[[], ContextManager[Session]],
+        read_session_factory: Callable[[], AbstractContextManager[Session]],
         conversation_service_provider: Provider[ConversationService],
     ):
         self._read_session_factory = read_session_factory
         self._conversation_service_provider = conversation_service_provider
 
-    def create(self) -> ContextManager[AskUnitOfWorkRo]:
+    def create(self) -> AbstractContextManager[AskUnitOfWorkRo]:
         @contextmanager
         def _ctx():
             with self._read_session_factory() as db:
@@ -46,7 +43,6 @@ class SqlAlchemyFollowAgeUnitOfWorkRoFactory(FollowAgeUnitOfWorkRoFactory):
 
 
 class SqlAlchemyFollowAgeUnitOfWorkRw(FollowAgeUnitOfWorkRw):
-
     def __init__(self, chat_use_case: ChatUseCase, conversation: ConversationService):
         self._chat_use_case = chat_use_case
         self._conversation = conversation
@@ -61,10 +57,9 @@ class SqlAlchemyFollowAgeUnitOfWorkRw(FollowAgeUnitOfWorkRw):
 
 
 class SqlAlchemyFollowAgeUnitOfWorkRwFactory(FollowAgeUnitOfWorkRwFactory):
-
     def __init__(
         self,
-        session_factory: Callable[[], ContextManager[Session]],
+        session_factory: Callable[[], AbstractContextManager[Session]],
         chat_use_case_provider: Provider[ChatUseCase],
         conversation_service_provider: Provider[ConversationService],
     ):
@@ -72,7 +67,7 @@ class SqlAlchemyFollowAgeUnitOfWorkRwFactory(FollowAgeUnitOfWorkRwFactory):
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
 
-    def create(self) -> ContextManager[FollowAgeUnitOfWorkRw]:
+    def create(self) -> AbstractContextManager[FollowAgeUnitOfWorkRw]:
         @contextmanager
         def _ctx():
             with self._session_factory() as db:

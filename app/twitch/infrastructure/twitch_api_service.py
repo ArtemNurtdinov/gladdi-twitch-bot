@@ -1,28 +1,28 @@
 from __future__ import annotations
 
 import logging
-import httpx
-from typing import Optional, Dict, Any, List
+from typing import Any
 
+import httpx
 from pydantic import ValidationError
 
-from app.follow.application.model import ChannelFollowerDTO
-from app.stream.application.model import StreamDataDTO, StreamStatusDTO
-from app.user.application.model import UserInfoDTO
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.model import FollowageInfo
+from app.follow.application.model import ChannelFollowerDTO
+from app.stream.application.model import StreamDataDTO, StreamStatusDTO
 from app.stream.application.stream_info_port import StreamInfoPort
 from app.stream.application.stream_status_port import StreamStatusPort
-from app.user.application.user_info_port import UserInfoPort
-from app.viewer.application.stream_chatters_port import StreamChattersPort
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.twitch_api_models import (
-    UsersResponse,
-    StreamsResponse,
-    FollowersResponse,
     ChattersResponse,
     FollowerData,
+    FollowersResponse,
+    StreamsResponse,
+    UsersResponse,
 )
+from app.user.application.model import UserInfoDTO
+from app.user.application.user_info_port import UserInfoPort
+from app.viewer.application.stream_chatters_port import StreamChattersPort
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +34,9 @@ class TwitchApiService(
     UserInfoPort,
     StreamChattersPort,
 ):
-
     def __init__(self, twitch_auth: TwitchAuth):
         self._twitch_auth = twitch_auth
-        self._base_url = 'https://api.twitch.tv/helix'
+        self._base_url = "https://api.twitch.tv/helix"
         self._client = httpx.AsyncClient(
             base_url=self._base_url,
             timeout=httpx.Timeout(10.0),
@@ -47,13 +46,10 @@ class TwitchApiService(
     async def aclose(self) -> None:
         await self._client.aclose()
 
-    def _get_headers(self) -> Dict[str, str]:
-        return {
-            'Client-ID': self._twitch_auth.client_id,
-            'Authorization': f'Bearer {self._twitch_auth.access_token}'
-        }
+    def _get_headers(self) -> dict[str, str]:
+        return {"Client-ID": self._twitch_auth.client_id, "Authorization": f"Bearer {self._twitch_auth.access_token}"}
 
-    async def _handle_api_response(self, response: httpx.Response, operation: str) -> Dict[str, Any]:
+    async def _handle_api_response(self, response: httpx.Response, operation: str) -> dict[str, Any]:
         if response.status_code == 200:
             logger.debug(f"API операция '{operation}' выполнена успешно")
             return response.json()
@@ -61,12 +57,12 @@ class TwitchApiService(
             logger.error(f"Ошибка в API операции '{operation}': {response.status_code}, {response.text}")
             raise Exception(f"API операция '{operation}' завершилась с ошибкой: {response.status_code}")
 
-    async def get_user_by_login(self, login: str) -> Optional[UserInfoDTO]:
+    async def get_user_by_login(self, login: str) -> UserInfoDTO | None:
         logger.debug(f"Получение информации о пользователе для логина: {login}")
 
-        url = '/users'
+        url = "/users"
         headers = self._get_headers()
-        params = {'login': login}
+        params = {"login": login}
 
         try:
             response = await self._client.get(url, headers=headers, params=params)
@@ -108,15 +104,12 @@ class TwitchApiService(
             logger.error(f"Неожиданная ошибка при получении пользователя {login}: {e}")
             return None
 
-    async def _get_user_followage(self, broadcaster_id: str, user_id: str) -> Optional[FollowageInfo]:
+    async def _get_user_followage(self, broadcaster_id: str, user_id: str) -> FollowageInfo | None:
         logger.debug(f"Получение информации о подписке пользователя {user_id} на канал {broadcaster_id}")
 
-        url = '/channels/followers'
+        url = "/channels/followers"
         headers = self._get_headers()
-        params = {
-            'broadcaster_id': broadcaster_id,
-            'user_id': user_id
-        }
+        params = {"broadcaster_id": broadcaster_id, "user_id": user_id}
 
         response = await self._client.get(url, headers=headers, params=params)
         try:
@@ -126,7 +119,7 @@ class TwitchApiService(
             logger.error(f"Валидация followage для {user_id} не прошла: {e}")
             return None
 
-        followers: List[FollowerData] = parsed.data
+        followers: list[FollowerData] = parsed.data
         if followers:
             follow_data = followers[0]
             follow_dt = follow_data.followed_at.replace(tzinfo=None)
@@ -140,7 +133,7 @@ class TwitchApiService(
         logger.debug(f"Пользователь {user_id} не подписан на канал {broadcaster_id}")
         return None
 
-    async def get_followage(self, channel_name: str, user_id: str) -> Optional[FollowageInfo]:
+    async def get_followage(self, channel_name: str, user_id: str) -> FollowageInfo | None:
         user = await self.get_user_by_login(channel_name)
         broadcaster_id = None if user is None else user.id
         if not broadcaster_id:
@@ -148,46 +141,48 @@ class TwitchApiService(
 
         return await self._get_user_followage(broadcaster_id=broadcaster_id, user_id=user_id)
 
-    async def _get_channel_followers(self, broadcaster_id: str) -> List[ChannelFollowerDTO]:
-        url = '/channels/followers'
+    async def _get_channel_followers(self, broadcaster_id: str) -> list[ChannelFollowerDTO]:
+        url = "/channels/followers"
         headers = self._get_headers()
-        params = {'broadcaster_id': broadcaster_id, 'first': 100}
-        followers: List[ChannelFollowerDTO] = []
+        params = {"broadcaster_id": broadcaster_id, "first": 100}
+        followers: list[ChannelFollowerDTO] = []
         cursor = None
 
         while True:
             if cursor:
-                params['after'] = cursor
-            elif 'after' in params:
-                params.pop('after')
+                params["after"] = cursor
+            elif "after" in params:
+                params.pop("after")
 
             response = await self._client.get(url, headers=headers, params=params)
             try:
                 data = await self._handle_api_response(response, f"get_channel_followers({broadcaster_id})")
                 parsed: FollowersResponse = FollowersResponse.model_validate(data)
-                followers_page: List[FollowerData] = parsed.data
+                followers_page: list[FollowerData] = parsed.data
             except ValidationError as e:
                 logger.error(f"Валидация списка подписчиков {broadcaster_id} не прошла: {e}")
                 break
 
-            followers.extend([
-                ChannelFollowerDTO(
-                    user_id=item.user_id,
-                    user_name=item.user_login,
-                    display_name=item.user_name,
-                    followed_at=item.followed_at.replace(tzinfo=None),
-                )
-                for item in followers_page
-            ])
+            followers.extend(
+                [
+                    ChannelFollowerDTO(
+                        user_id=item.user_id,
+                        user_name=item.user_login,
+                        display_name=item.user_name,
+                        followed_at=item.followed_at.replace(tzinfo=None),
+                    )
+                    for item in followers_page
+                ]
+            )
 
-            pagination = data.get('pagination') if isinstance(data, dict) else None
-            cursor = None if not pagination else pagination.get('cursor')
+            pagination = data.get("pagination") if isinstance(data, dict) else None
+            cursor = None if not pagination else pagination.get("cursor")
             if not cursor or not parsed.data:
                 break
 
         return followers
 
-    async def get_channel_followers(self, channel_name: str) -> List[ChannelFollowerDTO]:
+    async def get_channel_followers(self, channel_name: str) -> list[ChannelFollowerDTO]:
         user = await self.get_user_by_login(channel_name)
         broadcaster_id = None if user is None else user.id
         if not broadcaster_id:
@@ -195,7 +190,7 @@ class TwitchApiService(
 
         return await self._get_channel_followers(broadcaster_id=broadcaster_id)
 
-    async def get_stream_info(self, channel_name: str) -> Optional[StreamDataDTO]:
+    async def get_stream_info(self, channel_name: str) -> StreamDataDTO | None:
         user = await self.get_user_by_login(channel_name)
         broadcaster_id = None if user is None else user.id
         if not broadcaster_id:
@@ -207,10 +202,10 @@ class TwitchApiService(
 
         return stream_status.stream_data
 
-    async def get_stream_status(self, broadcaster_id: str) -> Optional[StreamStatusDTO]:
-        url = '/streams'
+    async def get_stream_status(self, broadcaster_id: str) -> StreamStatusDTO | None:
+        url = "/streams"
         headers = self._get_headers()
-        params = {'user_id': broadcaster_id}
+        params = {"user_id": broadcaster_id}
 
         try:
             response = await self._client.get(url, headers=headers, params=params)
@@ -266,22 +261,13 @@ class TwitchApiService(
     async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool:
         logger.debug(f"Применение таймаута пользователю {user_id} на {duration_seconds} секунд")
 
-        url = '/moderation/bans'
+        url = "/moderation/bans"
         headers = self._get_headers()
-        headers['Content-Type'] = 'application/json'
+        headers["Content-Type"] = "application/json"
 
-        data = {
-            "data": {
-                "user_id": user_id,
-                "duration": duration_seconds,
-                "reason": reason
-            }
-        }
+        data = {"data": {"user_id": user_id, "duration": duration_seconds, "reason": reason}}
 
-        params = {
-            'broadcaster_id': broadcaster_id,
-            'moderator_id': moderator_id
-        }
+        params = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id}
 
         response = await self._client.post(url, headers=headers, json=data, params=params)
         if response.status_code == 200:
@@ -291,13 +277,10 @@ class TwitchApiService(
             logger.error(f"Не удалось дать таймаут пользователю {user_id}. Status: {response.status_code}, Response: {response.text}")
             return False
 
-    async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> List[str]:
-        url = '/chat/chatters'
+    async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> list[str]:
+        url = "/chat/chatters"
         headers = self._get_headers()
-        params = {
-            'broadcaster_id': broadcaster_id,
-            'moderator_id': moderator_id
-        }
+        params = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id}
 
         try:
             response = await self._client.get(url, headers=headers, params=params)

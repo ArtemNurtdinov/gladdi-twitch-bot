@@ -4,7 +4,6 @@ from app.ai.intent.domain.models import Intent
 
 
 class GetIntentFromTextUseCase:
-
     def __init__(self, intent_detector: IntentDetectorClient, llm_client: LLMClient):
         self._intent_detector = intent_detector
         self._llm_client = llm_client

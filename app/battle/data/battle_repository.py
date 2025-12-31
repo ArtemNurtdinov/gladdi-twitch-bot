@@ -4,13 +4,12 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.battle.data.db.battle_history import BattleHistory
+from app.battle.data.mappers.battle_mapper import map_battle_history
 from app.battle.domain.models import BattleRecord
 from app.battle.domain.repo import BattleRepository
-from app.battle.data.mappers.battle_mapper import map_battle_history
 
 
 class BattleRepositoryImpl(BattleRepository):
-
     def __init__(self, db: Session):
         self._db = db
 
@@ -22,7 +21,6 @@ class BattleRepositoryImpl(BattleRepository):
         winner: str,
         result_text: str,
     ) -> None:
-
         battle = BattleHistory(
             channel_name=channel_name,
             opponent_1=opponent_1,
@@ -53,6 +51,3 @@ class BattleRepositoryImpl(BattleRepository):
             .all()
         )
         return [map_battle_history(row) for row in rows]
-
-
-

@@ -1,11 +1,13 @@
-from sqlalchemy import Column, String, DateTime, Integer, BigInteger, Enum
 from datetime import datetime
-from core.db import Base
+
+from sqlalchemy import BigInteger, Column, DateTime, Enum, Integer, String
+
 from app.economy.domain.models import TransactionType
+from core.db import Base
 
 
 class TransactionHistory(Base):
-    __tablename__ = 'transaction_history'
+    __tablename__ = "transaction_history"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     channel_name = Column(String, nullable=False)

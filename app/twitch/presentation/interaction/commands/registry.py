@@ -1,5 +1,4 @@
 class CommandRegistry:
-
     def __init__(
         self,
         followage,
@@ -31,4 +30,3 @@ class CommandRegistry:
         self.help = help
         self.guess = guess
         self.rps = rps
-

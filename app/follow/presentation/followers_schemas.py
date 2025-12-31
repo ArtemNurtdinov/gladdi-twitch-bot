@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional, List
 
 from pydantic import BaseModel
 
@@ -10,16 +9,14 @@ class FollowerResponse(BaseModel):
     user_id: str
     user_name: str
     display_name: str
-    followed_at: Optional[datetime] = None
+    followed_at: datetime | None = None
     first_seen_at: datetime
     last_seen_at: datetime
-    unfollowed_at: Optional[datetime] = None
+    unfollowed_at: datetime | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
 
 
 class FollowersListResponse(BaseModel):
-    followers: List[FollowerResponse]
-
-
+    followers: list[FollowerResponse]

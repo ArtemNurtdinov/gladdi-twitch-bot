@@ -1,9 +1,8 @@
-from app.economy.domain.models import TimeoutProtectionEffect, ShopItemType, TimeoutReductionEffect
+from app.economy.domain.models import ShopItemType, TimeoutProtectionEffect, TimeoutReductionEffect
 from app.equipment.domain.models import UserEquipmentItem
 
 
 class CalculateTimeoutUseCase:
-
     def calculate_timeout_with_equipment(self, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
         if base_timeout_seconds <= 0:
             return 0, ""
@@ -15,7 +14,7 @@ class CalculateTimeoutUseCase:
             for effect in item.shop_item.effects:
                 if isinstance(effect, TimeoutProtectionEffect):
                     if item.item_type == ShopItemType.MAEL_EXPEDITION:
-                        return 0, "⚔️ Маэль перерисовала судьбу и спасла от таймаута! Фоном играет \"Алиииинаааа аииииии\"..."
+                        return 0, '⚔️ Маэль перерисовала судьбу и спасла от таймаута! Фоном играет "Алиииинаааа аииииии"...'
                     elif item.item_type == ShopItemType.COMMUNIST_PARTY:
                         return 0, "☭ Партия коммунистов защитила товарища! Единство спасло от таймаута!"
                     elif item.item_type == ShopItemType.GAMBLER_AMULET:

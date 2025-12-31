@@ -1,12 +1,11 @@
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Callable, Awaitable
 
-from app.commands.chat.model import ChatMessageDTO
 from app.commands.chat.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.commands.chat.model import ChatMessageDTO
 
 
 class ChatEventHandler:
-
     def __init__(
         self,
         handle_chat_message_use_case: HandleChatMessageUseCase,

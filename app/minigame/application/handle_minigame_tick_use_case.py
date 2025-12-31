@@ -3,7 +3,6 @@ from app.minigame.application.model import MinigameTickDTO
 
 
 class HandleMinigameTickUseCase:
-
     def __init__(self, minigame_orchestrator: MinigameOrchestrator):
         self._minigame_orchestrator = minigame_orchestrator
 

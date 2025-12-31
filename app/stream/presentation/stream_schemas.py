@@ -1,5 +1,6 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StreamViewerSessionResponse(BaseModel):
@@ -43,5 +44,3 @@ class StreamDetailResponse(StreamResponse):
 class StreamListResponse(BaseModel):
     items: list[StreamResponse] = Field(..., description="Список стримов")
     total: int = Field(..., description="Общее количество стримов в выборке")
-
-

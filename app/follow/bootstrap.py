@@ -67,4 +67,3 @@ def get_follower_detail_use_case(
     repo: FollowersRepositoryImpl = Depends(get_followers_repo_ro),
 ) -> GetFollowerDetailUseCase:
     return GetFollowerDetailUseCase(repo)
-

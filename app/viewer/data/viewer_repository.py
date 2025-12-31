@@ -1,11 +1,9 @@
 from datetime import datetime, timedelta
-from typing import Optional
 
 from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
 
 from app.stream.infrastructure.mappers.stream_mapper import map_stream_row
-
 from app.viewer.data.db.viewer_session import StreamViewerSession
 from app.viewer.domain.models import ViewerSession
 from app.viewer.domain.repo import ViewerRepository
@@ -32,10 +30,10 @@ class ViewerRepositoryImpl(ViewerRepository):
             last_reward_claimed=row.last_reward_claimed,
             created_at=row.created_at,
             updated_at=row.updated_at,
-            stream=map_stream_row(row.stream) if row.stream else None
+            stream=map_stream_row(row.stream) if row.stream else None,
         )
 
-    def get_viewer_session(self, stream_id: int, channel_name: str, user_name: str) -> Optional[ViewerSession]:
+    def get_viewer_session(self, stream_id: int, channel_name: str, user_name: str) -> ViewerSession | None:
         row = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
         if not row:
             return None
@@ -48,7 +46,7 @@ class ViewerRepositoryImpl(ViewerRepository):
             user_name=user_name,
             session_start=current_time,
             last_activity=current_time,
-            is_watching=True
+            is_watching=True,
         )
         self._db.add(session)
 
@@ -62,23 +60,13 @@ class ViewerRepositoryImpl(ViewerRepository):
         cutoff_time = current_time - timedelta(minutes=self.ACTIVITY_TIMEOUT_MINUTES)
         rows = (
             self._db.query(StreamViewerSession)
-            .filter_by(
-                stream_id=stream_id,
-                is_watching=True
-            )
+            .filter_by(stream_id=stream_id, is_watching=True)
             .filter(StreamViewerSession.last_activity < cutoff_time)
             .all()
         )
         return [self._to_viewer_session(row) for row in rows]
 
-    def finish_session(
-        self,
-        stream_id: int,
-        channel_name: str,
-        user_name: str,
-        total_minutes: int,
-        current_time: datetime
-    ):
+    def finish_session(self, stream_id: int, channel_name: str, user_name: str, total_minutes: int, current_time: datetime):
         session = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
         session.total_minutes = total_minutes
         session.session_end = current_time

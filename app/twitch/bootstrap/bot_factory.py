@@ -10,13 +10,14 @@ from app.commands.balance.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.battle.handle_battle_use_case import HandleBattleUseCase
 from app.commands.bonus.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.chat.handle_chat_message_use_case import HandleChatMessageUseCase
-from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory, \
-    SqlAlchemyChatMessageUnitOfWorkRoFactory
+from app.commands.chat.infrastructure.chat_message_uow import (
+    SqlAlchemyChatMessageUnitOfWorkFactory,
+    SqlAlchemyChatMessageUnitOfWorkRoFactory,
+)
 from app.commands.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
-from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkRoFactory, \
-    SqlAlchemyFollowAgeUnitOfWorkRwFactory
+from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkRoFactory, SqlAlchemyFollowAgeUnitOfWorkRwFactory
 from app.commands.guess.handle_guess_use_case import HandleGuessUseCase
 from app.commands.help.handle_help_use_case import HandleHelpUseCase
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
@@ -39,8 +40,8 @@ from app.stream.application.handle_restore_stream_context_use_case import Handle
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.application.model import RestoreStreamJobDTO
 from app.stream.bootstrap import StreamProviders
-from app.twitch.bootstrap.twitch import TwitchProviders
 from app.twitch.bootstrap.bot_settings import BotSettings
+from app.twitch.bootstrap.twitch import TwitchProviders
 from app.twitch.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.jobs.chat_summarizer_job import ChatSummarizerJob
@@ -75,7 +76,6 @@ from core.db import SessionLocal, db_ro_session
 
 
 class BotFactory:
-
     def __init__(
         self,
         twitch_providers: TwitchProviders,
@@ -149,7 +149,7 @@ class BotFactory:
             command_rps=self._settings.command_rps,
             bot_nick_provider=lambda: bot.nick,
             send_channel_message=bot.send_channel_message,
-            conversation_service_provider=self._ai.conversation_service_provider
+            conversation_service_provider=self._ai.conversation_service_provider,
         )
 
     def _create_background_tasks(self, bot: Bot, chat_response_use_case: ChatResponseUseCase) -> BotBackgroundTasks:
@@ -164,17 +164,14 @@ class BotFactory:
                         stream_info=self._stream.stream_info_port,
                         chat_response_use_case=chat_response_use_case,
                         conversation_service_provider=self._ai.conversation_service_provider,
-                        chat_use_case_provider=self._chat.chat_use_case_provider
+                        chat_use_case_provider=self._chat.chat_use_case_provider,
                     ),
                     db_session_provider=SessionLocal.begin,
                     send_channel_message=bot.send_channel_message,
                     bot_nick_provider=lambda: bot.nick,
                 ),
                 TokenCheckerJob(
-                    handle_token_checker_use_case=HandleTokenCheckerUseCase(
-                        twitch_auth=self._twitch.twitch_auth,
-                        interval_seconds=1000
-                    ),
+                    handle_token_checker_use_case=HandleTokenCheckerUseCase(twitch_auth=self._twitch.twitch_auth, interval_seconds=1000),
                 ),
                 StreamStatusJob(
                     channel_name=self._settings.channel_name,
@@ -236,13 +233,14 @@ class BotFactory:
                     ),
                     db_session_provider=SessionLocal.begin,
                     interval_seconds=self._settings.sync_followers_interval_seconds,
-                )
-            ]
+                ),
+            ],
         )
 
     def _create_command_registry(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str) -> CommandRegistry:
         prefix = self._settings.prefix
-        bot_nick_provider = lambda: bot.nick
+        def bot_nick_provider() -> str:
+            return bot.nick
         post_message_fn = bot.post_message_in_twitch_chat
         timeout_fn = bot.timeout_user
         settings = self._settings
@@ -259,7 +257,7 @@ class BotFactory:
                 chat_response_use_case=chat_response_use_case,
                 unit_of_work_ro_factory=self._build_follow_age_uow_ro_factory(),
                 unit_of_work_rw_factory=self._build_follow_age_uow_rw_factory(),
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
             ),
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
@@ -273,7 +271,7 @@ class BotFactory:
                 unit_of_work_factory=ask_uow_factory,
                 unit_of_work_ro_factory=self._build_ask_uow_ro_factory(),
                 system_prompt=system_prompt,
-                chat_response_use_case=chat_response_use_case
+                chat_response_use_case=chat_response_use_case,
             ),
             post_message_fn=post_message_fn,
             bot_nick_provider=bot_nick_provider,
@@ -288,7 +286,7 @@ class BotFactory:
                 battle_use_case_provider=self._battle.battle_use_case_provider,
                 get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
                 chat_response_use_case=chat_response_use_case,
-                calculate_timeout_use_case_provider=self._equipment.calculate_timeout_use_case_provider
+                calculate_timeout_use_case_provider=self._equipment.calculate_timeout_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
@@ -305,7 +303,7 @@ class BotFactory:
                 roll_cooldown_use_case_provider=self._equipment.roll_cooldown_use_case_provider,
                 get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
-                calculate_timeout_use_case_provider=self._equipment.calculate_timeout_use_case_provider
+                calculate_timeout_use_case_provider=self._equipment.calculate_timeout_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
@@ -315,8 +313,7 @@ class BotFactory:
         )
         balance = BalanceCommandHandler(
             handle_balance_use_case=HandleBalanceUseCase(
-                economy_service_provider=self._economy.economy_service_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider
+                economy_service_provider=self._economy.economy_service_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
@@ -355,7 +352,7 @@ class BotFactory:
                 economy_service_provider=self._economy.economy_service_provider,
                 add_equipment_use_case_provider=self._equipment.add_equipment_use_case_provider,
                 equipment_exists_use_case_provider=self._equipment.equipment_exists_use_case_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider
+                chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
@@ -368,7 +365,7 @@ class BotFactory:
             command_shop=settings.command_shop,
             handle_equipment_use_case=HandleEquipmentUseCase(
                 get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider
+                chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
@@ -377,8 +374,7 @@ class BotFactory:
         )
         top_bottom = TopBottomCommandHandler(
             handle_top_bottom_use_case=HandleTopBottomUseCase(
-                economy_service_provider=self._economy.economy_service_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider
+                economy_service_provider=self._economy.economy_service_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
@@ -417,9 +413,7 @@ class BotFactory:
         }
         help_handler = HelpCommandHandler(
             command_prefix=prefix,
-            handle_help_use_case=HandleHelpUseCase(
-                chat_use_case_provider=self._chat.chat_use_case_provider
-            ),
+            handle_help_use_case=HandleHelpUseCase(chat_use_case_provider=self._chat.chat_use_case_provider),
             db_session_provider=SessionLocal.begin,
             commands=commands,
             bot_nick_provider=bot_nick_provider,
@@ -476,7 +470,7 @@ class BotFactory:
             get_intent_from_text_use_case=self._ai.get_intent_use_case,
             prompt_service=self._ai.prompt_service,
             system_prompt=system_prompt,
-            chat_response_use_case=chat_response_use_case
+            chat_response_use_case=chat_response_use_case,
         )
         return ChatEventHandler(
             handle_chat_message_use_case=handle_chat_message,
@@ -530,13 +524,12 @@ class BotFactory:
 
     def _build_follow_age_uow_ro_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkRoFactory:
         return SqlAlchemyFollowAgeUnitOfWorkRoFactory(
-            read_session_factory=lambda: db_ro_session(),
-            conversation_service_provider=self._ai.conversation_service_provider
+            read_session_factory=lambda: db_ro_session(), conversation_service_provider=self._ai.conversation_service_provider
         )
 
     def _build_follow_age_uow_rw_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkRwFactory:
         return SqlAlchemyFollowAgeUnitOfWorkRwFactory(
             session_factory=SessionLocal.begin,
             chat_use_case_provider=self._chat.chat_use_case_provider,
-            conversation_service_provider=self._ai.conversation_service_provider
+            conversation_service_provider=self._ai.conversation_service_provider,
         )

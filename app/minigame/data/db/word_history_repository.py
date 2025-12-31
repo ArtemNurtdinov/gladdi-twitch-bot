@@ -2,12 +2,11 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.minigame.domain.repo import WordHistoryRepository
 from app.minigame.data.db.word_history import WordHistory as OrmWordHistory
+from app.minigame.domain.repo import WordHistoryRepository
 
 
 class WordHistoryRepositoryImpl(WordHistoryRepository):
-
     def __init__(self, db: Session):
         self._db = db
 

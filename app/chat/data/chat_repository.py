@@ -1,26 +1,22 @@
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Sequence, Tuple
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.chat.data.db.chat_message import ChatMessage as ChatMessageORM
 from app.chat.domain.models import ChatMessage
 from app.chat.domain.repo import ChatRepository
-from app.chat.data.db.chat_message import ChatMessage as ChatMessageORM
 
 
 class ChatRepositoryImpl(ChatRepository):
-
     def __init__(self, db: Session):
         self._db = db
 
     def save(self, message: ChatMessage) -> None:
         self._db.add(
             ChatMessageORM(
-                channel_name=message.channel_name,
-                user_name=message.user_name,
-                content=message.content,
-                created_at=message.created_at
+                channel_name=message.channel_name, user_name=message.user_name, content=message.content, created_at=message.created_at
             )
         )
 
@@ -45,7 +41,7 @@ class ChatRepositoryImpl(ChatRepository):
         )
         return [ChatMessage(r.channel_name, r.user_name, r.content, r.created_at) for r in reversed(rows)]
 
-    def top_chat_users(self, limit: int, date_from: datetime | None, date_to: datetime | None) -> Sequence[Tuple[str, str, int]]:
+    def top_chat_users(self, limit: int, date_from: datetime | None, date_to: datetime | None) -> Sequence[tuple[str, str, int]]:
         count_expr = func.count(ChatMessageORM.id).label("message_count")
         query = self._db.query(ChatMessageORM.channel_name, ChatMessageORM.user_name, count_expr)
 

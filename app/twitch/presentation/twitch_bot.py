@@ -1,11 +1,10 @@
 import asyncio
 import logging
-from typing import Optional
 
 from twitchio.ext import commands
 
+from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS, BotSettings
 from app.twitch.bootstrap.twitch import TwitchProviders
-from app.twitch.bootstrap.bot_settings import BotSettings, DEFAULT_SETTINGS
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.model.state import ChatSummaryState
 from app.twitch.presentation.interaction.chat_event_handler import ChatEventHandler
@@ -15,13 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class Bot(commands.Bot):
-
-    def __init__(
-        self,
-        twitch_providers: TwitchProviders,
-        user_providers: UserProviders,
-        settings: BotSettings
-    ):
+    def __init__(self, twitch_providers: TwitchProviders, user_providers: UserProviders, settings: BotSettings):
         self._settings = settings
         self._twitch = twitch_providers
         self._user = user_providers
@@ -34,7 +27,7 @@ class Bot(commands.Bot):
         self._battle_waiting_user_ref = {"value": None}
 
         self.minigame_orchestrator = None
-        self._background_tasks: Optional[BotBackgroundTasks] = None
+        self._background_tasks: BotBackgroundTasks | None = None
         self._command_registry = None
         self._chat_event_handler: ChatEventHandler | None = None
 
@@ -83,11 +76,11 @@ class Bot(commands.Bot):
         await super().close()
 
     async def event_ready(self):
-        logger.info(f'Бот {self.nick} готов')
+        logger.info(f"Бот {self.nick} готов")
         if self.initial_channels:
-            logger.info(f'Бот успешно подключен к каналу: {", ".join(self.initial_channels)}')
+            logger.info(f"Бот успешно подключен к каналу: {', '.join(self.initial_channels)}")
         else:
-            logger.error('Проблемы с подключением к каналам!')
+            logger.error("Проблемы с подключением к каналам!")
         await self._warmup_broadcaster_id()
         await self._start_background_tasks()
 
@@ -110,27 +103,17 @@ class Bot(commands.Bot):
             return
 
         await self._chat_event_handler.handle(
-            channel_name=message.channel.name,
-            display_name=message.author.display_name,
-            message=message.content,
-            bot_nick=self.nick
+            channel_name=message.channel.name, display_name=message.author.display_name, message=message.content, bot_nick=self.nick
         )
 
     @commands.command(name=DEFAULT_SETTINGS.command_followage)
     async def followage(self, ctx):
-        await self._command_registry.followage.handle(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx
-        )
+        await self._command_registry.followage.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx)
 
     @commands.command(name=DEFAULT_SETTINGS.command_gladdi)
     async def ask(self, ctx):
         await self._command_registry.ask.handle(
-            channel_name=ctx.channel.name,
-            full_message=ctx.message.content,
-            display_name=ctx.author.display_name,
-            ctx=ctx
+            channel_name=ctx.channel.name, full_message=ctx.message.content, display_name=ctx.author.display_name, ctx=ctx
         )
 
     @commands.command(name=DEFAULT_SETTINGS.command_fight)
@@ -139,133 +122,80 @@ class Bot(commands.Bot):
             channel_name=ctx.channel.name,
             display_name=ctx.author.display_name,
             battle_waiting_user_ref=self._battle_waiting_user_ref,
-            ctx=ctx
+            ctx=ctx,
         )
 
     @commands.command(name=DEFAULT_SETTINGS.command_roll)
     async def roll(self, ctx, amount: str = None):
         await self._command_registry.roll.handle(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx,
-            amount=amount
+            channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx, amount=amount
         )
 
     @commands.command(name=DEFAULT_SETTINGS.command_balance)
     async def balance(self, ctx):
-        await self._command_registry.balance.handle(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx
-        )
+        await self._command_registry.balance.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx)
 
     @commands.command(name=DEFAULT_SETTINGS.command_bonus)
     async def daily_bonus(self, ctx):
-        await self._command_registry.bonus.handle(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx
-        )
+        await self._command_registry.bonus.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx)
 
     @commands.command(name=DEFAULT_SETTINGS.command_transfer)
     async def transfer_money(self, ctx, recipient: str = None, amount: str = None):
         await self._command_registry.transfer.handle(
-            channel_name=ctx.channel.name,
-            sender_display_name=ctx.author.display_name,
-            ctx=ctx,
-            recipient=recipient,
-            amount=amount
+            channel_name=ctx.channel.name, sender_display_name=ctx.author.display_name, ctx=ctx, recipient=recipient, amount=amount
         )
 
     @commands.command(name=DEFAULT_SETTINGS.command_shop)
     async def shop(self, ctx):
-        await self._command_registry.shop.handle_shop(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx
-        )
+        await self._command_registry.shop.handle_shop(channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx)
 
     @commands.command(name=DEFAULT_SETTINGS.command_buy)
     async def buy_item(self, ctx, *, item_name: str = None):
         await self._command_registry.shop.handle_buy(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx,
-            item_name=item_name
+            channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx, item_name=item_name
         )
 
     @commands.command(name=DEFAULT_SETTINGS.command_equipment)
     async def equipment(self, ctx):
-        await self._command_registry.equipment.handle(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx
-        )
+        await self._command_registry.equipment.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx)
 
     @commands.command(name=DEFAULT_SETTINGS.command_top)
     async def top_users(self, ctx):
-        await self._command_registry.top_bottom.handle_top(
-            channel_name=ctx.channel.name,
-            ctx=ctx
-        )
+        await self._command_registry.top_bottom.handle_top(channel_name=ctx.channel.name, ctx=ctx)
 
     @commands.command(name=DEFAULT_SETTINGS.command_bottom)
     async def bottom_users(self, ctx):
-        await self._command_registry.top_bottom.handle_bottom(
-            channel_name=ctx.channel.name,
-            ctx=ctx
-        )
+        await self._command_registry.top_bottom.handle_bottom(channel_name=ctx.channel.name, ctx=ctx)
 
     @commands.command(name=DEFAULT_SETTINGS.command_help)
     async def list_commands(self, ctx):
-        await self._command_registry.help.handle(
-            channel_name=ctx.channel.name,
-            ctx=ctx
-        )
+        await self._command_registry.help.handle(channel_name=ctx.channel.name, ctx=ctx)
 
     @commands.command(name=DEFAULT_SETTINGS.command_stats)
     async def user_stats(self, ctx):
-        await self._command_registry.stats.handle(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx
-        )
+        await self._command_registry.stats.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx)
 
     @commands.command(name=DEFAULT_SETTINGS.command_guess)
     async def guess_number(self, ctx, number: str = None):
         await self._command_registry.guess.handle_guess_number(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx,
-            number=number
+            channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx, number=number
         )
 
     @commands.command(name=DEFAULT_SETTINGS.command_guess_letter)
     async def guess_letter(self, ctx, letter: str = None):
         await self._command_registry.guess.handle_guess_letter(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx,
-            letter=letter
+            channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx, letter=letter
         )
 
     @commands.command(name=DEFAULT_SETTINGS.command_guess_word)
     async def guess_word(self, ctx, *, word: str = None):
         await self._command_registry.guess.handle_guess_word(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx,
-            word=word
+            channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx, word=word
         )
 
     @commands.command(name=DEFAULT_SETTINGS.command_rps)
     async def join_rps(self, ctx, choice: str = None):
-        await self._command_registry.rps.handle(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            ctx=ctx,
-            choice=choice
-        )
+        await self._command_registry.rps.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx, choice=choice)
 
     async def timeout_user(self, channel_name: str, username: str, duration_seconds: int, reason: str):
         try:
@@ -302,7 +232,7 @@ class Bot(commands.Bot):
                 messages.append(text)
                 break
 
-            split_pos = text.rfind(' ', 0, max_length)
+            split_pos = text.rfind(" ", 0, max_length)
 
             if split_pos == -1:
                 split_pos = max_length

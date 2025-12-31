@@ -1,15 +1,14 @@
 from datetime import datetime, timedelta
-from typing import Optional
 
 from app.economy.domain.models import (
-    UserBalanceInfo,
-    TransactionData,
     BalanceBrief,
-    TransferResult,
+    DailyBonusMultiplierEffect,
     DailyBonusResult,
     ShopItemType,
-    DailyBonusMultiplierEffect,
-    TransactionType
+    TransactionData,
+    TransactionType,
+    TransferResult,
+    UserBalanceInfo,
 )
 from app.economy.domain.repo import EconomyRepository
 from app.equipment.domain.models import UserEquipmentItem
@@ -93,12 +92,7 @@ class EconomyService:
         return user_balance
 
     def add_balance(
-        self,
-        channel_name: str,
-        user_name: str,
-        amount: int,
-        transaction_type: TransactionType,
-        description: str
+        self, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str
     ) -> UserBalanceInfo:
         normalized_user_name = user_name.lower()
 
@@ -125,13 +119,8 @@ class EconomyService:
         return saved
 
     def subtract_balance(
-        self,
-        channel_name: str,
-        user_name: str,
-        amount: int,
-        transaction_type: TransactionType,
-        description: str = None
-    ) -> Optional[UserBalanceInfo]:
+        self, channel_name: str, user_name: str, amount: int, transaction_type: TransactionType, description: str = None
+    ) -> UserBalanceInfo | None:
         normalized_user_name = user_name.lower()
 
         user_balance = self.get_user_balance(channel_name, normalized_user_name)
@@ -223,7 +212,9 @@ class EconomyService:
         )
         return TransferResult.success_result()
 
-    def claim_daily_bonus(self, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None) -> DailyBonusResult:
+    def claim_daily_bonus(
+        self, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None
+    ) -> DailyBonusResult:
         user_balance = self.get_user_balance(channel_name, user_name)
 
         if user_balance.last_bonus_stream_id == active_stream_id:
@@ -245,7 +236,7 @@ class EconomyService:
                     elif item.item_type == ShopItemType.OCTOPUSES:
                         bonus_messages.append("Осьминоги принесли сокровища со дна и увеличили бонус!")
                     elif item.item_type == ShopItemType.MAEL_EXPEDITION:
-                        bonus_messages.append("Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет \"Алиииинаааа аииииии\"...")
+                        bonus_messages.append('Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет "Алиииинаааа аииииии"...')
                     elif item.item_type == ShopItemType.COMMUNIST_PARTY:
                         bonus_messages.append("Партия коммунистов обеспечила тебе увеличенный бонус! Единство силу даёт, товарищ!")
 

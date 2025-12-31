@@ -1,11 +1,12 @@
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, Text
 from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
 
 from core.db import Base
 
 
 class Stream(Base):
-    __tablename__ = 'stream'
+    __tablename__ = "stream"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     channel_name = Column(String, nullable=False)

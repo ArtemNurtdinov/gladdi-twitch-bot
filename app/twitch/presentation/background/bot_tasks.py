@@ -6,8 +6,7 @@ from core.background_task_runner import BackgroundTaskRunner
 class BackgroundJob(Protocol):
     name: str
 
-    def register(self, runner: BackgroundTaskRunner) -> None:
-        ...
+    def register(self, runner: BackgroundTaskRunner) -> None: ...
 
 
 class BotBackgroundTasks:
@@ -25,4 +24,3 @@ class BotBackgroundTasks:
 
     async def stop_all(self) -> None:
         await self._runner.cancel_all()
-

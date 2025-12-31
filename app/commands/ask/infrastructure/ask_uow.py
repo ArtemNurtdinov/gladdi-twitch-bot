@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager, contextmanager
 
 from sqlalchemy.orm import Session
 
@@ -12,7 +12,6 @@ from core.provider import Provider
 
 
 class SqlAlchemyAskUnitOfWork(AskUnitOfWork):
-
     def __init__(self, chat: ChatUseCase, conversation: ConversationService):
         self._chat = chat
         self._conversation = conversation
@@ -38,7 +37,7 @@ class SqlAlchemyAskUnitOfWorkRo(AskUnitOfWorkRo):
 class SqlAlchemyAskUnitOfWorkFactory(AskUnitOfWorkFactory):
     def __init__(
         self,
-        session_factory: Callable[[], ContextManager[Session]],
+        session_factory: Callable[[], AbstractContextManager[Session]],
         chat_use_case_provider: Provider[ChatUseCase],
         conversation_service_provider: Provider[ConversationService],
     ):
@@ -46,7 +45,7 @@ class SqlAlchemyAskUnitOfWorkFactory(AskUnitOfWorkFactory):
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
 
-    def create(self) -> ContextManager[AskUnitOfWork]:
+    def create(self) -> AbstractContextManager[AskUnitOfWork]:
         @contextmanager
         def _ctx():
             with self._session_factory() as db:
@@ -62,13 +61,13 @@ class SqlAlchemyAskUnitOfWorkFactory(AskUnitOfWorkFactory):
 class SqlAlchemyAskUnitOfWorkRoFactory(AskUnitOfWorkRoFactory):
     def __init__(
         self,
-        read_session_factory: Callable[[], ContextManager[Session]],
+        read_session_factory: Callable[[], AbstractContextManager[Session]],
         conversation_service_provider: Provider[ConversationService],
     ):
         self._read_session_factory = read_session_factory
         self._conversation_service_provider = conversation_service_provider
 
-    def create(self) -> ContextManager[AskUnitOfWorkRo]:
+    def create(self) -> AbstractContextManager[AskUnitOfWorkRo]:
         @contextmanager
         def _ctx():
             with self._read_session_factory() as db:

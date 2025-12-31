@@ -27,10 +27,4 @@ class UserBattleStats:
         return 100.0 - self.win_rate if self.total_battles > 0 else 0.0
 
     def __str__(self) -> str:
-        return (
-            f"UserBattleStats(battles={self.total_battles}, "
-            f"wins={self.wins}, win_rate={self.win_rate:.1f}%)"
-        )
-
-
-
+        return f"UserBattleStats(battles={self.total_battles}, wins={self.wins}, win_rate={self.win_rate:.1f}%)"

@@ -7,7 +7,7 @@ from core.db import Base
 
 
 class AIMessage(Base):
-    __tablename__ = 'twitch_messages'
+    __tablename__ = "twitch_messages"
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     channel_name = Column(String, nullable=False)

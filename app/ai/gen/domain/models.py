@@ -8,7 +8,6 @@ class Role(Enum):
 
 
 class AIMessage:
-
     def __init__(self, role: Role, content: str):
         self.role = role
         self.content = content

@@ -1,21 +1,22 @@
 from sqlalchemy import text
-from core.db import engine, db_ro_session, SessionLocal
+
 from app.ai.gen.data.db.ai_message import AIMessage
-from app.auth.domain.auth_service import AuthService
 from app.auth.data.auth_repository import AuthRepositoryImpl
 from app.auth.data.db.access_token import AccessToken
 from app.auth.data.db.user import User
+from app.auth.domain.auth_service import AuthService
 from app.auth.domain.models import UserCreateData, UserRole
 from app.battle.data.db.battle_history import BattleHistory
 from app.betting.data.db.bet_history import BetHistory
 from app.chat.data.db.chat_message import ChatMessage
-from app.minigame.data.db.word_history import WordHistory
-from app.economy.data.db.user_balance import UserBalance
 from app.economy.data.db.transaction_history import TransactionHistory
+from app.economy.data.db.user_balance import UserBalance
 from app.equipment.data.db.user_equipment import UserEquipment
+from app.follow.infrastructure.db.follower import ChannelFollowerRow
+from app.minigame.data.db.word_history import WordHistory
 from app.stream.infrastructure.db.stream import Stream
 from app.viewer.data.db.viewer_session import StreamViewerSession
-from app.follow.infrastructure.db.follower import ChannelFollowerRow
+from core.db import SessionLocal, db_ro_session, engine
 
 
 def test_connection():
@@ -70,18 +71,13 @@ def create_admin():
         with db_ro_session() as db:
             existing_user = auth_service.get_user_by_email(db, "artem.nefrit@gmail.com")
             if existing_user:
-                print(f"   Пользователь с email 'artem.nefrit@gmail.com' уже существует!")
+                print("   Пользователь с email 'artem.nefrit@gmail.com' уже существует!")
                 print(f"   ID: {existing_user.id}")
                 print(f"   Роль: {existing_user.role.value}")
                 return
 
         user_data = UserCreateData(
-            email="artem.nefrit@gmail.com",
-            first_name="Артем",
-            last_name="Нуртдинов",
-            password="12345",
-            role=UserRole.ADMIN,
-            is_active=True
+            email="artem.nefrit@gmail.com", first_name="Артем", last_name="Нуртдинов", password="12345", role=UserRole.ADMIN, is_active=True
         )
 
         with SessionLocal.begin() as db:
@@ -97,6 +93,7 @@ def create_admin():
     except Exception as e:
         print(f"Ошибка создания администратора: {e}")
         import traceback
+
         traceback.print_exc()
 
 

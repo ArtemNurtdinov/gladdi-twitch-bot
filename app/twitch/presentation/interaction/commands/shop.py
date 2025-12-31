@@ -1,22 +1,23 @@
+from collections.abc import Awaitable, Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any, Awaitable, Callable, ContextManager
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.commands.shop.model import CommandBuyDTO, CommandShopDTO
 from app.commands.shop.handle_shop_use_case import HandleShopUseCase
+from app.commands.shop.model import CommandBuyDTO, CommandShopDTO
 
 
 class ShopCommandHandler:
-
     def __init__(
         self,
         command_prefix: str,
         command_shop_name: str,
         command_buy_name: str,
         handle_shop_use_case: HandleShopUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):

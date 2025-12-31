@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID
 
 
@@ -14,11 +13,11 @@ class UserRole(Enum):
 class User:
     id: UUID
     email: str
-    first_name: Optional[str]
-    last_name: Optional[str]
+    first_name: str | None
+    last_name: str | None
     role: UserRole
     is_active: bool
-    hashed_password: Optional[str]
+    hashed_password: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -36,19 +35,18 @@ class AccessToken:
 @dataclass
 class UserCreateData:
     email: str
-    first_name: Optional[str]
-    last_name: Optional[str]
-    password: Optional[str]
+    first_name: str | None
+    last_name: str | None
+    password: str | None
     role: UserRole
     is_active: bool = True
 
 
 @dataclass
 class UserUpdateData:
-    email: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    password: Optional[str] = None
-    role: Optional[UserRole] = None
-    is_active: Optional[bool] = None
-
+    email: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    password: str | None = None
+    role: UserRole | None = None
+    is_active: bool | None = None

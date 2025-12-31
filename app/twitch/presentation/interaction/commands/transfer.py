@@ -1,19 +1,20 @@
+from collections.abc import Awaitable, Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any, Awaitable, Callable, ContextManager
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.commands.transfer.model import TransferDTO
 from app.commands.transfer.handle_transfer_use_case import HandleTransferUseCase
+from app.commands.transfer.model import TransferDTO
 
 
 class TransferCommandHandler:
-
     def __init__(
         self,
         command_prefix: str,
         handle_transfer_use_case: HandleTransferUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_name: str,
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
@@ -35,12 +36,9 @@ class TransferCommandHandler:
             recipient_input=recipient,
             amount_input=amount,
             command_prefix=self.command_prefix,
-            command_name=self.command_name
+            command_name=self.command_name,
         )
 
-        result = await self._handle_transfer_use_case.handle(
-            db_session_provider=self._db_session_provider,
-            command_transfer=dto
-        )
+        result = await self._handle_transfer_use_case.handle(db_session_provider=self._db_session_provider, command_transfer=dto)
 
         await self.post_message_fn(result, ctx)

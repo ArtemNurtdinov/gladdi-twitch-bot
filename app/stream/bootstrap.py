@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.stream.application.stream_info_port import StreamInfoPort
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
+from app.stream.application.stream_info_port import StreamInfoPort
 from app.stream.application.stream_status_port import StreamStatusPort
 from app.stream.domain.repo import StreamRepository
 from app.stream.domain.stream_service import StreamService
@@ -44,7 +44,6 @@ class StreamProviders:
 
 
 def build_stream_providers(twitch_api_service: TwitchApiService) -> StreamProviders:
-
     def stream_service(db):
         return StreamService(StreamRepositoryImpl(db))
 

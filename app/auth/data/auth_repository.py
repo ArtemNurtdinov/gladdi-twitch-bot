@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -8,7 +7,11 @@ from app.auth.data.db.access_token import AccessToken as OrmAccessToken
 from app.auth.data.db.user import User as OrmUser
 from app.auth.domain.models import (
     AccessToken as DomainAccessToken,
+)
+from app.auth.domain.models import (
     User as DomainUser,
+)
+from app.auth.domain.models import (
     UserCreateData,
     UserRole,
     UserUpdateData,
@@ -30,7 +33,7 @@ def _to_domain_user(orm_user: OrmUser) -> DomainUser:
     )
 
 
-def _apply_user_updates(orm_user: OrmUser, updates: UserUpdateData, hashed_password: Optional[str]):
+def _apply_user_updates(orm_user: OrmUser, updates: UserUpdateData, hashed_password: str | None):
     if updates.email is not None:
         orm_user.email = updates.email
     if updates.first_name is not None:
@@ -58,19 +61,19 @@ def _to_domain_token(token: OrmAccessToken) -> DomainAccessToken:
 
 
 class AuthRepositoryImpl(AuthRepository[Session]):
-    def get_user_by_email(self, db: Session, email: str) -> Optional[DomainUser]:
+    def get_user_by_email(self, db: Session, email: str) -> DomainUser | None:
         user = db.query(OrmUser).filter(OrmUser.email == email).first()
         return _to_domain_user(user) if user else None
 
-    def get_user_by_id(self, db: Session, user_id: UUID) -> Optional[DomainUser]:
+    def get_user_by_id(self, db: Session, user_id: UUID) -> DomainUser | None:
         user = db.query(OrmUser).filter(OrmUser.id == user_id).first()
         return _to_domain_user(user) if user else None
 
-    def list_users(self, db: Session, skip: int, limit: int) -> List[DomainUser]:
+    def list_users(self, db: Session, skip: int, limit: int) -> list[DomainUser]:
         users = db.query(OrmUser).offset(skip).limit(limit).all()
         return [_to_domain_user(u) for u in users]
 
-    def create_user(self, db: Session, data: UserCreateData, hashed_password: Optional[str]) -> DomainUser:
+    def create_user(self, db: Session, data: UserCreateData, hashed_password: str | None) -> DomainUser:
         orm_user = OrmUser(
             email=data.email,
             first_name=data.first_name,
@@ -84,7 +87,7 @@ class AuthRepositoryImpl(AuthRepository[Session]):
         db.refresh(orm_user)
         return _to_domain_user(orm_user)
 
-    def update_user(self, db: Session, user_id: UUID, updates: UserUpdateData) -> Optional[DomainUser]:
+    def update_user(self, db: Session, user_id: UUID, updates: UserUpdateData) -> DomainUser | None:
         user = db.query(OrmUser).filter(OrmUser.id == user_id).first()
         if not user:
             return None
@@ -110,20 +113,20 @@ class AuthRepositoryImpl(AuthRepository[Session]):
         db.refresh(orm_token)
         return _to_domain_token(orm_token)
 
-    def list_tokens(self, db: Session, skip: int, limit: int) -> List[DomainAccessToken]:
+    def list_tokens(self, db: Session, skip: int, limit: int) -> list[DomainAccessToken]:
         tokens = db.query(OrmAccessToken).offset(skip).limit(limit).all()
         return [_to_domain_token(t) for t in tokens]
 
-    def get_token_by_id(self, db: Session, token_id: UUID) -> Optional[DomainAccessToken]:
+    def get_token_by_id(self, db: Session, token_id: UUID) -> DomainAccessToken | None:
         token = db.query(OrmAccessToken).filter(OrmAccessToken.id == token_id).first()
         return _to_domain_token(token) if token else None
 
-    def find_active_token(self, db: Session, token: str, current_time: datetime) -> Optional[DomainAccessToken]:
+    def find_active_token(self, db: Session, token: str, current_time: datetime) -> DomainAccessToken | None:
         record = (
             db.query(OrmAccessToken)
             .filter(
                 OrmAccessToken.token == token,
-                OrmAccessToken.is_active == True,
+                OrmAccessToken.is_active,
                 OrmAccessToken.expires_at > current_time,
             )
             .first()

@@ -1,22 +1,23 @@
 import asyncio
+from collections.abc import Awaitable, Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any, Awaitable, Callable, ContextManager
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.commands.battle.model import BattleDTO
 from app.commands.battle.handle_battle_use_case import HandleBattleUseCase
+from app.commands.battle.model import BattleDTO
 
 
 class BattleCommandHandler:
-
     def __init__(
         self,
         command_prefix: str,
         command_name: str,
         handle_battle_use_case: HandleBattleUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         timeout_fn: Callable[[str, str, int, str], Awaitable[None]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],

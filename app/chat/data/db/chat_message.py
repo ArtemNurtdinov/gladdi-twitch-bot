@@ -1,10 +1,12 @@
-from sqlalchemy import Column, String, DateTime, Integer
 from datetime import datetime
+
+from sqlalchemy import Column, DateTime, Integer, String
+
 from core.db import Base
 
 
 class ChatMessage(Base):
-    __tablename__ = 'chat_message_log'
+    __tablename__ = "chat_message_log"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     channel_name = Column(String, nullable=False)

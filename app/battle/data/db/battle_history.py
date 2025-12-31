@@ -15,6 +15,3 @@ class BattleHistory(Base):
     winner = Column(String, nullable=False)
     result_text = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-
-
-

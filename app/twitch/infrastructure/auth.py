@@ -6,12 +6,7 @@ from core.config import config
 
 
 class TwitchAuth:
-    def __init__(
-        self,
-        access_token: str,
-        refresh_token: str,
-        logger: Logger
-    ):
+    def __init__(self, access_token: str, refresh_token: str, logger: Logger):
         self.access_token = access_token
         self.refresh_token = refresh_token
         self.client_id = config.twitch.client_id
@@ -20,31 +15,31 @@ class TwitchAuth:
 
     async def update_access_token(self):
         self.logger.info("updating access token")
-        url = 'https://id.twitch.tv/oauth2/token'
+        url = "https://id.twitch.tv/oauth2/token"
 
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'refresh_token',
-            'refresh_token': self.refresh_token
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "refresh_token",
+            "refresh_token": self.refresh_token,
         }
 
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(url, data=data)
         token_data = response.json()
 
-        if 'access_token' in token_data:
-            self.access_token = token_data['access_token']
-            self.refresh_token = token_data.get('refresh_token', self.refresh_token)
+        if "access_token" in token_data:
+            self.access_token = token_data["access_token"]
+            self.refresh_token = token_data.get("refresh_token", self.refresh_token)
         else:
-            raise Exception('Ошибка обновления токена:', token_data)
+            raise Exception("Ошибка обновления токена:", token_data)
 
     async def check_token_is_valid(self) -> bool:
         if not self.access_token:
             raise ValueError("Access token пуст")
 
-        url = 'https://id.twitch.tv/oauth2/validate'
-        headers = {'Authorization': f'OAuth {self.access_token}'}
+        url = "https://id.twitch.tv/oauth2/validate"
+        headers = {"Authorization": f"OAuth {self.access_token}"}
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.get(url, headers=headers)
 

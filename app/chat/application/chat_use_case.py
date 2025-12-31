@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from app.chat.domain.models import ChatMessage, TopChatUserInfo
 from app.chat.domain.repo import ChatRepository
 
 
 class ChatUseCase:
-
     def __init__(self, repo: ChatRepository):
         self._repo = repo
 
@@ -42,7 +40,7 @@ class ChatUseCase:
             raise ValueError("limit must be positive")
         return list(self._repo.list_last(channel_name, limit))
 
-    def get_top_chat_users(self, limit: int, date_from: Optional[datetime], date_to: Optional[datetime]) -> list[TopChatUserInfo]:
+    def get_top_chat_users(self, limit: int, date_from: datetime | None, date_to: datetime | None) -> list[TopChatUserInfo]:
         if limit <= 0:
             raise ValueError("limit must be positive")
         if date_from and date_to and date_from > date_to:
@@ -52,11 +50,3 @@ class ChatUseCase:
 
     def get_last_chat_messages_since(self, channel_name: str, since: datetime) -> list[ChatMessage]:
         return self._repo.get_last_chat_messages_since(channel_name, since)
-
-
-
-
-
-
-
-

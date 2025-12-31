@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +12,7 @@ class UserData(BaseModel):
 
 
 class UsersResponse(BaseModel):
-    data: List[UserData] = Field(default_factory=list)
+    data: list[UserData] = Field(default_factory=list)
 
 
 class StreamDataModel(BaseModel):
@@ -21,20 +20,20 @@ class StreamDataModel(BaseModel):
     user_id: str
     user_login: str
     user_name: str
-    game_id: Optional[str] = None
-    game_name: Optional[str] = None
-    type: Optional[str] = None
-    title: Optional[str] = None
-    viewer_count: Optional[int] = None
+    game_id: str | None = None
+    game_name: str | None = None
+    type: str | None = None
+    title: str | None = None
+    viewer_count: int | None = None
     started_at: datetime
-    language: Optional[str] = None
-    thumbnail_url: Optional[str] = None
-    tag_ids: List[str] = Field(default_factory=list)
-    is_mature: Optional[bool] = False
+    language: str | None = None
+    thumbnail_url: str | None = None
+    tag_ids: list[str] = Field(default_factory=list)
+    is_mature: bool | None = False
 
 
 class StreamsResponse(BaseModel):
-    data: List[StreamDataModel] = Field(default_factory=list)
+    data: list[StreamDataModel] = Field(default_factory=list)
 
 
 class FollowerData(BaseModel):
@@ -45,9 +44,9 @@ class FollowerData(BaseModel):
 
 
 class FollowersResponse(BaseModel):
-    data: List[FollowerData] = Field(default_factory=list)
-    total: Optional[int] = None
-    pagination: Optional[dict] = None
+    data: list[FollowerData] = Field(default_factory=list)
+    total: int | None = None
+    pagination: dict | None = None
 
 
 class Chatter(BaseModel):
@@ -55,4 +54,4 @@ class Chatter(BaseModel):
 
 
 class ChattersResponse(BaseModel):
-    data: List[Chatter] = Field(default_factory=list)
+    data: list[Chatter] = Field(default_factory=list)

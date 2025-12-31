@@ -1,26 +1,22 @@
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
 from app.commands.transfer.model import TransferDTO
+from app.economy.domain.economy_service import EconomyService
 from core.provider import Provider
 
 
 class HandleTransferUseCase:
-
-    def __init__(
-        self,
-        economy_service_provider: Provider[EconomyService],
-        chat_use_case_provider: Provider[ChatUseCase]
-    ):
+    def __init__(self, economy_service_provider: Provider[EconomyService], chat_use_case_provider: Provider[ChatUseCase]):
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_transfer: TransferDTO,
     ) -> str:
         command_prefix = command_transfer.command_prefix
@@ -36,7 +32,7 @@ class HandleTransferUseCase:
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.bot_nick,
                     content=result,
-                    current_time=command_transfer.occurred_at
+                    current_time=command_transfer.occurred_at,
                 )
             return result
 
@@ -52,7 +48,7 @@ class HandleTransferUseCase:
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.bot_nick,
                     content=result,
-                    current_time=command_transfer.occurred_at
+                    current_time=command_transfer.occurred_at,
                 )
             return result
 
@@ -63,11 +59,11 @@ class HandleTransferUseCase:
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.bot_nick,
                     content=result,
-                    current_time=command_transfer.occurred_at
+                    current_time=command_transfer.occurred_at,
                 )
             return result
 
-        recipient = command_transfer.recipient_input.lstrip('@')
+        recipient = command_transfer.recipient_input.lstrip("@")
         normalized_receiver_name = recipient.lower()
 
         with db_session_provider() as db:
@@ -75,7 +71,7 @@ class HandleTransferUseCase:
                 channel_name=command_transfer.channel_name,
                 sender_name=command_transfer.user_name,
                 receiver_name=normalized_receiver_name,
-                amount=transfer_amount
+                amount=transfer_amount,
             )
 
         if transfer_result.success:
@@ -88,7 +84,7 @@ class HandleTransferUseCase:
                 channel_name=command_transfer.channel_name,
                 user_name=command_transfer.bot_nick,
                 content=result,
-                current_time=command_transfer.occurred_at
+                current_time=command_transfer.occurred_at,
             )
 
         return result

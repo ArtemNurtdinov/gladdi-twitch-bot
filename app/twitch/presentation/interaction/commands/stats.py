@@ -1,19 +1,20 @@
+from collections.abc import Awaitable, Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any, Awaitable, Callable, ContextManager
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.commands.stats.model import StatsDTO
 from app.commands.stats.handle_stats_use_case import HandleStatsUseCase
+from app.commands.stats.model import StatsDTO
 
 
 class StatsCommandHandler:
-
     def __init__(
         self,
         handle_stats_use_case: HandleStatsUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         command_name: str,
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
@@ -31,13 +32,13 @@ class StatsCommandHandler:
             display_name=display_name,
             user_name=display_name.lower(),
             bot_nick=self.bot_nick_provider().lower(),
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         result = await self._handle_stats_use_case.handle(
             db_session_provider=self._db_session_provider,
             db_readonly_session_provider=self._db_readonly_session_provider,
-            command_stats=dto
+            command_stats=dto,
         )
 
         await self.post_message_fn(result, ctx)

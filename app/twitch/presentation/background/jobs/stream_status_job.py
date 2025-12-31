@@ -1,11 +1,12 @@
 import asyncio
 import logging
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
-from app.stream.application.model import StatusJobDTO
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
+from app.stream.application.model import StatusJobDTO
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
@@ -18,8 +19,8 @@ class StreamStatusJob:
         self,
         channel_name: str,
         handle_stream_status_use_case: HandleStreamStatusUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         stream_status_interval_seconds: int,
     ):
         self._channel_name = channel_name
@@ -38,7 +39,7 @@ class StreamStatusJob:
                 await self._handle_stream_status_use_case.handle(
                     db_session_provider=self._db_session_provider,
                     db_readonly_session_provider=self._db_readonly_session_provider,
-                    status_job_dto=handle_stream_status
+                    status_job_dto=handle_stream_status,
                 )
             except asyncio.CancelledError:
                 logger.info("StreamStatusJob cancelled")

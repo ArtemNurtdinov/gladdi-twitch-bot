@@ -1,10 +1,8 @@
-from typing import Optional
-
 from app.battle.data.db.battle_history import BattleHistory
 from app.battle.domain.models import BattleRecord
 
 
-def map_battle_history(row: Optional[BattleHistory]) -> Optional[BattleRecord]:
+def map_battle_history(row: BattleHistory | None) -> BattleRecord | None:
     if row is None:
         return None
 
@@ -17,6 +15,3 @@ def map_battle_history(row: Optional[BattleHistory]) -> Optional[BattleRecord]:
         result_text=row.result_text,
         created_at=row.created_at,
     )
-
-
-

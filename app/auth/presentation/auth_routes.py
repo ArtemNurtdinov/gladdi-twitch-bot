@@ -1,16 +1,14 @@
-from typing import List
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer
-from uuid import UUID
-
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from app.auth.presentation.auth_schemas import UserResponse, UserCreate, UserUpdate, TokenResponse, UserLogin, LoginResponse
 from app.auth.domain.auth_service import AuthService
-from app.auth.presentation.dependencies import get_current_user, get_auth_service, get_admin_user
 from app.auth.domain.models import User, UserCreateData, UserUpdateData
+from app.auth.presentation.auth_schemas import LoginResponse, TokenResponse, UserCreate, UserLogin, UserResponse, UserUpdate
+from app.auth.presentation.dependencies import get_admin_user, get_auth_service, get_current_user
+from core.db import get_db
 
 router = APIRouter(prefix="/auth")
 admin_router = APIRouter(prefix="/admin")
@@ -22,7 +20,7 @@ async def create_user(
     user_data: UserCreate,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     existing_user = auth_service.get_user_by_email(db, user_data.email)
     if existing_user:
@@ -44,19 +42,17 @@ async def create_user(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(
-    current_user: User = Depends(get_current_user)
-):
+async def get_me(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user).model_dump()
 
 
-@admin_router.get("/users", response_model=List[UserResponse])
+@admin_router.get("/users", response_model=list[UserResponse])
 async def get_users(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     users = auth_service.get_users(db, skip, limit)
     return [UserResponse.model_validate(user) for user in users]
@@ -67,7 +63,7 @@ async def get_user(
     user_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     user = auth_service.get_user_by_id(db, user_id)
     if not user:
@@ -81,7 +77,7 @@ async def update_user(
     user_data: UserUpdate,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     if user_data.email:
         existing_user = auth_service.get_user_by_email(db, user_data.email)
@@ -107,7 +103,7 @@ async def delete_user(
     user_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     if user_id == current_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Нельзя удалить самого себя")
@@ -119,13 +115,13 @@ async def delete_user(
     return {"message": "Пользователь удален"}
 
 
-@admin_router.get("/tokens", response_model=List[TokenResponse])
+@admin_router.get("/tokens", response_model=list[TokenResponse])
 async def get_tokens(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     tokens = auth_service.get_tokens(db, skip, limit)
     return [TokenResponse.model_validate(token) for token in tokens]
@@ -136,7 +132,7 @@ async def get_token(
     token_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     token = auth_service.get_token_by_id(db, token_id)
     if not token:
@@ -149,7 +145,7 @@ async def deactivate_token(
     token_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     success = auth_service.deactivate_token(db, token_id)
     if not success:
@@ -162,7 +158,7 @@ async def delete_token(
     token_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     success = auth_service.delete_token(db, token_id)
     if not success:
@@ -179,9 +175,13 @@ async def login(
     user = auth_service.authenticate_user(db, user_data.email, user_data.password)
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль", headers={"WWW-Authenticate": "Bearer"}
+        )
 
     access_token = auth_service.create_token(db, user)
     user_response = UserResponse.model_validate(user)
 
-    return LoginResponse(access_token=access_token.token, created_at=access_token.created_at, expires_at=access_token.expires_at, user=user_response)
+    return LoginResponse(
+        access_token=access_token.token, created_at=access_token.created_at, expires_at=access_token.expires_at, user=user_response
+    )

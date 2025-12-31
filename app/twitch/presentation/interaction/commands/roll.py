@@ -1,10 +1,12 @@
+from collections.abc import Awaitable, Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any, Awaitable, Callable, ContextManager
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.commands.roll.model import RollDTO
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
+from app.commands.roll.model import RollDTO
 
 
 class RollCommandHandler:
@@ -16,8 +18,8 @@ class RollCommandHandler:
         command_prefix: str,
         command_name: str,
         handle_roll_use_case: HandleRollUseCase,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         timeout_fn: Callable[[str, str, int, str], Awaitable[None]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
@@ -61,9 +63,7 @@ class RollCommandHandler:
         )
 
         result = await self._handle_roll_use_case.handle(
-            db_session_provider=self._db_session_provider,
-            db_readonly_session_provider=self._db_readonly_session_provider,
-            command_roll=dto
+            db_session_provider=self._db_session_provider, db_readonly_session_provider=self._db_readonly_session_provider, command_roll=dto
         )
 
         if result.new_last_roll_time:

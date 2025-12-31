@@ -1,23 +1,22 @@
 import logging
+
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from core.config import config
+
 from app.auth.presentation import auth_routes
-from app.joke.presentation import joke_routes
 from app.chat.presentation import chat_routes
-from app.stream.presentation import stream_routes
-from app.viewer.presentation import viewer_routes
-from app.twitch.presentation import twitch_routes
 from app.follow.presentation import followers_routes
+from app.joke.presentation import joke_routes
+from app.stream.presentation import stream_routes
+from app.twitch.presentation import twitch_routes
+from app.viewer.presentation import viewer_routes
+from core.config import config
 
 logging.basicConfig(
     level=getattr(logging, config.logging.level.upper(), logging.INFO),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(config.logging.file, encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler(config.logging.file, encoding="utf-8"), logging.StreamHandler()],
 )
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,7 @@ app = FastAPI(
     description="REST API для аналитики активности Twitch и Telegram бота",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 app.add_middleware(
@@ -50,21 +49,12 @@ app.include_router(followers_routes.router, prefix="/api/v1", tags=["Followers"]
 
 @app.get("/", tags=["Health"])
 async def root():
-    return {
-        "message": "GLaDDi Twitch Bot API",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "redoc": "/redoc"
-    }
+    return {"message": "GLaDDi Twitch Bot API", "version": "1.0.0", "docs": "/docs", "redoc": "/redoc"}
 
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    return {
-        "status": "healthy",
-        "message": "API is running",
-        "service": "GLaDDi Twitch Bot"
-    }
+    return {"status": "healthy", "message": "API is running", "service": "GLaDDi Twitch Bot"}
 
 
 if __name__ == "__main__":

@@ -1,15 +1,12 @@
-from typing import Optional
-
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.gen.domain.prompt_service import PromptService
+from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
 from app.commands.chat.chat_message_uow import ChatMessageUnitOfWorkFactory, ChatMessageUnitOfWorkRoFactory
 from app.commands.chat.model import ChatMessageDTO
 
 
 class HandleChatMessageUseCase:
-
     def __init__(
         self,
         unit_of_work_factory: ChatMessageUnitOfWorkFactory,
@@ -17,7 +14,7 @@ class HandleChatMessageUseCase:
         get_intent_from_text_use_case: GetIntentFromTextUseCase,
         prompt_service: PromptService,
         system_prompt: str,
-        chat_response_use_case: ChatResponseUseCase
+        chat_response_use_case: ChatResponseUseCase,
     ):
         self._unit_of_work_factory = unit_of_work_factory
         self._unit_of_work_ro_factory = unit_of_work_ro_factory
@@ -26,7 +23,7 @@ class HandleChatMessageUseCase:
         self._system_prompt = system_prompt
         self._chat_response_use_case = chat_response_use_case
 
-    async def handle(self, dto: ChatMessageDTO) -> Optional[str]:
+    async def handle(self, dto: ChatMessageDTO) -> str | None:
         intent = await self._get_intent_from_text_use_case.get_intent_from_text(dto.message)
 
         prompt = None
@@ -42,10 +39,7 @@ class HandleChatMessageUseCase:
 
         with self._unit_of_work_factory.create() as uow:
             uow.chat.save_chat_message(
-                channel_name=dto.channel_name,
-                user_name=dto.user_name,
-                content=dto.message,
-                current_time=dto.occurred_at
+                channel_name=dto.channel_name, user_name=dto.user_name, content=dto.message, current_time=dto.occurred_at
             )
             uow.economy.process_user_message_activity(
                 channel_name=dto.channel_name,

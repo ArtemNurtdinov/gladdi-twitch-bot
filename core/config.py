@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -115,7 +116,7 @@ def load_config() -> Config:
         database=DatabaseConfig(),
         logging=LoggingConfig(),
         llmbox=LLMBoxConfig(),
-        intent_detector=IntentDetectorConfig()
+        intent_detector=IntentDetectorConfig(),
     )
 
     errors = validate_config(cfg)

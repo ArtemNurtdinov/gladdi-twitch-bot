@@ -1,18 +1,16 @@
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from app.stream.infrastructure.db.stream import Stream
 from app.stream.domain.models import StreamInfo, StreamViewerSessionInfo
 from app.stream.domain.repo import StreamRepository
+from app.stream.infrastructure.db.stream import Stream
 from app.stream.infrastructure.mappers.stream_mapper import map_stream_row
 from app.viewer.data.db.viewer_session import StreamViewerSession
 
 
 class StreamRepositoryImpl(StreamRepository):
-
     def __init__(self, db: Session):
         self._db = db
 
@@ -20,7 +18,7 @@ class StreamRepositoryImpl(StreamRepository):
         stream = Stream(channel_name=channel_name, started_at=started_at, game_name=game_name, title=title, is_active=True)
         self._db.add(stream)
 
-    def get_active_stream(self, channel_name: str) -> Optional[StreamInfo]:
+    def get_active_stream(self, channel_name: str) -> StreamInfo | None:
         row = self._db.query(Stream).filter_by(channel_name=channel_name, is_active=True).first()
         if not row:
             return None
@@ -58,7 +56,9 @@ class StreamRepositoryImpl(StreamRepository):
         stream.max_concurrent_viewers = viewers_count
         stream.updated_at = datetime.utcnow()
 
-    def list_streams(self, skip: int, limit: int, date_from: Optional[datetime], date_to: Optional[datetime]) -> tuple[list[StreamInfo], int]:
+    def list_streams(
+        self, skip: int, limit: int, date_from: datetime | None, date_to: datetime | None
+    ) -> tuple[list[StreamInfo], int]:
         query = self._db.query(Stream)
         if date_from:
             query = query.filter(Stream.started_at >= date_from)
@@ -69,7 +69,7 @@ class StreamRepositoryImpl(StreamRepository):
         items = [map_stream_row(row) for row in streams]
         return items, total
 
-    def get_stream_with_sessions(self, stream_id: int) -> Optional[tuple[StreamInfo, list[StreamViewerSessionInfo]]]:
+    def get_stream_with_sessions(self, stream_id: int) -> tuple[StreamInfo, list[StreamViewerSessionInfo]] | None:
         stream = self._db.query(Stream).filter(Stream.id == stream_id).first()
         if not stream:
             return None

@@ -1,7 +1,15 @@
 from fastapi import APIRouter, HTTPException
-from app.joke.presentation.joke_schemas import JokesStatus, JokesResponse, JokesIntervalResponse, JokesIntervalRequest, NextJoke, JokeInterval
-from app.joke.domain.joke_service import JokeService
+
 from app.joke.data.settings_repository import FileJokeSettingsRepository
+from app.joke.domain.joke_service import JokeService
+from app.joke.presentation.joke_schemas import (
+    JokeInterval,
+    JokesIntervalRequest,
+    JokesIntervalResponse,
+    JokesResponse,
+    JokesStatus,
+    NextJoke,
+)
 
 router = APIRouter()
 
@@ -29,7 +37,7 @@ def _to_interval_model(dto_interval) -> JokeInterval:
     "/jokes/status",
     response_model=JokesStatus,
     summary="Статус анекдотов",
-    description="Получить текущий статус включения/отключения анекдотов в Twitch боте"
+    description="Получить текущий статус включения/отключения анекдотов в Twitch боте",
 )
 async def get_jokes_status() -> JokesStatus:
     try:
@@ -45,12 +53,7 @@ async def get_jokes_status() -> JokesStatus:
         raise HTTPException(status_code=500, detail=f"Ошибка получения статуса анекдотов: {str(e)}")
 
 
-@router.post(
-    "/jokes/enable",
-    response_model=JokesResponse,
-    summary="Включить анекдоты",
-    description="Включить анекдоты в Twitch боте"
-)
+@router.post("/jokes/enable", response_model=JokesResponse, summary="Включить анекдоты", description="Включить анекдоты в Twitch боте")
 async def enable_jokes() -> JokesResponse:
     try:
         joke_service = get_joke_service()
@@ -60,12 +63,7 @@ async def enable_jokes() -> JokesResponse:
         raise HTTPException(status_code=500, detail=f"Ошибка включения анекдотов: {str(e)}")
 
 
-@router.post(
-    "/jokes/disable",
-    response_model=JokesResponse,
-    summary="Отключить анекдоты",
-    description="Отключить анекдоты в Twitch боте"
-)
+@router.post("/jokes/disable", response_model=JokesResponse, summary="Отключить анекдоты", description="Отключить анекдоты в Twitch боте")
 async def disable_jokes() -> JokesResponse:
     try:
         joke_service = get_joke_service()
@@ -79,7 +77,8 @@ async def disable_jokes() -> JokesResponse:
     "/jokes/interval",
     response_model=JokesIntervalResponse,
     summary="Установить интервал между анекдотами",
-    description="Установить интервал между генерацией анекдотов в минутах. Бот будет генерировать анекдоты через случайное время от min_minutes до max_minutes"
+    description="Установить интервал между генерацией анекдотов в минутах. "
+    "Бот будет генерировать анекдоты через случайное время от min_minutes до max_minutes",
 )
 async def set_jokes_interval(request: JokesIntervalRequest) -> JokesIntervalResponse:
     try:

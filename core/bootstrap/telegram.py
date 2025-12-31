@@ -15,4 +15,3 @@ def build_telegram_providers() -> TelegramProviders:
     http_request = HTTPXRequest(connection_pool_size=10, pool_timeout=10)
     telegram_bot = telegram.Bot(token=config.telegram.bot_token, request=http_request)
     return TelegramProviders(telegram_bot=telegram_bot)
-

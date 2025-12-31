@@ -1,18 +1,18 @@
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
+from app.commands.shop.model import CommandBuyDTO, CommandShopDTO
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import ShopItems, TransactionType
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
-from app.commands.shop.model import CommandBuyDTO, CommandShopDTO
 from core.provider import Provider
 
 
 class HandleShopUseCase:
-
     def __init__(
         self,
         economy_service_provider: Provider[EconomyService],
@@ -27,7 +27,7 @@ class HandleShopUseCase:
 
     async def handle_shop(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_shop: CommandShopDTO,
     ) -> str:
         all_items = ShopItems.get_all_items()
@@ -54,8 +54,8 @@ class HandleShopUseCase:
 
     async def handle_buy(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         command_buy: CommandBuyDTO,
     ) -> str:
         user_name = command_buy.user_name
@@ -71,7 +71,7 @@ class HandleShopUseCase:
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.bot_nick,
                     content=result,
-                    current_time=command_buy.occurred_at
+                    current_time=command_buy.occurred_at,
                 )
             return result
 
@@ -84,7 +84,7 @@ class HandleShopUseCase:
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.bot_nick,
                     content=result,
-                    current_time=command_buy.occurred_at
+                    current_time=command_buy.occurred_at,
                 )
             return result
 
@@ -92,9 +92,7 @@ class HandleShopUseCase:
 
         with db_readonly_session_provider() as db:
             equipment_exists = self._equipment_exists_use_case_provider.get(db).check_equipment_exists(
-                channel_name=command_buy.channel_name,
-                user_name=user_name,
-                item_type=item_type
+                channel_name=command_buy.channel_name, user_name=user_name, item_type=item_type
             )
 
         if equipment_exists:
@@ -104,14 +102,13 @@ class HandleShopUseCase:
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.bot_nick,
                     content=result,
-                    current_time=command_buy.occurred_at
+                    current_time=command_buy.occurred_at,
                 )
             return result
 
         with db_session_provider() as db:
             user_balance = self._economy_service_provider.get(db).get_user_balance(
-                channel_name=command_buy.channel_name,
-                user_name=user_name
+                channel_name=command_buy.channel_name, user_name=user_name
             )
 
         if user_balance.balance < item.price:
@@ -121,7 +118,7 @@ class HandleShopUseCase:
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.bot_nick,
                     content=result,
-                    current_time=command_buy.occurred_at
+                    current_time=command_buy.occurred_at,
                 )
             return result
 
@@ -134,18 +131,13 @@ class HandleShopUseCase:
                 description=f"Покупка '{item.name}'",
             )
             self._add_equipment_use_case_provider.get(db).add(
-                channel_name=command_buy.channel_name,
-                user_name=user_name,
-                item_type=item_type
+                channel_name=command_buy.channel_name, user_name=user_name, item_type=item_type
             )
 
         result = f"@{command_buy.display_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
         with db_session_provider() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
-                channel_name=command_buy.channel_name,
-                user_name=command_buy.bot_nick,
-                content=result,
-                current_time=command_buy.occurred_at
+                channel_name=command_buy.channel_name, user_name=command_buy.bot_nick, content=result, current_time=command_buy.occurred_at
             )
         return result
