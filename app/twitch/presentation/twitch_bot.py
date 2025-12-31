@@ -4,24 +4,31 @@ from typing import Optional
 
 from twitchio.ext import commands
 
-from app.twitch.bootstrap.deps import BotDependencies
+from app.twitch.bootstrap.twitch import TwitchProviders
 from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings, DEFAULT_SETTINGS
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.model.state import ChatSummaryState
 from app.twitch.presentation.interaction.chat_event_handler import ChatEventHandler
+from app.user.bootstrap import UserProviders
 
 logger = logging.getLogger(__name__)
 
 
 class Bot(commands.Bot):
 
-    def __init__(self, deps: BotDependencies, settings: TwitchBotSettings):
+    def __init__(
+        self,
+        twitch_providers: TwitchProviders,
+        user_providers: UserProviders,
+        settings: TwitchBotSettings
+    ):
         self._settings = settings
-        self._deps = deps
+        self._twitch = twitch_providers
+        self._user = user_providers
 
         self._prefix = self._settings.prefix
         self.initial_channels = [self._settings.channel_name]
-        super().__init__(token=deps.twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
+        super().__init__(token=twitch_providers.twitch_auth.access_token, prefix=self._prefix, initial_channels=self.initial_channels)
 
         self._chat_summary_state = ChatSummaryState()
         self._battle_waiting_user_ref = {"value": None}
@@ -60,7 +67,7 @@ class Bot(commands.Bot):
                 return
 
             channel_name = self.initial_channels[0]
-            await self._deps.user_cache.warmup(channel_name)
+            await self._user.user_cache.warmup(channel_name)
         except Exception as e:
             logger.error(f"Не удалось прогреть кеш ID канала: {e}")
 
@@ -262,11 +269,11 @@ class Bot(commands.Bot):
 
     async def timeout_user(self, channel_name: str, username: str, duration_seconds: int, reason: str):
         try:
-            user = await self._deps.twitch_api_service.get_user_by_login(username)
+            user = await self._twitch.twitch_api_service.get_user_by_login(username)
             user_id = None if user is None else user.id
 
-            broadcaster_id = await self._deps.user_cache.get_user_id(channel_name)
-            moderator_id = await self._deps.user_cache.get_user_id(self.nick)
+            broadcaster_id = await self._user.user_cache.get_user_id(channel_name)
+            moderator_id = await self._user.user_cache.get_user_id(self.nick)
 
             if not user_id:
                 logger.error(f"Не удалось получить ID пользователя {username}")
@@ -278,7 +285,7 @@ class Bot(commands.Bot):
                 logger.error(f"Не удалось получить ID модератора {self.nick}")
                 return
 
-            success = await self._deps.twitch_api_service.timeout_user(broadcaster_id, moderator_id, user_id, duration_seconds, reason)
+            success = await self._twitch.twitch_api_service.timeout_user(broadcaster_id, moderator_id, user_id, duration_seconds, reason)
 
             if not success:
                 raise Exception("Не удалось применить таймаут")
@@ -324,4 +331,3 @@ class Bot(commands.Bot):
         for msg in messages:
             await channel.send(msg)
             await asyncio.sleep(0.3)
-

@@ -1,9 +1,27 @@
+from dataclasses import dataclass
+
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from core.db import get_db_ro, get_db_rw
-from app.chat.data.chat_repository import ChatRepositoryImpl
 from app.chat.application.chat_use_case import ChatUseCase
+from app.chat.data.chat_repository import ChatRepositoryImpl
+from core.db import get_db_ro, get_db_rw
+from core.provider import Provider
+
+
+@dataclass
+class ChatProviders:
+    chat_use_case_provider: Provider[ChatUseCase]
+
+
+def build_chat_providers() -> ChatProviders:
+
+    def chat_use_case(db):
+        return ChatUseCase(ChatRepositoryImpl(db))
+
+    return ChatProviders(
+        chat_use_case_provider=Provider(chat_use_case),
+    )
 
 
 def get_chat_repo_ro(db: Session = Depends(get_db_ro)) -> ChatRepositoryImpl:

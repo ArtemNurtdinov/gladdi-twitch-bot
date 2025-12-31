@@ -6,7 +6,21 @@ from typing import Optional
 from app.twitch.bootstrap.twitch_bot_settings import DEFAULT_SETTINGS
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.infrastructure.auth import TwitchAuth
-from app.twitch.bootstrap.deps import build_bot_dependencies
+from app.twitch.bootstrap.twitch import build_twitch_providers
+from app.stream.bootstrap import build_stream_providers
+from app.economy.bootstrap import build_economy_providers
+from app.equipment.bootstrap import build_equipment_providers
+from app.minigame.bootstrap import build_minigame_providers
+from app.ai.bootstrap import build_ai_providers
+from app.battle.bootstrap import build_battle_providers
+from app.betting.bootstrap import build_betting_providers
+from app.chat.bootstrap import build_chat_providers
+from app.follow.bootstrap import build_follow_providers
+from app.joke.bootstrap import build_joke_providers
+from app.user.bootstrap import build_user_providers
+from app.viewer.bootstrap import build_viewer_providers
+from core.bootstrap.background import build_background_providers
+from core.bootstrap.telegram import build_telegram_providers
 from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.twitch.bootstrap.bot_factory import BotFactory
 from app.twitch.presentation.twitch_bot import Bot as TwitchBot
@@ -71,10 +85,40 @@ class BotManager:
             auth = TwitchAuth(access_token=access_token, refresh_token=refresh_token, logger=logger)
             self._ensure_credentials(auth)
 
-            twitch_api_service = TwitchApiService(auth)
-            self._twitch_api_service = twitch_api_service
-            deps = build_bot_dependencies(auth, twitch_api_service)
-            self._bot = BotFactory(deps, DEFAULT_SETTINGS).create()
+            twitch_providers = build_twitch_providers(auth)
+            self._twitch_api_service = twitch_providers.twitch_api_service
+            stream_providers = build_stream_providers(twitch_providers.twitch_api_service)
+            ai_providers = build_ai_providers()
+            chat_providers = build_chat_providers()
+            follow_providers = build_follow_providers(twitch_providers.twitch_api_service)
+            joke_providers = build_joke_providers()
+            user_providers = build_user_providers(twitch_providers.twitch_api_service)
+            viewer_providers = build_viewer_providers()
+            economy_providers = build_economy_providers()
+            equipment_providers = build_equipment_providers()
+            minigame_providers = build_minigame_providers()
+            battle_providers = build_battle_providers()
+            betting_providers = build_betting_providers()
+            background_providers = build_background_providers()
+            telegram_providers = build_telegram_providers()
+            self._bot = BotFactory(
+                twitch_providers,
+                ai_providers,
+                chat_providers,
+                follow_providers,
+                joke_providers,
+                user_providers,
+                viewer_providers,
+                stream_providers,
+                economy_providers,
+                minigame_providers,
+                equipment_providers,
+                battle_providers,
+                betting_providers,
+                background_providers,
+                telegram_providers,
+                DEFAULT_SETTINGS
+            ).create()
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None
