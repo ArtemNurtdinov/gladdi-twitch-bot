@@ -1,20 +1,25 @@
 import random
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Callable, ContextManager, List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.betting.application.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
 from app.chat.application.chat_use_case import ChatUseCase
+from app.commands.roll.model import RollDTO, RollTimeoutAction, RollUseCaseResult
 from app.economy.domain.economy_service import EconomyService
-from app.economy.domain.models import JackpotPayoutMultiplierEffect, MissPayoutMultiplierEffect, PartialPayoutMultiplierEffect, \
-    TransactionType
+from app.economy.domain.models import (
+    JackpotPayoutMultiplierEffect,
+    MissPayoutMultiplierEffect,
+    PartialPayoutMultiplierEffect,
+    TransactionType,
+)
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
-from app.commands.roll.model import RollDTO, RollUseCaseResult, RollTimeoutAction
-from core.provider import SingletonProvider, Provider
+from core.provider import Provider, SingletonProvider
 
 
 class HandleRollUseCase:
@@ -38,22 +43,20 @@ class HandleRollUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         command_roll: RollDTO,
     ) -> RollUseCaseResult:
-        messages: List[str] = []
-        timeout_action: Optional[RollTimeoutAction] = None
+        messages: list[str] = []
+        timeout_action: RollTimeoutAction | None = None
         current_time = datetime.now()
 
         with db_readonly_session_provider() as db:
             equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
-                channel_name=command_roll.channel_name,
-                user_name=command_roll.user_name
+                channel_name=command_roll.channel_name, user_name=command_roll.user_name
             )
             cooldown_seconds = self._roll_cooldown_use_case_provider.get().calc_seconds(
-                default_cooldown_seconds=HandleRollUseCase.DEFAULT_COOLDOWN_SECONDS,
-                equipment=equipment
+                default_cooldown_seconds=HandleRollUseCase.DEFAULT_COOLDOWN_SECONDS, equipment=equipment
             )
 
         if command_roll.last_roll_time:
@@ -66,7 +69,7 @@ class HandleRollUseCase:
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.bot_nick,
                         content=result,
-                        current_time=command_roll.occurred_at
+                        current_time=command_roll.occurred_at,
                     )
                 messages.append(result)
                 return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=command_roll.last_roll_time)
@@ -86,7 +89,8 @@ class HandleRollUseCase:
                     self._chat_use_case_provider.get(db).save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.bot_nick,
-                        content=result, current_time=command_roll.occurred_at
+                        content=result,
+                        current_time=command_roll.occurred_at,
                     )
                 messages.append(result)
                 return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=command_roll.last_roll_time)
@@ -100,7 +104,7 @@ class HandleRollUseCase:
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.bot_nick,
                     content=result,
-                    current_time=command_roll.occurred_at
+                    current_time=command_roll.occurred_at,
                 )
             messages.append(result)
             return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
@@ -112,7 +116,7 @@ class HandleRollUseCase:
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.bot_nick,
                     content=result,
-                    current_time=command_roll.occurred_at
+                    current_time=command_roll.occurred_at,
                 )
             messages.append(result)
             return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
@@ -132,8 +136,7 @@ class HandleRollUseCase:
 
         with db_readonly_session_provider() as db:
             rarity_level = self._betting_service_provider.get(db).determine_correct_rarity(
-                slot_result=slot_result_string,
-                result_type=result_type
+                slot_result=slot_result_string, result_type=result_type
             )
 
         with db_session_provider() as db:
@@ -150,7 +153,7 @@ class HandleRollUseCase:
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.bot_nick,
                     content=result,
-                    current_time=command_roll.occurred_at
+                    current_time=command_roll.occurred_at,
                 )
                 messages.append(result)
                 return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
@@ -203,23 +206,21 @@ class HandleRollUseCase:
             if payout > 0:
                 transaction_type = TransactionType.BET_WIN
                 description = (
-                    f"Выигрыш в слот-машине: {slot_result_string}"
-                    if result_type != "miss"
-                    else f"Консольный приз: {slot_result_string}"
+                    f"Выигрыш в слот-машине: {slot_result_string}" if result_type != "miss" else f"Консольный приз: {slot_result_string}"
                 )
                 user_balance = self._economy_service_provider.get(db).add_balance(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
                     amount=payout,
                     transaction_type=transaction_type,
-                    description=description
+                    description=description,
                 )
             self._betting_service_provider.get(db).save_bet(
                 channel_name=command_roll.channel_name,
                 user_name=command_roll.user_name,
                 slot_result=slot_result_string,
                 result_type=result_type,
-                rarity_level=rarity_level
+                rarity_level=rarity_level,
             )
 
         result_emoji = self._get_result_emoji(result_type, payout)
@@ -232,7 +233,7 @@ class HandleRollUseCase:
                 channel_name=command_roll.channel_name,
                 user_name=command_roll.bot_nick,
                 content=final_result,
-                current_time=command_roll.occurred_at
+                current_time=command_roll.occurred_at,
             )
         messages.append(final_result)
 
@@ -240,8 +241,7 @@ class HandleRollUseCase:
             base_timeout_duration = timeout_seconds if timeout_seconds else 0
 
             final_timeout, protection_message = self._calculate_timeout_use_case_provider.get().calculate_timeout_with_equipment(
-                base_timeout_seconds=base_timeout_duration,
-                equipment=equipment
+                base_timeout_seconds=base_timeout_duration, equipment=equipment
             )
 
             if final_timeout == 0:
@@ -255,7 +255,7 @@ class HandleRollUseCase:
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.bot_nick,
                         content=no_timeout_message,
-                        current_time=command_roll.occurred_at
+                        current_time=command_roll.occurred_at,
                     )
                 messages.append(no_timeout_message)
             else:
@@ -274,8 +274,9 @@ class HandleRollUseCase:
                 )
         elif self._is_miss(result_type):
             if self._is_consolation_prize(result_type, payout):
-                no_timeout_message = (f"🎁 @{command_roll.display_name}, повезло! Редкий эмодзи спас от таймаута! "
-                                      f"Консольный приз: {payout} монет")
+                no_timeout_message = (
+                    f"🎁 @{command_roll.display_name}, повезло! Редкий эмодзи спас от таймаута! Консольный приз: {payout} монет"
+                )
             else:
                 no_timeout_message = f"✨ @{command_roll.display_name}, редкий эмодзи спас от таймаута!"
 

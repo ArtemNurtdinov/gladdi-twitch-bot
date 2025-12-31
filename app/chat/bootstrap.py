@@ -15,7 +15,6 @@ class ChatProviders:
 
 
 def build_chat_providers() -> ChatProviders:
-
     def chat_use_case(db):
         return ChatUseCase(ChatRepositoryImpl(db))
 
@@ -38,4 +37,3 @@ def get_chat_use_case_ro(repo: ChatRepositoryImpl = Depends(get_chat_repo_ro)) -
 
 def get_chat_use_case_rw(repo: ChatRepositoryImpl = Depends(get_chat_repo_rw)) -> ChatUseCase:
     return ChatUseCase(repo)
-

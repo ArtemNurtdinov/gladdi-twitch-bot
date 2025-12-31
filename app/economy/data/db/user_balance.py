@@ -1,11 +1,12 @@
-from sqlalchemy import Column, String, DateTime, Integer, BigInteger, Boolean
 from datetime import datetime
+
+from sqlalchemy import BigInteger, Column, DateTime, Integer, String
 
 from core.db import Base
 
 
 class UserBalance(Base):
-    __tablename__ = 'user_balance'
+    __tablename__ = "user_balance"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     channel_name = Column(String, nullable=False)
@@ -21,4 +22,4 @@ class UserBalance(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     def __repr__(self):
-        return f"<UserBalance(user_name='{self.user_name}', balance={self.balance})>" 
+        return f"<UserBalance(user_name='{self.user_name}', balance={self.balance})>"

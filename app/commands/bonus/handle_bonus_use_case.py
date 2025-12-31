@@ -1,17 +1,17 @@
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
+from app.commands.dto import ChatContextDTO
 from app.economy.domain.economy_service import EconomyService
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.stream.domain.stream_service import StreamService
-from app.commands.dto import ChatContextDTO
 from core.provider import Provider
 
 
 class HandleBonusUseCase:
-
     def __init__(
         self,
         stream_service_provider: Provider[StreamService],
@@ -26,8 +26,8 @@ class HandleBonusUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         chat_context_dto: ChatContextDTO,
     ) -> str:
         with db_readonly_session_provider() as db:
@@ -38,18 +38,20 @@ class HandleBonusUseCase:
         else:
             with db_session_provider() as db:
                 user_equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
-                    channel_name=chat_context_dto.channel_name,
-                    user_name=chat_context_dto.user_name
+                    channel_name=chat_context_dto.channel_name, user_name=chat_context_dto.user_name
                 )
                 bonus_result = self._economy_service_provider.get(db).claim_daily_bonus(
                     active_stream_id=active_stream.id,
                     channel_name=chat_context_dto.channel_name,
                     user_name=chat_context_dto.user_name,
-                    user_equipment=user_equipment
+                    user_equipment=user_equipment,
                 )
                 if bonus_result.success:
                     if bonus_result.bonus_message:
-                        result = f"🎁 @{chat_context_dto.display_name} получил бонус {bonus_result.bonus_amount} монет! {bonus_result.bonus_message}"
+                        result = (
+                            f"🎁 @{chat_context_dto.display_name} получил бонус {bonus_result.bonus_amount} монет! "
+                            f"{bonus_result.bonus_message}"
+                        )
                     else:
                         result = f"🎁 @{chat_context_dto.display_name} получил бонус {bonus_result.bonus_amount} монет!"
                 else:

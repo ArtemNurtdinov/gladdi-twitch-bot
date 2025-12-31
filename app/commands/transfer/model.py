@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -12,5 +11,5 @@ class TransferDTO:
     user_name: str
     bot_nick: str
     occurred_at: datetime
-    recipient_input: Optional[str]
-    amount_input: Optional[str]
+    recipient_input: str | None
+    amount_input: str | None

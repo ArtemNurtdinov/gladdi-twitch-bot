@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, List
 
 
 @dataclass(frozen=True)
@@ -12,8 +11,8 @@ class RollDTO:
     user_name: str
     bot_nick: str
     occurred_at: datetime
-    amount_input: Optional[str]
-    last_roll_time: Optional[datetime]
+    amount_input: str | None
+    last_roll_time: datetime | None
 
 
 @dataclass(frozen=True)
@@ -25,6 +24,6 @@ class RollTimeoutAction:
 
 @dataclass(frozen=True)
 class RollUseCaseResult:
-    messages: List[str]
-    timeout_action: Optional[RollTimeoutAction]
-    new_last_roll_time: Optional[datetime]
+    messages: list[str]
+    timeout_action: RollTimeoutAction | None
+    new_last_roll_time: datetime | None

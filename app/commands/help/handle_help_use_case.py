@@ -1,4 +1,5 @@
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
@@ -8,13 +9,12 @@ from core.provider import Provider
 
 
 class HandleHelpUseCase:
-
     def __init__(self, chat_use_case_provider: Provider[ChatUseCase]):
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_help: HelpDTO,
     ) -> str:
         help_parts = ["📜 Доступные команды:"]

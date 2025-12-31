@@ -1,15 +1,15 @@
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
 from app.commands.balance.model import BalanceDTO
+from app.economy.domain.economy_service import EconomyService
 from core.provider import Provider
 
 
 class HandleBalanceUseCase:
-
     def __init__(
         self,
         economy_service_provider: Provider[EconomyService],
@@ -20,7 +20,7 @@ class HandleBalanceUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_balance_dto: BalanceDTO,
     ) -> str:
         with db_session_provider() as db:
@@ -36,7 +36,7 @@ class HandleBalanceUseCase:
                 channel_name=command_balance_dto.channel_name,
                 user_name=command_balance_dto.bot_nick,
                 content=result,
-                current_time=command_balance_dto.occurred_at
+                current_time=command_balance_dto.occurred_at,
             )
 
         return result

@@ -1,17 +1,17 @@
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import timedelta
-from typing import Callable, ContextManager, Optional
 
 from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.chat_use_case import ChatUseCase
-from app.stream.domain.stream_service import StreamService
 from app.chat.application.model import SummarizerJobDTO
+from app.stream.domain.stream_service import StreamService
 from core.provider import Provider
 
 
 class HandleChatSummarizerUseCase:
-
     def __init__(
         self,
         stream_service_provider: Provider[StreamService],
@@ -24,9 +24,9 @@ class HandleChatSummarizerUseCase:
 
     async def handle(
         self,
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         summarizer_job: SummarizerJobDTO,
-    ) -> Optional[str]:
+    ) -> str | None:
         with db_readonly_session_provider() as db:
             active_stream = self._stream_service_provider.get(db).get_active_stream(summarizer_job.channel_name)
         if not active_stream:

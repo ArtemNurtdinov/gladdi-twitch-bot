@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -24,6 +23,5 @@ class CommandBuyDTO:
     user_name: str
     bot_nick: str
     occurred_at: datetime
-    item_name_input: Optional[str]
+    item_name_input: str | None
     command_prefix: str
-

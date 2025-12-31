@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -12,7 +11,7 @@ class GuessNumberDTO:
     user_name: str
     bot_nick: str
     occurred_at: datetime
-    guess_input: Optional[str]
+    guess_input: str | None
 
 
 @dataclass(frozen=True)
@@ -22,7 +21,7 @@ class GuessLetterDTO:
     user_name: str
     bot_nick: str
     occurred_at: datetime
-    letter_input: Optional[str]
+    letter_input: str | None
 
 
 @dataclass(frozen=True)
@@ -32,4 +31,4 @@ class GuessWordDTO:
     user_name: str
     bot_nick: str
     occurred_at: datetime
-    word_input: Optional[str]
+    word_input: str | None

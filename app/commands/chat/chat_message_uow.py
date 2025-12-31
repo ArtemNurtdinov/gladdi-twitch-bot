@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import ContextManager, Protocol
+from contextlib import AbstractContextManager
+from typing import Protocol
 
 from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
@@ -10,39 +11,30 @@ from app.viewer.domain.viewer_session_service import ViewerTimeService
 
 
 class ChatMessageUnitOfWork(Protocol):
+    @property
+    def chat(self) -> ChatUseCase: ...
 
     @property
-    def chat(self) -> ChatUseCase:
-        ...
+    def economy(self) -> EconomyService: ...
 
     @property
-    def economy(self) -> EconomyService:
-        ...
+    def stream(self) -> StreamService: ...
 
     @property
-    def stream(self) -> StreamService:
-        ...
+    def viewer(self) -> ViewerTimeService: ...
 
     @property
-    def viewer(self) -> ViewerTimeService:
-        ...
+    def conversation(self) -> ConversationService: ...
 
-    @property
-    def conversation(self) -> ConversationService:
-        ...
 
 class ChatMessageUnitOfWorkRo(Protocol):
     @property
-    def conversation(self) -> ConversationService:
-        ...
+    def conversation(self) -> ConversationService: ...
 
 
 class ChatMessageUnitOfWorkFactory(Protocol):
+    def create(self) -> AbstractContextManager[ChatMessageUnitOfWork]: ...
 
-    def create(self) -> ContextManager[ChatMessageUnitOfWork]:
-        ...
 
 class ChatMessageUnitOfWorkRoFactory(Protocol):
-
-    def create(self) -> ContextManager[ChatMessageUnitOfWorkRo]:
-        ...
+    def create(self) -> AbstractContextManager[ChatMessageUnitOfWorkRo]: ...

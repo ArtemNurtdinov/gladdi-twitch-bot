@@ -1,16 +1,14 @@
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.economy.data.db.user_balance import UserBalance
 from app.economy.data.db.transaction_history import TransactionHistory
-from app.economy.domain.models import UserBalanceInfo, TransactionData, BalanceBrief
+from app.economy.data.db.user_balance import UserBalance
+from app.economy.domain.models import BalanceBrief, TransactionData, UserBalanceInfo
 from app.economy.domain.repo import EconomyRepository
 
 
 class EconomyRepositoryImpl(EconomyRepository):
-
     def __init__(self, db: Session):
         self._db = db
 
@@ -30,7 +28,7 @@ class EconomyRepositoryImpl(EconomyRepository):
             updated_at=row.updated_at,
         )
 
-    def get_balance(self, channel_name: str, user_name: str) -> Optional[UserBalanceInfo]:
+    def get_balance(self, channel_name: str, user_name: str) -> UserBalanceInfo | None:
         row = self._db.query(UserBalance).filter_by(channel_name=channel_name, user_name=user_name).first()
         return self._to_info(row) if row else None
 
@@ -89,22 +87,9 @@ class EconomyRepositoryImpl(EconomyRepository):
         )
 
     def get_top_users(self, channel_name: str, limit: int) -> list[BalanceBrief]:
-        rows = (
-            self._db.query(UserBalance)
-            .filter_by(channel_name=channel_name)
-            .order_by(UserBalance.balance.desc())
-            .limit(limit)
-            .all()
-        )
+        rows = self._db.query(UserBalance).filter_by(channel_name=channel_name).order_by(UserBalance.balance.desc()).limit(limit).all()
         return [BalanceBrief(user_name=r.user_name, balance=r.balance) for r in rows]
 
     def get_bottom_users(self, channel_name: str, limit: int) -> list[BalanceBrief]:
-        rows = (
-            self._db.query(UserBalance)
-            .filter_by(channel_name=channel_name)
-            .order_by(UserBalance.balance.asc())
-            .limit(limit)
-            .all()
-        )
+        rows = self._db.query(UserBalance).filter_by(channel_name=channel_name).order_by(UserBalance.balance.asc()).limit(limit).all()
         return [BalanceBrief(user_name=r.user_name, balance=r.balance) for r in rows]
-

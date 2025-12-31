@@ -1,10 +1,8 @@
-from typing import Optional
-
 from app.betting.data.db.bet_history import BetHistory
 from app.betting.domain.models import BetRecord
 
 
-def map_bet_history(row: Optional[BetHistory]) -> Optional[BetRecord]:
+def map_bet_history(row: BetHistory | None) -> BetRecord | None:
     if row is None:
         return None
 
@@ -17,4 +15,3 @@ def map_bet_history(row: Optional[BetHistory]) -> Optional[BetRecord]:
         rarity_level=row.rarity_level,
         created_at=row.created_at,
     )
-

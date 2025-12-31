@@ -1,7 +1,7 @@
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
-from pydantic import BaseModel, Field, ConfigDict, field_serializer
+
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.auth.domain.models import UserRole
 
@@ -9,8 +9,8 @@ from app.auth.domain.models import UserRole
 class UserResponse(BaseModel):
     id: UUID = Field(..., description="UUID пользователя")
     email: str = Field(..., description="Email пользователя")
-    first_name: Optional[str] = Field(..., description="Имя пользователя")
-    last_name: Optional[str] = Field(..., description="Фамилия пользователя")
+    first_name: str | None = Field(..., description="Имя пользователя")
+    last_name: str | None = Field(..., description="Фамилия пользователя")
     role: UserRole = Field(..., description="Роль пользователя")
     is_active: bool = Field(..., description="Активен ли пользователь")
     created_at: datetime = Field(..., description="Дата создания")
@@ -18,13 +18,13 @@ class UserResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
-    @field_serializer('created_at', 'updated_at')
+    @field_serializer("created_at", "updated_at")
     def _ser_dt(self, v: datetime) -> str:
         if v.tzinfo is None:
-            v = v.replace(tzinfo=timezone.utc)
+            v = v.replace(tzinfo=UTC)
         else:
-            v = v.astimezone(timezone.utc)
-        return v.isoformat().replace('+00:00', 'Z')
+            v = v.astimezone(UTC)
+        return v.isoformat().replace("+00:00", "Z")
 
 
 class LoginResponse(BaseModel):
@@ -33,32 +33,32 @@ class LoginResponse(BaseModel):
     expires_at: datetime = Field(..., description="Время истечения жизни токена")
     user: UserResponse = Field(..., description="Информация о пользователе")
 
-    @field_serializer('created_at', 'expires_at')
+    @field_serializer("created_at", "expires_at")
     def _ser_dt(self, v: datetime) -> str:
         if v.tzinfo is None:
-            v = v.replace(tzinfo=timezone.utc)
+            v = v.replace(tzinfo=UTC)
         else:
-            v = v.astimezone(timezone.utc)
-        return v.isoformat().replace('+00:00', 'Z')
+            v = v.astimezone(UTC)
+        return v.isoformat().replace("+00:00", "Z")
 
 
 class UserCreate(BaseModel):
     email: str
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    password: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    password: str | None = None
     role: UserRole
     is_active: bool = True
 
 
 class UserUpdate(BaseModel):
-    email: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    password: Optional[str] = None
-    role: Optional[UserRole] = None
+    email: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    password: str | None = None
+    role: UserRole | None = None
     is_active: bool = True
-    is_verified: Optional[bool] = None
+    is_verified: bool | None = None
 
 
 class TokenResponse(BaseModel):
@@ -71,13 +71,13 @@ class TokenResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    @field_serializer('created_at', 'expires_at')
+    @field_serializer("created_at", "expires_at")
     def _ser_dt(self, v: datetime) -> str:
         if v.tzinfo is None:
-            v = v.replace(tzinfo=timezone.utc)
+            v = v.replace(tzinfo=UTC)
         else:
-            v = v.astimezone(timezone.utc)
-        return v.isoformat().replace('+00:00', 'Z')
+            v = v.astimezone(UTC)
+        return v.isoformat().replace("+00:00", "Z")
 
 
 class UserLogin(BaseModel):

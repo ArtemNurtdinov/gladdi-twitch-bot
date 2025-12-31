@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
 
-from app.economy.domain.models import ShopItemType, ShopItems
+from app.economy.domain.models import ShopItems, ShopItemType
 from app.equipment.domain.models import UserEquipmentItem
 from app.equipment.domain.repo import EquipmentRepository
 
 
 class AddEquipmentUseCase:
-
     def __init__(self, repo: EquipmentRepository):
         self._repo = repo
 

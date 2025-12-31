@@ -1,6 +1,6 @@
 from collections import Counter
 
-from app.betting.domain.models import EmojiConfig, RarityLevel, BetRecord
+from app.betting.domain.models import BetRecord, EmojiConfig, RarityLevel
 from app.betting.domain.repo import BettingRepository
 
 
@@ -18,7 +18,7 @@ class BettingService:
         RarityLevel.RARE: 0.6,
         RarityLevel.EPIC: 1,
         RarityLevel.LEGENDARY: 5,
-        RarityLevel.MYTHICAL: 100
+        RarityLevel.MYTHICAL: 100,
     }
 
     CONSOLATION_PRIZES = {
@@ -27,7 +27,7 @@ class BettingService:
         RarityLevel.EPIC: 25,
         RarityLevel.RARE: 0,
         RarityLevel.UNCOMMON: 0,
-        RarityLevel.COMMON: 0
+        RarityLevel.COMMON: 0,
     }
 
     def __init__(self, repo: BettingRepository):
@@ -45,7 +45,7 @@ class BettingService:
             RarityLevel.RARE: 3,
             RarityLevel.EPIC: 4,
             RarityLevel.LEGENDARY: 5,
-            RarityLevel.MYTHICAL: 6
+            RarityLevel.MYTHICAL: 6,
         }
 
         if result_type == "partial":

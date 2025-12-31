@@ -1,5 +1,6 @@
 import random
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 from sqlalchemy.orm import Session
 
@@ -7,16 +8,15 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.domain.conversation_service import ConversationService
 from app.battle.application.battle_use_case import BattleUseCase
 from app.chat.application.chat_use_case import ChatUseCase
+from app.commands.battle.model import BattleDTO, BattleTimeoutAction, BattleUseCaseResult
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
-from app.commands.battle.model import BattleDTO, BattleUseCaseResult, BattleTimeoutAction
-from core.provider import SingletonProvider, Provider
+from core.provider import Provider, SingletonProvider
 
 
 class HandleBattleUseCase:
-
     def __init__(
         self,
         economy_service_provider: Provider[EconomyService],
@@ -25,7 +25,7 @@ class HandleBattleUseCase:
         battle_use_case_provider: Provider[BattleUseCase],
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
         chat_response_use_case: ChatResponseUseCase,
-        calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase]
+        calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase],
     ):
         self._economy_service_provider = economy_service_provider
         self._chat_use_case_provider = chat_use_case_provider
@@ -37,8 +37,8 @@ class HandleBattleUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], ContextManager[Session]],
-        db_readonly_session_provider: Callable[[], ContextManager[Session]],
+        db_session_provider: Callable[[], AbstractContextManager[Session]],
+        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         command_battle: BattleDTO,
     ) -> BattleUseCaseResult:
         challenger_display = command_battle.display_name
@@ -49,15 +49,11 @@ class HandleBattleUseCase:
 
         with db_session_provider() as db:
             user_balance = self._economy_service_provider.get(db).get_user_balance(
-                channel_name=command_battle.channel_name,
-                user_name=challenger_user
+                channel_name=command_battle.channel_name, user_name=challenger_user
             )
 
         if user_balance.balance < fee:
-            result = (
-                f"@{challenger_display}, недостаточно монет для участия в битве! "
-                f"Необходимо: {EconomyService.BATTLE_ENTRY_FEE} монет."
-            )
+            result = f"@{challenger_display}, недостаточно монет для участия в битве! Необходимо: {EconomyService.BATTLE_ENTRY_FEE} монет."
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_battle.channel_name,
@@ -148,11 +144,7 @@ class HandleBattleUseCase:
                     content=result,
                     current_time=command_battle.occurred_at,
                 )
-            return BattleUseCaseResult(
-                messages=[result],
-                new_waiting_user=command_battle.waiting_user,
-                timeout_action=None
-            )
+            return BattleUseCaseResult(messages=[result], new_waiting_user=command_battle.waiting_user, timeout_action=None)
 
         opponent_display = command_battle.waiting_user
         new_waiting_user = None
@@ -177,25 +169,20 @@ class HandleBattleUseCase:
                 user_name=winner,
                 amount=winner_amount,
                 transaction_type=TransactionType.BATTLE_WIN,
-                description=f"Победа в битве против {loser}"
+                description=f"Победа в битве против {loser}",
             )
             self._conversation_service_provider.get(db).save_conversation_to_db(
-                channel_name=command_battle.channel_name,
-                user_message=prompt,
-                ai_message=result_story
+                channel_name=command_battle.channel_name, user_message=prompt, ai_message=result_story
             )
             self._chat_use_case_provider.get(db).save_chat_message(
-                channel_name=command_battle.channel_name,
-                user_name=bot_nick,
-                content=result_story,
-                current_time=command_battle.occurred_at
+                channel_name=command_battle.channel_name, user_name=bot_nick, content=result_story, current_time=command_battle.occurred_at
             )
             self._battle_use_case_provider.get(db).save_battle_history(
                 channel_name=command_battle.channel_name,
                 opponent_1=opponent_display,
                 opponent_2=challenger_display,
                 winner=winner,
-                result_text=result_story
+                result_text=result_story,
             )
 
         messages = [result_story]
@@ -208,19 +195,17 @@ class HandleBattleUseCase:
                 channel_name=command_battle.channel_name,
                 user_name=bot_nick,
                 content=winner_message,
-                current_time=command_battle.occurred_at
+                current_time=command_battle.occurred_at,
             )
 
         base_battle_timeout = 120
         with db_readonly_session_provider() as db:
             equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
-                channel_name=command_battle.channel_name,
-                user_name=loser.lower()
+                channel_name=command_battle.channel_name, user_name=loser.lower()
             )
 
         final_timeout, protection_message = self._calculate_timeout_use_case_provider.get().calculate_timeout_with_equipment(
-            base_timeout_seconds=base_battle_timeout,
-            equipment=equipment
+            base_timeout_seconds=base_battle_timeout, equipment=equipment
         )
 
         timeout_action = None
@@ -234,16 +219,14 @@ class HandleBattleUseCase:
                     channel_name=command_battle.channel_name,
                     user_name=bot_nick,
                     content=no_timeout_message,
-                    current_time=command_battle.occurred_at
+                    current_time=command_battle.occurred_at,
                 )
         else:
             timeout_minutes = final_timeout // 60
             timeout_seconds_remainder = final_timeout % 60
             if timeout_minutes > 0:
                 time_display = (
-                    f"{timeout_minutes} минут"
-                    if timeout_seconds_remainder == 0
-                    else f"{timeout_minutes}м {timeout_seconds_remainder}с"
+                    f"{timeout_minutes} минут" if timeout_seconds_remainder == 0 else f"{timeout_minutes}м {timeout_seconds_remainder}с"
                 )
             else:
                 time_display = f"{timeout_seconds_remainder} секунд"
@@ -253,11 +236,7 @@ class HandleBattleUseCase:
             if protection_message:
                 reason += f" {protection_message}"
 
-            timeout_action = BattleTimeoutAction(
-                user_name=loser,
-                duration_seconds=final_timeout,
-                reason=reason
-            )
+            timeout_action = BattleTimeoutAction(user_name=loser, duration_seconds=final_timeout, reason=reason)
 
         return BattleUseCaseResult(
             messages=messages,

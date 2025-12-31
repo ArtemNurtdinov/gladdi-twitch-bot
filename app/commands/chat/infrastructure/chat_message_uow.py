@@ -1,26 +1,25 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
-from typing import Callable, ContextManager
+from collections.abc import Callable
+from contextlib import AbstractContextManager, contextmanager
 
 from sqlalchemy.orm import Session
 
 from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
-from app.stream.domain.stream_service import StreamService
 from app.commands.chat.chat_message_uow import (
     ChatMessageUnitOfWork,
     ChatMessageUnitOfWorkFactory,
     ChatMessageUnitOfWorkRo,
     ChatMessageUnitOfWorkRoFactory,
 )
+from app.economy.domain.economy_service import EconomyService
+from app.stream.domain.stream_service import StreamService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
 
 
 class SqlAlchemyChatMessageUnitOfWork(ChatMessageUnitOfWork):
-
     def __init__(
         self,
         chat: ChatUseCase,
@@ -59,7 +58,7 @@ class SqlAlchemyChatMessageUnitOfWork(ChatMessageUnitOfWork):
 class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
     def __init__(
         self,
-        session_factory: Callable[[], ContextManager[Session]],
+        session_factory: Callable[[], AbstractContextManager[Session]],
         chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: Provider[StreamService],
@@ -73,7 +72,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
         self._viewer_service_provider = viewer_service_provider
         self._conversation_service_provider = conversation_service_provider
 
-    def create(self) -> ContextManager[ChatMessageUnitOfWork]:
+    def create(self) -> AbstractContextManager[ChatMessageUnitOfWork]:
         @contextmanager
         def _ctx():
             with self._session_factory() as db:
@@ -92,7 +91,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
 class SqlAlchemyChatMessageUnitOfWorkRoFactory(ChatMessageUnitOfWorkRoFactory):
     def __init__(
         self,
-        read_session_factory: Callable[[], ContextManager[Session]],
+        read_session_factory: Callable[[], AbstractContextManager[Session]],
         chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: Provider[StreamService],
@@ -106,7 +105,7 @@ class SqlAlchemyChatMessageUnitOfWorkRoFactory(ChatMessageUnitOfWorkRoFactory):
         self._viewer_service_provider = viewer_service_provider
         self._conversation_service_provider = conversation_service_provider
 
-    def create(self) -> ContextManager[ChatMessageUnitOfWorkRo]:
+    def create(self) -> AbstractContextManager[ChatMessageUnitOfWorkRo]:
         @contextmanager
         def _ctx():
             with self._read_session_factory() as db:

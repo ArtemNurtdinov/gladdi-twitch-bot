@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional, List
 
 from app.commands.dto import ChatContextDTO
 
@@ -7,7 +6,7 @@ from app.commands.dto import ChatContextDTO
 @dataclass(frozen=True)
 class BattleDTO(ChatContextDTO):
     command_call: str
-    waiting_user: Optional[str] = field(default=None)
+    waiting_user: str | None = field(default=None)
 
 
 @dataclass(frozen=True)
@@ -19,7 +18,7 @@ class BattleTimeoutAction:
 
 @dataclass(frozen=True)
 class BattleUseCaseResult:
-    messages: List[str]
-    new_waiting_user: Optional[str]
-    timeout_action: Optional[BattleTimeoutAction]
+    messages: list[str]
+    new_waiting_user: str | None
+    timeout_action: BattleTimeoutAction | None
     delay_before_timeout: float = 0.0
