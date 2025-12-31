@@ -2,7 +2,7 @@ import calendar
 import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 import bcrypt
@@ -10,14 +10,9 @@ from jose import JWTError, jwt
 from jose import exceptions as jose_exceptions
 from sqlalchemy.orm import Session
 
-from core.config import config
-from app.auth.domain.models import (
-    User,
-    AccessToken,
-    UserCreateData,
-    UserUpdateData,
-)
+from app.auth.domain.models import (AccessToken, User, UserCreateData, UserUpdateData)
 from app.auth.domain.repo import AuthRepository
+from core.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -176,4 +171,3 @@ class AuthService:
 
     def delete_token(self, db: Session, token_id: UUID) -> bool:
         return self._repo.delete_token(db, token_id)
-
