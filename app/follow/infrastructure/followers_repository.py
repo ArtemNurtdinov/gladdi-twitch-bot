@@ -3,7 +3,7 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from app.follow.data.db.follower import ChannelFollowerRow
+from app.follow.infrastructure.db.follower import ChannelFollowerRow
 from app.follow.domain.models import ChannelFollower
 from app.follow.domain.repo import FollowersRepository
 

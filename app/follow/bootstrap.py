@@ -2,7 +2,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from core.db import get_db_ro
-from app.follow.data.followers_repository import FollowersRepositoryImpl
+from app.follow.infrastructure.followers_repository import FollowersRepositoryImpl
 from app.follow.application.followers_query_use_cases import (
     ListActiveFollowersUseCase,
     ListNewFollowersUseCase,

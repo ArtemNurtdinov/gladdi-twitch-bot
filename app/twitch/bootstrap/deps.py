@@ -48,7 +48,7 @@ from app.twitch.application.common.stream_info_port import StreamInfoPort
 from app.twitch.application.common.stream_status_port import StreamStatusPort
 from app.twitch.application.common.stream_chatters_port import StreamChattersPort
 from app.twitch.application.common.user_info_port import UserInfoPort
-from app.follow.data.followers_repository import FollowersRepositoryImpl
+from app.follow.infrastructure.followers_repository import FollowersRepositoryImpl
 from app.follow.domain.repo import FollowersRepository
 from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.viewer_session_service import ViewerTimeService

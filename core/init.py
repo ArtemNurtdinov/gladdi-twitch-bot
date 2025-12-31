@@ -15,7 +15,7 @@ from app.economy.data.db.transaction_history import TransactionHistory
 from app.equipment.data.db.user_equipment import UserEquipment
 from app.stream.data.db.stream import Stream
 from app.viewer.data.db.viewer_session import StreamViewerSession
-from app.follow.data.db.follower import ChannelFollowerRow
+from app.follow.infrastructure.db.follower import ChannelFollowerRow
 
 
 def test_connection():

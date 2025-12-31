@@ -1,7 +1,7 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.follow.data.followers_repository import FollowersRepositoryImpl
+from app.follow.infrastructure.followers_repository import FollowersRepositoryImpl
 from app.follow.domain.repo import FollowersRepository
 from core.db import get_db_ro
 
