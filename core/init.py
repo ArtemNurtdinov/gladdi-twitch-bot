@@ -15,6 +15,7 @@ from app.economy.data.db.transaction_history import TransactionHistory
 from app.equipment.data.db.user_equipment import UserEquipment
 from app.stream.data.db.stream import Stream
 from app.viewer.data.db.viewer_session import StreamViewerSession
+from app.twitch.data.followers.db.follower import ChannelFollowerRow
 
 
 def test_connection():
@@ -51,6 +52,7 @@ def create_tables():
             WordHistory.__table__.create(bind=connection, checkfirst=True)
             User.__table__.create(bind=connection, checkfirst=True)
             AccessToken.__table__.create(bind=connection, checkfirst=True)
+            ChannelFollowerRow.__table__.create(bind=connection, checkfirst=True)
         print("Таблицы успешно созданы!")
 
         with engine.connect() as connection:

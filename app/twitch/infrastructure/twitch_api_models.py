@@ -46,6 +46,8 @@ class FollowerData(BaseModel):
 
 class FollowersResponse(BaseModel):
     data: List[FollowerData] = Field(default_factory=list)
+    total: Optional[int] = None
+    pagination: Optional[dict] = None
 
 
 class Chatter(BaseModel):

@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any, List
 
 from pydantic import ValidationError
 
-from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO
+from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO, ChannelFollowerDTO
 from app.twitch.application.interaction.follow.followage_port import FollowagePort
 from app.twitch.application.interaction.follow.model import FollowageInfo
 from app.twitch.application.common.stream_info_port import StreamInfoPort
@@ -145,6 +145,53 @@ class TwitchApiService(
             return None
 
         return await self._get_user_followage(broadcaster_id=broadcaster_id, user_id=user_id)
+
+    async def _get_channel_followers(self, broadcaster_id: str) -> List[ChannelFollowerDTO]:
+        url = '/channels/followers'
+        headers = self._get_headers()
+        params = {'broadcaster_id': broadcaster_id, 'first': 100}
+        followers: List[ChannelFollowerDTO] = []
+        cursor = None
+
+        while True:
+            if cursor:
+                params['after'] = cursor
+            elif 'after' in params:
+                params.pop('after')
+
+            response = await self._client.get(url, headers=headers, params=params)
+            try:
+                data = await self._handle_api_response(response, f"get_channel_followers({broadcaster_id})")
+                parsed: FollowersResponse = FollowersResponse.model_validate(data)
+                followers_page: List[FollowerData] = parsed.data
+            except ValidationError as e:
+                logger.error(f"Валидация списка подписчиков {broadcaster_id} не прошла: {e}")
+                break
+
+            followers.extend([
+                ChannelFollowerDTO(
+                    user_id=item.user_id,
+                    user_name=item.user_login,
+                    display_name=item.user_name,
+                    followed_at=item.followed_at.replace(tzinfo=None),
+                )
+                for item in followers_page
+            ])
+
+            pagination = data.get('pagination') if isinstance(data, dict) else None
+            cursor = None if not pagination else pagination.get('cursor')
+            if not cursor or not parsed.data:
+                break
+
+        return followers
+
+    async def get_channel_followers(self, channel_login: str) -> List[ChannelFollowerDTO]:
+        user = await self.get_user_by_login(channel_login)
+        broadcaster_id = None if user is None else user.id
+        if not broadcaster_id:
+            return []
+
+        return await self._get_channel_followers(broadcaster_id=broadcaster_id)
 
     async def get_stream_info(self, channel_login: str) -> Optional[StreamDataDTO]:
         user = await self.get_user_by_login(channel_login)

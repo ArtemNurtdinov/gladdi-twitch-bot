@@ -32,3 +32,11 @@ class UserInfoDTO:
     id: str
     login: str
     display_name: str
+
+
+@dataclass(frozen=True)
+class ChannelFollowerDTO:
+    user_id: str
+    user_name: str  # login
+    display_name: str  # display name from Twitch
+    followed_at: datetime

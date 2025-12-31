@@ -37,15 +37,19 @@ from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.infrastructure.adapters.followage_adapter import FollowageAdapter
+from app.twitch.infrastructure.adapters.followers_adapter import FollowersAdapter
 from app.twitch.infrastructure.adapters.stream_chatters_adapter import StreamChattersAdapter
 from app.twitch.infrastructure.adapters.stream_info_adapter import StreamInfoAdapter
 from app.twitch.infrastructure.adapters.stream_status_adapter import StreamStatusAdapter
 from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoAdapter
 from app.twitch.application.interaction.follow.followage_port import FollowagePort
+from app.twitch.application.common.followers_port import FollowersPort
 from app.twitch.application.common.stream_info_port import StreamInfoPort
 from app.twitch.application.common.stream_status_port import StreamStatusPort
 from app.twitch.application.common.stream_chatters_port import StreamChattersPort
 from app.twitch.application.common.user_info_port import UserInfoPort
+from app.twitch.data.followers.followers_repository import FollowersRepositoryImpl
+from app.twitch.domain.followers.repo import FollowersRepository
 from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.background_task_runner import BackgroundTaskRunner
@@ -58,6 +62,7 @@ class BotDependencies:
     twitch_auth: TwitchAuth
     twitch_api_service: TwitchApiService
     followage_port: FollowagePort
+    followers_port: FollowersPort
     stream_info_port: StreamInfoPort
     stream_status_port: StreamStatusPort
     stream_chatters_port: StreamChattersPort
@@ -86,6 +91,7 @@ class BotDependencies:
     equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase]
     add_equipment_use_case_provider: Provider[AddEquipmentUseCase]
     calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase]
+    followers_repository_provider: Provider[FollowersRepository]
 
 
 def build_bot_dependencies(
@@ -98,6 +104,7 @@ def build_bot_dependencies(
     prompt_service = PromptService()
 
     followage_port = FollowageAdapter(twitch_api_service)
+    followers_port = FollowersAdapter(twitch_api_service)
     stream_info_port = StreamInfoAdapter(twitch_api_service)
     stream_status_port = StreamStatusAdapter(twitch_api_service)
     stream_chatters_port = StreamChattersAdapter(twitch_api_service)
@@ -156,10 +163,14 @@ def build_bot_dependencies(
     def calculate_timeout_use_case():
         return CalculateTimeoutUseCase()
 
+    def followers_repository(db):
+        return FollowersRepositoryImpl(db)
+
     deps = BotDependencies(
         twitch_auth=twitch_auth,
         twitch_api_service=twitch_api_service,
         followage_port=followage_port,
+        followers_port=followers_port,
         stream_info_port=stream_info_port,
         stream_status_port=stream_status_port,
         stream_chatters_port=stream_chatters_port,
@@ -187,6 +198,7 @@ def build_bot_dependencies(
         roll_cooldown_use_case_provider=SingletonProvider(roll_use_case),
         equipment_exists_use_case_provider=Provider(equipment_use_case),
         add_equipment_use_case_provider=Provider(add_equipment_use_case),
-        calculate_timeout_use_case_provider=SingletonProvider(calculate_timeout_use_case)
+        calculate_timeout_use_case_provider=SingletonProvider(calculate_timeout_use_case),
+        followers_repository_provider=Provider(followers_repository),
     )
     return deps

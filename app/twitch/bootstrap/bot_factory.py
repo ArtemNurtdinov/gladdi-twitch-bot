@@ -10,6 +10,9 @@ from app.twitch.application.background.minigame_tick.handle_minigame_tick_use_ca
     HandleMinigameTickUseCase,
 )
 from app.twitch.application.background.post_joke.handle_post_joke_use_case import HandlePostJokeUseCase
+from app.twitch.application.background.followers_sync.handle_followers_sync_use_case import (
+    HandleFollowersSyncUseCase,
+)
 from app.twitch.application.background.stream_context.handle_restore_stream_context_use_case import (
     HandleRestoreStreamContextUseCase,
 )
@@ -49,6 +52,7 @@ from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.jobs.chat_summarizer_job import ChatSummarizerJob
 from app.twitch.presentation.background.jobs.minigame_tick_job import MinigameTickJob
 from app.twitch.presentation.background.jobs.post_joke_job import PostJokeJob
+from app.twitch.presentation.background.jobs.followers_sync_job import FollowersSyncJob
 from app.twitch.presentation.background.jobs.stream_status_job import StreamStatusJob
 from app.twitch.presentation.background.jobs.token_checker_job import TokenCheckerJob
 from app.twitch.presentation.background.jobs.viewer_time_job import ViewerTimeJob
@@ -197,7 +201,16 @@ class BotFactory:
                     bot_nick_provider=lambda: bot.nick,
                     check_interval_seconds=self._settings.check_viewers_interval_seconds,
                 ),
-            ],
+                FollowersSyncJob(
+                    channel_name=self._settings.channel_name,
+                    handle_followers_sync_use_case=HandleFollowersSyncUseCase(
+                        followers_port=self._deps.followers_port,
+                        followers_repository_provider=self._deps.followers_repository_provider,
+                    ),
+                    db_session_provider=SessionLocal.begin,
+                    interval_seconds=self._settings.sync_followers_interval_seconds,
+                )
+            ]
         )
 
     def _create_command_registry(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str) -> CommandRegistry:

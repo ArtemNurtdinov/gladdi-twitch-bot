@@ -10,6 +10,7 @@ class TwitchBotSettings:
     group_id: int = config.telegram.group_id
     check_viewers_interval_seconds: int = 10
     check_stream_status_interval_seconds: int = 60
+    sync_followers_interval_seconds: int = 24 * 60 * 60
     command_roll: str = "ставка"
     command_followage: str = "followage"
     command_gladdi: str = "gladdi"
