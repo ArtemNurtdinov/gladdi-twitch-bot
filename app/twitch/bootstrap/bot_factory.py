@@ -2,9 +2,7 @@ from app.ai.bootstrap import AIProviders
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.battle.bootstrap import BattleProviders
 from app.betting.bootstrap import BettingProviders
-from app.chat.application.handle_chat_summarizer_use_case import (
-    HandleChatSummarizerUseCase,
-)
+from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.bootstrap import ChatProviders
 from app.commands.ask.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory, SqlAlchemyAskUnitOfWorkRoFactory
@@ -24,22 +22,16 @@ from app.commands.help.handle_help_use_case import HandleHelpUseCase
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
 from app.commands.shop.handle_shop_use_case import HandleShopUseCase
 from app.commands.stats.handle_stats_use_case import HandleStatsUseCase
-from app.commands.top_bottom.handle_top_bottom_use_case import (
-    HandleTopBottomUseCase,
-)
+from app.commands.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.transfer.handle_transfer_use_case import HandleTransferUseCase
 from app.economy.bootstrap import EconomyProviders
 from app.equipment.bootstrap import EquipmentProviders
-from app.follow.application.handle_followers_sync_use_case import (
-    HandleFollowersSyncUseCase,
-)
+from app.follow.application.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.bootstrap import FollowProviders
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.handle_post_joke_use_case import HandlePostJokeUseCase
 from app.joke.bootstrap import JokeProviders
-from app.minigame.application.handle_minigame_tick_use_case import (
-    HandleMinigameTickUseCase,
-)
+from app.minigame.application.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.minigame.bootstrap import MinigameProviders
@@ -48,7 +40,7 @@ from app.stream.application.handle_stream_status_use_case import HandleStreamSta
 from app.stream.application.model import RestoreStreamJobDTO
 from app.stream.bootstrap import StreamProviders
 from app.twitch.bootstrap.twitch import TwitchProviders
-from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings
+from app.twitch.bootstrap.bot_settings import BotSettings
 from app.twitch.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.jobs.chat_summarizer_job import ChatSummarizerJob
@@ -101,7 +93,7 @@ class BotFactory:
         betting_providers: BettingProviders,
         background_providers: BackgroundProviders,
         telegram_providers: TelegramProviders,
-        settings: TwitchBotSettings,
+        settings: BotSettings,
     ):
         self._twitch = twitch_providers
         self._ai = ai_providers
@@ -204,7 +196,6 @@ class BotFactory:
                     ),
                     db_session_provider=SessionLocal.begin,
                     db_readonly_session_provider=lambda: db_ro_session(),
-                    state=bot.chat_summary_state,
                     stream_status_interval_seconds=self._settings.check_stream_status_interval_seconds,
                 ),
                 ChatSummarizerJob(

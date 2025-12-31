@@ -5,7 +5,7 @@ from typing import Optional
 from twitchio.ext import commands
 
 from app.twitch.bootstrap.twitch import TwitchProviders
-from app.twitch.bootstrap.twitch_bot_settings import TwitchBotSettings, DEFAULT_SETTINGS
+from app.twitch.bootstrap.bot_settings import BotSettings, DEFAULT_SETTINGS
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.model.state import ChatSummaryState
 from app.twitch.presentation.interaction.chat_event_handler import ChatEventHandler
@@ -20,7 +20,7 @@ class Bot(commands.Bot):
         self,
         twitch_providers: TwitchProviders,
         user_providers: UserProviders,
-        settings: TwitchBotSettings
+        settings: BotSettings
     ):
         self._settings = settings
         self._twitch = twitch_providers

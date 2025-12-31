@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from app.twitch.bootstrap.twitch_bot_settings import DEFAULT_SETTINGS
+from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.bootstrap.twitch import build_twitch_providers

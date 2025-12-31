@@ -61,4 +61,3 @@ class TwitchAuth:
             self.logger.info("Статус код:", response.status_code)
             self.logger.info("Ответ от сервера:", response.json())
         return False
-
