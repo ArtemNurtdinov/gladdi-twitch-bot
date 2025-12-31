@@ -1,7 +1,7 @@
 from typing import List
 
-from app.twitch.application.common.followers_port import FollowersPort
-from app.twitch.application.common.model import ChannelFollowerDTO
+from app.follow.application.model import ChannelFollowerDTO
+from app.follow.application.followers_port import FollowersPort
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 

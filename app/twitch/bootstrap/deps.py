@@ -37,13 +37,13 @@ from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.cache.user_cache_service import UserCacheService
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.infrastructure.adapters.followage_adapter import FollowageAdapter
-from app.twitch.infrastructure.adapters.followers_adapter import FollowersAdapter
+from app.follow.infrastructure.followers_adapter import FollowersAdapter
 from app.twitch.infrastructure.adapters.stream_chatters_adapter import StreamChattersAdapter
 from app.twitch.infrastructure.adapters.stream_info_adapter import StreamInfoAdapter
 from app.twitch.infrastructure.adapters.stream_status_adapter import StreamStatusAdapter
 from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoAdapter
 from app.twitch.application.interaction.follow.followage_port import FollowagePort
-from app.twitch.application.common.followers_port import FollowersPort
+from app.follow.application.followers_port import FollowersPort
 from app.twitch.application.common.stream_info_port import StreamInfoPort
 from app.twitch.application.common.stream_status_port import StreamStatusPort
 from app.twitch.application.common.stream_chatters_port import StreamChattersPort

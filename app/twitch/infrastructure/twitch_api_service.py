@@ -6,7 +6,8 @@ from typing import Optional, Dict, Any, List
 
 from pydantic import ValidationError
 
-from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO, ChannelFollowerDTO
+from app.follow.application.model import ChannelFollowerDTO
+from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO
 from app.twitch.application.interaction.follow.followage_port import FollowagePort
 from app.twitch.application.interaction.follow.model import FollowageInfo
 from app.twitch.application.common.stream_info_port import StreamInfoPort

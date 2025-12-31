@@ -6,3 +6,11 @@ from datetime import datetime
 class FollowersSyncJobDTO:
     channel_name: str
     occurred_at: datetime
+
+
+@dataclass(frozen=True)
+class ChannelFollowerDTO:
+    user_id: str
+    user_name: str
+    display_name: str
+    followed_at: datetime

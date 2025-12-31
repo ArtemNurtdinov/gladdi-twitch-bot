@@ -5,8 +5,8 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.background.followers_sync.handle_followers_sync_use_case import HandleFollowersSyncUseCase
-from app.twitch.application.background.followers_sync.model import FollowersSyncJobDTO
+from app.follow.application.handle_followers_sync_use_case import HandleFollowersSyncUseCase
+from app.follow.application.model import FollowersSyncJobDTO
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 from typing import Protocol, List
 
-from app.twitch.application.common.model import ChannelFollowerDTO
+from app.follow.application.model import ChannelFollowerDTO
 
 
 class FollowersPort(Protocol):

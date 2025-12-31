@@ -2,8 +2,8 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.background.followers_sync.model import FollowersSyncJobDTO
-from app.twitch.application.common.followers_port import FollowersPort
+from app.follow.application.model import FollowersSyncJobDTO
+from app.follow.application.followers_port import FollowersPort
 from app.follow.domain.repo import FollowersRepository
 from core.provider import Provider
 
