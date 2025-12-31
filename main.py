@@ -8,7 +8,8 @@ from app.joke.presentation import joke_routes
 from app.chat.presentation import chat_routes
 from app.stream.presentation import stream_routes
 from app.viewer.presentation import viewer_routes
-from app.twitch.presentation import twitch_routes, followers_routes
+from app.twitch.presentation import twitch_routes
+from app.follow.presentation import followers_routes
 
 logging.basicConfig(
     level=getattr(logging, config.logging.level.upper(), logging.INFO),

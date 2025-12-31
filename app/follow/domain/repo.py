@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Protocol, List
 
-from app.twitch.domain.followers.models import ChannelFollower
+from app.follow.domain.models import ChannelFollower
 
 
 class FollowersRepository(Protocol):

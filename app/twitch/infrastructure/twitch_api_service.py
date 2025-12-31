@@ -6,7 +6,8 @@ from typing import Optional, Dict, Any, List
 
 from pydantic import ValidationError
 
-from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO, ChannelFollowerDTO
+from app.follow.application.model import ChannelFollowerDTO
+from app.twitch.application.common.model import StreamStatusDTO, StreamDataDTO, UserInfoDTO
 from app.twitch.application.interaction.follow.followage_port import FollowagePort
 from app.twitch.application.interaction.follow.model import FollowageInfo
 from app.twitch.application.common.stream_info_port import StreamInfoPort
@@ -138,8 +139,8 @@ class TwitchApiService(
         logger.debug(f"Пользователь {user_id} не подписан на канал {broadcaster_id}")
         return None
 
-    async def get_followage(self, channel_login: str, user_id: str) -> Optional[FollowageInfo]:
-        user = await self.get_user_by_login(channel_login)
+    async def get_followage(self, channel_name: str, user_id: str) -> Optional[FollowageInfo]:
+        user = await self.get_user_by_login(channel_name)
         broadcaster_id = None if user is None else user.id
         if not broadcaster_id:
             return None
@@ -185,16 +186,16 @@ class TwitchApiService(
 
         return followers
 
-    async def get_channel_followers(self, channel_login: str) -> List[ChannelFollowerDTO]:
-        user = await self.get_user_by_login(channel_login)
+    async def get_channel_followers(self, channel_name: str) -> List[ChannelFollowerDTO]:
+        user = await self.get_user_by_login(channel_name)
         broadcaster_id = None if user is None else user.id
         if not broadcaster_id:
             return []
 
         return await self._get_channel_followers(broadcaster_id=broadcaster_id)
 
-    async def get_stream_info(self, channel_login: str) -> Optional[StreamDataDTO]:
-        user = await self.get_user_by_login(channel_login)
+    async def get_stream_info(self, channel_name: str) -> Optional[StreamDataDTO]:
+        user = await self.get_user_by_login(channel_name)
         broadcaster_id = None if user is None else user.id
         if not broadcaster_id:
             return None

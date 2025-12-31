@@ -5,8 +5,8 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.background.followers_sync.handle_followers_sync_use_case import HandleFollowersSyncUseCase
-from app.twitch.application.background.followers_sync.model import FollowersSyncJobDTO
+from app.follow.application.handle_followers_sync_use_case import HandleFollowersSyncUseCase
+from app.follow.application.model import FollowersSyncJobDTO
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
@@ -35,11 +35,11 @@ class FollowersSyncJob:
             try:
                 dto = FollowersSyncJobDTO(
                     channel_name=self._channel_name,
-                    occurred_at=datetime.utcnow(),
+                    occurred_at=datetime.utcnow()
                 )
                 await self._handle_followers_sync_use_case.handle(
                     db_session_provider=self._db_session_provider,
-                    sync_job=dto,
+                    sync_job=dto
                 )
             except asyncio.CancelledError:
                 logger.info("FollowersSyncJob cancelled")

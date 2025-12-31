@@ -10,7 +10,7 @@ from app.twitch.application.background.minigame_tick.handle_minigame_tick_use_ca
     HandleMinigameTickUseCase,
 )
 from app.twitch.application.background.post_joke.handle_post_joke_use_case import HandlePostJokeUseCase
-from app.twitch.application.background.followers_sync.handle_followers_sync_use_case import (
+from app.follow.application.handle_followers_sync_use_case import (
     HandleFollowersSyncUseCase,
 )
 from app.twitch.application.background.stream_context.handle_restore_stream_context_use_case import (
@@ -52,7 +52,7 @@ from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.jobs.chat_summarizer_job import ChatSummarizerJob
 from app.twitch.presentation.background.jobs.minigame_tick_job import MinigameTickJob
 from app.twitch.presentation.background.jobs.post_joke_job import PostJokeJob
-from app.twitch.presentation.background.jobs.followers_sync_job import FollowersSyncJob
+from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.twitch.presentation.background.jobs.stream_status_job import StreamStatusJob
 from app.twitch.presentation.background.jobs.token_checker_job import TokenCheckerJob
 from app.twitch.presentation.background.jobs.viewer_time_job import ViewerTimeJob
