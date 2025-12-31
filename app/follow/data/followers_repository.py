@@ -3,9 +3,9 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from app.twitch.data.followers.db.follower import ChannelFollowerRow
-from app.twitch.domain.followers.models import ChannelFollower
-from app.twitch.domain.followers.repo import FollowersRepository
+from app.follow.data.db.follower import ChannelFollowerRow
+from app.follow.domain.models import ChannelFollower
+from app.follow.domain.repo import FollowersRepository
 
 
 class FollowersRepositoryImpl(FollowersRepository):

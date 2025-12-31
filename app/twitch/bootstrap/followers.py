@@ -1,8 +1,8 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.twitch.data.followers.followers_repository import FollowersRepositoryImpl
-from app.twitch.domain.followers.repo import FollowersRepository
+from app.follow.data.followers_repository import FollowersRepositoryImpl
+from app.follow.domain.repo import FollowersRepository
 from core.db import get_db_ro
 
 

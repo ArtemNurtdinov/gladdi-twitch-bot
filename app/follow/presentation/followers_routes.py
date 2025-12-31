@@ -4,8 +4,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.twitch.bootstrap.followers import get_followers_repo
-from app.twitch.domain.followers.repo import FollowersRepository
-from app.twitch.presentation.followers_schemas import FollowerResponse, FollowersListResponse
+from app.follow.domain.repo import FollowersRepository
+from app.follow.presentation.followers_schemas import FollowerResponse, FollowersListResponse
 
 router = APIRouter(prefix="/followers", tags=["Followers"])
 

@@ -35,11 +35,11 @@ class FollowersSyncJob:
             try:
                 dto = FollowersSyncJobDTO(
                     channel_name=self._channel_name,
-                    occurred_at=datetime.utcnow(),
+                    occurred_at=datetime.utcnow()
                 )
                 await self._handle_followers_sync_use_case.handle(
                     db_session_provider=self._db_session_provider,
-                    sync_job=dto,
+                    sync_job=dto
                 )
             except asyncio.CancelledError:
                 logger.info("FollowersSyncJob cancelled")
