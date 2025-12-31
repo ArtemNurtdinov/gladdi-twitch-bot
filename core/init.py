@@ -13,7 +13,7 @@ from app.minigame.data.db.word_history import WordHistory
 from app.economy.data.db.user_balance import UserBalance
 from app.economy.data.db.transaction_history import TransactionHistory
 from app.equipment.data.db.user_equipment import UserEquipment
-from app.stream.data.db.stream import Stream
+from app.stream.infrastructure.db.stream import Stream
 from app.viewer.data.db.viewer_session import StreamViewerSession
 from app.follow.infrastructure.db.follower import ChannelFollowerRow
 

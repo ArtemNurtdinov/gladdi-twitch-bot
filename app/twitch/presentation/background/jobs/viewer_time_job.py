@@ -5,8 +5,8 @@ from typing import Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.background.viewer_time.model import ViewerTimeDTO
-from app.twitch.application.background.viewer_time.handle_viewer_time_use_case import HandleViewerTimeUseCase
+from app.viewer.application.model import ViewerTimeDTO
+from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)

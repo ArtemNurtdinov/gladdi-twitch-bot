@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.minigame.application.dto import RpsDTO
 from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
+from app.minigame.application.model import RpsDTO
 
 
 class RpsCommandHandler:

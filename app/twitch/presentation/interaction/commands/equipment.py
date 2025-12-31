@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.equipment.model import EquipmentDTO
-from app.twitch.application.interaction.equipment.handle_equipment_use_case import HandleEquipmentUseCase
+from app.commands.equipment.model import EquipmentDTO
+from app.commands.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 
 
 class EquipmentCommandHandler:

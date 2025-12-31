@@ -3,8 +3,8 @@ from typing import Any, Awaitable, Callable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.interaction.bonus.model import BonusDTO
-from app.twitch.application.interaction.bonus.handle_bonus_use_case import HandleBonusUseCase
+from app.commands.bonus.model import BonusDTO
+from app.commands.bonus.handle_bonus_use_case import HandleBonusUseCase
 
 
 class BonusCommandHandler:

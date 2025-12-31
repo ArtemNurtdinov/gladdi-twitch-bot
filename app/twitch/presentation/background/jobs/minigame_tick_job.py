@@ -2,8 +2,8 @@ import asyncio
 import logging
 from datetime import datetime
 
-from app.twitch.application.background.minigame_tick.model import MinigameTickDTO
-from app.twitch.application.background.minigame_tick.handle_minigame_tick_use_case import HandleMinigameTickUseCase
+from app.minigame.application.model import MinigameTickDTO
+from app.minigame.application.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from core.background_task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)

@@ -4,8 +4,8 @@ from typing import Callable, Awaitable, ContextManager
 
 from sqlalchemy.orm import Session
 
-from app.twitch.application.background.post_joke.model import PostJokeDTO
-from app.twitch.application.background.post_joke.handle_post_joke_use_case import HandlePostJokeUseCase
+from app.joke.application.model import PostJokeDTO
+from app.joke.application.handle_post_joke_use_case import HandlePostJokeUseCase
 from core.background_task_runner import BackgroundTaskRunner
 
 

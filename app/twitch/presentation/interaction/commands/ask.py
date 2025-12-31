@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Any, Awaitable, Callable
 
-from app.twitch.application.interaction.ask.model import AskCommandDTO
-from app.twitch.application.interaction.ask.handle_ask_use_case import HandleAskUseCase
+from app.commands.ask.model import AskCommandDTO
+from app.commands.ask.handle_ask_use_case import HandleAskUseCase
 
 
 class AskCommandHandler:
