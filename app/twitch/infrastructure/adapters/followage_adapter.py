@@ -9,6 +9,6 @@ class FollowageAdapter(FollowagePort):
     def __init__(self, twitch_api_service: TwitchApiService):
         self._twitch_api_service = twitch_api_service
 
-    async def get_followage(self, channel_login: str, user_id: str) -> Optional[FollowageInfo]:
-        return await self._twitch_api_service.get_followage(channel_login, user_id)
+    async def get_followage(self, channel_name: str, user_id: str) -> Optional[FollowageInfo]:
+        return await self._twitch_api_service.get_followage(channel_name, user_id)
 

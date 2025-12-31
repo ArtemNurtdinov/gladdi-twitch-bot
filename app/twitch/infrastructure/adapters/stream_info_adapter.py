@@ -9,6 +9,6 @@ class StreamInfoAdapter(StreamInfoPort):
     def __init__(self, twitch_api_service: TwitchApiService):
         self._twitch_api_service = twitch_api_service
 
-    async def get_stream_info(self, channel_login: str) -> Optional[StreamDataDTO]:
-        return await self._twitch_api_service.get_stream_info(channel_login)
+    async def get_stream_info(self, channel_name: str) -> Optional[StreamDataDTO]:
+        return await self._twitch_api_service.get_stream_info(channel_name)
 

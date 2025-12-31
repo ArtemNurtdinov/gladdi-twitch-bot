@@ -36,7 +36,7 @@ class HandleFollowAgeUseCase:
         channel_name = command_follow_age.channel_name
 
         follow_info: Optional[FollowageInfo] = await self._get_followage_use_case.get_followage(
-            channel_login=channel_name,
+            channel_name=channel_name,
             user_id=command_follow_age.user_id,
         )
 

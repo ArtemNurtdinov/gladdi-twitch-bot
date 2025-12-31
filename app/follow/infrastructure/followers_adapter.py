@@ -10,5 +10,5 @@ class FollowersAdapter(FollowersPort):
     def __init__(self, twitch_api_service: TwitchApiService):
         self._twitch_api_service = twitch_api_service
 
-    async def get_channel_followers(self, channel_login: str) -> List[ChannelFollowerDTO]:
-        return await self._twitch_api_service.get_channel_followers(channel_login)
+    async def get_channel_followers(self, channel_name: str) -> List[ChannelFollowerDTO]:
+        return await self._twitch_api_service.get_channel_followers(channel_name)
