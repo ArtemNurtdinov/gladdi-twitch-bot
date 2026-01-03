@@ -10,10 +10,7 @@ from app.commands.balance.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.battle.handle_battle_use_case import HandleBattleUseCase
 from app.commands.bonus.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.chat.handle_chat_message_use_case import HandleChatMessageUseCase
-from app.commands.chat.infrastructure.chat_message_uow import (
-    SqlAlchemyChatMessageUnitOfWorkFactory,
-    SqlAlchemyChatMessageUnitOfWorkRoFactory,
-)
+from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.commands.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
@@ -462,10 +459,8 @@ class BotFactory:
 
     def _create_chat_event_handler(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str) -> ChatEventHandler:
         chat_message_uow_factory = self._build_chat_message_uow_factory()
-        chat_message_uow_ro_factory = self._build_chat_message_uow_ro_factory()
         handle_chat_message = HandleChatMessageUseCase(
             unit_of_work_factory=chat_message_uow_factory,
-            unit_of_work_ro_factory=chat_message_uow_ro_factory,
             get_intent_from_text_use_case=self._ai.get_intent_use_case,
             prompt_service=self._ai.prompt_service,
             system_prompt=system_prompt,
@@ -498,16 +493,6 @@ class BotFactory:
     def _build_chat_message_uow_factory(self) -> SqlAlchemyChatMessageUnitOfWorkFactory:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
             session_factory=SessionLocal.begin,
-            chat_use_case_provider=self._chat.chat_use_case_provider,
-            economy_service_provider=self._economy.economy_service_provider,
-            stream_service_provider=self._stream.stream_service_provider,
-            viewer_service_provider=self._viewer.viewer_service_provider,
-            conversation_service_provider=self._ai.conversation_service_provider,
-        )
-
-    def _build_chat_message_uow_ro_factory(self) -> SqlAlchemyChatMessageUnitOfWorkRoFactory:
-        return SqlAlchemyChatMessageUnitOfWorkRoFactory(
-            read_session_factory=lambda: db_ro_session(),
             chat_use_case_provider=self._chat.chat_use_case_provider,
             economy_service_provider=self._economy.economy_service_provider,
             stream_service_provider=self._stream.stream_service_provider,
