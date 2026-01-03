@@ -17,7 +17,7 @@ from app.commands.chat.infrastructure.chat_message_uow import (
 from app.commands.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
-from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkRoFactory, SqlAlchemyFollowAgeUnitOfWorkRwFactory
+from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
 from app.commands.guess.handle_guess_use_case import HandleGuessUseCase
 from app.commands.help.handle_help_use_case import HandleHelpUseCase
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
@@ -256,8 +256,7 @@ class BotFactory:
                     followage_port=self._follow.followage_port,
                 ),
                 chat_response_use_case=chat_response_use_case,
-                unit_of_work_ro_factory=self._build_follow_age_uow_ro_factory(),
-                unit_of_work_rw_factory=self._build_follow_age_uow_rw_factory(),
+                unit_of_work_factory=self._build_follow_age_uow_factory(),
                 system_prompt=system_prompt,
             ),
             bot_nick_provider=bot_nick_provider,
@@ -523,13 +522,8 @@ class BotFactory:
             conversation_service_provider=self._ai.conversation_service_provider,
         )
 
-    def _build_follow_age_uow_ro_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkRoFactory:
-        return SqlAlchemyFollowAgeUnitOfWorkRoFactory(
-            read_session_factory=lambda: db_ro_session(), conversation_service_provider=self._ai.conversation_service_provider
-        )
-
-    def _build_follow_age_uow_rw_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkRwFactory:
-        return SqlAlchemyFollowAgeUnitOfWorkRwFactory(
+    def _build_follow_age_uow_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkFactory:
+        return SqlAlchemyFollowAgeUnitOfWorkFactory(
             session_factory=SessionLocal.begin,
             chat_use_case_provider=self._chat.chat_use_case_provider,
             conversation_service_provider=self._ai.conversation_service_provider,

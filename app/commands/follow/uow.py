@@ -5,22 +5,17 @@ from app.ai.gen.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
 
 
-class FollowAgeUnitOfWorkRo(Protocol):
+class FollowAgeUnitOfWork(Protocol):
     @property
     def conversation(self) -> ConversationService: ...
 
-
-class FollowAgeUnitOfWorkRoFactory(Protocol):
-    def create(self) -> AbstractContextManager[FollowAgeUnitOfWorkRo]: ...
-
-
-class FollowAgeUnitOfWorkRw(Protocol):
     @property
     def chat(self) -> ChatUseCase: ...
 
-    @property
-    def conversation(self) -> ConversationService: ...
+    def commit(self) -> None: ...
+
+    def rollback(self) -> None: ...
 
 
-class FollowAgeUnitOfWorkRwFactory(Protocol):
-    def create(self) -> AbstractContextManager[FollowAgeUnitOfWorkRw]: ...
+class FollowAgeUnitOfWorkFactory(Protocol):
+    def create(self, read_only: bool = False) -> AbstractContextManager[FollowAgeUnitOfWork]: ...
