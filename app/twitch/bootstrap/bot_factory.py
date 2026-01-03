@@ -239,8 +239,10 @@ class BotFactory:
 
     def _create_command_registry(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str) -> CommandRegistry:
         prefix = self._settings.prefix
+
         def bot_nick_provider() -> str:
             return bot.nick
+
         post_message_fn = bot.post_message_in_twitch_chat
         timeout_fn = bot.timeout_user
         settings = self._settings
@@ -253,7 +255,6 @@ class BotFactory:
                 get_followage_use_case=GetFollowageUseCase(
                     followage_port=self._follow.followage_port,
                 ),
-                prompt_service=self._ai.prompt_service,
                 chat_response_use_case=chat_response_use_case,
                 unit_of_work_ro_factory=self._build_follow_age_uow_ro_factory(),
                 unit_of_work_rw_factory=self._build_follow_age_uow_rw_factory(),
