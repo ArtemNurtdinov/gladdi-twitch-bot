@@ -1,6 +1,5 @@
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.gen.domain.prompt_service import PromptService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.model import FollowageDTO, FollowageInfo
@@ -14,7 +13,6 @@ class HandleFollowAgeUseCase:
         chat_use_case_provider: Provider[ChatUseCase],
         conversation_service_provider: Provider[ConversationService],
         get_followage_use_case: GetFollowageUseCase,
-        prompt_service: PromptService,
         chat_response_use_case: ChatResponseUseCase,
         unit_of_work_ro_factory: FollowAgeUnitOfWorkRoFactory,
         unit_of_work_rw_factory: FollowAgeUnitOfWorkRwFactory,
@@ -23,7 +21,6 @@ class HandleFollowAgeUseCase:
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
         self._get_followage_use_case = get_followage_use_case
-        self._prompt_service = prompt_service
         self._chat_response_use_case = chat_response_use_case
         self._unit_of_work_ro_factory = unit_of_work_ro_factory
         self._unit_of_work_rw_factory = unit_of_work_rw_factory
