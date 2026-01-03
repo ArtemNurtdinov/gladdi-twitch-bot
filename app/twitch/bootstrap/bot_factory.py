@@ -5,7 +5,7 @@ from app.betting.bootstrap import BettingProviders
 from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.bootstrap import ChatProviders
 from app.commands.ask.handle_ask_use_case import HandleAskUseCase
-from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory, SqlAlchemyAskUnitOfWorkRoFactory
+from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
 from app.commands.balance.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.battle.handle_battle_use_case import HandleBattleUseCase
 from app.commands.bonus.handle_bonus_use_case import HandleBonusUseCase
@@ -269,7 +269,6 @@ class BotFactory:
                 get_intent_from_text_use_case=self._ai.get_intent_use_case,
                 prompt_service=self._ai.prompt_service,
                 unit_of_work_factory=ask_uow_factory,
-                unit_of_work_ro_factory=self._build_ask_uow_ro_factory(),
                 system_prompt=system_prompt,
                 chat_response_use_case=chat_response_use_case,
             ),
@@ -493,12 +492,6 @@ class BotFactory:
         return SqlAlchemyAskUnitOfWorkFactory(
             session_factory=SessionLocal.begin,
             chat_use_case_provider=self._chat.chat_use_case_provider,
-            conversation_service_provider=self._ai.conversation_service_provider,
-        )
-
-    def _build_ask_uow_ro_factory(self) -> SqlAlchemyAskUnitOfWorkRoFactory:
-        return SqlAlchemyAskUnitOfWorkRoFactory(
-            read_session_factory=lambda: db_ro_session(),
             conversation_service_provider=self._ai.conversation_service_provider,
         )
 
