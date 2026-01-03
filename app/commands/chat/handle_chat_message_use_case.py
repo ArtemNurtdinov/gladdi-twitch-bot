@@ -2,7 +2,7 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.domain.prompt_service import PromptService
 from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
-from app.commands.chat.chat_message_uow import ChatMessageUnitOfWorkFactory, ChatMessageUnitOfWorkRoFactory
+from app.commands.chat.chat_message_uow import ChatMessageUnitOfWorkFactory
 from app.commands.chat.model import ChatMessageDTO
 
 
@@ -10,14 +10,12 @@ class HandleChatMessageUseCase:
     def __init__(
         self,
         unit_of_work_factory: ChatMessageUnitOfWorkFactory,
-        unit_of_work_ro_factory: ChatMessageUnitOfWorkRoFactory,
         get_intent_from_text_use_case: GetIntentFromTextUseCase,
         prompt_service: PromptService,
         system_prompt: str,
         chat_response_use_case: ChatResponseUseCase,
     ):
         self._unit_of_work_factory = unit_of_work_factory
-        self._unit_of_work_ro_factory = unit_of_work_ro_factory
         self._get_intent_from_text_use_case = get_intent_from_text_use_case
         self._prompt_service = prompt_service
         self._system_prompt = system_prompt
@@ -54,7 +52,7 @@ class HandleChatMessageUseCase:
                     current_time=dto.occurred_at,
                 )
 
-        with self._unit_of_work_ro_factory.create() as uow_ro:
+        with self._unit_of_work_factory.create(read_only=True) as uow_ro:
             history = uow_ro.conversation.get_last_messages(
                 channel_name=dto.channel_name,
                 system_prompt=self._system_prompt,
