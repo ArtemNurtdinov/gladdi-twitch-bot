@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import random
 from collections.abc import Awaitable, Callable
 from datetime import datetime
@@ -17,8 +16,6 @@ from app.minigame.domain.minigame_service import MinigameService
 from app.stream.domain.stream_service import StreamService
 from core.db import SessionLocal, db_ro_session
 from core.provider import Provider
-
-logger = logging.getLogger(__name__)
 
 
 class MinigameOrchestrator:
@@ -132,8 +129,8 @@ class MinigameOrchestrator:
         avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words))) if used_words else ""
 
         prompt = (
-            "Проанализируй последние сообщения из чата и выбери одно подходящее русское существительное (ОДНО слово),"
-            " связанное по смыслу с обсуждаемыми темами. Придумай короткую подсказку-описание к нему. Не повторяйся в загаданных словах."
+            "Проанализируй последние сообщения из чата и выбери (или придумай) существительное (ОДНО слово),"
+            " связанное по смыслу с обсуждаемыми темами. Придумай короткую подсказку-описание к нему."
             + avoid_clause
             + '\nОтвет верни строго в JSON без дополнительного текста: {"word": "слово", "hint": "краткая подсказка"}.'
             "\nТребования: слово только из букв, без пробелов и дефисов; подсказка до 100 символов."
@@ -165,7 +162,6 @@ class MinigameOrchestrator:
             f"или слово: {self._prefix}{self._command_guess_word} <слово>. "
             f"Время на игру: {self.minigame_service.WORD_GAME_DURATION_MINUTES} минут"
         )
-        logger.info(f"Запущена новая игра 'поле чудес' в канале {channel_name}")
 
         await self._send_channel_message(channel_name, game_message)
 
@@ -180,7 +176,6 @@ class MinigameOrchestrator:
             f"Используй: {self._prefix}{self._command_guess} [число]. "
             f"Время на игру: {self.minigame_service.GUESS_GAME_DURATION_MINUTES} минут ⏰"
         )
-        logger.info(f"Запущена новая игра 'угадай число' в канале {channel_name}")
 
         await self._send_channel_message(channel_name, game_message)
         with SessionLocal.begin() as db:
@@ -195,7 +190,6 @@ class MinigameOrchestrator:
             f"взнос {MinigameService.RPS_ENTRY_FEE_PER_USER} монет. "
             f"Время на голосование: {MinigameService.RPS_GAME_DURATION_MINUTES} минуты ⏰"
         )
-        logger.info(f"Запущена новая игра КНБ в канале {channel_name}")
 
         await self._send_channel_message(channel_name, game_message)
         with SessionLocal.begin() as db:
