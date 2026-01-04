@@ -101,7 +101,7 @@ class HandleGuessUseCase:
             return result
 
         if guess == game.target_number:
-            self._minigame_service.finish_game_with_winner(game, guess_number.channel_name, guess_number.display_name, guess)
+            self._minigame_service.finish_game_with_winner(game, guess_number.channel_name, guess_number.display_name)
             message = f"ПОЗДРАВЛЯЕМ! @{guess_number.display_name} угадал число {guess} и выиграл {game.prize_amount} монет!"
 
             with db_session_provider() as db:
@@ -243,7 +243,10 @@ class HandleGuessUseCase:
             message = f"Такой буквы нет. Слово: {masked}."
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    guess_letter_dto.channel_name, guess_letter_dto.bot_nick, message, guess_letter_dto.occurred_at
+                    channel_name=guess_letter_dto.channel_name,
+                    user_name=guess_letter_dto.bot_nick,
+                    content=message,
+                    current_time=guess_letter_dto.occurred_at,
                 )
 
         return message
