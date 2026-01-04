@@ -4,7 +4,7 @@ from contextlib import AbstractContextManager
 from sqlalchemy.orm import Session
 
 from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.gen.domain.llm_client import LLMClientPort
+from app.ai.gen.domain.llm_client_port import LLMClientPort
 from app.ai.gen.domain.models import AIMessage, Role
 from core.provider import Provider
 
@@ -30,10 +30,11 @@ class ChatResponseUseCase:
             )
         messages.extend(history)
         messages.append(AIMessage(Role.USER, prompt))
-        assistant_message = await self._llm_client.generate_ai_response(messages)
-        return assistant_message
+        assistant_response = await self._llm_client.generate_ai_response(messages)
+        return assistant_response.message
 
     async def generate_response_from_history(self, history: list[AIMessage], prompt: str) -> str:
         messages = list(history)
         messages.append(AIMessage(Role.USER, prompt))
-        return await self._llm_client.generate_ai_response(messages)
+        assistant_response = await self._llm_client.generate_ai_response(messages)
+        return assistant_response.message

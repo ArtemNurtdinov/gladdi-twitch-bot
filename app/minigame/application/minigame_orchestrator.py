@@ -5,7 +5,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.gen.domain.llm_client import LLMClientPort
+from app.ai.gen.domain.llm_client_port import LLMClientPort
 from app.ai.gen.domain.models import AIMessage, Role
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
@@ -148,12 +148,13 @@ class MinigameOrchestrator:
         system_prompt = self._system_prompt
         ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
 
-        response = await self._llm_client.generate_ai_response(ai_messages)
+        assistant_response = await self._llm_client.generate_ai_response(ai_messages)
+        assistant_message = assistant_response.message
 
         with SessionLocal.begin() as db:
-            self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, response)
+            self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, assistant_message)
 
-        data = json.loads(response)
+        data = json.loads(assistant_message)
         word = str(data.get("word", "")).strip()
         hint = str(data.get("hint", "")).strip()
         final_word = word.strip().lower()

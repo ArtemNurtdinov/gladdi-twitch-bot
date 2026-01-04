@@ -1,6 +1,6 @@
 import requests
 
-from app.ai.gen.domain.llm_client import LLMClientPort
+from app.ai.gen.domain.llm_client_port import LLMClientPort
 from app.ai.gen.domain.models import AIMessage, Role
 from app.ai.intent.domain.intent_detector import IntentDetectorClient
 from app.ai.intent.domain.models import Intent
@@ -48,8 +48,8 @@ class IntentDetectorClientImpl(IntentDetectorClient):
             "Если определён неверно — напиши правильный intent (одно слово, без пояснений)."
         )
         ai_response = await llm_client.generate_ai_response([AIMessage(Role.USER, prompt)])
-        ai_response = ai_response.strip().lower()
+        ai_message = ai_response.message.strip().lower()
         for intent in Intent:
-            if ai_response == intent.value:
+            if ai_message == intent.value:
                 return intent
         return detected_intent

@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.ai.gen.domain.llm_client import LLMClientPort
+from app.ai.gen.domain.llm_client_port import LLMClientPort
 from app.ai.intent.domain.models import Intent
 
 
