@@ -485,7 +485,8 @@ class BotFactory:
 
     def _build_ask_uow_factory(self) -> SqlAlchemyAskUnitOfWorkFactory:
         return SqlAlchemyAskUnitOfWorkFactory(
-            session_factory=SessionLocal.begin,
+            session_factory_rw=SessionLocal.begin,
+            session_factory_ro=db_ro_session,
             chat_use_case_provider=self._chat.chat_use_case_provider,
             conversation_service_provider=self._ai.conversation_service_provider,
         )

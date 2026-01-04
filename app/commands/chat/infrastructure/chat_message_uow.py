@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from contextlib import AbstractContextManager, contextmanager
 
 from sqlalchemy.orm import Session
@@ -12,6 +11,7 @@ from app.economy.domain.economy_service import EconomyService
 from app.stream.domain.stream_service import StreamService
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
+from core.types import SessionFactory
 
 
 class SqlAlchemyChatMessageUnitOfWork(ChatMessageUnitOfWork):
@@ -64,7 +64,7 @@ class SqlAlchemyChatMessageUnitOfWork(ChatMessageUnitOfWork):
 class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
     def __init__(
         self,
-        session_factory: Callable[[], AbstractContextManager[Session]],
+        session_factory: SessionFactory,
         chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: Provider[StreamService],
