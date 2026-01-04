@@ -4,9 +4,9 @@ import random
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.gen.domain.llm_client_port import LLMClientPort
-from app.ai.gen.domain.models import AIMessage, Role
+from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.conversation.domain.models import AIMessage, Role
+from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
 from app.economy.domain.models import TransactionType

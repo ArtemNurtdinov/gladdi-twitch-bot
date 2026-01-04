@@ -5,7 +5,7 @@ from contextlib import AbstractContextManager, contextmanager
 
 from sqlalchemy.orm import Session
 
-from app.ai.gen.domain.conversation_service import ConversationService
+from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.follow.uow import FollowAgeUnitOfWork, FollowAgeUnitOfWorkFactory
 from core.provider import Provider

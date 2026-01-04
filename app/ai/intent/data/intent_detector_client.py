@@ -1,7 +1,7 @@
 import requests
 
-from app.ai.gen.domain.llm_client_port import LLMClientPort
-from app.ai.gen.domain.models import AIMessage, Role
+from app.ai.gen.conversation.domain.models import AIMessage, Role
+from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
 from app.ai.intent.domain.intent_detector import IntentDetectorClient
 from app.ai.intent.domain.models import Intent
 from core.config import config

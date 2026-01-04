@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from app.ai.gen.data.message_repository import ConversationRepositoryImpl
-from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.gen.domain.llm_client_port import LLMClientPort
-from app.ai.gen.domain.prompt_service import PromptService
-from app.ai.gen.infrastructure.llm_box_client import LLMBoxClientPortImpl
+from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.conversation.infrastructure.conversation_repository import ConversationRepositoryImpl
+from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
+from app.ai.gen.llm.infrastructure.llm_box_client import LLMBoxClientPortImpl
+from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
 from core.provider import Provider

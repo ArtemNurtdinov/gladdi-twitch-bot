@@ -1,10 +1,10 @@
 import httpx
 from pydantic import ValidationError
 
-from app.ai.gen.domain.llm_client_exceptions import LLMClientError, LLMResponseFormatError
-from app.ai.gen.domain.llm_client_port import LLMClientPort
-from app.ai.gen.domain.models import AIAssistantResponse, AIMessage, Usage
-from app.ai.gen.infrastructure.llm_schemas import AIResponseSchema
+from app.ai.gen.conversation.domain.models import AIAssistantResponse, AIMessage, Usage
+from app.ai.gen.llm.domain.llm_client_exceptions import LLMClientError, LLMResponseFormatError
+from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
+from app.ai.gen.llm.infrastructure.llm_schemas import AIResponseSchema
 from core.config import config
 
 
