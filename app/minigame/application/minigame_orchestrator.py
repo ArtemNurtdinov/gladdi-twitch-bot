@@ -97,7 +97,11 @@ class MinigameOrchestrator:
             with SessionLocal.begin() as db:
                 for winner in winners:
                     self._economy_service_provider.get(db).add_balance(
-                        channel_name, winner, share, TransactionType.MINIGAME_WIN, f"Победа в КНБ ({winning_choice})"
+                        channel_name=channel_name,
+                        user_name=winner,
+                        amount=share,
+                        transaction_type=TransactionType.MINIGAME_WIN,
+                        description=f"Победа в КНБ ({winning_choice})",
                     )
             winners_display = ", ".join(f"@{winner}" for winner in winners)
             message = (
@@ -108,7 +112,9 @@ class MinigameOrchestrator:
             message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
 
         with SessionLocal.begin() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(channel_name, self._bot_name_lower(), message, datetime.utcnow())
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=channel_name, user_name=self._bot_name_lower(), content=message, current_time=datetime.utcnow()
+            )
 
         await self._send_channel_message(channel_name, message)
         await asyncio.sleep(60)
@@ -118,7 +124,9 @@ class MinigameOrchestrator:
         for channel, timeout_message in expired_games.items():
             await self._send_channel_message(channel, timeout_message)
             with SessionLocal.begin() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(channel, self._bot_name_lower(), timeout_message, datetime.utcnow())
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=channel, user_name=self._bot_name_lower(), content=timeout_message, current_time=datetime.utcnow()
+                )
 
     async def _start_word_game(self, channel_name: str):
         with db_ro_session() as db:
@@ -166,7 +174,9 @@ class MinigameOrchestrator:
         await self._send_channel_message(channel_name, game_message)
 
         with SessionLocal.begin() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(channel_name, self._bot_name_lower(), game_message, datetime.utcnow())
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
+            )
 
     async def _start_number_game(self, channel_name: str):
         game = self.minigame_service.start_guess_number_game(channel_name)
@@ -179,7 +189,9 @@ class MinigameOrchestrator:
 
         await self._send_channel_message(channel_name, game_message)
         with SessionLocal.begin() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(channel_name, self._bot_name_lower(), game_message, datetime.utcnow())
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
+            )
 
     async def _start_rps_game(self, channel_name: str):
         self.minigame_service.start_rps_game(channel_name)
@@ -193,4 +205,6 @@ class MinigameOrchestrator:
 
         await self._send_channel_message(channel_name, game_message)
         with SessionLocal.begin() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(channel_name, self._bot_name_lower(), game_message, datetime.utcnow())
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
+            )

@@ -1,10 +1,7 @@
-import logging
 import random
 from datetime import datetime, timedelta
 
 from app.minigame.domain.models import RPS_CHOICES, GuessNumberGame, RPSGame, WordGuessGame
-
-logger = logging.getLogger(__name__)
 
 
 class MinigameService:
@@ -64,7 +61,6 @@ class MinigameService:
             first_game_delay_minutes = random.randint(self.FIRST_GAME_START_MIN, self.FIRST_GAME_START_MAX)
             required_delay = timedelta(minutes=first_game_delay_minutes)
 
-            logger.debug(f"Проверка первой игры для {channel_name}: прошло {time_since_stream_start}, нужно {required_delay}")
             return time_since_stream_start >= required_delay
 
         last_game_time = self.last_game_time[channel_name]
@@ -73,7 +69,6 @@ class MinigameService:
         random_minutes = random.randint(self.GAME_START_INTERVAL_MIN, self.GAME_START_INTERVAL_MAX)
         required_interval = timedelta(minutes=random_minutes)
 
-        logger.debug(f"Проверка следующей игры для {channel_name}: прошло {time_since_last}, нужно {required_interval}")
         return time_since_last >= required_interval
 
     def start_guess_number_game(self, channel_name: str) -> GuessNumberGame:
@@ -121,8 +116,6 @@ class MinigameService:
 
         timeout_message = f"Время игры 'угадай число' истекло! Загаданное число было {game.target_number}. Никто не выиграл на этот раз."
 
-        logger.info(f"Игра 'угадай число' завершена по таймауту. Число: {game.target_number}")
-
         del self.active_guess_games[channel_name]
 
         return timeout_message
@@ -163,7 +156,6 @@ class MinigameService:
         game = WordGuessGame(channel_name, word, hint, start_time, end_time, prize_amount=self.WORD_GAME_MAX_PRIZE)
         self.active_word_games[channel_name] = game
         self.last_game_time[channel_name] = start_time
-        logger.info(f"Запущена игра 'поле чудес' в канале {channel_name}. Слово: {word}, подсказка: {hint}")
         return game
 
     def is_word_game_active(self, channel_name) -> bool:
@@ -199,7 +191,6 @@ class MinigameService:
         game = self.active_word_games[channel_name]
         game.is_active = False
         timeout_message = f"Время игры 'поле чудес' истекло! Слово было '{game.target_word}'. Никто не выиграл."
-        logger.info(f"Игра 'поле чудес' завершена по таймауту. Слово: {game.target_word}")
         del self.active_word_games[channel_name]
         return timeout_message
 
@@ -211,7 +202,6 @@ class MinigameService:
         game = RPSGame(channel_name=channel_name, start_time=start_time, end_time=end_time, bank=self.RPS_BASE_BANK)
         self.active_rps_games[channel_name] = game
         self.last_game_time[channel_name] = start_time
-        logger.info(f"Запущена игра 'камень-ножницы-бумага' в канале {channel_name}")
         return game
 
     def rps_game_is_active(self, channel_name: str) -> bool:
