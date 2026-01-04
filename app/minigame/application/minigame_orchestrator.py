@@ -5,7 +5,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.ai.gen.domain.conversation_service import ConversationService
-from app.ai.gen.domain.llm_client import LLMClient
+from app.ai.gen.domain.llm_client import LLMClientPort
 from app.ai.gen.domain.models import AIMessage, Role
 from app.chat.application.chat_use_case import ChatUseCase
 from app.economy.domain.economy_service import EconomyService
@@ -30,7 +30,7 @@ class MinigameOrchestrator:
         get_used_words_use_case_provider: Provider[GetUsedWordsUseCase],
         add_used_words_use_case_provider: Provider[AddUsedWordsUseCase],
         conversation_service_provider: Provider[ConversationService],
-        llm_client: LLMClient,
+        llm_client: LLMClientPort,
         system_prompt: str,
         prefix: str,
         command_guess_letter: str,
