@@ -64,14 +64,16 @@ class SqlAlchemyChatMessageUnitOfWork(ChatMessageUnitOfWork):
 class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
     def __init__(
         self,
-        session_factory: SessionFactory,
+        session_factory_rw: SessionFactory,
+        session_factory_ro: SessionFactory,
         chat_use_case_provider: Provider[ChatUseCase],
         economy_service_provider: Provider[EconomyService],
         stream_service_provider: Provider[StreamService],
         viewer_service_provider: Provider[ViewerTimeService],
         conversation_service_provider: Provider[ConversationService],
     ):
-        self._session_factory = session_factory
+        self._session_factory_rw = session_factory_rw
+        self._session_factory_ro = session_factory_ro
         self._chat_use_case_provider = chat_use_case_provider
         self._economy_service_provider = economy_service_provider
         self._stream_service_provider = stream_service_provider
@@ -79,9 +81,11 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
         self._conversation_service_provider = conversation_service_provider
 
     def create(self, read_only: bool = False) -> AbstractContextManager[ChatMessageUnitOfWork]:
+        session_factory = self._session_factory_ro if read_only else self._session_factory_rw
+
         @contextmanager
         def _ctx():
-            with self._session_factory() as db:
+            with session_factory() as db:
                 uow = SqlAlchemyChatMessageUnitOfWork(
                     session=db,
                     chat=self._chat_use_case_provider.get(db),
@@ -93,7 +97,8 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
                 )
                 try:
                     yield uow
-                    uow.commit()
+                    if not read_only:
+                        uow.commit()
                 except Exception:
                     uow.rollback()
                     raise

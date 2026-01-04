@@ -493,7 +493,8 @@ class BotFactory:
 
     def _build_chat_message_uow_factory(self) -> SqlAlchemyChatMessageUnitOfWorkFactory:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
-            session_factory=SessionLocal.begin,
+            session_factory_rw=SessionLocal.begin,
+            session_factory_ro=db_ro_session,
             chat_use_case_provider=self._chat.chat_use_case_provider,
             economy_service_provider=self._economy.economy_service_provider,
             stream_service_provider=self._stream.stream_service_provider,
@@ -503,7 +504,8 @@ class BotFactory:
 
     def _build_follow_age_uow_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkFactory:
         return SqlAlchemyFollowAgeUnitOfWorkFactory(
-            session_factory=SessionLocal.begin,
+            session_factory_rw=SessionLocal.begin,
+            session_factory_ro=db_ro_session,
             chat_use_case_provider=self._chat.chat_use_case_provider,
             conversation_service_provider=self._ai.conversation_service_provider,
         )
