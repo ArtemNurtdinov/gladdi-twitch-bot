@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.ai.gen.domain.models import AIAssistantResponse, AIMessage
+from app.ai.gen.conversation.domain.models import AIAssistantResponse, AIMessage
 
 
 class LLMClientPort(Protocol):

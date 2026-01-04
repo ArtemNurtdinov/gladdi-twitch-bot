@@ -1,5 +1,5 @@
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.domain.prompt_service import PromptService
+from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
 from app.commands.chat.chat_message_uow import ChatMessageUnitOfWorkFactory

@@ -1,9 +1,9 @@
 from sqlalchemy import case
 from sqlalchemy.orm import Session
 
-from app.ai.gen.data.db.ai_message import AIMessage as AIDbMessage
-from app.ai.gen.domain.conversation_repository import ConversationRepository
-from app.ai.gen.domain.models import AIMessage, Role
+from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
+from app.ai.gen.conversation.domain.models import AIMessage, Role
+from app.ai.gen.conversation.infrastructure.db.ai_message import AIMessage as AIDbMessage
 
 
 class ConversationRepositoryImpl(ConversationRepository):

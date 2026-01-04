@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import Column, DateTime, Enum, Integer, String
 
-from app.ai.gen.domain.models import Role
+from app.ai.gen.conversation.domain.models import Role
 from core.db import Base
 
 

@@ -1,5 +1,5 @@
-from app.ai.gen.domain.conversation_repository import ConversationRepository
-from app.ai.gen.domain.models import AIMessage
+from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
+from app.ai.gen.conversation.domain.models import AIMessage
 
 
 class ConversationService:
