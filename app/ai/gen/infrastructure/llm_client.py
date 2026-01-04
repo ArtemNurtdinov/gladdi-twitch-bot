@@ -1,11 +1,11 @@
 import httpx
 
-from app.ai.gen.domain.llm_client import LLMClient
+from app.ai.gen.domain.llm_client import LLMClientPort
 from app.ai.gen.domain.models import AIMessage
 from core.config import config
 
 
-class LLMClientImpl(LLMClient):
+class LLMBoxClientPortImpl(LLMClientPort):
     _LLMBOX_API_DOMAIN = config.llmbox.host
 
     async def generate_ai_response(self, user_messages: list[AIMessage]) -> str:

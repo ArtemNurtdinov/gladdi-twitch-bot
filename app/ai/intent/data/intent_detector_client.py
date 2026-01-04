@@ -1,6 +1,6 @@
 import requests
 
-from app.ai.gen.domain.llm_client import LLMClient
+from app.ai.gen.domain.llm_client import LLMClientPort
 from app.ai.gen.domain.models import AIMessage, Role
 from app.ai.intent.domain.intent_detector import IntentDetectorClient
 from app.ai.intent.domain.models import Intent
@@ -25,7 +25,7 @@ class IntentDetectorClientImpl(IntentDetectorClient):
 
         raise Exception(f"Ошибка запроса: {response.status_code} - {response.text}")
 
-    async def validate_intent_via_llm(self, detected_intent: Intent, text: str, llm_client: LLMClient) -> Intent:
+    async def validate_intent_via_llm(self, detected_intent: Intent, text: str, llm_client: LLMClientPort) -> Intent:
         intent_descriptions = {
             "games_history": "вопросы о прошедших играх, их истории, результатах и т.п.",
             "jackbox": "вопросы о Jackbox, просьбы поиграть, обсуждение этой игры",
