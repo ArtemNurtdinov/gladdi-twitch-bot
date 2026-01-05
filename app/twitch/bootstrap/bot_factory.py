@@ -1,11 +1,9 @@
 from app.ai.bootstrap import AIProviders
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.conversation.infrastructure.conversation_repository import ConversationRepositoryImpl
 from app.battle.bootstrap import BattleProviders
 from app.betting.bootstrap import BettingProviders
 from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.bootstrap import ChatProviders
-from app.chat.data.chat_repository import ChatRepositoryImpl
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
 from app.commands.balance.handle_balance_use_case import HandleBalanceUseCase
@@ -72,7 +70,6 @@ from app.viewer.bootstrap import ViewerProviders
 from core.bootstrap.background import BackgroundProviders
 from core.bootstrap.telegram import TelegramProviders
 from core.db import SessionLocal, db_ro_session
-from core.provider import Provider
 
 
 class BotFactory:
