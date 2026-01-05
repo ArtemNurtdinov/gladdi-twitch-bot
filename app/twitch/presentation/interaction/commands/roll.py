@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.model import RollDTO
-from app.twitch.application.chat_moderation_port import ChatModerationPort
+from app.moderation.application.chat_moderation_port import ChatModerationPort
 
 
 class RollCommandHandler:

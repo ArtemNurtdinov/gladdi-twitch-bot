@@ -33,11 +33,11 @@ from app.minigame.application.handle_minigame_tick_use_case import HandleMinigam
 from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.minigame.bootstrap import MinigameProviders
+from app.moderation.application.moderation_service import ModerationService
 from app.stream.application.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.application.model import RestoreStreamJobDTO
 from app.stream.bootstrap import StreamProviders
-from app.twitch.application.moderation_service import ModerationService
 from app.twitch.bootstrap.bot_settings import BotSettings
 from app.twitch.bootstrap.twitch import TwitchProviders
 from app.twitch.handle_token_checker_use_case import HandleTokenCheckerUseCase

@@ -1,7 +1,7 @@
 import logging
 
-from app.twitch.application.chat_moderation_port import ChatModerationPort
-from app.twitch.application.moderation_port import ModerationPort
+from app.moderation.application.chat_moderation_port import ChatModerationPort
+from app.moderation.application.moderation_port import ModerationPort
 from app.user.infrastructure.cache.user_cache_service import UserCacheService
 
 logger = logging.getLogger(__name__)
@@ -12,9 +12,7 @@ class ModerationService(ChatModerationPort):
         self._moderation_port = moderation_port
         self._user_cache = user_cache
 
-    async def timeout_user(
-        self, channel_name: str, moderator_name: str, username: str, duration_seconds: int, reason: str
-    ) -> bool:
+    async def timeout_user(self, channel_name: str, moderator_name: str, username: str, duration_seconds: int, reason: str) -> bool:
         try:
             user_id = await self._user_cache.get_user_id(username)
             broadcaster_id = await self._user_cache.get_user_id(channel_name)
@@ -28,4 +26,3 @@ class ModerationService(ChatModerationPort):
         except Exception as e:
             logger.error(f"Ошибка при попытке дать таймаут пользователю {username}: {e}")
             return False
-

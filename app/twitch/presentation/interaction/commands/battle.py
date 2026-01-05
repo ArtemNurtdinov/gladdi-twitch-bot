@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.commands.battle.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.model import BattleDTO
-from app.twitch.application.chat_moderation_port import ChatModerationPort
+from app.moderation.application.chat_moderation_port import ChatModerationPort
 
 
 class BattleCommandHandler:

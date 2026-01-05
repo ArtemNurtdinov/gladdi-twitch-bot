@@ -3,10 +3,10 @@ from __future__ import annotations
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.model import ChannelFollowerDTO
+from app.moderation.application.moderation_port import ModerationPort
 from app.stream.application.model import StreamDataDTO, StreamStatusDTO
 from app.stream.application.stream_info_port import StreamInfoPort
 from app.stream.application.stream_status_port import StreamStatusPort
-from app.twitch.application.moderation_port import ModerationPort
 from app.twitch.infrastructure.adapters.chatters_adapter import ChattersApiAdapter
 from app.twitch.infrastructure.adapters.followage_adapter import FollowageApiAdapter
 from app.twitch.infrastructure.adapters.moderation_adapter import ModerationApiAdapter
