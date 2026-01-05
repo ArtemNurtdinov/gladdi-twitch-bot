@@ -1,6 +1,5 @@
 from collections.abc import Callable
 from contextlib import AbstractContextManager
-from datetime import datetime
 
 from sqlalchemy.orm import Session
 
@@ -72,7 +71,9 @@ class HandleViewerTimeUseCase:
                     claimed_list.append(minutes_threshold)
                     rewards = ",".join(map(str, sorted(claimed_list)))
                     self._viewer_service_provider.get(db).update_session_rewards(
-                        session_id=session.id, rewards=rewards, current_time=viewer_time_dto.occurred_at or datetime.utcnow()
+                        session_id=session.id,
+                        rewards=rewards,
+                        current_time=viewer_time_dto.occurred_at
                     )
                     self._economy_policy_provider.get(db).add_balance(
                         channel_name=viewer_time_dto.channel_name,
