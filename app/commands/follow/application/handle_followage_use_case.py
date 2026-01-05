@@ -1,24 +1,25 @@
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.conversation.domain.conversation_service import ConversationService
-from app.chat.application.chat_use_case import ChatUseCase
+from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
+from app.chat.domain.models import ChatMessage
+from app.chat.domain.repo import ChatRepository
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
-from app.commands.follow.model import FollowageDTO, FollowageInfo
-from app.commands.follow.uow import FollowAgeUnitOfWorkFactory
+from app.commands.follow.application.model import FollowageDTO, FollowageInfo
+from app.commands.follow.application.uow import FollowAgeUnitOfWorkFactory
 from core.provider import Provider
 
 
 class HandleFollowAgeUseCase:
     def __init__(
         self,
-        chat_use_case_provider: Provider[ChatUseCase],
-        conversation_service_provider: Provider[ConversationService],
+        chat_repo_provider: Provider[ChatRepository],
+        conversation_repo_provider: Provider[ConversationRepository],
         get_followage_use_case: GetFollowageUseCase,
         chat_response_use_case: ChatResponseUseCase,
         unit_of_work_factory: FollowAgeUnitOfWorkFactory,
         system_prompt: str,
     ):
-        self._chat_use_case_provider = chat_use_case_provider
-        self._conversation_service_provider = conversation_service_provider
+        self._chat_repo_provider = chat_repo_provider
+        self._conversation_repo_provider = conversation_repo_provider
         self._get_followage_use_case = get_followage_use_case
         self._chat_response_use_case = chat_response_use_case
         self._unit_of_work_factory = unit_of_work_factory
@@ -35,11 +36,13 @@ class HandleFollowAgeUseCase:
         if not follow_info:
             result = f"@{command_follow_age.display_name}, вы не отслеживаете канал."
             with self._unit_of_work_factory.create() as uow:
-                uow.chat.save_chat_message(
-                    channel_name=channel_name,
-                    user_name=command_follow_age.bot_nick.lower(),
-                    content=result,
-                    current_time=command_follow_age.occurred_at,
+                uow.chat_repo.save(
+                    ChatMessage(
+                        channel_name=channel_name,
+                        user_name=command_follow_age.bot_nick.lower(),
+                        content=result,
+                        created_at=command_follow_age.occurred_at,
+                    )
                 )
             return result
 
@@ -55,16 +58,25 @@ class HandleFollowAgeUseCase:
         )
 
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            history = uow.conversation.get_last_messages(channel_name=command_follow_age.channel_name, system_prompt=self._system_prompt)
+            history = uow.conversation_repo.get_last_messages(
+                channel_name=command_follow_age.channel_name,
+                system_prompt=self._system_prompt,
+            )
 
         assistant_message = await self._chat_response_use_case.generate_response_from_history(history=history, prompt=prompt)
 
         with self._unit_of_work_factory.create() as uow:
-            uow.conversation.save_conversation_to_db(channel_name=channel_name, user_message=prompt, ai_message=assistant_message)
-            uow.chat.save_chat_message(
+            uow.conversation_repo.add_messages_to_db(
                 channel_name=channel_name,
-                user_name=command_follow_age.bot_nick.lower(),
-                content=assistant_message,
-                current_time=command_follow_age.occurred_at,
+                user_message=prompt,
+                ai_message=assistant_message,
+            )
+            uow.chat_repo.save(
+                ChatMessage(
+                    channel_name=channel_name,
+                    user_name=command_follow_age.bot_nick.lower(),
+                    content=assistant_message,
+                    created_at=command_follow_age.occurred_at,
+                )
             )
         return assistant_message

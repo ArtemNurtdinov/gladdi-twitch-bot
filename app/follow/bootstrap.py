@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.commands.follow.application.followage_port import FollowagePort
-from app.commands.follow.followage_adapter import FollowageAdapter
+from app.commands.follow.infrastructure.followage_adapter import FollowageAdapter
 from app.follow.application.followers_port import FollowersPort
 from app.follow.application.followers_query_use_cases import (
     GetFollowerDetailUseCase,

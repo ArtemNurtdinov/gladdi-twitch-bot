@@ -12,14 +12,19 @@ from core.provider import Provider
 @dataclass
 class ChatProviders:
     chat_use_case_provider: Provider[ChatUseCase]
+    chat_repo_provider: Provider[ChatRepositoryImpl]
 
 
 def build_chat_providers() -> ChatProviders:
     def chat_use_case(db):
         return ChatUseCase(ChatRepositoryImpl(db))
 
+    def chat_repo(db):
+        return ChatRepositoryImpl(db)
+
     return ChatProviders(
         chat_use_case_provider=Provider(chat_use_case),
+        chat_repo_provider=Provider(chat_repo),
     )
 
 

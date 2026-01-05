@@ -17,6 +17,7 @@ class AIProviders:
     get_intent_use_case: GetIntentFromTextUseCase
     prompt_service: PromptService
     conversation_service_provider: Provider[ConversationService]
+    conversation_repo_provider: Provider[ConversationRepositoryImpl]
 
 
 def build_ai_providers() -> AIProviders:
@@ -28,10 +29,14 @@ def build_ai_providers() -> AIProviders:
     def conversation_service(db):
         return ConversationService(ConversationRepositoryImpl(db))
 
+    def conversation_repo(db):
+        return ConversationRepositoryImpl(db)
+
     return AIProviders(
         llm_client=llm_client,
         intent_detector=intent_detector,
         get_intent_use_case=get_intent_from_text_use_case,
         prompt_service=prompt_service,
         conversation_service_provider=Provider(conversation_service),
+        conversation_repo_provider=Provider(conversation_repo),
     )

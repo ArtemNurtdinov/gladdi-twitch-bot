@@ -13,14 +13,19 @@ from core.provider import Provider
 @dataclass
 class ViewerProviders:
     viewer_service_provider: Provider[ViewerTimeService]
+    viewer_repo_provider: Provider[ViewerRepository]
 
 
 def build_viewer_providers() -> ViewerProviders:
     def viewer_service(db):
         return ViewerTimeService(ViewerRepositoryImpl(db))
 
+    def viewer_repo(db):
+        return ViewerRepositoryImpl(db)
+
     return ViewerProviders(
         viewer_service_provider=Provider(viewer_service),
+        viewer_repo_provider=Provider(viewer_repo),
     )
 
 

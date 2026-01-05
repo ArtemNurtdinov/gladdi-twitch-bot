@@ -39,7 +39,6 @@ from app.stream.application.handle_restore_stream_context_use_case import Handle
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.application.model import RestoreStreamJobDTO
 from app.stream.bootstrap import StreamProviders
-from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
 from app.twitch.bootstrap.bot_settings import BotSettings
 from app.twitch.bootstrap.twitch import TwitchProviders
 from app.twitch.handle_token_checker_use_case import HandleTokenCheckerUseCase
@@ -70,7 +69,6 @@ from app.twitch.presentation.twitch_bot import Bot
 from app.user.bootstrap import UserProviders
 from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from app.viewer.bootstrap import ViewerProviders
-from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from core.bootstrap.background import BackgroundProviders
 from core.bootstrap.telegram import TelegramProviders
 from core.db import SessionLocal, db_ro_session
@@ -252,8 +250,8 @@ class BotFactory:
 
         follow_age = FollowageCommandHandler(
             handle_follow_age_use_case=HandleFollowAgeUseCase(
-                chat_use_case_provider=self._chat.chat_use_case_provider,
-                conversation_service_provider=self._ai.conversation_service_provider,
+                chat_repo_provider=Provider(lambda db: ChatRepositoryImpl(db)),
+                conversation_repo_provider=Provider(lambda db: ConversationRepositoryImpl(db)),
                 get_followage_use_case=GetFollowageUseCase(
                     followage_port=self._follow.followage_port,
                 ),
@@ -492,25 +490,25 @@ class BotFactory:
         return SqlAlchemyAskUnitOfWorkFactory(
             session_factory_rw=SessionLocal.begin,
             session_factory_ro=db_ro_session,
-            chat_repo_provider=Provider(lambda db: ChatRepositoryImpl(db)),
-            conversation_repo_provider=Provider(lambda db: ConversationRepositoryImpl(db)),
+            chat_repo_provider=self._chat.chat_repo_provider,
+            conversation_repo_provider=self._ai.conversation_repo_provider,
         )
 
     def _build_chat_message_uow_factory(self) -> SqlAlchemyChatMessageUnitOfWorkFactory:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
             session_factory_rw=SessionLocal.begin,
             session_factory_ro=db_ro_session,
-            chat_repo_provider=Provider(lambda db: ChatRepositoryImpl(db)),
+            chat_repo_provider=self._chat.chat_repo_provider,
             economy_policy_provider=self._economy.economy_policy_provider,
-            stream_repo_provider=Provider(lambda db: StreamRepositoryImpl(db)),
-            viewer_repo_provider=Provider(lambda db: ViewerRepositoryImpl(db)),
-            conversation_repo_provider=Provider(lambda db: ConversationRepositoryImpl(db)),
+            stream_repo_provider=self._stream.stream_repo_provider,
+            viewer_repo_provider=self._viewer.viewer_repo_provider,
+            conversation_repo_provider=self._ai.conversation_repo_provider,
         )
 
     def _build_follow_age_uow_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkFactory:
         return SqlAlchemyFollowAgeUnitOfWorkFactory(
             session_factory_rw=SessionLocal.begin,
             session_factory_ro=db_ro_session,
-            chat_use_case_provider=self._chat.chat_use_case_provider,
-            conversation_service_provider=self._ai.conversation_service_provider,
+            chat_repo_provider=self._chat.chat_repo_provider,
+            conversation_repo_provider=self._ai.conversation_repo_provider,
         )

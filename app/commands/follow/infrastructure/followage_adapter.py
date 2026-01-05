@@ -1,5 +1,5 @@
 from app.commands.follow.application.followage_port import FollowagePort
-from app.commands.follow.model import FollowageInfo
+from app.commands.follow.application.model import FollowageInfo
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 

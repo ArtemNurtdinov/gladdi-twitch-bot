@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
-from app.commands.follow.model import FollowageDTO
+from app.commands.follow.application.model import FollowageDTO
 
 
 class FollowageCommandHandler:
