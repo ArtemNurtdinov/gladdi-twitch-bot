@@ -2,8 +2,8 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 from typing import Any
 
-from app.commands.ask.handle_ask_use_case import HandleAskUseCase
-from app.commands.ask.model import AskCommandDTO
+from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
+from app.commands.ask.application.model import AskCommandDTO
 
 
 class AskCommandHandler:
