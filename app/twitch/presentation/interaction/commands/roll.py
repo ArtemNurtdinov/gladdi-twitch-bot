@@ -20,7 +20,7 @@ class RollCommandHandler:
         handle_roll_use_case: HandleRollUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
-        timeout_fn: Callable[[str, str, int, str], Awaitable[None]],
+        timeout_fn: Callable[[str, str, str, int, str], Awaitable[None]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
@@ -76,6 +76,7 @@ class RollCommandHandler:
             await self.post_message_fn(result.timeout_action.reason, ctx)
             await self.timeout_user(
                 channel_name,
+                self.bot_nick_provider(),
                 result.timeout_action.user_name,
                 result.timeout_action.duration_seconds,
                 result.timeout_action.reason,
