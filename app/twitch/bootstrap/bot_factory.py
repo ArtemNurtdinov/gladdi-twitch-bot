@@ -250,8 +250,8 @@ class BotFactory:
 
         follow_age = FollowageCommandHandler(
             handle_follow_age_use_case=HandleFollowAgeUseCase(
-                chat_repo_provider=Provider(lambda db: ChatRepositoryImpl(db)),
-                conversation_repo_provider=Provider(lambda db: ConversationRepositoryImpl(db)),
+                chat_repo_provider=self._chat.chat_repo_provider,
+                conversation_repo_provider=self._ai.conversation_repo_provider,
                 get_followage_use_case=GetFollowageUseCase(
                     followage_port=self._follow.followage_port,
                 ),

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
 from app.chat.data.chat_repository import ChatRepositoryImpl
+from app.chat.domain.repo import ChatRepository
 from core.db import get_db_ro, get_db_rw
 from core.provider import Provider
 
@@ -12,7 +13,7 @@ from core.provider import Provider
 @dataclass
 class ChatProviders:
     chat_use_case_provider: Provider[ChatUseCase]
-    chat_repo_provider: Provider[ChatRepositoryImpl]
+    chat_repo_provider: Provider[ChatRepository]
 
 
 def build_chat_providers() -> ChatProviders:
