@@ -39,6 +39,7 @@ from app.stream.application.handle_restore_stream_context_use_case import Handle
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.application.model import RestoreStreamJobDTO
 from app.stream.bootstrap import StreamProviders
+from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
 from app.twitch.bootstrap.bot_settings import BotSettings
 from app.twitch.bootstrap.twitch import TwitchProviders
 from app.twitch.handle_token_checker_use_case import HandleTokenCheckerUseCase
@@ -69,6 +70,7 @@ from app.twitch.presentation.twitch_bot import Bot
 from app.user.bootstrap import UserProviders
 from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from app.viewer.bootstrap import ViewerProviders
+from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from core.bootstrap.background import BackgroundProviders
 from core.bootstrap.telegram import TelegramProviders
 from core.db import SessionLocal, db_ro_session
@@ -500,8 +502,8 @@ class BotFactory:
             session_factory_ro=db_ro_session,
             chat_repo_provider=Provider(lambda db: ChatRepositoryImpl(db)),
             economy_policy_provider=self._economy.economy_policy_provider,
-            stream_service_provider=self._stream.stream_service_provider,
-            viewer_service_provider=self._viewer.viewer_service_provider,
+            stream_repo_provider=Provider(lambda db: StreamRepositoryImpl(db)),
+            viewer_repo_provider=Provider(lambda db: ViewerRepositoryImpl(db)),
             conversation_repo_provider=Provider(lambda db: ConversationRepositoryImpl(db)),
         )
 

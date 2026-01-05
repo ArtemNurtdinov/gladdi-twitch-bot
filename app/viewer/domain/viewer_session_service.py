@@ -13,13 +13,6 @@ class ViewerTimeService:
     def __init__(self, repo: ViewerRepository):
         self._repo = repo
 
-    def update_viewer_session(self, stream_id: int, channel_name: str, user_name: str, current_time: datetime):
-        session = self._repo.get_viewer_session(stream_id, channel_name, user_name)
-        if session:
-            self._repo.update_last_activity(stream_id, channel_name, user_name, current_time)
-        else:
-            self._repo.create_view_session(stream_id, channel_name, user_name, current_time)
-
     def update_viewers(self, active_stream_id: int, channel_name: str, chatters: list[str], current_time: datetime):
         for user_name in chatters:
             normalized_user_name = user_name.lower()

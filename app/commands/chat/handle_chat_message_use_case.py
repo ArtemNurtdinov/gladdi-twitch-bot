@@ -49,14 +49,27 @@ class HandleChatMessageUseCase:
                 channel_name=dto.channel_name,
                 user_name=dto.user_name,
             )
-            active_stream = uow.stream.get_active_stream(dto.channel_name)
+            active_stream = uow.stream_repo.get_active_stream(dto.channel_name)
             if active_stream:
-                uow.viewer.update_viewer_session(
+                existing_session = uow.viewer_repo.get_viewer_session(
                     stream_id=active_stream.id,
                     channel_name=dto.channel_name,
                     user_name=dto.user_name,
-                    current_time=dto.occurred_at,
                 )
+                if existing_session:
+                    uow.viewer_repo.update_last_activity(
+                        stream_id=active_stream.id,
+                        channel_name=dto.channel_name,
+                        user_name=dto.user_name,
+                        current_time=dto.occurred_at,
+                    )
+                else:
+                    uow.viewer_repo.create_view_session(
+                        stream_id=active_stream.id,
+                        channel_name=dto.channel_name,
+                        user_name=dto.user_name,
+                        current_time=dto.occurred_at,
+                    )
 
         with self._unit_of_work_factory.create(read_only=True) as uow_ro:
             history = uow_ro.conversation_repo.get_last_messages(
