@@ -6,8 +6,8 @@ from typing import Protocol
 from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
 from app.chat.domain.repo import ChatRepository
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.stream.domain.stream_service import StreamService
-from app.viewer.domain.viewer_session_service import ViewerTimeService
+from app.stream.domain.repo import StreamRepository
+from app.viewer.domain.repo import ViewerRepository
 
 
 class ChatMessageUnitOfWork(Protocol):
@@ -18,10 +18,10 @@ class ChatMessageUnitOfWork(Protocol):
     def economy(self) -> EconomyPolicy: ...
 
     @property
-    def stream(self) -> StreamService: ...
+    def stream_repo(self) -> StreamRepository: ...
 
     @property
-    def viewer(self) -> ViewerTimeService: ...
+    def viewer_repo(self) -> ViewerRepository: ...
 
     @property
     def conversation_repo(self) -> ConversationRepository: ...
