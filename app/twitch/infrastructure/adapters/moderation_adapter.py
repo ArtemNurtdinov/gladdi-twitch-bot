@@ -12,7 +12,7 @@ class ModerationApiAdapter(ModerationPort):
     def __init__(self, client: StreamingApiClient):
         self._client = client
 
-    async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str):
+    async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool:
         response = await self._client.post(
             "/moderation/bans",
             params={"broadcaster_id": broadcaster_id, "moderator_id": moderator_id},
@@ -21,5 +21,7 @@ class ModerationApiAdapter(ModerationPort):
         )
         if response.status_code == 200:
             logger.info(f"Таймаут успешно применён для пользователя {user_id} на {duration_seconds} секунд за: {reason}")
+            return True
         else:
             logger.error(f"Не удалось дать таймаут пользователю {user_id}. Status: {response.status_code}, Response: {response.text}")
+            return False

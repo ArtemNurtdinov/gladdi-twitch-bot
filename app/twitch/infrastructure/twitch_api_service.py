@@ -57,5 +57,5 @@ class TwitchApiService(
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> list[str]:
         return await self._chatters_adapter.get_stream_chatters(broadcaster_id, moderator_id)
 
-    async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str):
-        await self.moderation_adapter.timeout_user(broadcaster_id, moderator_id, user_id, duration_seconds, reason)
+    async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool:
+        return await self.moderation_adapter.timeout_user(broadcaster_id, moderator_id, user_id, duration_seconds, reason)

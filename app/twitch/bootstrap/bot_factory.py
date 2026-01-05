@@ -37,6 +37,7 @@ from app.stream.application.handle_restore_stream_context_use_case import Handle
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.application.model import RestoreStreamJobDTO
 from app.stream.bootstrap import StreamProviders
+from app.twitch.application.moderation_service import ModerationService
 from app.twitch.bootstrap.bot_settings import BotSettings
 from app.twitch.bootstrap.twitch import TwitchProviders
 from app.twitch.handle_token_checker_use_case import HandleTokenCheckerUseCase
@@ -241,7 +242,7 @@ class BotFactory:
             return bot.nick
 
         post_message_fn = bot.post_message_in_twitch_chat
-        timeout_fn = bot.timeout_user
+        moderation_service = ModerationService(moderation_port=self._twitch.twitch_api_service, user_cache=self._user.user_cache)
         settings = self._settings
         ask_uow_factory = self._build_ask_uow_factory()
 
@@ -286,7 +287,7 @@ class BotFactory:
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
-            timeout_fn=timeout_fn,
+            chat_moderation=moderation_service,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )
@@ -303,7 +304,7 @@ class BotFactory:
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
-            timeout_fn=timeout_fn,
+            chat_moderation=moderation_service,
             bot_nick_provider=bot_nick_provider,
             post_message_fn=post_message_fn,
         )

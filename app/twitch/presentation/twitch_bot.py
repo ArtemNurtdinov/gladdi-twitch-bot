@@ -197,20 +197,6 @@ class Bot(commands.Bot):
     async def join_rps(self, ctx, choice: str = None):
         await self._command_registry.rps.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, ctx=ctx, choice=choice)
 
-    async def timeout_user(self, channel_name: str, moderator_name: str, username: str, duration_seconds: int, reason: str):
-        try:
-            user_id = await self._user.user_cache.get_user_id(username)
-            broadcaster_id = await self._user.user_cache.get_user_id(channel_name)
-            moderator_id = await self._user.user_cache.get_user_id(moderator_name)
-
-            if not user_id or not broadcaster_id or not moderator_id:
-                logger.error("Не удалось получить user_id, broadcaster_id или moderator_id")
-                return
-
-            await self._twitch.twitch_api_service.timeout_user(broadcaster_id, moderator_id, user_id, duration_seconds, reason)
-        except Exception as e:
-            logger.error(f"Ошибка при попытке дать таймаут пользователю {username}: {e}")
-
     def _split_text(self, text, max_length=500):
         if len(text) <= max_length:
             return [text]

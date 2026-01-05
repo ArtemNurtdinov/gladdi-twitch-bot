@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.model import RollDTO
+from app.twitch.application.chat_moderation_port import ChatModerationPort
 
 
 class RollCommandHandler:
@@ -20,7 +21,7 @@ class RollCommandHandler:
         handle_roll_use_case: HandleRollUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
-        timeout_fn: Callable[[str, str, str, int, str], Awaitable[None]],
+        chat_moderation: ChatModerationPort,
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
@@ -30,7 +31,7 @@ class RollCommandHandler:
         self._db_session_provider = db_session_provider
         self._db_readonly_session_provider = db_readonly_session_provider
         self.roll_cooldowns: dict[str, datetime] = {}
-        self.timeout_user = timeout_fn
+        self._chat_moderation = chat_moderation
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
@@ -74,10 +75,10 @@ class RollCommandHandler:
 
         if result.timeout_action:
             await self.post_message_fn(result.timeout_action.reason, ctx)
-            await self.timeout_user(
-                channel_name,
-                self.bot_nick_provider(),
-                result.timeout_action.user_name,
-                result.timeout_action.duration_seconds,
-                result.timeout_action.reason,
+            await self._chat_moderation.timeout_user(
+                channel_name=channel_name,
+                moderator_name=self.bot_nick_provider(),
+                username=result.timeout_action.user_name,
+                duration_seconds=result.timeout_action.duration_seconds,
+                reason=result.timeout_action.reason,
             )
