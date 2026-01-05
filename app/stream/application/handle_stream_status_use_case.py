@@ -12,7 +12,7 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.battle.application.battle_use_case import BattleUseCase
 from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.model import StatusJobDTO
@@ -41,7 +41,7 @@ class HandleStreamStatusUseCase:
         start_stream_use_case_provider: Provider[StartNewStreamUseCase],
         viewer_service_provider: Provider[ViewerTimeService],
         battle_use_case_provider: Provider[BattleUseCase],
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case_provider: Provider[ChatUseCase],
         conversation_service_provider: Provider[ConversationService],
         minigame_service: MinigameService,
@@ -56,7 +56,7 @@ class HandleStreamStatusUseCase:
         self._start_stream_use_case_provider = start_stream_use_case_provider
         self._viewer_service_provider = viewer_service_provider
         self._battle_use_case_provider = battle_use_case_provider
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
         self._minigame_service = minigame_service
@@ -236,7 +236,7 @@ class HandleStreamStatusUseCase:
         if stream_stat.top_user and stream_stat.top_user != "нет":
             reward_amount = 200
             with db_session_provider() as db:
-                user_balance = self._economy_service_provider.get(db).add_balance(
+                user_balance = self._economy_policy_provider.get(db).add_balance(
                     channel_name=channel_name,
                     user_name=stream_stat.top_user,
                     amount=reward_amount,

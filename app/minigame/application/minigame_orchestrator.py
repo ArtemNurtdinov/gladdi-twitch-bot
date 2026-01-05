@@ -8,7 +8,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
 from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
@@ -24,7 +24,7 @@ class MinigameOrchestrator:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case_provider: Provider[ChatUseCase],
         stream_service_provider: Provider[StreamService],
         get_used_words_use_case_provider: Provider[GetUsedWordsUseCase],
@@ -41,7 +41,7 @@ class MinigameOrchestrator:
         send_channel_message: Callable[[str, str], Awaitable[None]],
     ):
         self.minigame_service = minigame_service
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._stream_service_provider = stream_service_provider
         self._get_used_words_use_case_provider = get_used_words_use_case_provider
@@ -96,7 +96,7 @@ class MinigameOrchestrator:
             share = max(1, game.bank // len(winners))
             with SessionLocal.begin() as db:
                 for winner in winners:
-                    self._economy_service_provider.get(db).add_balance(
+                    self._economy_policy_provider.get(db).add_balance(
                         channel_name=channel_name,
                         user_name=winner,
                         amount=share,

@@ -5,17 +5,17 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.balance.model import BalanceDTO
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from core.provider import Provider
 
 
 class HandleBalanceUseCase:
     def __init__(
         self,
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case_provider: Provider[ChatUseCase],
     ):
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -24,7 +24,7 @@ class HandleBalanceUseCase:
         command_balance_dto: BalanceDTO,
     ) -> str:
         with db_session_provider() as db:
-            user_balance = self._economy_service_provider.get(db).get_user_balance(
+            user_balance = self._economy_policy_provider.get(db).get_user_balance(
                 channel_name=command_balance_dto.channel_name,
                 user_name=command_balance_dto.user_name,
             )

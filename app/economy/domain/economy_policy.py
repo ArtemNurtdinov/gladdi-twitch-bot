@@ -14,7 +14,7 @@ from app.economy.domain.repo import EconomyRepository
 from app.equipment.domain.models import UserEquipmentItem
 
 
-class EconomyService:
+class EconomyPolicy:
     STARTING_BALANCE = 1000
     DAILY_BONUS = 200
 

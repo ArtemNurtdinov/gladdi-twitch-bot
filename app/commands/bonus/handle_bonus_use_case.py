@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.dto import ChatContextDTO
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.stream.domain.stream_service import StreamService
 from core.provider import Provider
@@ -16,12 +16,12 @@ class HandleBonusUseCase:
         self,
         stream_service_provider: Provider[StreamService],
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case_provider: Provider[ChatUseCase],
     ):
         self._stream_service_provider = stream_service_provider
         self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -40,7 +40,7 @@ class HandleBonusUseCase:
                 user_equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
                     channel_name=chat_context_dto.channel_name, user_name=chat_context_dto.user_name
                 )
-                bonus_result = self._economy_service_provider.get(db).claim_daily_bonus(
+                bonus_result = self._economy_policy_provider.get(db).claim_daily_bonus(
                     active_stream_id=active_stream.id,
                     channel_name=chat_context_dto.channel_name,
                     user_name=chat_context_dto.user_name,

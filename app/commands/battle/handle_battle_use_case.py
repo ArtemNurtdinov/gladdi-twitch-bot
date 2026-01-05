@@ -9,7 +9,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.battle.application.battle_use_case import BattleUseCase
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.battle.model import BattleDTO, BattleTimeoutAction, BattleUseCaseResult
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
@@ -19,7 +19,7 @@ from core.provider import Provider, SingletonProvider
 class HandleBattleUseCase:
     def __init__(
         self,
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case_provider: Provider[ChatUseCase],
         conversation_service_provider: Provider[ConversationService],
         battle_use_case_provider: Provider[BattleUseCase],
@@ -27,7 +27,7 @@ class HandleBattleUseCase:
         chat_response_use_case: ChatResponseUseCase,
         calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase],
     ):
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._chat_use_case_provider = chat_use_case_provider
         self._conversation_service_provider = conversation_service_provider
         self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
@@ -45,15 +45,15 @@ class HandleBattleUseCase:
         challenger_user = command_battle.user_name
         bot_nick = command_battle.bot_nick
 
-        fee = EconomyService.BATTLE_ENTRY_FEE
+        fee = EconomyPolicy.BATTLE_ENTRY_FEE
 
         with db_session_provider() as db:
-            user_balance = self._economy_service_provider.get(db).get_user_balance(
+            user_balance = self._economy_policy_provider.get(db).get_user_balance(
                 channel_name=command_battle.channel_name, user_name=challenger_user
             )
 
         if user_balance.balance < fee:
-            result = f"@{challenger_display}, недостаточно монет для участия в битве! Необходимо: {EconomyService.BATTLE_ENTRY_FEE} монет."
+            result = f"@{challenger_display}, недостаточно монет для участия в битве! Необходимо: {EconomyPolicy.BATTLE_ENTRY_FEE} монет."
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_battle.channel_name,
@@ -70,7 +70,7 @@ class HandleBattleUseCase:
         if not command_battle.waiting_user:
             error_result = None
             with db_session_provider() as db:
-                user_balance = self._economy_service_provider.get(db).subtract_balance(
+                user_balance = self._economy_policy_provider.get(db).subtract_balance(
                     channel_name=command_battle.channel_name,
                     user_name=challenger_user,
                     amount=fee,
@@ -95,7 +95,7 @@ class HandleBattleUseCase:
 
             result = (
                 f"@{challenger_display} ищет себе оппонента для эпичной битвы! "
-                f"Взнос: {EconomyService.BATTLE_ENTRY_FEE} монет. "
+                f"Взнос: {EconomyPolicy.BATTLE_ENTRY_FEE} монет. "
                 f"Используй {command_battle.command_call}, чтобы принять вызов."
             )
             with db_session_provider() as db:
@@ -128,7 +128,7 @@ class HandleBattleUseCase:
             )
 
         with db_session_provider() as db:
-            challenger_balance = self._economy_service_provider.get(db).subtract_balance(
+            challenger_balance = self._economy_policy_provider.get(db).subtract_balance(
                 channel_name=command_battle.channel_name,
                 user_name=challenger_user,
                 amount=fee,
@@ -157,14 +157,14 @@ class HandleBattleUseCase:
             "\nСимулируй юмористическую и эпичную битву между ними, с абсурдом и неожиданными поворотами."
             "\nБитва должна быть короткой, но эпичной и красочной."
             f"\nПобедить в битве должен {winner}, проигравший: {loser}"
-            f"\n\nПроигравший получит таймаут! Победитель получит {EconomyService.BATTLE_WINNER_PRIZE} монет!"
+            f"\n\nПроигравший получит таймаут! Победитель получит {EconomyPolicy.BATTLE_WINNER_PRIZE} монет!"
         )
 
         result_story = await self._chat_response_use_case.generate_response(prompt, command_battle.channel_name)
 
-        winner_amount = EconomyService.BATTLE_WINNER_PRIZE
+        winner_amount = EconomyPolicy.BATTLE_WINNER_PRIZE
         with db_session_provider() as db:
-            self._economy_service_provider.get(db).add_balance(
+            self._economy_policy_provider.get(db).add_balance(
                 channel_name=command_battle.channel_name,
                 user_name=winner,
                 amount=winner_amount,
@@ -187,7 +187,7 @@ class HandleBattleUseCase:
 
         messages = [result_story]
 
-        winner_message = f"{winner} получает {EconomyService.BATTLE_WINNER_PRIZE} монет!"
+        winner_message = f"{winner} получает {EconomyPolicy.BATTLE_WINNER_PRIZE} монет!"
         messages.append(winner_message)
 
         with db_session_provider() as db:

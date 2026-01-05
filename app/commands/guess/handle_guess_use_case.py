@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.guess.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from core.provider import Provider
@@ -16,11 +16,11 @@ class HandleGuessUseCase:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case_provider: Provider[ChatUseCase],
     ):
         self._minigame_service = minigame_service
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle_number(
@@ -105,7 +105,7 @@ class HandleGuessUseCase:
             message = f"ПОЗДРАВЛЯЕМ! @{guess_number.display_name} угадал число {guess} и выиграл {game.prize_amount} монет!"
 
             with db_session_provider() as db:
-                self._economy_service_provider.get(db).add_balance(
+                self._economy_policy_provider.get(db).add_balance(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     amount=game.prize_amount,
@@ -218,7 +218,7 @@ class HandleGuessUseCase:
             all_letters_revealed = letters_in_word.issubset(game.guessed_letters)
             if all_letters_revealed:
                 with db_session_provider() as db:
-                    winner_balance = self._economy_service_provider.get(db).add_balance(
+                    winner_balance = self._economy_policy_provider.get(db).add_balance(
                         channel_name=guess_letter_dto.channel_name,
                         user_name=guess_letter_dto.user_name,
                         amount=game.prize_amount,
@@ -302,7 +302,7 @@ class HandleGuessUseCase:
             self._minigame_service.finish_word_game_with_winner(game, guess_word_dto.channel_name, guess_word_dto.display_name)
 
             with db_session_provider() as db:
-                winner_balance = self._economy_service_provider.get(db).add_balance(
+                winner_balance = self._economy_policy_provider.get(db).add_balance(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.user_name,
                     amount=game.prize_amount,

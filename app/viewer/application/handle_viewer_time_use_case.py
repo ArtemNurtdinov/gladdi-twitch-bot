@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.stream.domain.stream_service import StreamService
 from app.user.infrastructure.cache.user_cache_service import UserCacheService
@@ -19,13 +19,13 @@ class HandleViewerTimeUseCase:
         self,
         viewer_service_provider: Provider[ViewerTimeService],
         stream_service_provider: Provider[StreamService],
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         user_cache: UserCacheService,
         stream_chatters_port: StreamChattersPort,
     ):
         self._viewer_service_provider = viewer_service_provider
         self._stream_service_provider = stream_service_provider
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._user_cache = user_cache
         self._stream_chatters_port = stream_chatters_port
 
@@ -74,7 +74,7 @@ class HandleViewerTimeUseCase:
                     self._viewer_service_provider.get(db).update_session_rewards(
                         session_id=session.id, rewards=rewards, current_time=viewer_time_dto.occurred_at or datetime.utcnow()
                     )
-                    self._economy_service_provider.get(db).add_balance(
+                    self._economy_policy_provider.get(db).add_balance(
                         channel_name=viewer_time_dto.channel_name,
                         user_name=session.user_name,
                         amount=reward_amount,

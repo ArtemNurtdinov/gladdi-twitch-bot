@@ -2,6 +2,7 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
+from app.chat.domain.models import ChatMessage
 from app.commands.chat.chat_message_uow import ChatMessageUnitOfWorkFactory
 from app.commands.chat.model import ChatMessageDTO
 
@@ -36,8 +37,13 @@ class HandleChatMessageUseCase:
             return None
 
         with self._unit_of_work_factory.create() as uow:
-            uow.chat.save_chat_message(
-                channel_name=dto.channel_name, user_name=dto.user_name, content=dto.message, current_time=dto.occurred_at
+            uow.chat_repo.save(
+                ChatMessage(
+                    channel_name=dto.channel_name,
+                    user_name=dto.user_name,
+                    content=dto.message,
+                    created_at=dto.occurred_at,
+                )
             )
             uow.economy.process_user_message_activity(
                 channel_name=dto.channel_name,
@@ -53,7 +59,7 @@ class HandleChatMessageUseCase:
                 )
 
         with self._unit_of_work_factory.create(read_only=True) as uow_ro:
-            history = uow_ro.conversation.get_last_messages(
+            history = uow_ro.conversation_repo.get_last_messages(
                 channel_name=dto.channel_name,
                 system_prompt=self._system_prompt,
             )
@@ -61,16 +67,18 @@ class HandleChatMessageUseCase:
         result = await self._chat_response_use_case.generate_response_from_history(history, prompt)
 
         with self._unit_of_work_factory.create() as uow:
-            uow.conversation.save_conversation_to_db(
+            uow.conversation_repo.add_messages_to_db(
                 channel_name=dto.channel_name,
                 user_message=prompt,
                 ai_message=result,
             )
-            uow.chat.save_chat_message(
-                channel_name=dto.channel_name,
-                user_name=dto.bot_nick.lower(),
-                content=result,
-                current_time=dto.occurred_at,
+            uow.chat_repo.save(
+                ChatMessage(
+                    channel_name=dto.channel_name,
+                    user_name=dto.bot_nick.lower(),
+                    content=result,
+                    created_at=dto.occurred_at,
+                )
             )
 
         return result
