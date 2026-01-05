@@ -7,10 +7,10 @@ from pydantic import ValidationError
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.model import ChannelFollowerDTO
+from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
 from app.twitch.infrastructure.api_client import StreamingApiClient
 from app.twitch.infrastructure.api_common import handle_api_response
 from app.twitch.infrastructure.twitch_api_models import FollowerData, FollowersResponse
-from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -96,4 +96,3 @@ class FollowageApiAdapter(FollowagePort):
         if not broadcaster_id:
             return []
         return await self._get_channel_followers(broadcaster_id=broadcaster_id)
-

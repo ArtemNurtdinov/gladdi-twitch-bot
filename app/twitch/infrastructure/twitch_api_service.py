@@ -3,10 +3,10 @@ from __future__ import annotations
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.model import ChannelFollowerDTO
+from app.moderation.application.moderation_port import ModerationPort
 from app.stream.application.model import StreamDataDTO, StreamStatusDTO
 from app.stream.application.stream_info_port import StreamInfoPort
 from app.stream.application.stream_status_port import StreamStatusPort
-from app.twitch.application.moderation_port import ModerationPort
 from app.twitch.infrastructure.adapters.chatters_adapter import ChattersApiAdapter
 from app.twitch.infrastructure.adapters.followage_adapter import FollowageApiAdapter
 from app.twitch.infrastructure.adapters.moderation_adapter import ModerationApiAdapter
@@ -57,5 +57,5 @@ class TwitchApiService(
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> list[str]:
         return await self._chatters_adapter.get_stream_chatters(broadcaster_id, moderator_id)
 
-    async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str):
-        await self.moderation_adapter.timeout_user(broadcaster_id, moderator_id, user_id, duration_seconds, reason)
+    async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool:
+        return await self.moderation_adapter.timeout_user(broadcaster_id, moderator_id, user_id, duration_seconds, reason)
