@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.transfer.model import TransferDTO
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from core.provider import Provider
 
 
 class HandleTransferUseCase:
-    def __init__(self, economy_service_provider: Provider[EconomyService], chat_use_case_provider: Provider[ChatUseCase]):
-        self._economy_service_provider = economy_service_provider
+    def __init__(self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case_provider: Provider[ChatUseCase]):
+        self._economy_policy_provider = economy_policy_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -67,7 +67,7 @@ class HandleTransferUseCase:
         normalized_receiver_name = recipient.lower()
 
         with db_session_provider() as db:
-            transfer_result = self._economy_service_provider.get(db).transfer_money(
+            transfer_result = self._economy_policy_provider.get(db).transfer_money(
                 channel_name=command_transfer.channel_name,
                 sender_name=command_transfer.user_name,
                 receiver_name=normalized_receiver_name,

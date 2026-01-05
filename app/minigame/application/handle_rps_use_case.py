@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.minigame.application.model import RpsDTO
 from app.minigame.domain.minigame_service import MinigameService
@@ -17,11 +17,11 @@ class HandleRpsUseCase:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case_provider: Provider[ChatUseCase],
     ):
         self._minigame_service = minigame_service
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._chat_use_case_provider = chat_use_case_provider
 
     async def handle(
@@ -50,7 +50,7 @@ class HandleRpsUseCase:
                 share = max(1, game.bank // len(winners))
                 with db_session_provider() as db:
                     for winner in winners:
-                        self._economy_service_provider.get(db).add_balance(
+                        self._economy_policy_provider.get(db).add_balance(
                             dto.channel_name,
                             winner,
                             share,
@@ -91,7 +91,7 @@ class HandleRpsUseCase:
         fee = MinigameService.RPS_ENTRY_FEE_PER_USER
 
         with db_session_provider() as db:
-            user_balance = self._economy_service_provider.get(db).subtract_balance(
+            user_balance = self._economy_policy_provider.get(db).subtract_balance(
                 channel_name=dto.channel_name,
                 user_name=user_name,
                 amount=fee,

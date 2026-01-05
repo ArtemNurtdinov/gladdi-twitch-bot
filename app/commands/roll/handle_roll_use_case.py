@@ -9,7 +9,7 @@ from app.betting.application.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.roll.model import RollDTO, RollTimeoutAction, RollUseCaseResult
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import (
     JackpotPayoutMultiplierEffect,
     MissPayoutMultiplierEffect,
@@ -27,14 +27,14 @@ class HandleRollUseCase:
 
     def __init__(
         self,
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         betting_service_provider: Provider[BettingService],
         roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase],
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
         chat_use_case_provider: Provider[ChatUseCase],
         calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase],
     ):
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._betting_service_provider = betting_service_provider
         self._roll_cooldown_use_case_provider = roll_cooldown_use_case_provider
         self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
@@ -140,7 +140,7 @@ class HandleRollUseCase:
             )
 
         with db_session_provider() as db:
-            user_balance = self._economy_service_provider.get(db).subtract_balance(
+            user_balance = self._economy_policy_provider.get(db).subtract_balance(
                 channel_name=command_roll.channel_name,
                 user_name=command_roll.user_name,
                 amount=bet_amount,
@@ -208,7 +208,7 @@ class HandleRollUseCase:
                 description = (
                     f"Выигрыш в слот-машине: {slot_result_string}" if result_type != "miss" else f"Консольный приз: {slot_result_string}"
                 )
-                user_balance = self._economy_service_provider.get(db).add_balance(
+                user_balance = self._economy_policy_provider.get(db).add_balance(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
                     amount=payout,

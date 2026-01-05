@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.shop.model import CommandBuyDTO, CommandShopDTO
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import ShopItems, TransactionType
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
@@ -15,12 +15,12 @@ from core.provider import Provider
 class HandleShopUseCase:
     def __init__(
         self,
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         add_equipment_use_case_provider: Provider[AddEquipmentUseCase],
         equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase],
         chat_use_case_provider: Provider[ChatUseCase],
     ):
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._add_equipment_use_case_provider = add_equipment_use_case_provider
         self._equipment_exists_use_case_provider = equipment_exists_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider
@@ -107,7 +107,7 @@ class HandleShopUseCase:
             return result
 
         with db_session_provider() as db:
-            user_balance = self._economy_service_provider.get(db).get_user_balance(
+            user_balance = self._economy_policy_provider.get(db).get_user_balance(
                 channel_name=command_buy.channel_name, user_name=user_name
             )
 
@@ -123,7 +123,7 @@ class HandleShopUseCase:
             return result
 
         with db_session_provider() as db:
-            self._economy_service_provider.get(db).subtract_balance(
+            self._economy_policy_provider.get(db).subtract_balance(
                 channel_name=command_buy.channel_name,
                 user_name=user_name,
                 amount=item.price,

@@ -1,6 +1,6 @@
 from app.ai.bootstrap import AIProviders
-from app.ai.gen.conversation.infrastructure.conversation_repository import ConversationRepositoryImpl
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.conversation.infrastructure.conversation_repository import ConversationRepositoryImpl
 from app.battle.bootstrap import BattleProviders
 from app.betting.bootstrap import BettingProviders
 from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
@@ -135,7 +135,7 @@ class BotFactory:
     def _create_minigame(self, bot: Bot, system_prompt: str) -> MinigameOrchestrator:
         return MinigameOrchestrator(
             minigame_service=self._minigame.minigame_service,
-            economy_service_provider=self._economy.economy_service_provider,
+            economy_policy_provider=self._economy.economy_policy_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
             stream_service_provider=self._stream.stream_service_provider,
             get_used_words_use_case_provider=self._minigame.get_used_words_use_case_provider,
@@ -182,7 +182,7 @@ class BotFactory:
                         start_stream_use_case_provider=self._stream.start_stream_use_case_provider,
                         viewer_service_provider=self._viewer.viewer_service_provider,
                         battle_use_case_provider=self._battle.battle_use_case_provider,
-                        economy_service_provider=self._economy.economy_service_provider,
+                        economy_policy_provider=self._economy.economy_policy_provider,
                         chat_use_case_provider=self._chat.chat_use_case_provider,
                         conversation_service_provider=self._ai.conversation_service_provider,
                         minigame_service=self._minigame.minigame_service,
@@ -216,7 +216,7 @@ class BotFactory:
                     handle_viewer_time_use_case=HandleViewerTimeUseCase(
                         viewer_service_provider=self._viewer.viewer_service_provider,
                         stream_service_provider=self._stream.stream_service_provider,
-                        economy_service_provider=self._economy.economy_service_provider,
+                        economy_policy_provider=self._economy.economy_policy_provider,
                         user_cache=self._user.user_cache,
                         stream_chatters_port=self._stream.stream_chatters_port,
                     ),
@@ -279,7 +279,7 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_fight,
             handle_battle_use_case=HandleBattleUseCase(
-                economy_service_provider=self._economy.economy_service_provider,
+                economy_policy_provider=self._economy.economy_policy_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
                 conversation_service_provider=self._ai.conversation_service_provider,
                 battle_use_case_provider=self._battle.battle_use_case_provider,
@@ -297,7 +297,7 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_roll,
             handle_roll_use_case=HandleRollUseCase(
-                economy_service_provider=self._economy.economy_service_provider,
+                economy_policy_provider=self._economy.economy_policy_provider,
                 betting_service_provider=self._betting.betting_service_provider,
                 roll_cooldown_use_case_provider=self._equipment.roll_cooldown_use_case_provider,
                 get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
@@ -312,7 +312,7 @@ class BotFactory:
         )
         balance = BalanceCommandHandler(
             handle_balance_use_case=HandleBalanceUseCase(
-                economy_service_provider=self._economy.economy_service_provider, chat_use_case_provider=self._chat.chat_use_case_provider
+                economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,
             bot_nick_provider=bot_nick_provider,
@@ -324,7 +324,7 @@ class BotFactory:
             handle_bonus_use_case=HandleBonusUseCase(
                 stream_service_provider=self._stream.stream_service_provider,
                 get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
-                economy_service_provider=self._economy.economy_service_provider,
+                economy_policy_provider=self._economy.economy_policy_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
@@ -336,7 +336,7 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_transfer,
             handle_transfer_use_case=HandleTransferUseCase(
-                economy_service_provider=self._economy.economy_service_provider,
+                economy_policy_provider=self._economy.economy_policy_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
@@ -348,7 +348,7 @@ class BotFactory:
             command_shop_name=settings.command_shop,
             command_buy_name=settings.command_buy,
             handle_shop_use_case=HandleShopUseCase(
-                economy_service_provider=self._economy.economy_service_provider,
+                economy_policy_provider=self._economy.economy_policy_provider,
                 add_equipment_use_case_provider=self._equipment.add_equipment_use_case_provider,
                 equipment_exists_use_case_provider=self._equipment.equipment_exists_use_case_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
@@ -373,7 +373,7 @@ class BotFactory:
         )
         top_bottom = TopBottomCommandHandler(
             handle_top_bottom_use_case=HandleTopBottomUseCase(
-                economy_service_provider=self._economy.economy_service_provider, chat_use_case_provider=self._chat.chat_use_case_provider
+                economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
@@ -384,7 +384,7 @@ class BotFactory:
         )
         stats = StatsCommandHandler(
             handle_stats_use_case=HandleStatsUseCase(
-                economy_service_provider=self._economy.economy_service_provider,
+                economy_policy_provider=self._economy.economy_policy_provider,
                 betting_service_provider=self._betting.betting_service_provider,
                 battle_use_case_provider=self._battle.battle_use_case_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
@@ -425,7 +425,7 @@ class BotFactory:
             command_guess_word=settings.command_guess_word,
             handle_guess_use_case=HandleGuessUseCase(
                 minigame_service=self._minigame.minigame_service,
-                economy_service_provider=self._economy.economy_service_provider,
+                economy_policy_provider=self._economy.economy_policy_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
@@ -435,7 +435,7 @@ class BotFactory:
         rps = RpsCommandHandler(
             handle_rps_use_case=HandleRpsUseCase(
                 minigame_service=self._minigame.minigame_service,
-                economy_service_provider=self._economy.economy_service_provider,
+                economy_policy_provider=self._economy.economy_policy_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
@@ -498,11 +498,11 @@ class BotFactory:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
             session_factory_rw=SessionLocal.begin,
             session_factory_ro=db_ro_session,
-            chat_use_case_provider=self._chat.chat_use_case_provider,
-            economy_service_provider=self._economy.economy_service_provider,
+            chat_repo_provider=Provider(lambda db: ChatRepositoryImpl(db)),
+            economy_policy_provider=self._economy.economy_policy_provider,
             stream_service_provider=self._stream.stream_service_provider,
             viewer_service_provider=self._viewer.viewer_service_provider,
-            conversation_service_provider=self._ai.conversation_service_provider,
+            conversation_repo_provider=Provider(lambda db: ConversationRepositoryImpl(db)),
         )
 
     def _build_follow_age_uow_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkFactory:

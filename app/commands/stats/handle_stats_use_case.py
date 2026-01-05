@@ -9,19 +9,19 @@ from app.betting.application.betting_service import BettingService
 from app.betting.presentation.betting_schemas import UserBetStats
 from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.stats.model import StatsDTO
-from app.economy.domain.economy_service import EconomyService
+from app.economy.domain.economy_policy import EconomyPolicy
 from core.provider import Provider
 
 
 class HandleStatsUseCase:
     def __init__(
         self,
-        economy_service_provider: Provider[EconomyService],
+        economy_policy_provider: Provider[EconomyPolicy],
         betting_service_provider: Provider[BettingService],
         battle_use_case_provider: Provider[BattleUseCase],
         chat_use_case_provider: Provider[ChatUseCase],
     ):
-        self._economy_service_provider = economy_service_provider
+        self._economy_policy_provider = economy_policy_provider
         self._betting_service_provider = betting_service_provider
         self._battle_use_case_provider = battle_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider
@@ -33,7 +33,7 @@ class HandleStatsUseCase:
         command_stats: StatsDTO,
     ) -> str:
         with db_session_provider() as db:
-            balance = self._economy_service_provider.get(db).get_user_balance(command_stats.channel_name, command_stats.user_name)
+            balance = self._economy_policy_provider.get(db).get_user_balance(command_stats.channel_name, command_stats.user_name)
             bets = self._betting_service_provider.get(db).get_user_bets(command_stats.channel_name, command_stats.user_name)
 
         if not bets:
