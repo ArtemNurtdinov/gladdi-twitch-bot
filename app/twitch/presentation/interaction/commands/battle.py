@@ -18,7 +18,7 @@ class BattleCommandHandler:
         handle_battle_use_case: HandleBattleUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
-        timeout_fn: Callable[[str, str, int, str], Awaitable[None]],
+        timeout_fn: Callable[[str, str, str, int, str], Awaitable[None]],
         bot_nick_provider: Callable[[], str],
         post_message_fn: Callable[[str, Any], Awaitable[None]],
     ):
@@ -59,6 +59,7 @@ class BattleCommandHandler:
         if result.timeout_action:
             await self.timeout_user(
                 channel_name,
+                self.bot_nick_provider(),
                 result.timeout_action.user_name,
                 result.timeout_action.duration_seconds,
                 result.timeout_action.reason,
