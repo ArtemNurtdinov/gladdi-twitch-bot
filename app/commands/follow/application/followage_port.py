@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.commands.follow.model import FollowageInfo
+from app.commands.follow.application.model import FollowageInfo
 
 
 class FollowagePort(Protocol):

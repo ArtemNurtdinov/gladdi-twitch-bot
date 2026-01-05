@@ -7,7 +7,7 @@ import httpx
 from pydantic import ValidationError
 
 from app.commands.follow.application.followage_port import FollowagePort
-from app.commands.follow.model import FollowageInfo
+from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.model import ChannelFollowerDTO
 from app.stream.application.model import StreamDataDTO, StreamStatusDTO
 from app.stream.application.stream_info_port import StreamInfoPort

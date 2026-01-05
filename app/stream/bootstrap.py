@@ -41,6 +41,7 @@ class StreamProviders:
     stream_chatters_port: StreamChattersPort
     stream_service_provider: Provider[StreamService]
     start_stream_use_case_provider: Provider[StartNewStreamUseCase]
+    stream_repo_provider: Provider[StreamRepository]
 
 
 def build_stream_providers(twitch_api_service: TwitchApiService) -> StreamProviders:
@@ -50,10 +51,14 @@ def build_stream_providers(twitch_api_service: TwitchApiService) -> StreamProvid
     def start_stream_use_case(db):
         return StartNewStreamUseCase(StreamRepositoryImpl(db))
 
+    def stream_repo(db):
+        return StreamRepositoryImpl(db)
+
     return StreamProviders(
         stream_info_port=StreamInfoAdapter(twitch_api_service),
         stream_status_port=StreamStatusAdapter(twitch_api_service),
         stream_chatters_port=StreamChattersAdapter(twitch_api_service),
         stream_service_provider=Provider(stream_service),
         start_stream_use_case_provider=Provider(start_stream_use_case),
+        stream_repo_provider=Provider(stream_repo),
     )
