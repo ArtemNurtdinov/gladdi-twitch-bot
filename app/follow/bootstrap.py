@@ -15,7 +15,7 @@ from app.follow.application.followers_query_use_cases import (
 from app.follow.domain.repo import FollowersRepository
 from app.follow.infrastructure.followers_adapter import FollowersAdapter
 from app.follow.infrastructure.followers_repository import FollowersRepositoryImpl
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.platform.streaming import StreamingPlatformPort
 from core.db import get_db_ro
 from core.provider import Provider
 
@@ -27,9 +27,9 @@ class FollowProviders:
     followers_repository_provider: Provider[FollowersRepository]
 
 
-def build_follow_providers(twitch_api_service: TwitchApiService) -> FollowProviders:
-    followage_port = FollowageAdapter(twitch_api_service)
-    followers_port = FollowersAdapter(twitch_api_service)
+def build_follow_providers(platform: StreamingPlatformPort) -> FollowProviders:
+    followage_port = FollowageAdapter(platform)
+    followers_port = FollowersAdapter(platform)
 
     def followers_repository(db):
         return FollowersRepositoryImpl(db)

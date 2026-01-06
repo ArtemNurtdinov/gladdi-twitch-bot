@@ -17,6 +17,7 @@ from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS
 from app.twitch.bootstrap.twitch import build_twitch_providers
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
+from app.twitch.infrastructure.twitch_platform_adapter import TwitchStreamingPlatformAdapter
 from app.twitch.presentation.twitch_bot import Bot as TwitchBot
 from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.user.bootstrap import build_user_providers
@@ -36,6 +37,7 @@ class BotManager:
         self._last_error: str | None = None
         self._lock = asyncio.Lock()
         self._twitch_api_service: TwitchApiService | None = None
+        self._streaming_platform: TwitchStreamingPlatformAdapter | None = None
 
     def _ensure_credentials(self, auth: TwitchAuth) -> None:
         missing = []
@@ -85,12 +87,13 @@ class BotManager:
 
             twitch_providers = build_twitch_providers(auth)
             self._twitch_api_service = twitch_providers.twitch_api_service
-            stream_providers = build_stream_providers(twitch_providers.twitch_api_service)
+            self._streaming_platform = twitch_providers.streaming_platform
+            stream_providers = build_stream_providers(self._streaming_platform)
             ai_providers = build_ai_providers()
             chat_providers = build_chat_providers()
-            follow_providers = build_follow_providers(twitch_providers.twitch_api_service)
+            follow_providers = build_follow_providers(self._streaming_platform)
             joke_providers = build_joke_providers()
-            user_providers = build_user_providers(twitch_providers.twitch_api_service)
+            user_providers = build_user_providers(self._streaming_platform)
             viewer_providers = build_viewer_providers()
             economy_providers = build_economy_providers()
             equipment_providers = build_equipment_providers()
