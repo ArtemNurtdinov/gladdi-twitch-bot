@@ -71,7 +71,6 @@ class StreamApiAdapter(StreamInfoPort, StreamStatusPort):
             return None
 
     async def get_stream_info(self, channel_name: str) -> StreamDataDTO | None:
-        # Теперь адаптер сам резолвит broadcaster_id через user_info порт.
         user = await self._user_info.get_user_by_login(channel_name)
         broadcaster_id = None if user is None else user.id
         if not broadcaster_id:

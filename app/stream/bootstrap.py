@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from app.platform.streaming import StreamingPlatformPort
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.application.stream_info_port import StreamInfoPort
 from app.stream.application.stream_status_port import StreamStatusPort
@@ -12,7 +13,6 @@ from app.stream.infrastructure.stream_chatters_adapter import StreamChattersAdap
 from app.stream.infrastructure.stream_info_adapter import StreamInfoAdapter
 from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
 from app.stream.infrastructure.stream_status_adapter import StreamStatusAdapter
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.viewer.application.stream_chatters_port import StreamChattersPort
 from core.db import get_db_ro, get_db_rw
 from core.provider import Provider
@@ -44,7 +44,7 @@ class StreamProviders:
     stream_repo_provider: Provider[StreamRepository]
 
 
-def build_stream_providers(twitch_api_service: TwitchApiService) -> StreamProviders:
+def build_stream_providers(platform: StreamingPlatformPort) -> StreamProviders:
     def stream_service(db):
         return StreamService(StreamRepositoryImpl(db))
 
@@ -55,9 +55,9 @@ def build_stream_providers(twitch_api_service: TwitchApiService) -> StreamProvid
         return StreamRepositoryImpl(db)
 
     return StreamProviders(
-        stream_info_port=StreamInfoAdapter(twitch_api_service),
-        stream_status_port=StreamStatusAdapter(twitch_api_service),
-        stream_chatters_port=StreamChattersAdapter(twitch_api_service),
+        stream_info_port=StreamInfoAdapter(platform),
+        stream_status_port=StreamStatusAdapter(platform),
+        stream_chatters_port=StreamChattersAdapter(platform),
         stream_service_provider=Provider(stream_service),
         start_stream_use_case_provider=Provider(start_stream_use_case),
         stream_repo_provider=Provider(stream_repo),

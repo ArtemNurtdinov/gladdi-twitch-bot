@@ -242,7 +242,7 @@ class BotFactory:
             return bot.nick
 
         post_message_fn = bot.post_message_in_twitch_chat
-        moderation_service = ModerationService(moderation_port=self._twitch.twitch_api_service, user_cache=self._user.user_cache)
+        moderation_service = ModerationService(moderation_port=self._twitch.streaming_platform, user_cache=self._user.user_cache)
         settings = self._settings
         ask_uow_factory = self._build_ask_uow_factory()
 
