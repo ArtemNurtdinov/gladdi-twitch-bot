@@ -14,4 +14,3 @@ async def handle_api_response(response: httpx.Response, operation: str) -> dict[
         return response.json()
     logger.error(f"Ошибка в API операции '{operation}': {response.status_code}, {response.text}")
     raise Exception(f"API операция '{operation}' завершилась с ошибкой: {response.status_code}")
-
