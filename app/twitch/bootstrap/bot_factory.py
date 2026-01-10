@@ -2,73 +2,73 @@ from app.ai.bootstrap import AIProviders
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.battle.bootstrap import BattleProviders
 from app.betting.bootstrap import BettingProviders
+from app.chat.application.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.bootstrap import ChatProviders
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
+from app.commands.ask.ask import AskCommandHandler
 from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
+from app.commands.balance.balance import BalanceCommandHandler
 from app.commands.balance.handle_balance_use_case import HandleBalanceUseCase
+from app.commands.battle.battle import BattleCommandHandler
 from app.commands.battle.handle_battle_use_case import HandleBattleUseCase
+from app.commands.bonus.bonus import BonusCommandHandler
 from app.commands.bonus.handle_bonus_use_case import HandleBonusUseCase
+from app.commands.chat.chat_event_handler import ChatEventHandler
 from app.commands.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
+from app.commands.equipment.equipment import EquipmentCommandHandler
 from app.commands.equipment.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
+from app.commands.follow.followage import FollowageCommandHandler
 from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
+from app.commands.guess.guess import GuessCommandHandler
 from app.commands.guess.handle_guess_use_case import HandleGuessUseCase
+from app.commands.guess.rps import RpsCommandHandler
 from app.commands.help.handle_help_use_case import HandleHelpUseCase
+from app.commands.help.help import HelpCommandHandler
+from app.commands.registry import CommandRegistry
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
+from app.commands.roll.roll import RollCommandHandler
 from app.commands.shop.handle_shop_use_case import HandleShopUseCase
+from app.commands.shop.shop import ShopCommandHandler
 from app.commands.stats.handle_stats_use_case import HandleStatsUseCase
+from app.commands.stats.stats import StatsCommandHandler
 from app.commands.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
+from app.commands.top_bottom.top_bottom import TopBottomCommandHandler
 from app.commands.transfer.handle_transfer_use_case import HandleTransferUseCase
+from app.commands.transfer.transfer import TransferCommandHandler
 from app.economy.bootstrap import EconomyProviders
 from app.equipment.bootstrap import EquipmentProviders
 from app.follow.application.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.bootstrap import FollowProviders
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.handle_post_joke_use_case import HandlePostJokeUseCase
+from app.joke.application.post_joke_job import PostJokeJob
 from app.joke.bootstrap import JokeProviders
 from app.minigame.application.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
+from app.minigame.application.minigame_tick_job import MinigameTickJob
 from app.minigame.bootstrap import MinigameProviders
 from app.moderation.application.moderation_service import ModerationService
+from app.platform.application.token_checker_job import TokenCheckerJob
+from app.platform.bot import Bot
+from app.platform.handle_token_checker_use_case import HandleTokenCheckerUseCase
+from app.platform.providers import PlatformProviders
 from app.stream.application.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.application.model import RestoreStreamJobDTO
+from app.stream.application.stream_status_job import StreamStatusJob
 from app.stream.bootstrap import StreamProviders
 from app.twitch.bootstrap.bot_settings import BotSettings
-from app.twitch.bootstrap.twitch import TwitchProviders
-from app.twitch.handle_token_checker_use_case import HandleTokenCheckerUseCase
-from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
-from app.twitch.presentation.background.jobs.chat_summarizer_job import ChatSummarizerJob
-from app.twitch.presentation.background.jobs.minigame_tick_job import MinigameTickJob
-from app.twitch.presentation.background.jobs.post_joke_job import PostJokeJob
-from app.twitch.presentation.background.jobs.stream_status_job import StreamStatusJob
-from app.twitch.presentation.background.jobs.token_checker_job import TokenCheckerJob
-from app.twitch.presentation.background.jobs.viewer_time_job import ViewerTimeJob
-from app.twitch.presentation.interaction.chat_event_handler import ChatEventHandler
-from app.twitch.presentation.interaction.commands.ask import AskCommandHandler
-from app.twitch.presentation.interaction.commands.balance import BalanceCommandHandler
-from app.twitch.presentation.interaction.commands.battle import BattleCommandHandler
-from app.twitch.presentation.interaction.commands.bonus import BonusCommandHandler
-from app.twitch.presentation.interaction.commands.equipment import EquipmentCommandHandler
-from app.twitch.presentation.interaction.commands.followage import FollowageCommandHandler
-from app.twitch.presentation.interaction.commands.guess import GuessCommandHandler
-from app.twitch.presentation.interaction.commands.help import HelpCommandHandler
-from app.twitch.presentation.interaction.commands.registry import CommandRegistry
-from app.twitch.presentation.interaction.commands.roll import RollCommandHandler
-from app.twitch.presentation.interaction.commands.rps import RpsCommandHandler
-from app.twitch.presentation.interaction.commands.shop import ShopCommandHandler
-from app.twitch.presentation.interaction.commands.stats import StatsCommandHandler
-from app.twitch.presentation.interaction.commands.top_bottom import TopBottomCommandHandler
-from app.twitch.presentation.interaction.commands.transfer import TransferCommandHandler
-from app.twitch.presentation.twitch_bot import Bot
-from app.twitch.presentation.twitch_chat_client import TwitchCommandRouter
+from app.twitch.infrastructure.twitch_chat_client import TwitchCommandRouter
 from app.user.bootstrap import UserProviders
 from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
+from app.viewer.application.viewer_time_job import ViewerTimeJob
 from app.viewer.bootstrap import ViewerProviders
+from core.background.bot_tasks import BotBackgroundTasks
 from core.bootstrap.background import BackgroundProviders
 from core.bootstrap.telegram import TelegramProviders
 from core.chat.interfaces import ChatMessage
@@ -79,7 +79,7 @@ from core.db import SessionLocal, db_ro_session
 class BotFactory:
     def __init__(
         self,
-        twitch_providers: TwitchProviders,
+        platform_providers: PlatformProviders,
         ai_providers: AIProviders,
         chat_providers: ChatProviders,
         follow_providers: FollowProviders,
@@ -96,7 +96,7 @@ class BotFactory:
         telegram_providers: TelegramProviders,
         settings: BotSettings,
     ):
-        self._twitch = twitch_providers
+        self._platform = platform_providers
         self._ai = ai_providers
         self._chat = chat_providers
         self._follow = follow_providers
@@ -114,7 +114,7 @@ class BotFactory:
         self._settings = settings
 
     def create(self, chat_outbound: ChatOutbound) -> Bot:
-        bot = Bot(self._twitch, self._user, self._settings)
+        bot = Bot(self._platform, self._user, self._settings)
         system_prompt = self._ai.prompt_service.get_system_prompt_for_group()
         chat_response_use_case = self._create_chat_response_use_case(system_prompt)
 
@@ -176,7 +176,9 @@ class BotFactory:
                     bot_nick_provider=lambda: bot.nick,
                 ),
                 TokenCheckerJob(
-                    handle_token_checker_use_case=HandleTokenCheckerUseCase(twitch_auth=self._twitch.twitch_auth, interval_seconds=1000),
+                    handle_token_checker_use_case=HandleTokenCheckerUseCase(
+                        platform_auth=self._platform.platform_auth, interval_seconds=1000
+                    ),
                 ),
                 StreamStatusJob(
                     channel_name=self._settings.channel_name,
@@ -251,7 +253,7 @@ class BotFactory:
             return bot.nick
 
         post_message_fn = outbound.post_message
-        moderation_service = ModerationService(moderation_port=self._twitch.streaming_platform, user_cache=self._user.user_cache)
+        moderation_service = ModerationService(moderation_port=self._platform.streaming_platform, user_cache=self._user.user_cache)
         settings = self._settings
         ask_uow_factory = self._build_ask_uow_factory()
 

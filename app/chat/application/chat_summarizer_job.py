@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from datetime import datetime
@@ -7,11 +6,8 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
-from app.chat.application.model import SummarizerJobDTO
-from app.twitch.presentation.background.model.state import ChatSummaryState
+from app.chat.application.model import ChatSummaryState, SummarizerJobDTO
 from core.background_task_runner import BackgroundTaskRunner
-
-logger = logging.getLogger(__name__)
 
 
 class ChatSummarizerJob:
@@ -43,14 +39,11 @@ class ChatSummarizerJob:
                     db_readonly_session_provider=self._db_readonly_session_provider, summarizer_job=summarizer_job_dto
                 )
                 if result is None:
-                    logger.debug("Нет данных для анализа или стрим не активен")
                     continue
 
                 self._chat_summary_state.current_stream_summaries.append(result)
                 self._chat_summary_state.last_chat_summary_time = datetime.utcnow()
-                logger.info(f"Создан периодический анализ чата: {result}")
             except asyncio.CancelledError:
-                logger.info("ChatSummarizerJob cancelled")
                 break
-            except Exception as e:
-                logger.error(f"Ошибка в ChatSummarizerJob: {e}")
+            except Exception:
+                pass

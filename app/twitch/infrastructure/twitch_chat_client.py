@@ -6,8 +6,8 @@ import logging
 from twitchio.ext import commands
 
 from app.twitch.bootstrap.bot_settings import BotSettings
+from app.twitch.infrastructure.adapters.chat_context_adapter import as_chat_context
 from app.twitch.infrastructure.auth import TwitchAuth
-from app.twitch.presentation.interaction.chat_context_adapter import as_chat_context
 from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandHandler, CommandRouter
 from core.chat.outbound import ChatOutbound
 
@@ -52,7 +52,7 @@ class TwitchCommandRouter(CommandRouter):
 
 class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
     def __init__(self, twitch_auth: TwitchAuth, settings: BotSettings):
-        self._router: CommandRouter | None = None
+        self._command_router: CommandRouter | None = None
         self._chat_event_handler = None
         self._bot_nick_provider = lambda: ""
         self._prefix = settings.prefix
@@ -60,7 +60,7 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
         super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self._initial_channels)
 
     def set_router(self, router: CommandRouter) -> None:
-        self._router = router
+        self._command_router = router
 
     def set_chat_event_handler(self, handler, bot_nick_provider):
         self._chat_event_handler = handler
@@ -76,26 +76,25 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
         logger.info("TwitchChatClient ready. Channels: %s", ", ".join(self._initial_channels))
 
     async def event_message(self, message):
-        if not self._router:
+        if not self._command_router:
             logger.error("CommandRouter is not set for TwitchChatClient")
             return
 
-        if not getattr(message, "author", None):
-            logger.debug("Skip message without author")
+        if message.author is None:
             return
 
         chat_message = ChatMessage()
         chat_message.channel = message.channel.name
-        chat_message.author = getattr(message.author, "display_name", "") or ""
+        chat_message.author = message.author.display_name
         chat_message.text = message.content
 
         chat_ctx = as_chat_context(message)
-        if isinstance(self._router, TwitchCommandRouter):
-            self._router.set_runtime_context(chat_ctx)
+        if isinstance(self._command_router, TwitchCommandRouter):
+            self._command_router.set_runtime_context(chat_ctx)
 
         handled = False
         try:
-            handled = await self._router.dispatch(chat_message)
+            handled = await self._command_router.dispatch(chat_message)
         except Exception:
             logger.exception("Ошибка обработки сообщения: %s", message.content)
         if handled:
@@ -104,7 +103,6 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
             logger.debug("Неизвестная команда: %s", message.content)
             return
 
-        # Non-command message: forward to chat_event_handler if configured
         if self._chat_event_handler:
             try:
                 await self._chat_event_handler.handle(

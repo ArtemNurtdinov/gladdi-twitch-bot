@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import logging
-
 from pydantic import ValidationError
 
 from app.commands.follow.application.followage_port import FollowagePort
@@ -12,8 +10,6 @@ from app.twitch.infrastructure.api_client import StreamingApiClient
 from app.twitch.infrastructure.api_common import handle_api_response
 from app.twitch.infrastructure.twitch_api_models import FollowerData, FollowersResponse
 
-logger = logging.getLogger(__name__)
-
 
 class FollowageApiAdapter(FollowagePort):
     def __init__(self, client: StreamingApiClient, user_info: UserInfoApiAdapter):
@@ -21,27 +17,23 @@ class FollowageApiAdapter(FollowagePort):
         self._user_info = user_info
 
     async def _get_user_followage(self, broadcaster_id: str, user_id: str) -> FollowageInfo | None:
-        logger.debug(f"Получение информации о подписке пользователя {user_id} на канал {broadcaster_id}")
         response = await self._client.get("/channels/followers", params={"broadcaster_id": broadcaster_id, "user_id": user_id})
         try:
             data = await handle_api_response(response, f"get_user_followage({broadcaster_id}, {user_id})")
             parsed: FollowersResponse = FollowersResponse.model_validate(data)
-        except ValidationError as e:
-            logger.error(f"Валидация followage для {user_id} не прошла: {e}")
+        except ValidationError:
             return None
 
         followers: list[FollowerData] = parsed.data
         if followers:
             follow_data = followers[0]
             follow_dt = follow_data.followed_at.replace(tzinfo=None)
-            logger.debug(f"Пользователь {user_id} подписан с {follow_data.followed_at}")
             return FollowageInfo(
                 user_id=follow_data.user_id,
                 user_name=follow_data.user_name,
                 user_login=follow_data.user_login,
                 followed_at=follow_dt,
             )
-        logger.debug(f"Пользователь {user_id} не подписан на канал {broadcaster_id}")
         return None
 
     async def get_followage(self, channel_name: str, user_id: str) -> FollowageInfo | None:
@@ -67,8 +59,7 @@ class FollowageApiAdapter(FollowagePort):
                 data = await handle_api_response(response, f"get_channel_followers({broadcaster_id})")
                 parsed: FollowersResponse = FollowersResponse.model_validate(data)
                 followers_page: list[FollowerData] = parsed.data
-            except ValidationError as e:
-                logger.error(f"Валидация списка подписчиков {broadcaster_id} не прошла: {e}")
+            except ValidationError:
                 break
 
             followers.extend(

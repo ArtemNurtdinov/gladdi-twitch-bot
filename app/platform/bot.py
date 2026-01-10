@@ -3,12 +3,12 @@ from __future__ import annotations
 import asyncio
 import logging
 
+from app.chat.application.model import ChatSummaryState
+from app.commands.chat.chat_event_handler import ChatEventHandler
+from app.platform.providers import PlatformProviders
 from app.twitch.bootstrap.bot_settings import BotSettings
-from app.twitch.bootstrap.twitch import TwitchProviders
-from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
-from app.twitch.presentation.background.model.state import ChatSummaryState
-from app.twitch.presentation.interaction.chat_event_handler import ChatEventHandler
 from app.user.bootstrap import UserProviders
+from core.background.bot_tasks import BotBackgroundTasks
 from core.chat.interfaces import CommandRouter
 from core.chat.outbound import ChatOutbound
 
@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class Bot:
-    def __init__(self, twitch_providers: TwitchProviders, user_providers: UserProviders, settings: BotSettings):
+    def __init__(self, platform_providers: PlatformProviders, user_providers: UserProviders, settings: BotSettings):
         self._settings = settings
-        self._twitch = twitch_providers
+        self._platform = platform_providers
         self._user = user_providers
         self._chat_client: ChatOutbound | None = None
         self.nick = settings.channel_name or "bot"
@@ -69,13 +69,12 @@ class Bot:
     async def warmup(self):
         await self._warmup_broadcaster_id()
 
-    async def start_background_tasks_only(self):
+    async def start_background_tasks(self):
         await self._start_background_tasks()
 
     async def _warmup_broadcaster_id(self):
         try:
             if not self._settings.channel_name:
-                logger.warning("Список каналов пуст, пропускаем прогрев кеша ID")
                 return
             channel_name = self._settings.channel_name
             await self._user.user_cache.warmup(channel_name)
@@ -84,7 +83,6 @@ class Bot:
 
     async def _start_background_tasks(self):
         if not self._background_tasks:
-            logger.warning("Фоновые задачи не сконфигурированы, пропускаем запуск")
             return
         self._background_tasks.start_all()
 

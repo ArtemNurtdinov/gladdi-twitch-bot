@@ -1,12 +1,9 @@
 import asyncio
-import logging
 from datetime import datetime
 
 from app.minigame.application.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.minigame.application.model import MinigameTickDTO
 from core.background_task_runner import BackgroundTaskRunner
-
-logger = logging.getLogger(__name__)
 
 
 class MinigameTickJob:
@@ -30,8 +27,6 @@ class MinigameTickJob:
                 delay = await self._handle_minigame_tick_use_case.handle(dto)
                 await asyncio.sleep(delay)
             except asyncio.CancelledError:
-                logger.info("MinigameTickJob cancelled")
                 break
-            except Exception as e:
-                logger.error(f"Ошибка в MinigameTickJob: {e}")
+            except Exception:
                 await asyncio.sleep(self._default_delay)

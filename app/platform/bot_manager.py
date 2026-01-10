@@ -1,6 +1,8 @@
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import datetime
+from typing import Any
 
 from app.ai.bootstrap import build_ai_providers
 from app.battle.bootstrap import build_battle_providers
@@ -11,15 +13,12 @@ from app.equipment.bootstrap import build_equipment_providers
 from app.follow.bootstrap import build_follow_providers
 from app.joke.bootstrap import build_joke_providers
 from app.minigame.bootstrap import build_minigame_providers
+from app.platform.auth import PlatformAuth
+from app.platform.bot import Bot
+from app.platform.providers import PlatformProviders
 from app.stream.bootstrap import build_stream_providers
 from app.twitch.bootstrap.bot_factory import BotFactory
-from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS
-from app.twitch.bootstrap.twitch import build_twitch_providers
-from app.twitch.infrastructure.auth import TwitchAuth
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.twitch.infrastructure.twitch_platform_adapter import TwitchStreamingPlatformAdapter
-from app.twitch.presentation.twitch_bot import Bot as TwitchBot
-from app.twitch.presentation.twitch_chat_client import TwitchChatClient
+from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS, BotSettings
 from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.user.bootstrap import build_user_providers
 from app.viewer.bootstrap import build_viewer_providers
@@ -30,30 +29,40 @@ logger = logging.getLogger(__name__)
 
 
 class BotManager:
-    def __init__(self):
-        self._bot: TwitchBot | None = None
-        self._chat_client: TwitchChatClient | None = None
+    def __init__(
+        self,
+        platform_auth_factory: Callable[[str, str], PlatformAuth],
+        platform_providers_builder: Callable[[PlatformAuth], PlatformProviders],
+        chat_client_factory: Callable[[PlatformAuth, BotSettings], Any],
+        settings: BotSettings = DEFAULT_SETTINGS,
+    ):
+        self._platform_auth_factory = platform_auth_factory
+        self._platform_providers_builder = platform_providers_builder
+        self._chat_client_factory = chat_client_factory
+        self._settings = settings
+
+        self._bot: Bot | None = None
+        self._chat_client: Any = None
         self._task: asyncio.Task | None = None
         self._status: BotStatusEnum = BotStatusEnum.STOPPED
         self._started_at: datetime | None = None
         self._last_error: str | None = None
         self._lock = asyncio.Lock()
-        self._twitch_api_service: TwitchApiService | None = None
-        self._streaming_platform: TwitchStreamingPlatformAdapter | None = None
+        self._platform_providers: PlatformProviders | None = None
 
-    def _ensure_credentials(self, auth: TwitchAuth) -> None:
+    def _ensure_credentials(self, auth: PlatformAuth) -> None:
         missing = []
         if not auth.client_id:
-            missing.append("TWITCH_CLIENT_ID")
+            missing.append("client_id")
         if not auth.client_secret:
-            missing.append("TWITCH_CLIENT_SECRET")
+            missing.append("client_secret")
         if not auth.refresh_token:
             missing.append("refresh_token")
         if not auth.access_token:
             missing.append("access_token")
 
         if missing:
-            raise ValueError(f"Недостаточно данных для авторизации Twitch: {', '.join(missing)}")
+            raise ValueError(f"Недостаточно данных для авторизации платформы: {', '.join(missing)}")
 
     def _reset_state(self):
         self._bot = None
@@ -61,8 +70,7 @@ class BotManager:
         self._task = None
         self._status = BotStatusEnum.STOPPED
         self._started_at = None
-        self._twitch_api_service = None
-        self._streaming_platform = None
+        self._platform_providers = None
 
     def _on_bot_done(self, task: asyncio.Task) -> None:
         try:
@@ -86,18 +94,19 @@ class BotManager:
             if self._task and not self._task.done():
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            auth = TwitchAuth(access_token=access_token, refresh_token=refresh_token, logger=logger)
+            auth = self._platform_auth_factory(access_token, refresh_token)
             self._ensure_credentials(auth)
 
-            twitch_providers = build_twitch_providers(auth)
-            self._twitch_api_service = twitch_providers.twitch_api_service
-            self._streaming_platform = twitch_providers.streaming_platform
-            stream_providers = build_stream_providers(self._streaming_platform)
+            platform_providers = self._platform_providers_builder(auth)
+            self._platform_providers = platform_providers
+            streaming_platform = platform_providers.streaming_platform
+
+            stream_providers = build_stream_providers(streaming_platform)
             ai_providers = build_ai_providers()
             chat_providers = build_chat_providers()
-            follow_providers = build_follow_providers(self._streaming_platform)
+            follow_providers = build_follow_providers(streaming_platform)
             joke_providers = build_joke_providers()
-            user_providers = build_user_providers(self._streaming_platform)
+            user_providers = build_user_providers(streaming_platform)
             viewer_providers = build_viewer_providers()
             economy_providers = build_economy_providers()
             equipment_providers = build_equipment_providers()
@@ -106,9 +115,9 @@ class BotManager:
             betting_providers = build_betting_providers()
             background_providers = build_background_providers()
             telegram_providers = build_telegram_providers()
-            self._chat_client = TwitchChatClient(twitch_auth=twitch_providers.twitch_auth, settings=DEFAULT_SETTINGS)
+            self._chat_client = self._chat_client_factory(platform_providers.platform_auth, self._settings)
             self._bot = BotFactory(
-                twitch_providers,
+                platform_providers,
                 ai_providers,
                 chat_providers,
                 follow_providers,
@@ -123,24 +132,17 @@ class BotManager:
                 betting_providers,
                 background_providers,
                 telegram_providers,
-                DEFAULT_SETTINGS,
+                self._settings,
             ).create(chat_outbound=self._chat_client)
-            if self._bot and self._chat_client and self._bot.command_router:
-                self._chat_client.set_router(self._bot.command_router)
-            if self._bot and self._chat_client and self._bot.chat_event_handler:
-                self._chat_client.set_chat_event_handler(self._bot.chat_event_handler, bot_nick_provider=lambda: self._bot.nick)
-            if self._bot:
-                await self._bot.warmup()
-                await self._bot.start_background_tasks_only()
+            self._chat_client.set_router(self._bot.command_router)
+            self._chat_client.set_chat_event_handler(self._bot.chat_event_handler, bot_nick_provider=lambda: self._bot.nick)
+            await self._bot.warmup()
+            await self._bot.start_background_tasks()
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None
 
-            # Запускаем только чат-клиент для обработки команд; Bot можно держать выключенным или использовать позже для фоновых задач
-            if self._chat_client:
-                self._task = asyncio.create_task(self._chat_client.start())
-            else:
-                self._task = asyncio.create_task(self._bot.start())
+            self._task = asyncio.create_task(self._chat_client.start())
             self._task.add_done_callback(self._on_bot_done)
 
             return BotActionResult(**self.get_status().model_dump(), message="Запуск инициализирован")
@@ -149,7 +151,7 @@ class BotManager:
         async with self._lock:
             task = self._task
             bot = self._bot
-            twitch_api_service = self._twitch_api_service
+            platform_api_service = self._platform_providers.api_client if self._platform_providers else None
 
             if not isinstance(task, asyncio.Task):
                 logger.info("Попытка остановки, но бот не запущен")
@@ -157,8 +159,8 @@ class BotManager:
             try:
                 if self._chat_client:
                     await self._chat_client.stop()
-                if twitch_api_service:
-                    await twitch_api_service.aclose()
+                if platform_api_service:
+                    await platform_api_service.aclose()
                 if bot:
                     await bot.close()
                 if task and not task.done():

@@ -4,8 +4,14 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, HTTPException
 
-from app.twitch.presentation.bot_manager import BotManager
+from app.platform.auth import PlatformAuth
+from app.platform.bot_manager import BotManager
+from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS, BotSettings
+from app.twitch.bootstrap.twitch import build_twitch_providers
+from app.twitch.infrastructure.auth import TwitchAuth
+from app.twitch.infrastructure.twitch_chat_client import TwitchChatClient
 from app.twitch.presentation.twitch_schemas import AuthStartResponse, BotActionResult, BotStatus
+from core.chat.outbound import ChatOutbound
 from core.config import config
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
@@ -15,7 +21,22 @@ PERMISSIONS_SCOPE = "chat:read chat:edit user:read:follows moderator:read:follow
 
 router = APIRouter(prefix="/bot")
 
-bot_manager = BotManager()
+
+def _twitch_auth_factory(access_token: str, refresh_token: str) -> TwitchAuth:
+    return TwitchAuth(access_token=access_token, refresh_token=refresh_token, logger=logging.getLogger(__name__))
+
+
+def _twitch_chat_client_factory(auth: PlatformAuth, settings: BotSettings = DEFAULT_SETTINGS) -> ChatOutbound:
+    twitch_auth: TwitchAuth = auth  # type: ignore[assignment]
+    return TwitchChatClient(twitch_auth=twitch_auth, settings=settings)
+
+
+bot_manager = BotManager(
+    platform_auth_factory=_twitch_auth_factory,
+    platform_providers_builder=build_twitch_providers,
+    chat_client_factory=_twitch_chat_client_factory,
+    settings=DEFAULT_SETTINGS,
+)
 
 
 @router.get("/status", summary="Получить состояние бота", response_model=BotStatus)
