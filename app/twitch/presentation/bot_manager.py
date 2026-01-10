@@ -19,6 +19,7 @@ from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 from app.twitch.infrastructure.twitch_platform_adapter import TwitchStreamingPlatformAdapter
 from app.twitch.presentation.twitch_bot import Bot as TwitchBot
+from app.twitch.presentation.twitch_chat_client import TwitchChatClient
 from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.user.bootstrap import build_user_providers
 from app.viewer.bootstrap import build_viewer_providers
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 class BotManager:
     def __init__(self):
         self._bot: TwitchBot | None = None
+        self._chat_client: TwitchChatClient | None = None
         self._task: asyncio.Task | None = None
         self._status: BotStatusEnum = BotStatusEnum.STOPPED
         self._started_at: datetime | None = None
@@ -55,6 +57,7 @@ class BotManager:
 
     def _reset_state(self):
         self._bot = None
+        self._chat_client = None
         self._task = None
         self._status = BotStatusEnum.STOPPED
         self._started_at = None
@@ -103,6 +106,7 @@ class BotManager:
             betting_providers = build_betting_providers()
             background_providers = build_background_providers()
             telegram_providers = build_telegram_providers()
+            self._chat_client = TwitchChatClient(twitch_auth=twitch_providers.twitch_auth, settings=DEFAULT_SETTINGS)
             self._bot = BotFactory(
                 twitch_providers,
                 ai_providers,
@@ -120,12 +124,23 @@ class BotManager:
                 background_providers,
                 telegram_providers,
                 DEFAULT_SETTINGS,
-            ).create()
+            ).create(chat_outbound=self._chat_client)
+            if self._bot and self._chat_client and self._bot.command_router:
+                self._chat_client.set_router(self._bot.command_router)
+            if self._bot and self._chat_client and self._bot.chat_event_handler:
+                self._chat_client.set_chat_event_handler(self._bot.chat_event_handler, bot_nick_provider=lambda: self._bot.nick)
+            if self._bot:
+                await self._bot.warmup()
+                await self._bot.start_background_tasks_only()
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None
 
-            self._task = asyncio.create_task(self._bot.start())
+            # Запускаем только чат-клиент для обработки команд; Bot можно держать выключенным или использовать позже для фоновых задач
+            if self._chat_client:
+                self._task = asyncio.create_task(self._chat_client.start())
+            else:
+                self._task = asyncio.create_task(self._bot.start())
             self._task.add_done_callback(self._on_bot_done)
 
             return BotActionResult(**self.get_status().model_dump(), message="Запуск инициализирован")
@@ -140,10 +155,12 @@ class BotManager:
                 logger.info("Попытка остановки, но бот не запущен")
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже остановлен")
             try:
-                if bot:
-                    await bot.close()
+                if self._chat_client:
+                    await self._chat_client.stop()
                 if twitch_api_service:
                     await twitch_api_service.aclose()
+                if bot:
+                    await bot.close()
                 if task and not task.done():
                     task.cancel()
                     try:
