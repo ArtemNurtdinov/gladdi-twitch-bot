@@ -14,7 +14,6 @@ def validate_interval(interval_min: int, interval_max: int) -> None:
 
 
 def plan_next_joke_time(settings: BotSettings, now: datetime | None = None) -> str:
-    """Возвращает iso-время следующего анекдота, используя интервалы настроек."""
     now = now or datetime.now()
     interval_minutes = randint(settings.jokes_interval_min, settings.jokes_interval_max)
     return (now + timedelta(minutes=interval_minutes)).isoformat()

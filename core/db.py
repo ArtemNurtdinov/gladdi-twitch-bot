@@ -72,7 +72,6 @@ def db_ro_session() -> AbstractContextManager[Session]:
 
 @contextmanager
 def db_rw_session() -> AbstractContextManager[Session]:
-    """Контекстный менеджер для RW-сессии с коммитом/ролбеком."""
     db = _get_session_local()()
     try:
         yield db
