@@ -4,14 +4,14 @@ from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
 from app.ai.intent.domain.intent_detector import IntentDetectorClient
 from app.ai.intent.domain.models import Intent
-from core.config import config
 
 
 class IntentDetectorClientImpl(IntentDetectorClient):
-    _INTENT_DETECTOR_API_DOMAIN = config.intent_detector.host
+    def __init__(self, intent_detector_host: str):
+        self._intent_detector_host = intent_detector_host
 
     def extract_intent_from_text(self, text: str) -> Intent:
-        api_url = f"{self._INTENT_DETECTOR_API_DOMAIN}/extract-intent"
+        api_url = f"{self._intent_detector_host}/extract-intent"
         payload = {"message": text}
 
         response = requests.post(api_url, json=payload)

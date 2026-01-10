@@ -6,20 +6,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-@dataclass
+@dataclass(frozen=True)
 class ApplicationConfig:
     auth_secret: str = os.getenv("ACCESS_SECRET_KEY")
     auth_secret_algorithm: str = os.getenv("ACCESS_SECRET_ALGORITHM", "")
     access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 30))
 
 
-@dataclass
+@dataclass(frozen=True)
 class TelegramConfig:
     bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     group_id: int = int(os.getenv("TELEGRAM_GROUP_ID", "0"))
 
 
-@dataclass
+@dataclass(frozen=True)
 class TwitchConfig:
     client_id: str = os.getenv("TWITCH_CLIENT_ID", "")
     client_secret: str = os.getenv("TWITCH_CLIENT_SECRET", "")
@@ -27,36 +27,36 @@ class TwitchConfig:
     channel_name: str = os.getenv("TWITCH_CHANNEL", "artemnefrit")
 
 
-@dataclass
+@dataclass(frozen=True)
 class DashboardConfig:
     host: str = os.getenv("DASHBOARD_HOST", "0.0.0.0")
     port: int = int(os.getenv("DASHBOARD_PORT", "8003"))
     log_level: str = os.getenv("DASHBOARD_LOG_LEVEL", "info")
 
 
-@dataclass
+@dataclass(frozen=True)
 class DatabaseConfig:
     url: str = os.getenv("DATABASE_URL", "")
 
 
-@dataclass
+@dataclass(frozen=True)
 class LoggingConfig:
     level: str = os.getenv("LOG_LEVEL", "INFO")
     file: str = os.getenv("LOG_FILE", "../gladdi-twitch-bot.log")
     format: str = os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
-@dataclass
+@dataclass(frozen=True)
 class LLMBoxConfig:
     host = os.getenv("LLMBOX_DOMAIN")
 
 
-@dataclass
+@dataclass(frozen=True)
 class IntentDetectorConfig:
     host = os.getenv("INTENT_DETECTOR_DOMAIN")
 
 
-@dataclass
+@dataclass(frozen=True)
 class Config:
     application: ApplicationConfig
     telegram: TelegramConfig

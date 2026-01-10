@@ -23,7 +23,7 @@ class AIProviders:
 
 def build_ai_providers(config: Config) -> AIProviders:
     llm_client = LLMBoxClientPortImpl(config.llmbox.host)
-    intent_detector = IntentDetectorClientImpl()
+    intent_detector = IntentDetectorClientImpl(config.intent_detector.host)
     get_intent_from_text_use_case = GetIntentFromTextUseCase(intent_detector, llm_client)
     prompt_service = PromptService()
 
