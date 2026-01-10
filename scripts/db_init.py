@@ -16,12 +16,13 @@ from app.follow.infrastructure.db.follower import ChannelFollowerRow
 from app.minigame.data.db.word_history import WordHistory
 from app.stream.infrastructure.db.stream import Stream
 from app.viewer.data.db.viewer_session import StreamViewerSession
-from core.db import SessionLocal, db_ro_session, engine
+from bootstrap.config_provider import get_config
+from core.db import db_ro_session, db_rw_session, get_engine
 
 
 def test_connection():
     try:
-        with engine.connect() as connection:
+        with get_engine().connect() as connection:
             result = connection.execute(text("SELECT version();"))
             version = result.scalar()
             print(f"Подключение успешно! Версия PostgreSQL: {version}")
@@ -40,7 +41,7 @@ def test_connection():
 
 def create_tables():
     try:
-        with engine.begin() as connection:
+        with get_engine().begin() as connection:
             AIMessage.__table__.create(bind=connection, checkfirst=True)
             ChatMessage.__table__.create(bind=connection, checkfirst=True)
             BattleHistory.__table__.create(bind=connection, checkfirst=True)
@@ -56,7 +57,7 @@ def create_tables():
             ChannelFollowerRow.__table__.create(bind=connection, checkfirst=True)
         print("Таблицы успешно созданы!")
 
-        with engine.connect() as connection:
+        with get_engine().connect() as connection:
             tables_result = connection.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
             tables = [row[0] for row in tables_result]
             print(f"Таблицы после создания: {', '.join(tables)}")
@@ -67,7 +68,13 @@ def create_tables():
 
 def create_admin():
     try:
-        auth_service = AuthService(AuthRepositoryImpl())
+        config = get_config()
+        auth_service = AuthService(
+            auth_secret=config.application.auth_secret,
+            auth_secret_algorithm=config.application.auth_secret_algorithm,
+            access_token_expires_minutes=config.application.access_token_expire_minutes,
+            repo=AuthRepositoryImpl(),
+        )
         with db_ro_session() as db:
             existing_user = auth_service.get_user_by_email(db, "artem.nefrit@gmail.com")
             if existing_user:
@@ -80,7 +87,7 @@ def create_admin():
             email="artem.nefrit@gmail.com", first_name="Артем", last_name="Нуртдинов", password="12345", role=UserRole.ADMIN, is_active=True
         )
 
-        with SessionLocal.begin() as db:
+        with db_rw_session() as db:
             user = auth_service.create_user_from_admin(db, user_data)
             print("    Администратор успешно создан!")
             print(f"   ID: {user.id}")

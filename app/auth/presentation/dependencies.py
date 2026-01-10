@@ -5,14 +5,22 @@ from sqlalchemy.orm import Session
 from app.auth.data.auth_repository import AuthRepositoryImpl
 from app.auth.domain.auth_service import AuthService
 from app.auth.domain.models import User, UserRole
+from bootstrap.config_provider import get_config
+from core.config import Config
 from core.db import get_db
 
 security = HTTPBearer()
 security_optional = HTTPBearer(auto_error=False)
 
 
-def get_auth_service() -> AuthService:
-    return AuthService(AuthRepositoryImpl())
+def get_auth_service(config: Config = Depends(get_config)) -> AuthService:
+    auth_repo = AuthRepositoryImpl()
+    return AuthService(
+        auth_secret=config.application.auth_secret,
+        auth_secret_algorithm=config.application.auth_secret_algorithm,
+        access_token_expires_minutes=config.application.access_token_expire_minutes,
+        repo=auth_repo,
+    )
 
 
 def get_current_user(

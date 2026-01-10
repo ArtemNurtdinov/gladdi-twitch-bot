@@ -14,7 +14,7 @@ from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.domain.stream_service import StreamService
-from core.db import SessionLocal, db_ro_session
+from core.db import db_ro_session, db_rw_session
 from core.provider import Provider
 
 
@@ -94,7 +94,7 @@ class MinigameOrchestrator:
 
         if winners:
             share = max(1, game.bank // len(winners))
-            with SessionLocal.begin() as db:
+            with db_rw_session() as db:
                 for winner in winners:
                     self._economy_policy_provider.get(db).add_balance(
                         channel_name=channel_name,
@@ -111,7 +111,7 @@ class MinigameOrchestrator:
         else:
             message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
 
-        with SessionLocal.begin() as db:
+        with db_rw_session() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name_lower(), content=message, current_time=datetime.utcnow()
             )
@@ -123,7 +123,7 @@ class MinigameOrchestrator:
         expired_games = self.minigame_service.check_expired_games()
         for channel, timeout_message in expired_games.items():
             await self._send_channel_message(channel, timeout_message)
-            with SessionLocal.begin() as db:
+            with db_rw_session() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=channel, user_name=self._bot_name_lower(), content=timeout_message, current_time=datetime.utcnow()
                 )
@@ -151,7 +151,7 @@ class MinigameOrchestrator:
         assistant_response = await self._llm_client.generate_ai_response(ai_messages)
         assistant_message = assistant_response.message
 
-        with SessionLocal.begin() as db:
+        with db_rw_session() as db:
             self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, assistant_message)
 
         data = json.loads(assistant_message)
@@ -160,7 +160,7 @@ class MinigameOrchestrator:
         final_word = word.strip().lower()
 
         game = self.minigame_service.start_word_guess_game(channel_name, final_word, hint)
-        with SessionLocal.begin() as db:
+        with db_rw_session() as db:
             self._add_used_words_use_case_provider.get(db).add_used_words(channel_name, final_word)
 
         masked = game.get_masked_word()
@@ -174,7 +174,7 @@ class MinigameOrchestrator:
 
         await self._send_channel_message(channel_name, game_message)
 
-        with SessionLocal.begin() as db:
+        with db_rw_session() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
             )
@@ -189,7 +189,7 @@ class MinigameOrchestrator:
         )
 
         await self._send_channel_message(channel_name, game_message)
-        with SessionLocal.begin() as db:
+        with db_rw_session() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
             )

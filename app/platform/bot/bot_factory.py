@@ -74,7 +74,7 @@ from core.bootstrap.background import BackgroundProviders
 from core.bootstrap.telegram import TelegramProviders
 from core.chat.interfaces import CommandRouter
 from core.chat.outbound import ChatOutbound
-from core.db import SessionLocal, db_ro_session
+from core.db import db_ro_session, db_rw_session
 
 
 class BotFactory:
@@ -172,7 +172,7 @@ class BotFactory:
                         conversation_service_provider=self._ai.conversation_service_provider,
                         chat_use_case_provider=self._chat.chat_use_case_provider,
                     ),
-                    db_session_provider=SessionLocal.begin,
+                    db_session_provider=lambda: db_rw_session(),
                     send_channel_message=send_channel_message,
                     bot_nick=bot.nick,
                 ),
@@ -199,7 +199,7 @@ class BotFactory:
                         chat_response_use_case=chat_response_use_case,
                         state=bot.chat_summary_state,
                     ),
-                    db_session_provider=SessionLocal.begin,
+                    db_session_provider=lambda: db_rw_session(),
                     db_readonly_session_provider=lambda: db_ro_session(),
                     stream_status_interval_seconds=self._settings.check_stream_status_interval_seconds,
                 ),
@@ -228,7 +228,7 @@ class BotFactory:
                         user_cache=self._user.user_cache,
                         stream_chatters_port=self._stream.stream_chatters_port,
                     ),
-                    db_session_provider=SessionLocal.begin,
+                    db_session_provider=lambda: db_rw_session(),
                     db_readonly_session_provider=lambda: db_ro_session(),
                     bot_nick=bot.nick,
                     check_interval_seconds=self._settings.check_viewers_interval_seconds,
@@ -239,7 +239,7 @@ class BotFactory:
                         followers_port=self._follow.followers_port,
                         followers_repository_provider=self._follow.followers_repository_provider,
                     ),
-                    db_session_provider=SessionLocal.begin,
+                    db_session_provider=lambda: db_rw_session(),
                     interval_seconds=self._settings.sync_followers_interval_seconds,
                 ),
             ],
@@ -294,7 +294,7 @@ class BotFactory:
                 chat_response_use_case=chat_response_use_case,
                 calculate_timeout_use_case_provider=self._equipment.calculate_timeout_use_case_provider,
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             db_readonly_session_provider=lambda: db_ro_session(),
             chat_moderation=moderation_service,
             bot_nick=bot_nick,
@@ -311,7 +311,7 @@ class BotFactory:
                 chat_use_case_provider=self._chat.chat_use_case_provider,
                 calculate_timeout_use_case_provider=self._equipment.calculate_timeout_use_case_provider,
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             db_readonly_session_provider=lambda: db_ro_session(),
             chat_moderation=moderation_service,
             bot_nick=bot_nick,
@@ -321,7 +321,7 @@ class BotFactory:
             handle_balance_use_case=HandleBalanceUseCase(
                 economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -334,7 +334,7 @@ class BotFactory:
                 economy_policy_provider=self._economy.economy_policy_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
@@ -346,7 +346,7 @@ class BotFactory:
                 economy_policy_provider=self._economy.economy_policy_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -360,7 +360,7 @@ class BotFactory:
                 equipment_exists_use_case_provider=self._equipment.equipment_exists_use_case_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
@@ -373,7 +373,7 @@ class BotFactory:
                 get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
@@ -382,7 +382,7 @@ class BotFactory:
             handle_top_bottom_use_case=HandleTopBottomUseCase(
                 economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             db_readonly_session_provider=lambda: db_ro_session(),
             command_top=settings.command_top,
             command_bottom=settings.command_bottom,
@@ -396,7 +396,7 @@ class BotFactory:
                 battle_use_case_provider=self._battle.battle_use_case_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             db_readonly_session_provider=lambda: db_ro_session(),
             command_name=settings.command_stats,
             bot_nick=bot_nick,
@@ -420,7 +420,7 @@ class BotFactory:
         help_handler = HelpCommandHandler(
             command_prefix=prefix,
             handle_help_use_case=HandleHelpUseCase(chat_use_case_provider=self._chat.chat_use_case_provider),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             commands=commands,
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
@@ -435,7 +435,7 @@ class BotFactory:
                 economy_policy_provider=self._economy.economy_policy_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -445,7 +445,7 @@ class BotFactory:
                 economy_policy_provider=self._economy.economy_policy_provider,
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
-            db_session_provider=SessionLocal.begin,
+            db_session_provider=lambda: db_rw_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -497,7 +497,7 @@ class BotFactory:
 
     def _build_ask_uow_factory(self) -> SqlAlchemyAskUnitOfWorkFactory:
         return SqlAlchemyAskUnitOfWorkFactory(
-            session_factory_rw=SessionLocal.begin,
+            session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             chat_repo_provider=self._chat.chat_repo_provider,
             conversation_repo_provider=self._ai.conversation_repo_provider,
@@ -505,7 +505,7 @@ class BotFactory:
 
     def _build_chat_message_uow_factory(self) -> SqlAlchemyChatMessageUnitOfWorkFactory:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
-            session_factory_rw=SessionLocal.begin,
+            session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             chat_repo_provider=self._chat.chat_repo_provider,
             economy_policy_provider=self._economy.economy_policy_provider,
@@ -516,7 +516,7 @@ class BotFactory:
 
     def _build_follow_age_uow_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkFactory:
         return SqlAlchemyFollowAgeUnitOfWorkFactory(
-            session_factory_rw=SessionLocal.begin,
+            session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             chat_repo_provider=self._chat.chat_repo_provider,
             conversation_repo_provider=self._ai.conversation_repo_provider,

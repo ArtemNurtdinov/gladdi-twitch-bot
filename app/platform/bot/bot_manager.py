@@ -23,6 +23,7 @@ from app.platform.providers import PlatformProviders
 from app.stream.bootstrap import build_stream_providers
 from app.user.bootstrap import build_user_providers
 from app.viewer.bootstrap import build_viewer_providers
+from bootstrap.config_provider import get_config
 from core.bootstrap.background import build_background_providers
 from core.bootstrap.telegram import build_telegram_providers
 from core.chat.interfaces import CommandRouter
@@ -106,7 +107,7 @@ class BotManager:
             streaming_platform = platform_providers.streaming_platform
 
             stream_providers = build_stream_providers(streaming_platform)
-            ai_providers = build_ai_providers()
+            ai_providers = build_ai_providers(config=get_config())
             chat_providers = build_chat_providers()
             follow_providers = build_follow_providers(streaming_platform)
             joke_providers = build_joke_providers()
