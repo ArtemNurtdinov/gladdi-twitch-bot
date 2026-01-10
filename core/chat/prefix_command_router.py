@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-import logging
-
 from core.chat.interfaces import ChatContext, ChatMessage, CommandHandler, CommandRouter
-
-logger = logging.getLogger(__name__)
 
 
 class PrefixCommandRouter(CommandRouter):
@@ -26,7 +22,6 @@ class PrefixCommandRouter(CommandRouter):
         cmd_name = parts[0].lower()
         handler = self._handlers.get(cmd_name)
         if not handler:
-            logger.debug("Unknown command: %s", cmd_name)
             return False
 
         await handler(ctx, message)
