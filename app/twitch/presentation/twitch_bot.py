@@ -3,13 +3,14 @@ import logging
 
 from twitchio.ext import commands
 
-from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS, BotSettings
+from app.twitch.bootstrap.bot_settings import BotSettings
 from app.twitch.bootstrap.twitch import TwitchProviders
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.model.state import ChatSummaryState
 from app.twitch.presentation.interaction.chat_context_adapter import as_chat_context
 from app.twitch.presentation.interaction.chat_event_handler import ChatEventHandler
 from app.user.bootstrap import UserProviders
+from core.chat.interfaces import ChatMessage, CommandRouter
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class Bot(commands.Bot):
         self._background_tasks: BotBackgroundTasks | None = None
         self._command_registry = None
         self._chat_event_handler: ChatEventHandler | None = None
+        self._command_router: CommandRouter | None = None
 
         logger.info("Twitch бот инициализирован успешно")
 
@@ -53,6 +55,13 @@ class Bot(commands.Bot):
 
     def set_chat_event_handler(self, chat_event_handler: ChatEventHandler):
         self._chat_event_handler = chat_event_handler
+
+    def set_command_router(self, command_router: CommandRouter):
+        self._command_router = command_router
+
+    @property
+    def command_router(self) -> CommandRouter | None:
+        return self._command_router
 
     async def _warmup_broadcaster_id(self):
         try:
@@ -96,7 +105,20 @@ class Bot(commands.Bot):
             return
 
         if message.content.startswith(self._prefix):
-            await self.handle_commands(message)
+            if self._command_router:
+                chat_ctx = as_chat_context(message)
+                chat_message = ChatMessage()
+                chat_message.channel = message.channel.name
+                chat_message.author = message.author.display_name
+                chat_message.author_id = getattr(message.author, "id", None)
+                chat_message.text = message.content
+                if hasattr(self._command_router, "set_runtime_context"):
+                    # TwitchCommandRouter uses runtime ctx for handlers
+                    try:
+                        self._command_router.set_runtime_context(chat_ctx)  # type: ignore[attr-defined]
+                    except Exception:
+                        logger.debug("Command router does not support runtime context")
+                await self._command_router.dispatch(chat_message)
             return
 
         if not self._chat_event_handler:
@@ -105,127 +127,6 @@ class Bot(commands.Bot):
 
         await self._chat_event_handler.handle(
             channel_name=message.channel.name, display_name=message.author.display_name, message=message.content, bot_nick=self.nick
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_followage)
-    async def followage(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.followage.handle(
-            channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_gladdi)
-    async def ask(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.ask.handle(
-            channel_name=ctx.channel.name, full_message=ctx.message.content, display_name=ctx.author.display_name, chat_ctx=chat_ctx
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_fight)
-    async def battle(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.battle.handle(
-            channel_name=ctx.channel.name,
-            display_name=ctx.author.display_name,
-            battle_waiting_user_ref=self._battle_waiting_user_ref,
-            chat_ctx=chat_ctx,
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_roll)
-    async def roll(self, ctx, amount: str = None):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.roll.handle(
-            chat_ctx=chat_ctx, channel_name=ctx.channel.name, display_name=ctx.author.display_name, amount=amount
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_balance)
-    async def balance(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.balance.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx)
-
-    @commands.command(name=DEFAULT_SETTINGS.command_bonus)
-    async def daily_bonus(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.bonus.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx)
-
-    @commands.command(name=DEFAULT_SETTINGS.command_transfer)
-    async def transfer_money(self, ctx, recipient: str = None, amount: str = None):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.transfer.handle(
-            channel_name=ctx.channel.name,
-            sender_display_name=ctx.author.display_name,
-            chat_ctx=chat_ctx,
-            recipient=recipient,
-            amount=amount,
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_shop)
-    async def shop(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.shop.handle_shop(
-            channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_buy)
-    async def buy_item(self, ctx, *, item_name: str = None):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.shop.handle_buy(
-            channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx, item_name=item_name
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_equipment)
-    async def equipment(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.equipment.handle(
-            channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_top)
-    async def top_users(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.top_bottom.handle_top(channel_name=ctx.channel.name, chat_ctx=chat_ctx)
-
-    @commands.command(name=DEFAULT_SETTINGS.command_bottom)
-    async def bottom_users(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.top_bottom.handle_bottom(channel_name=ctx.channel.name, chat_ctx=chat_ctx)
-
-    @commands.command(name=DEFAULT_SETTINGS.command_help)
-    async def list_commands(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.help.handle(channel_name=ctx.channel.name, chat_ctx=chat_ctx)
-
-    @commands.command(name=DEFAULT_SETTINGS.command_stats)
-    async def user_stats(self, ctx):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.stats.handle(channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx)
-
-    @commands.command(name=DEFAULT_SETTINGS.command_guess)
-    async def guess_number(self, ctx, number: str = None):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.guess.handle_guess_number(
-            channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx, number=number
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_guess_letter)
-    async def guess_letter(self, ctx, letter: str = None):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.guess.handle_guess_letter(
-            channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx, letter=letter
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_guess_word)
-    async def guess_word(self, ctx, *, word: str = None):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.guess.handle_guess_word(
-            channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx, word=word
-        )
-
-    @commands.command(name=DEFAULT_SETTINGS.command_rps)
-    async def join_rps(self, ctx, choice: str = None):
-        chat_ctx = as_chat_context(ctx)
-        await self._command_registry.rps.handle(
-            channel_name=ctx.channel.name, display_name=ctx.author.display_name, chat_ctx=chat_ctx, choice=choice
         )
 
     def _split_text(self, text, max_length=500):

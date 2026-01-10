@@ -59,6 +59,7 @@ class BotManager:
         self._status = BotStatusEnum.STOPPED
         self._started_at = None
         self._twitch_api_service = None
+        self._streaming_platform = None
 
     def _on_bot_done(self, task: asyncio.Task) -> None:
         try:
