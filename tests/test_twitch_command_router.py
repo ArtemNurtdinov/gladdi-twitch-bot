@@ -23,15 +23,12 @@ class FakeChatContext(ChatContext):
     def author(self) -> str:
         return self._author
 
-    async def reply(self, text: str) -> None:
-        return None
-
     async def send_channel(self, text: str) -> None:
         return None
 
 
-def make_message(channel: str, author: str, text: str) -> ChatMessage:
-    return ChatMessage(channel=channel, author=author, text=text, author_id=f"{author}_id")
+def make_message(author: str, text: str) -> ChatMessage:
+    return ChatMessage(author=author, text=text, author_id=f"{author}_id")
 
 
 class TestPrefixCommandRouter(unittest.IsolatedAsyncioTestCase):
@@ -41,13 +38,13 @@ class TestPrefixCommandRouter(unittest.IsolatedAsyncioTestCase):
 
         async def handler(ctx: ChatContext, msg: ChatMessage):
             await asyncio.sleep(0.01)
-            seen.append((ctx.author, msg.text))
+            seen.append((msg.author, msg.text))
 
         router.register("ping", handler)
 
         contexts = (
-            (make_message("chan", "alice", "!ping hello"), FakeChatContext(channel="chan", author="alice")),
-            (make_message("chan", "bob", "!ping there"), FakeChatContext(channel="chan", author="bob")),
+            (make_message("alice", "!ping hello"), FakeChatContext(channel="chan", author="alice")),
+            (make_message("bob", "!ping there"), FakeChatContext(channel="chan", author="bob")),
         )
 
         results = await asyncio.gather(*(router.dispatch(msg, ctx) for msg, ctx in contexts))

@@ -5,7 +5,6 @@ from typing import Protocol, runtime_checkable
 
 @dataclass(frozen=True)
 class ChatMessage:
-    channel: str
     author: str
     text: str
     author_id: str
@@ -16,10 +15,6 @@ class ChatContext(Protocol):
     @property
     def channel(self) -> str: ...
 
-    @property
-    def author(self) -> str: ...
-
-    async def reply(self, text: str) -> None: ...
     async def send_channel(self, text: str) -> None: ...
 
 
