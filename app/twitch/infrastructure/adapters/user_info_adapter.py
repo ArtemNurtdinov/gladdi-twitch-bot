@@ -5,10 +5,10 @@ import logging
 import httpx
 from pydantic import ValidationError
 
-from core.platform.api_client import StreamingApiClient
-from app.twitch.infrastructure.twitch_api_models import UsersResponse
+from app.twitch.infrastructure.helix.models import UsersResponse
 from app.user.application.model import UserInfoDTO
 from app.user.application.user_info_port import UserInfoPort
+from core.platform.api_client import StreamingApiClient
 
 logger = logging.getLogger(__name__)
 
@@ -53,4 +53,3 @@ class UserInfoApiAdapter(UserInfoPort):
         except Exception as e:
             logger.error(f"Неожиданная ошибка при получении пользователя {login}: {e}")
             return None
-

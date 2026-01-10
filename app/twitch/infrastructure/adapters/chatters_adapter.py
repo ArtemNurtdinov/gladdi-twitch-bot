@@ -4,10 +4,10 @@ import logging
 
 from pydantic import ValidationError
 
-from core.platform.api_client import StreamingApiClient
-from app.twitch.infrastructure.api_common import handle_api_response
-from app.twitch.infrastructure.twitch_api_models import ChattersResponse
+from app.twitch.infrastructure.common import handle_api_response
+from app.twitch.infrastructure.helix.models import ChattersResponse
 from app.viewer.application.stream_chatters_port import StreamChattersPort
+from core.platform.api_client import StreamingApiClient
 
 logger = logging.getLogger(__name__)
 
@@ -31,4 +31,3 @@ class ChattersApiAdapter(StreamChattersPort):
         except Exception as e:
             logger.error(f"Ошибка при получении списка зрителей: {e}")
             return []
-

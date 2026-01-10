@@ -10,9 +10,14 @@ class ChatMessage:
 
 @runtime_checkable
 class ChatContext(Protocol):
-    channel: str
-    author: str
-    author_id: str | None
+    @property
+    def channel(self) -> str: ...
+
+    @property
+    def author(self) -> str: ...
+
+    @property
+    def author_id(self) -> str | None: ...
 
     async def reply(self, text: str) -> None: ...
     async def send_channel(self, text: str) -> None: ...

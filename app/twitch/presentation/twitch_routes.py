@@ -11,8 +11,8 @@ from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings, build_b
 from app.platform.bot.schemas import BotActionResult, BotStatus
 from app.twitch.bootstrap.router_factory import build_twitch_command_router
 from app.twitch.bootstrap.twitch import build_twitch_providers
-from app.twitch.infrastructure.auth import TwitchAuth
-from app.twitch.infrastructure.twitch_chat_client import TwitchChatClient
+from app.twitch.infrastructure.chat.twitch_chat_client import TwitchChatClient
+from app.twitch.infrastructure.helix.auth import TwitchAuth
 from app.twitch.presentation.twitch_schemas import AuthStartResponse
 from bootstrap.config_provider import get_config
 from core.chat.outbound import ChatOutbound

@@ -9,8 +9,8 @@ from app.stream.application.model import StreamDataDTO, StreamStatusDTO
 from app.stream.application.stream_info_port import StreamInfoPort
 from app.stream.application.stream_status_port import StreamStatusPort
 from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
+from app.twitch.infrastructure.helix.models import StreamsResponse
 from core.platform.api_client import StreamingApiClient
-from app.twitch.infrastructure.twitch_api_models import StreamsResponse
 
 logger = logging.getLogger(__name__)
 

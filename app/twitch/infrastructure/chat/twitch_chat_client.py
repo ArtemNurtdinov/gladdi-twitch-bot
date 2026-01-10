@@ -6,8 +6,8 @@ import logging
 from twitchio.ext import commands
 
 from app.platform.bot.bot_settings import BotSettings
-from app.twitch.infrastructure.adapters.chat_context_adapter import CtxChatContext
-from app.twitch.infrastructure.auth import TwitchAuth
+from app.twitch.infrastructure.chat.chat_context_adapter import CtxChatContext
+from app.twitch.infrastructure.helix.auth import TwitchAuth
 from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandRouter
 from core.chat.outbound import ChatEventsHandler, ChatOutbound
 from core.chat.prefix_command_router import PrefixCommandRouter

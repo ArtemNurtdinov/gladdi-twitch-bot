@@ -6,8 +6,8 @@ from app.twitch.infrastructure.adapters.moderation_adapter import ModerationApiA
 from app.twitch.infrastructure.adapters.stream_adapter import StreamApiAdapter
 from app.twitch.infrastructure.adapters.twitch_platform_adapter import TwitchStreamingPlatformAdapter
 from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
-from app.twitch.infrastructure.api_client import TwitchHelixClient
-from app.twitch.infrastructure.auth import TwitchAuth
+from app.twitch.infrastructure.helix.auth import TwitchAuth
+from app.twitch.infrastructure.helix.client import TwitchHelixClient
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 
