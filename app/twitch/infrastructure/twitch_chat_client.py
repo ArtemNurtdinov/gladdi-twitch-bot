@@ -9,40 +9,16 @@ from app.commands.chat.chat_event_handler import ChatEventHandler
 from app.platform.bot.bot_settings import BotSettings
 from app.twitch.infrastructure.adapters.chat_context_adapter import CtxChatContext
 from app.twitch.infrastructure.auth import TwitchAuth
-from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandHandler, CommandRouter
+from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandRouter
 from core.chat.outbound import ChatOutbound
+from core.chat.prefix_command_router import PrefixCommandRouter
 
 logger = logging.getLogger(__name__)
 
 
-class TwitchCommandRouter(CommandRouter):
-    def __init__(self, prefix: str):
-        self._prefix = prefix
-        self._handlers: dict[str, CommandHandler] = {}
-
-    def register(self, name: str, handler: CommandHandler) -> None:
-        self._handlers[name.lower()] = handler
-
-    async def dispatch(self, message: ChatMessage, ctx: ChatContext) -> bool:
-        if not message.text.startswith(self._prefix):
-            return False
-
-        without_prefix = message.text[len(self._prefix) :].strip()
-        if not without_prefix:
-            return False
-        parts = without_prefix.split(" ", 1)
-        cmd_name = parts[0].lower()
-        handler = self._handlers.get(cmd_name)
-        if not handler:
-            return False
-
-        await handler(ctx, message)
-        return True
-
-
 class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
     def __init__(self, twitch_auth: TwitchAuth, settings: BotSettings):
-        self._command_router: CommandRouter | None = None
+        self._command_router: PrefixCommandRouter | None = None
         self._chat_event_handler: ChatEventHandler | None = None
         self.bot_nick = settings.bot_name
         self._prefix = settings.prefix

@@ -4,7 +4,7 @@ import logging
 
 from pydantic import ValidationError
 
-from app.twitch.infrastructure.api_client import StreamingApiClient
+from core.platform.api_client import StreamingApiClient
 from app.twitch.infrastructure.api_common import handle_api_response
 from app.twitch.infrastructure.twitch_api_models import ChattersResponse
 from app.viewer.application.stream_chatters_port import StreamChattersPort

@@ -1,25 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Any
 
 import httpx
 
 from app.twitch.infrastructure.auth import TwitchAuth
-
-
-class StreamingApiClient(Protocol):
-    async def get(self, url: str, *, params: dict[str, Any] | None = None, headers: dict[str, str] | None = None) -> httpx.Response: ...
-
-    async def post(
-        self,
-        url: str,
-        *,
-        params: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-        json: dict[str, Any] | None = None,
-    ) -> httpx.Response: ...
-
-    async def aclose(self) -> None: ...
+from core.platform.api_client import StreamingApiClient
 
 
 class TwitchHelixClient(StreamingApiClient):

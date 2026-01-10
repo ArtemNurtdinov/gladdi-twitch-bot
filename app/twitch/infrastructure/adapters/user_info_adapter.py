@@ -5,7 +5,7 @@ import logging
 import httpx
 from pydantic import ValidationError
 
-from app.twitch.infrastructure.api_client import StreamingApiClient
+from core.platform.api_client import StreamingApiClient
 from app.twitch.infrastructure.twitch_api_models import UsersResponse
 from app.user.application.model import UserInfoDTO
 from app.user.application.user_info_port import UserInfoPort

@@ -1,12 +1,12 @@
 from app.commands.registry import CommandRegistry
 from app.platform.bot.bot import Bot
 from app.platform.bot.bot_settings import BotSettings
-from app.twitch.infrastructure.twitch_chat_client import TwitchCommandRouter
 from core.chat.interfaces import ChatMessage, CommandRouter
+from core.chat.prefix_command_router import PrefixCommandRouter
 
 
 def build_twitch_command_router(settings: BotSettings, registry: CommandRegistry, bot: Bot) -> CommandRouter:
-    router = TwitchCommandRouter(settings.prefix)
+    router = PrefixCommandRouter(settings.prefix)
 
     async def followage_handler(chat_ctx, msg: ChatMessage):
         await registry.followage.handle(channel_name=chat_ctx.channel, display_name=chat_ctx.author, chat_ctx=chat_ctx)
