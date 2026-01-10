@@ -11,6 +11,7 @@ class ChatMessage:
 class ChatContext(Protocol):
     channel: str
     author: str
+    author_id: str | None
 
     async def reply(self, text: str) -> None: ...
     async def send_channel(self, text: str) -> None: ...

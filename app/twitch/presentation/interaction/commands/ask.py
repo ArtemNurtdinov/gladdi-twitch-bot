@@ -1,9 +1,9 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Any
 
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.application.model import AskCommandDTO
+from core.chat.interfaces import ChatContext
 
 
 class AskCommandHandler:
@@ -12,7 +12,7 @@ class AskCommandHandler:
         command_prefix: str,
         command_name: str,
         handle_ask_use_case: HandleAskUseCase,
-        post_message_fn: Callable[[str, Any], Awaitable[None]],
+        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
         bot_nick_provider: Callable[[], str],
     ):
         self.command_prefix = command_prefix
@@ -21,7 +21,7 @@ class AskCommandHandler:
         self.post_message_fn = post_message_fn
         self.bot_nick_provider = bot_nick_provider
 
-    async def handle(self, channel_name: str, full_message: str, display_name: str, ctx):
+    async def handle(self, channel_name: str, full_message: str, display_name: str, chat_ctx: ChatContext):
         user_message = full_message[len(f"{self.command_prefix}{self.command_name}") :].strip()
 
         dto = AskCommandDTO(
@@ -34,4 +34,4 @@ class AskCommandHandler:
         )
 
         result = await self._handle_ask_use_case.handle(dto)
-        await self.post_message_fn(result, ctx)
+        await self.post_message_fn(result, chat_ctx)

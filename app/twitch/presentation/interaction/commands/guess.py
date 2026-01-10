@@ -1,12 +1,12 @@
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.commands.guess.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
+from core.chat.interfaces import ChatContext
 
 
 class GuessCommandHandler:
@@ -19,7 +19,7 @@ class GuessCommandHandler:
         handle_guess_use_case: HandleGuessUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick_provider: Callable[[], str],
-        post_message_fn: Callable[[str, Any], Awaitable[None]],
+        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_guess = command_guess
@@ -30,7 +30,7 @@ class GuessCommandHandler:
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
-    async def handle_guess_number(self, channel_name: str, display_name: str, ctx, number: str | None):
+    async def handle_guess_number(self, channel_name: str, display_name: str, chat_ctx: ChatContext, number: str | None):
         dto = GuessNumberDTO(
             command_prefix=self.command_prefix,
             command_guess=self.command_guess,
@@ -46,9 +46,9 @@ class GuessCommandHandler:
             db_session_provider=self._db_session_provider,
             guess_number=dto,
         )
-        await self.post_message_fn(message, ctx)
+        await self.post_message_fn(message, chat_ctx)
 
-    async def handle_guess_letter(self, channel_name: str, display_name: str, ctx, letter: str | None):
+    async def handle_guess_letter(self, channel_name: str, display_name: str, chat_ctx: ChatContext, letter: str | None):
         dto = GuessLetterDTO(
             channel_name=channel_name,
             display_name=display_name,
@@ -62,9 +62,9 @@ class GuessCommandHandler:
             db_session_provider=self._db_session_provider,
             guess_letter_dto=dto,
         )
-        await self.post_message_fn(message, ctx)
+        await self.post_message_fn(message, chat_ctx)
 
-    async def handle_guess_word(self, channel_name: str, display_name: str, ctx, word: str | None):
+    async def handle_guess_word(self, channel_name: str, display_name: str, chat_ctx: ChatContext, word: str | None):
         dto = GuessWordDTO(
             channel_name=channel_name,
             display_name=display_name,
@@ -75,4 +75,4 @@ class GuessCommandHandler:
         )
 
         message = await self._handle_guess_use_case.handle_word(db_session_provider=self._db_session_provider, guess_word_dto=dto)
-        await self.post_message_fn(message, ctx)
+        await self.post_message_fn(message, chat_ctx)

@@ -7,6 +7,7 @@ from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS, BotSettings
 from app.twitch.bootstrap.twitch import TwitchProviders
 from app.twitch.presentation.background.bot_tasks import BotBackgroundTasks
 from app.twitch.presentation.background.model.state import ChatSummaryState
+from app.twitch.presentation.interaction.chat_context_adapter import as_chat_context
 from app.twitch.presentation.interaction.chat_event_handler import ChatEventHandler
 from app.user.bootstrap import UserProviders
 
@@ -220,10 +221,11 @@ class Bot(commands.Bot):
         return messages
 
     async def post_message_in_twitch_chat(self, message: str, ctx):
+        chat_ctx = as_chat_context(ctx)
         messages = self._split_text(message)
 
         for msg in messages:
-            await ctx.send(msg)
+            await chat_ctx.send_channel(msg)
             await asyncio.sleep(0.3)
 
     async def send_channel_message(self, channel_name: str, message: str):

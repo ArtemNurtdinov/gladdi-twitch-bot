@@ -1,12 +1,12 @@
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.commands.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.model import BottomDTO, TopDTO
+from core.chat.interfaces import ChatContext
 
 
 class TopBottomCommandHandler:
@@ -21,7 +21,7 @@ class TopBottomCommandHandler:
         command_top: str,
         command_bottom: str,
         bot_nick_provider: Callable[[], str],
-        post_message_fn: Callable[[str, Any], Awaitable[None]],
+        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self._handle_top_bottom_use_case = handle_top_bottom_use_case
         self._db_session_provider = db_session_provider
@@ -33,7 +33,7 @@ class TopBottomCommandHandler:
         self.top_limit = self._TOP_LIMIT
         self.bottom_limit = self._BOTTOM_LIMIT
 
-    async def handle_top(self, channel_name: str, ctx):
+    async def handle_top(self, channel_name: str, chat_ctx: ChatContext):
         bot_nick = self.bot_nick_provider().lower()
 
         dto = TopDTO(
@@ -47,9 +47,9 @@ class TopBottomCommandHandler:
             db_readonly_session_provider=self._db_readonly_session_provider, db_session_provider=self._db_session_provider, command_top=dto
         )
 
-        await self.post_message_fn(result, ctx)
+        await self.post_message_fn(result, chat_ctx)
 
-    async def handle_bottom(self, channel_name: str, ctx):
+    async def handle_bottom(self, channel_name: str, chat_ctx: ChatContext):
         bot_nick = self.bot_nick_provider().lower()
 
         dto = BottomDTO(channel_name=channel_name, bot_nick=bot_nick, occurred_at=datetime.utcnow(), limit=self.bottom_limit)
@@ -60,4 +60,4 @@ class TopBottomCommandHandler:
             command_bottom=dto,
         )
 
-        await self.post_message_fn(result, ctx)
+        await self.post_message_fn(result, chat_ctx)
