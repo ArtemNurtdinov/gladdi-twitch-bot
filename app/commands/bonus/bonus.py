@@ -17,7 +17,7 @@ class BonusCommandHandler:
         handle_bonus_use_case: HandleBonusUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
-        bot_nick_provider: Callable[[], str],
+        bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
@@ -25,11 +25,11 @@ class BonusCommandHandler:
         self._handle_bonus_use_case = handle_bonus_use_case
         self._db_session_provider = db_session_provider
         self._db_readonly_session_provider = db_readonly_session_provider
-        self.bot_nick_provider = bot_nick_provider
+        self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
-        bot_nick = self.bot_nick_provider().lower()
+        bot_nick = self._bot_nick.lower()
 
         bonus = BonusDTO(
             channel_name=channel_name,

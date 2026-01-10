@@ -16,18 +16,18 @@ class HelpCommandHandler:
         handle_help_use_case: HandleHelpUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         commands: set[str],
-        bot_nick_provider: Callable[[], str],
+        bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self._handle_help_use_case = handle_help_use_case
         self._db_session_provider = db_session_provider
         self.commands = commands
-        self.bot_nick_provider = bot_nick_provider
+        self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, chat_ctx: ChatContext):
-        bot_nick = self.bot_nick_provider().lower()
+        bot_nick = self._bot_nick.lower()
 
         dto = HelpDTO(
             command_prefix=self.command_prefix,

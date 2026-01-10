@@ -18,7 +18,7 @@ class ShopCommandHandler:
         handle_shop_use_case: HandleShopUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
-        bot_nick_provider: Callable[[], str],
+        bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
@@ -27,11 +27,11 @@ class ShopCommandHandler:
         self._handle_shop_use_case = handle_shop_use_case
         self._db_session_provider = db_session_provider
         self._db_readonly_session_provider = db_readonly_session_provider
-        self.bot_nick_provider = bot_nick_provider
+        self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
     async def handle_shop(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
-        bot_nick = self.bot_nick_provider().lower()
+        bot_nick = self._bot_nick.lower()
 
         dto = CommandShopDTO(
             channel_name=channel_name,
@@ -52,7 +52,7 @@ class ShopCommandHandler:
         await self.post_message_fn(result, chat_ctx)
 
     async def handle_buy(self, channel_name: str, display_name: str, chat_ctx: ChatContext, item_name: str | None):
-        bot_nick = self.bot_nick_provider().lower()
+        bot_nick = self._bot_nick.lower()
 
         dto = CommandBuyDTO(
             command_prefix=self.command_prefix,

@@ -18,9 +18,9 @@ from app.platform.auth import PlatformAuth
 from app.platform.bot.bot import Bot
 from app.platform.bot.bot_factory import BotFactory
 from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings
+from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.platform.providers import PlatformProviders
 from app.stream.bootstrap import build_stream_providers
-from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.user.bootstrap import build_user_providers
 from app.viewer.bootstrap import build_viewer_providers
 from core.bootstrap.background import build_background_providers
@@ -139,8 +139,6 @@ class BotManager:
                 self._settings,
                 self._command_router_builder,
             ).create(chat_outbound=self._chat_client)
-            self._chat_client.set_router(self._bot.command_router)
-            self._chat_client.set_chat_event_handler(self._bot.chat_event_handler, bot_nick_provider=lambda: self._bot.nick)
             await self._bot.warmup()
             await self._bot.start_background_tasks()
             self._status = BotStatusEnum.RUNNING

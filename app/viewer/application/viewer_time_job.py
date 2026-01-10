@@ -22,14 +22,14 @@ class ViewerTimeJob:
         handle_viewer_time_use_case: HandleViewerTimeUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
-        bot_nick_provider: Callable[[], str],
+        bot_nick: str,
         check_interval_seconds: int,
     ):
         self._channel_name = channel_name
         self._handle_viewer_time_use_case = handle_viewer_time_use_case
         self._db_session_provider = db_session_provider
         self._db_readonly_session_provider = db_readonly_session_provider
-        self._bot_nick_provider = bot_nick_provider
+        self._bot_nick = bot_nick
         self._interval_seconds = check_interval_seconds
 
     def register(self, runner: BackgroundTaskRunner):
@@ -38,7 +38,7 @@ class ViewerTimeJob:
     async def run(self):
         while True:
             try:
-                bot_nick = (self._bot_nick_provider() or "").lower()
+                bot_nick = self._bot_nick.lower()
                 viewer_time_dto = ViewerTimeDTO(bot_nick=bot_nick, channel_name=self._channel_name, occurred_at=datetime.utcnow())
 
                 await self._handle_viewer_time_use_case.handle(

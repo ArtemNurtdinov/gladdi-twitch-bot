@@ -54,7 +54,7 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
     def __init__(self, twitch_auth: TwitchAuth, settings: BotSettings):
         self._command_router: CommandRouter | None = None
         self._chat_event_handler = None
-        self._bot_nick_provider = lambda: ""
+        self.bot_nick = lambda: ""
         self._prefix = settings.prefix
         self._initial_channels = [settings.channel_name] if settings.channel_name else []
         super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self._initial_channels)
@@ -62,9 +62,9 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
     def set_router(self, router: CommandRouter) -> None:
         self._command_router = router
 
-    def set_chat_event_handler(self, handler, bot_nick_provider):
+    def set_chat_event_handler(self, handler, bot_nick: str):
         self._chat_event_handler = handler
-        self._bot_nick_provider = bot_nick_provider
+        self.bot_nick = bot_nick
 
     async def start(self) -> None:
         await super().start()
@@ -109,7 +109,7 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
                     channel_name=message.channel.name,
                     display_name=chat_message.author,
                     message=message.content,
-                    bot_nick=self._bot_nick_provider(),
+                    bot_nick=self.bot_nick,
                 )
             except Exception:
                 logger.exception("Ошибка в ChatEventHandler для сообщения: %s", message.content)

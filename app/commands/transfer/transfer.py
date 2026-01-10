@@ -16,14 +16,14 @@ class TransferCommandHandler:
         handle_transfer_use_case: HandleTransferUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_name: str,
-        bot_nick_provider: Callable[[], str],
+        bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self._handle_transfer_use_case = handle_transfer_use_case
         self._db_session_provider = db_session_provider
         self.command_name = command_name
-        self.bot_nick_provider = bot_nick_provider
+        self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
     async def handle(
@@ -33,7 +33,7 @@ class TransferCommandHandler:
             channel_name=channel_name,
             display_name=sender_display_name,
             user_name=sender_display_name.lower(),
-            bot_nick=self.bot_nick_provider().lower(),
+            bot_nick=self._bot_nick.lower(),
             occurred_at=datetime.utcnow(),
             recipient_input=recipient,
             amount_input=amount,

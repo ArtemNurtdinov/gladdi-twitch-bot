@@ -7,11 +7,12 @@ from fastapi import APIRouter, HTTPException
 from app.platform.auth import PlatformAuth
 from app.platform.bot.bot_manager import BotManager
 from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings
+from app.platform.bot.schemas import BotActionResult, BotStatus
 from app.twitch.bootstrap.router_factory import build_twitch_command_router
 from app.twitch.bootstrap.twitch import build_twitch_providers
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.twitch_chat_client import TwitchChatClient
-from app.twitch.presentation.twitch_schemas import AuthStartResponse, BotActionResult, BotStatus
+from app.twitch.presentation.twitch_schemas import AuthStartResponse
 from core.chat.outbound import ChatOutbound
 from core.config import config
 

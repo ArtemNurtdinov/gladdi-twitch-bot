@@ -121,13 +121,14 @@ class BotFactory:
         system_prompt = self._ai.prompt_service.get_system_prompt_for_group()
         chat_response_use_case = self._create_chat_response_use_case(system_prompt)
 
-        bot.set_minigame_orchestrator(self._create_minigame(bot, system_prompt))
-        bot.set_chat_client(chat_outbound)
+        bot.set_minigame_orchestrator(self._create_minigame(bot, system_prompt, chat_outbound))
         bot.set_background_tasks(self._create_background_tasks(bot, chat_response_use_case, chat_outbound))
-        command_registry = self._create_command_registry(bot, chat_response_use_case, system_prompt, chat_outbound)
-        bot.set_command_registry(command_registry)
-        bot.set_chat_event_handler(self._create_chat_event_handler(bot, chat_response_use_case, system_prompt))
-        bot.set_command_router(self._command_router_builder(self._settings, command_registry, bot))
+        command_registry = self._create_command_registry(bot.nick, chat_response_use_case, system_prompt, chat_outbound)
+        chat_outbound.set_chat_event_handler(
+            self._create_chat_event_handler(chat_response_use_case, system_prompt, chat_outbound),
+            bot_nick=bot.nick,
+        )
+        chat_outbound.set_router(self._command_router_builder(self._settings, command_registry, bot))
         self._restore_stream_context()
         return bot
 
@@ -139,7 +140,7 @@ class BotFactory:
             db_readonly_session_provider=lambda: db_ro_session(),
         )
 
-    def _create_minigame(self, bot: Bot, system_prompt: str) -> MinigameOrchestrator:
+    def _create_minigame(self, bot: Bot, system_prompt: str, outbound: ChatOutbound) -> MinigameOrchestrator:
         return MinigameOrchestrator(
             minigame_service=self._minigame.minigame_service,
             economy_policy_provider=self._economy.economy_policy_provider,
@@ -154,8 +155,8 @@ class BotFactory:
             command_guess_word=self._settings.command_guess_word,
             command_guess=self._settings.command_guess,
             command_rps=self._settings.command_rps,
-            bot_nick_provider=lambda: bot.nick,
-            send_channel_message=bot.send_channel_message,
+            bot_nick=bot.nick,
+            send_channel_message=outbound.send_channel_message,
             conversation_service_provider=self._ai.conversation_service_provider,
         )
 
@@ -176,7 +177,7 @@ class BotFactory:
                     ),
                     db_session_provider=SessionLocal.begin,
                     send_channel_message=send_channel_message,
-                    bot_nick_provider=lambda: bot.nick,
+                    bot_nick=bot.nick,
                 ),
                 TokenCheckerJob(
                     handle_token_checker_use_case=HandleTokenCheckerUseCase(
@@ -232,7 +233,7 @@ class BotFactory:
                     ),
                     db_session_provider=SessionLocal.begin,
                     db_readonly_session_provider=lambda: db_ro_session(),
-                    bot_nick_provider=lambda: bot.nick,
+                    bot_nick=bot.nick,
                     check_interval_seconds=self._settings.check_viewers_interval_seconds,
                 ),
                 FollowersSyncJob(
@@ -248,12 +249,9 @@ class BotFactory:
         )
 
     def _create_command_registry(
-        self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str, outbound: ChatOutbound
+        self, bot_nick: str, chat_response_use_case: ChatResponseUseCase, system_prompt: str, outbound: ChatOutbound
     ) -> CommandRegistry:
         prefix = self._settings.prefix
-
-        def bot_nick_provider() -> str:
-            return bot.nick
 
         post_message_fn = outbound.post_message
         moderation_service = ModerationService(moderation_port=self._platform.streaming_platform, user_cache=self._user.user_cache)
@@ -271,7 +269,7 @@ class BotFactory:
                 unit_of_work_factory=self._build_follow_age_uow_factory(),
                 system_prompt=system_prompt,
             ),
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         ask = AskCommandHandler(
@@ -285,7 +283,7 @@ class BotFactory:
                 chat_response_use_case=chat_response_use_case,
             ),
             post_message_fn=post_message_fn,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
         )
         battle = BattleCommandHandler(
             command_prefix=prefix,
@@ -302,7 +300,7 @@ class BotFactory:
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
             chat_moderation=moderation_service,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         roll = RollCommandHandler(
@@ -319,7 +317,7 @@ class BotFactory:
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
             chat_moderation=moderation_service,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         balance = BalanceCommandHandler(
@@ -327,7 +325,7 @@ class BotFactory:
                 economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
             db_session_provider=SessionLocal.begin,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         bonus = BonusCommandHandler(
@@ -341,7 +339,7 @@ class BotFactory:
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         transfer = TransferCommandHandler(
@@ -352,7 +350,7 @@ class BotFactory:
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         shop = ShopCommandHandler(
@@ -367,7 +365,7 @@ class BotFactory:
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         equipment = EquipmentCommandHandler(
@@ -380,7 +378,7 @@ class BotFactory:
             ),
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         top_bottom = TopBottomCommandHandler(
@@ -391,7 +389,7 @@ class BotFactory:
             db_readonly_session_provider=lambda: db_ro_session(),
             command_top=settings.command_top,
             command_bottom=settings.command_bottom,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         stats = StatsCommandHandler(
@@ -404,7 +402,7 @@ class BotFactory:
             db_session_provider=SessionLocal.begin,
             db_readonly_session_provider=lambda: db_ro_session(),
             command_name=settings.command_stats,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         commands = {
@@ -427,7 +425,7 @@ class BotFactory:
             handle_help_use_case=HandleHelpUseCase(chat_use_case_provider=self._chat.chat_use_case_provider),
             db_session_provider=SessionLocal.begin,
             commands=commands,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         guess = GuessCommandHandler(
@@ -441,7 +439,7 @@ class BotFactory:
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
         rps = RpsCommandHandler(
@@ -451,7 +449,7 @@ class BotFactory:
                 chat_use_case_provider=self._chat.chat_use_case_provider,
             ),
             db_session_provider=SessionLocal.begin,
-            bot_nick_provider=bot_nick_provider,
+            bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
 
@@ -472,7 +470,9 @@ class BotFactory:
             rps=rps,
         )
 
-    def _create_chat_event_handler(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str) -> ChatEventHandler:
+    def _create_chat_event_handler(
+        self, chat_response_use_case: ChatResponseUseCase, system_prompt: str, outbound: ChatOutbound
+    ) -> ChatEventHandler:
         chat_message_uow_factory = self._build_chat_message_uow_factory()
         handle_chat_message = HandleChatMessageUseCase(
             unit_of_work_factory=chat_message_uow_factory,
@@ -483,7 +483,7 @@ class BotFactory:
         )
         return ChatEventHandler(
             handle_chat_message_use_case=handle_chat_message,
-            send_channel_message=bot.send_channel_message,
+            send_channel_message=outbound.send_channel_message,
         )
 
     def _restore_stream_context(self):

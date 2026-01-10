@@ -22,7 +22,7 @@ class RollCommandHandler:
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         chat_moderation: ChatModerationPort,
-        bot_nick_provider: Callable[[], str],
+        bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
@@ -32,7 +32,7 @@ class RollCommandHandler:
         self._db_readonly_session_provider = db_readonly_session_provider
         self.roll_cooldowns: dict[str, datetime] = {}
         self._chat_moderation = chat_moderation
-        self.bot_nick_provider = bot_nick_provider
+        self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
     def _cleanup_old_cooldowns(self):
@@ -57,7 +57,7 @@ class RollCommandHandler:
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
-            bot_nick=self.bot_nick_provider().lower(),
+            bot_nick=self._bot_nick.lower(),
             occurred_at=datetime.utcnow(),
             amount_input=amount,
             last_roll_time=self.roll_cooldowns.get(display_name),
@@ -77,7 +77,7 @@ class RollCommandHandler:
             await self.post_message_fn(result.timeout_action.reason, chat_ctx)
             await self._chat_moderation.timeout_user(
                 channel_name=channel_name,
-                moderator_name=self.bot_nick_provider(),
+                moderator_name=self._bot_nick,
                 username=result.timeout_action.user_name,
                 duration_seconds=result.timeout_action.duration_seconds,
                 reason=result.timeout_action.reason,

@@ -6,6 +6,7 @@ from core.config import config
 @dataclass(frozen=True)
 class BotSettings:
     channel_name: str = "artemnefrit"
+    bot_name: str = "gladdi_bot"
     prefix: str = "!"
     group_id: int = config.telegram.group_id
     check_viewers_interval_seconds: int = 10

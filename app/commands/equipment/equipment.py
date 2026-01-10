@@ -18,7 +18,7 @@ class EquipmentCommandHandler:
         handle_equipment_use_case: HandleEquipmentUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
-        bot_nick_provider: Callable[[], str],
+        bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self._handle_equipment_use_case = handle_equipment_use_case
@@ -27,7 +27,7 @@ class EquipmentCommandHandler:
         self.command_name = command_name
         self.command_shop = command_shop
         self.command_prefix = command_prefix
-        self.bot_nick_provider = bot_nick_provider
+        self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
@@ -35,7 +35,7 @@ class EquipmentCommandHandler:
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
-            bot_nick=self.bot_nick_provider().lower(),
+            bot_nick=self._bot_nick.lower(),
             occurred_at=datetime.utcnow(),
             command_prefix=self.command_prefix,
             command_shop=self.command_shop,
