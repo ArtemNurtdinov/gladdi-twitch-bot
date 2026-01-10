@@ -6,8 +6,6 @@ from core.chat.interfaces import ChatContext
 
 
 class CtxChatContext(ChatContext):
-    """Адаптер twitchio Context/Message к ChatContext."""
-
     def __init__(self, ctx: Any):
         self._ctx = ctx
         author = getattr(ctx, "author", None)
@@ -32,7 +30,6 @@ class CtxChatContext(ChatContext):
         if send:
             await send(text)
             return
-        # fallback
         await self.send_channel(text)
 
     async def send_channel(self, text: str) -> None:
@@ -40,10 +37,3 @@ class CtxChatContext(ChatContext):
         send = getattr(channel, "send", None) if channel else None
         if send:
             await send(text)
-
-
-def as_chat_context(ctx: Any) -> ChatContext:
-    if isinstance(ctx, ChatContext):
-        return ctx
-    return CtxChatContext(ctx)
-

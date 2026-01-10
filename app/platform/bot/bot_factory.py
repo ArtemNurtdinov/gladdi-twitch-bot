@@ -124,10 +124,7 @@ class BotFactory:
         bot.set_minigame_orchestrator(self._create_minigame(bot, system_prompt, chat_outbound))
         bot.set_background_tasks(self._create_background_tasks(bot, chat_response_use_case, chat_outbound))
         command_registry = self._create_command_registry(bot.nick, chat_response_use_case, system_prompt, chat_outbound)
-        chat_outbound.set_chat_event_handler(
-            self._create_chat_event_handler(chat_response_use_case, system_prompt, chat_outbound),
-            bot_nick=bot.nick,
-        )
+        chat_outbound.set_chat_event_handler(self._create_chat_event_handler(chat_response_use_case, system_prompt, chat_outbound))
         chat_outbound.set_router(self._command_router_builder(self._settings, command_registry, bot))
         self._restore_stream_context()
         return bot

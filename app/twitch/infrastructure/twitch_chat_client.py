@@ -5,8 +5,9 @@ import logging
 
 from twitchio.ext import commands
 
+from app.commands.chat.chat_event_handler import ChatEventHandler
 from app.platform.bot.bot_settings import BotSettings
-from app.twitch.infrastructure.adapters.chat_context_adapter import as_chat_context
+from app.twitch.infrastructure.adapters.chat_context_adapter import CtxChatContext
 from app.twitch.infrastructure.auth import TwitchAuth
 from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandHandler, CommandRouter
 from core.chat.outbound import ChatOutbound
@@ -18,15 +19,11 @@ class TwitchCommandRouter(CommandRouter):
     def __init__(self, prefix: str):
         self._prefix = prefix
         self._handlers: dict[str, CommandHandler] = {}
-        self._runtime_ctx: ChatContext | None = None
-
-    def set_runtime_context(self, ctx: ChatContext) -> None:
-        self._runtime_ctx = ctx
 
     def register(self, name: str, handler: CommandHandler) -> None:
         self._handlers[name.lower()] = handler
 
-    async def dispatch(self, message: ChatMessage) -> bool:
+    async def dispatch(self, message: ChatMessage, ctx: ChatContext) -> bool:
         if not message.text.startswith(self._prefix):
             return False
 
@@ -39,22 +36,15 @@ class TwitchCommandRouter(CommandRouter):
         if not handler:
             return False
 
-        if not self._runtime_ctx:
-            logger.warning("Runtime ChatContext is not set for TwitchCommandRouter")
-            return False
-
-        try:
-            await handler(self._runtime_ctx, message)
-        finally:
-            self._runtime_ctx = None
+        await handler(ctx, message)
         return True
 
 
 class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
     def __init__(self, twitch_auth: TwitchAuth, settings: BotSettings):
         self._command_router: CommandRouter | None = None
-        self._chat_event_handler = None
-        self.bot_nick = lambda: ""
+        self._chat_event_handler: ChatEventHandler | None = None
+        self.bot_nick = settings.bot_name
         self._prefix = settings.prefix
         self._initial_channels = [settings.channel_name] if settings.channel_name else []
         super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self._initial_channels)
@@ -62,9 +52,8 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
     def set_router(self, router: CommandRouter) -> None:
         self._command_router = router
 
-    def set_chat_event_handler(self, handler, bot_nick: str):
+    def set_chat_event_handler(self, handler: ChatEventHandler):
         self._chat_event_handler = handler
-        self.bot_nick = bot_nick
 
     async def start(self) -> None:
         await super().start()
@@ -88,17 +77,16 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
         chat_message.author = message.author.display_name
         chat_message.text = message.content
 
-        chat_ctx = as_chat_context(message)
-        if isinstance(self._command_router, TwitchCommandRouter):
-            self._command_router.set_runtime_context(chat_ctx)
+        chat_ctx = CtxChatContext(message)
 
         handled = False
         try:
-            handled = await self._command_router.dispatch(chat_message)
+            handled = await self._command_router.dispatch(chat_message, chat_ctx)
         except Exception:
             logger.exception("Ошибка обработки сообщения: %s", message.content)
         if handled:
             return
+
         if message.content.startswith(self._prefix):
             logger.debug("Неизвестная команда: %s", message.content)
             return
