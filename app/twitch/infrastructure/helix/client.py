@@ -4,7 +4,7 @@ from typing import Any
 
 import httpx
 
-from app.twitch.infrastructure.auth import TwitchAuth
+from app.twitch.infrastructure.helix.auth import TwitchAuth
 from core.platform.api_client import StreamingApiClient
 
 
