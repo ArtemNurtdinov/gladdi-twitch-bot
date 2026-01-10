@@ -3,9 +3,10 @@ from datetime import datetime
 
 from app.commands.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.chat.model import ChatMessageDTO
+from core.chat.outbound import ChatEventsHandler
 
 
-class ChatEventHandler:
+class DefaultChatEventsHandler(ChatEventsHandler):
     def __init__(
         self,
         handle_chat_message_use_case: HandleChatMessageUseCase,

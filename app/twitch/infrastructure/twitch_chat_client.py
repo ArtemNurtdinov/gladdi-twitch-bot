@@ -5,12 +5,11 @@ import logging
 
 from twitchio.ext import commands
 
-from app.commands.chat.chat_event_handler import ChatEventHandler
 from app.platform.bot.bot_settings import BotSettings
 from app.twitch.infrastructure.adapters.chat_context_adapter import CtxChatContext
 from app.twitch.infrastructure.auth import TwitchAuth
 from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandRouter
-from core.chat.outbound import ChatOutbound
+from core.chat.outbound import ChatEventsHandler, ChatOutbound
 from core.chat.prefix_command_router import PrefixCommandRouter
 
 logger = logging.getLogger(__name__)
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
     def __init__(self, twitch_auth: TwitchAuth, settings: BotSettings):
         self._command_router: PrefixCommandRouter | None = None
-        self._chat_event_handler: ChatEventHandler | None = None
+        self._chat_event_handler: ChatEventsHandler | None = None
         self.bot_nick = settings.bot_name
         self._prefix = settings.prefix
         self._initial_channels = [settings.channel_name] if settings.channel_name else []
@@ -28,7 +27,7 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
     def set_router(self, router: CommandRouter) -> None:
         self._command_router = router
 
-    def set_chat_event_handler(self, handler: ChatEventHandler):
+    def set_chat_event_handler(self, handler: ChatEventsHandler):
         self._chat_event_handler = handler
 
     async def start(self) -> None:

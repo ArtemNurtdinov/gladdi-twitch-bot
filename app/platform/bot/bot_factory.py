@@ -16,7 +16,7 @@ from app.commands.battle.battle import BattleCommandHandler
 from app.commands.battle.handle_battle_use_case import HandleBattleUseCase
 from app.commands.bonus.bonus import BonusCommandHandler
 from app.commands.bonus.handle_bonus_use_case import HandleBonusUseCase
-from app.commands.chat.chat_event_handler import ChatEventHandler
+from app.commands.chat.chat_event_handler import DefaultChatEventsHandler
 from app.commands.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.commands.equipment.equipment import EquipmentCommandHandler
@@ -469,7 +469,7 @@ class BotFactory:
 
     def _create_chat_event_handler(
         self, chat_response_use_case: ChatResponseUseCase, system_prompt: str, outbound: ChatOutbound
-    ) -> ChatEventHandler:
+    ) -> DefaultChatEventsHandler:
         chat_message_uow_factory = self._build_chat_message_uow_factory()
         handle_chat_message = HandleChatMessageUseCase(
             unit_of_work_factory=chat_message_uow_factory,
@@ -478,7 +478,7 @@ class BotFactory:
             system_prompt=system_prompt,
             chat_response_use_case=chat_response_use_case,
         )
-        return ChatEventHandler(
+        return DefaultChatEventsHandler(
             handle_chat_message_use_case=handle_chat_message,
             send_channel_message=outbound.send_channel_message,
         )
