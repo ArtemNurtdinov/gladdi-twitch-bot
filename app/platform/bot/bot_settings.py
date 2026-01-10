@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from core.config import config
+from core.config import Config
 
 
 @dataclass(frozen=True)
@@ -8,7 +8,7 @@ class BotSettings:
     channel_name: str = "artemnefrit"
     bot_name: str = "gladdi_bot"
     prefix: str = "!"
-    group_id: int = config.telegram.group_id
+    group_id: int = 0
     check_viewers_interval_seconds: int = 10
     check_stream_status_interval_seconds: int = 60
     sync_followers_interval_seconds: int = 24 * 60 * 60
@@ -30,6 +30,13 @@ class BotSettings:
     command_guess_word: str = "слово"
     command_rps: str = "кнб"
     command_help: str = "команды"
+
+
+def build_bot_settings(cfg: Config) -> BotSettings:
+    return BotSettings(
+        channel_name=cfg.twitch.channel_name,
+        group_id=cfg.telegram.group_id,
+    )
 
 
 DEFAULT_SETTINGS = BotSettings()
