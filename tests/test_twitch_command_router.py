@@ -1,15 +1,27 @@
 import asyncio
 import unittest
+from dataclasses import dataclass
 
 from core.chat.interfaces import ChatContext, ChatMessage
 from core.chat.prefix_command_router import PrefixCommandRouter
 
 
-class FakeChatContext:
+@dataclass(slots=True)
+class FakeChatContext(ChatContext):
+    _channel: str
+    _author: str
+
     def __init__(self, channel: str, author: str):
-        self.channel = channel
-        self.author = author
-        self.author_id = None
+        self._channel = channel
+        self._author = author
+
+    @property
+    def channel(self) -> str:
+        return self._channel
+
+    @property
+    def author(self) -> str:
+        return self._author
 
     async def reply(self, text: str) -> None:
         return None
@@ -18,11 +30,8 @@ class FakeChatContext:
         return None
 
 
-class FakeMessage(ChatMessage):
-    def __init__(self, channel: str, author: str, text: str):
-        self.channel = channel
-        self.author = author
-        self.text = text
+def make_message(channel: str, author: str, text: str) -> ChatMessage:
+    return ChatMessage(channel=channel, author=author, text=text, author_id=f"{author}_id")
 
 
 class TestPrefixCommandRouter(unittest.IsolatedAsyncioTestCase):
@@ -36,15 +45,12 @@ class TestPrefixCommandRouter(unittest.IsolatedAsyncioTestCase):
 
         router.register("ping", handler)
 
-        msg1 = FakeMessage(channel="chan", author="alice", text="!ping hello")
-        msg2 = FakeMessage(channel="chan", author="bob", text="!ping there")
-        ctx1 = FakeChatContext(channel="chan", author="alice")
-        ctx2 = FakeChatContext(channel="chan", author="bob")
-
-        results = await asyncio.gather(
-            router.dispatch(msg1, ctx1),
-            router.dispatch(msg2, ctx2),
+        contexts = (
+            (make_message("chan", "alice", "!ping hello"), FakeChatContext(channel="chan", author="alice")),
+            (make_message("chan", "bob", "!ping there"), FakeChatContext(channel="chan", author="bob")),
         )
+
+        results = await asyncio.gather(*(router.dispatch(msg, ctx) for msg, ctx in contexts))
 
         self.assertEqual(results, [True, True])
         self.assertCountEqual(seen, [("alice", "!ping hello"), ("bob", "!ping there")])

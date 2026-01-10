@@ -47,10 +47,9 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
         if message.author is None:
             return
 
-        chat_message = ChatMessage()
-        chat_message.channel = message.channel.name
-        chat_message.author = message.author.display_name
-        chat_message.text = message.content
+        chat_message = ChatMessage(
+            channel=message.channel.name, author=message.author.display_name, text=message.content, author_id=message.author.id
+        )
 
         chat_ctx = CtxChatContext(message)
 

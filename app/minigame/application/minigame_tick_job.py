@@ -3,7 +3,7 @@ from datetime import datetime
 
 from app.minigame.application.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.minigame.application.model import MinigameTickDTO
-from core.background_task_runner import BackgroundTaskRunner
+from core.background.task_runner import BackgroundTaskRunner
 
 
 class MinigameTickJob:

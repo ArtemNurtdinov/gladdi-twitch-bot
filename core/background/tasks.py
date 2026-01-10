@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from core.background_task_runner import BackgroundTaskRunner
+from core.background.task_runner import BackgroundTaskRunner
 
 
 class BackgroundJob(Protocol):
@@ -9,7 +9,7 @@ class BackgroundJob(Protocol):
     def register(self, runner: BackgroundTaskRunner) -> None: ...
 
 
-class BotBackgroundTasks:
+class BackgroundTasks:
     def __init__(self, runner: BackgroundTaskRunner, jobs: list[BackgroundJob]):
         self._runner = runner
         self._jobs = jobs

@@ -6,7 +6,7 @@ from app.chat.application.model import ChatSummaryState
 from app.platform.bot.bot_settings import BotSettings
 from app.platform.providers import PlatformProviders
 from app.user.bootstrap import UserProviders
-from core.background.bot_tasks import BotBackgroundTasks
+from core.background.tasks import BackgroundTasks
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class Bot:
         self._battle_waiting_user_ref = {"value": None}
 
         self.minigame_orchestrator = None
-        self._background_tasks: BotBackgroundTasks | None = None
+        self._background_tasks: BackgroundTasks | None = None
 
     @property
     def battle_waiting_user_ref(self):
@@ -35,7 +35,7 @@ class Bot:
     def set_minigame_orchestrator(self, orchestrator):
         self.minigame_orchestrator = orchestrator
 
-    def set_background_tasks(self, background_tasks: BotBackgroundTasks):
+    def set_background_tasks(self, background_tasks: BackgroundTasks):
         self._background_tasks = background_tasks
 
     async def warmup(self):

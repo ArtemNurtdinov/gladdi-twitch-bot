@@ -8,8 +8,6 @@ from core.chat.interfaces import ChatContext
 class CtxChatContext(ChatContext):
     def __init__(self, ctx: Any):
         self._ctx = ctx
-        author = getattr(ctx, "author", None)
-        self._author_id = getattr(author, "id", None) if author else None
 
     @property
     def channel(self) -> str:
@@ -20,10 +18,6 @@ class CtxChatContext(ChatContext):
     def author(self) -> str:
         author = getattr(self._ctx, "author", None)
         return getattr(author, "display_name", "") if author else ""
-
-    @property
-    def author_id(self) -> str | None:
-        return str(self._author_id) if self._author_id is not None else None
 
     async def reply(self, text: str) -> None:
         send = getattr(self._ctx, "send", None)

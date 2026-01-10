@@ -1,11 +1,14 @@
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 
+@dataclass(frozen=True)
 class ChatMessage:
     channel: str
     author: str
     text: str
+    author_id: str
 
 
 @runtime_checkable
@@ -15,9 +18,6 @@ class ChatContext(Protocol):
 
     @property
     def author(self) -> str: ...
-
-    @property
-    def author_id(self) -> str | None: ...
 
     async def reply(self, text: str) -> None: ...
     async def send_channel(self, text: str) -> None: ...

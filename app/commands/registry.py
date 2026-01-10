@@ -1,7 +1,10 @@
+from app.commands.follow.followage import FollowageCommandHandler
+
+
 class CommandRegistry:
     def __init__(
         self,
-        followage,
+        followage: FollowageCommandHandler,
         ask,
         battle,
         roll,
@@ -16,7 +19,7 @@ class CommandRegistry:
         guess,
         rps,
     ):
-        self.followage = followage
+        self.followage: FollowageCommandHandler = followage
         self.ask = ask
         self.battle = battle
         self.roll = roll

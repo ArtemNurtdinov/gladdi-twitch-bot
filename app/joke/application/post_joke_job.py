@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.joke.application.handle_post_joke_use_case import HandlePostJokeUseCase
 from app.joke.application.model import PostJokeDTO
-from core.background_task_runner import BackgroundTaskRunner
+from core.background.task_runner import BackgroundTaskRunner
 
 
 class PostJokeJob:
