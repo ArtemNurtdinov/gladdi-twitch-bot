@@ -5,8 +5,8 @@ import logging
 
 from app.chat.application.model import ChatSummaryState
 from app.commands.chat.chat_event_handler import ChatEventHandler
+from app.platform.bot.bot_settings import BotSettings
 from app.platform.providers import PlatformProviders
-from app.twitch.bootstrap.bot_settings import BotSettings
 from app.user.bootstrap import UserProviders
 from core.background.bot_tasks import BotBackgroundTasks
 from core.chat.interfaces import CommandRouter

@@ -8,22 +8,24 @@ from app.ai.bootstrap import build_ai_providers
 from app.battle.bootstrap import build_battle_providers
 from app.betting.bootstrap import build_betting_providers
 from app.chat.bootstrap import build_chat_providers
+from app.commands.registry import CommandRegistry
 from app.economy.bootstrap import build_economy_providers
 from app.equipment.bootstrap import build_equipment_providers
 from app.follow.bootstrap import build_follow_providers
 from app.joke.bootstrap import build_joke_providers
 from app.minigame.bootstrap import build_minigame_providers
 from app.platform.auth import PlatformAuth
-from app.platform.bot import Bot
+from app.platform.bot.bot import Bot
+from app.platform.bot.bot_factory import BotFactory
+from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings
 from app.platform.providers import PlatformProviders
 from app.stream.bootstrap import build_stream_providers
-from app.twitch.bootstrap.bot_factory import BotFactory
-from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS, BotSettings
 from app.twitch.presentation.twitch_schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.user.bootstrap import build_user_providers
 from app.viewer.bootstrap import build_viewer_providers
 from core.bootstrap.background import build_background_providers
 from core.bootstrap.telegram import build_telegram_providers
+from core.chat.interfaces import CommandRouter
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +36,13 @@ class BotManager:
         platform_auth_factory: Callable[[str, str], PlatformAuth],
         platform_providers_builder: Callable[[PlatformAuth], PlatformProviders],
         chat_client_factory: Callable[[PlatformAuth, BotSettings], Any],
+        command_router_builder: Callable[[BotSettings, CommandRegistry, Bot], CommandRouter],
         settings: BotSettings = DEFAULT_SETTINGS,
     ):
         self._platform_auth_factory = platform_auth_factory
         self._platform_providers_builder = platform_providers_builder
         self._chat_client_factory = chat_client_factory
+        self._command_router_builder = command_router_builder
         self._settings = settings
 
         self._bot: Bot | None = None
@@ -133,6 +137,7 @@ class BotManager:
                 background_providers,
                 telegram_providers,
                 self._settings,
+                self._command_router_builder,
             ).create(chat_outbound=self._chat_client)
             self._chat_client.set_router(self._bot.command_router)
             self._chat_client.set_chat_event_handler(self._bot.chat_event_handler, bot_nick_provider=lambda: self._bot.nick)

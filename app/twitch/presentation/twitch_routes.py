@@ -5,8 +5,9 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from app.platform.auth import PlatformAuth
-from app.platform.bot_manager import BotManager
-from app.twitch.bootstrap.bot_settings import DEFAULT_SETTINGS, BotSettings
+from app.platform.bot.bot_manager import BotManager
+from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings
+from app.twitch.bootstrap.router_factory import build_twitch_command_router
 from app.twitch.bootstrap.twitch import build_twitch_providers
 from app.twitch.infrastructure.auth import TwitchAuth
 from app.twitch.infrastructure.twitch_chat_client import TwitchChatClient
@@ -35,6 +36,7 @@ bot_manager = BotManager(
     platform_auth_factory=_twitch_auth_factory,
     platform_providers_builder=build_twitch_providers,
     chat_client_factory=_twitch_chat_client_factory,
+    command_router_builder=build_twitch_command_router,
     settings=DEFAULT_SETTINGS,
 )
 
