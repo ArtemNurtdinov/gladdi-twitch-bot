@@ -69,9 +69,9 @@ from app.user.bootstrap import UserProviders
 from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from app.viewer.application.viewer_time_job import ViewerTimeJob
 from app.viewer.bootstrap import ViewerProviders
-from core.background.bot_tasks import BotBackgroundTasks
+from bootstrap.telegram_provider import TelegramProviders
+from core.background.tasks import BackgroundTasks
 from core.bootstrap.background import BackgroundProviders
-from core.bootstrap.telegram import TelegramProviders
 from core.chat.interfaces import CommandRouter
 from core.chat.outbound import ChatOutbound
 from core.db import db_ro_session, db_rw_session
@@ -157,10 +157,10 @@ class BotFactory:
             conversation_service_provider=self._ai.conversation_service_provider,
         )
 
-    def _create_background_tasks(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, outbound) -> BotBackgroundTasks:
+    def _create_background_tasks(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, outbound) -> BackgroundTasks:
         send_channel_message = outbound.send_channel_message
-        return BotBackgroundTasks(
-            runner=self._background.background_runner,
+        return BackgroundTasks(
+            runner=self._background.runner,
             jobs=[
                 PostJokeJob(
                     channel_name=self._settings.channel_name,

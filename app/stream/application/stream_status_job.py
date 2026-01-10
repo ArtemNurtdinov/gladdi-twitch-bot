@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.application.model import StatusJobDTO
-from core.background_task_runner import BackgroundTaskRunner
+from core.background.task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
 

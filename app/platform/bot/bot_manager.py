@@ -23,8 +23,8 @@ from app.platform.providers import PlatformProviders
 from app.stream.bootstrap import build_stream_providers
 from app.user.bootstrap import build_user_providers
 from app.viewer.bootstrap import build_viewer_providers
+from bootstrap.telegram_provider import build_telegram_providers
 from core.bootstrap.background import build_background_providers
-from core.bootstrap.telegram import build_telegram_providers
 from core.chat.interfaces import CommandRouter
 
 logger = logging.getLogger(__name__)

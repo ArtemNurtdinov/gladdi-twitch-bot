@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.follow.application.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.application.model import FollowersSyncJobDTO
-from core.background_task_runner import BackgroundTaskRunner
+from core.background.task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
 

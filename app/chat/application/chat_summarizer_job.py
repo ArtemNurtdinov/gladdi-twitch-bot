@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.application.model import ChatSummaryState, SummarizerJobDTO
-from core.background_task_runner import BackgroundTaskRunner
+from core.background.task_runner import BackgroundTaskRunner
 
 
 class ChatSummarizerJob:

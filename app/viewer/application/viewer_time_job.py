@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from app.viewer.application.model import ViewerTimeDTO
-from core.background_task_runner import BackgroundTaskRunner
+from core.background.task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
 
