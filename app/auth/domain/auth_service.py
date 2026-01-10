@@ -12,17 +12,15 @@ from sqlalchemy.orm import Session
 
 from app.auth.domain.models import AccessToken, User, UserCreateData, UserUpdateData
 from app.auth.domain.repo import AuthRepository
-from core.config import config
 
 logger = logging.getLogger(__name__)
 
 
 class AuthService:
-    SECRET_KEY = config.application.auth_secret
-    ALGORITHM = config.application.auth_secret_algorithm
-    ACCESS_TOKEN_EXPIRE_MINUTES = config.application.access_token_expire_minutes
-
-    def __init__(self, repo: AuthRepository[Session]):
+    def __init__(self, auth_secret: str, auth_secret_algorithm: str, access_token_expires_minutes: int, repo: AuthRepository[Session]):
+        self._auth_secret = auth_secret
+        self._auth_secret_algorithm = auth_secret_algorithm
+        self._access_token_expires_minutes = access_token_expires_minutes
         self._repo = repo
 
     def hash_password(self, password: str) -> str:
@@ -34,7 +32,7 @@ class AuthService:
 
     def generate_access_token(self, user: User) -> str:
         issued_at_utc = datetime.utcnow()
-        expires_at_utc = issued_at_utc + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_at_utc = issued_at_utc + timedelta(minutes=self._access_token_expires_minutes)
 
         issued_at_timestamp = calendar.timegm(issued_at_utc.timetuple())
         expires_at_timestamp = calendar.timegm(expires_at_utc.timetuple())
@@ -47,14 +45,16 @@ class AuthService:
             "exp": expires_at_timestamp,
         }
 
-        token = jwt.encode(payload, self.SECRET_KEY, algorithm=self.ALGORITHM)
+        token = jwt.encode(payload, self._auth_secret, algorithm=self._auth_secret_algorithm)
         return token
 
     def validate_access_token(self, db: Session, token: str) -> User | None:
         current_time = datetime.utcnow()
 
         try:
-            payload_no_verify = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM], options={"verify_exp": False})
+            payload_no_verify = jwt.decode(
+                token, self._auth_secret, algorithms=[self._auth_secret_algorithm], options={"verify_exp": False}
+            )
 
             exp_timestamp = payload_no_verify.get("exp", 0)
             current_timestamp_utc = calendar.timegm(current_time.timetuple())
@@ -68,7 +68,7 @@ class AuthService:
             if time_diff_utc <= 0:
                 raise jose_exceptions.ExpiredSignatureError("Signature has expired")
 
-            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM], options={"verify_exp": False})
+            payload = jwt.decode(token, self._auth_secret, algorithms=[self._auth_secret_algorithm], options={"verify_exp": False})
             user_id = uuid.UUID(payload.get("sub"))
 
             logger.info("JWT валидация прошла успешно (UTC проверка)")
@@ -142,7 +142,7 @@ class AuthService:
 
     def create_token(self, db: Session, user: User) -> AccessToken:
         token_str = self.generate_access_token(user)
-        expires_at_utc = datetime.utcnow() + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_at_utc = datetime.utcnow() + timedelta(minutes=self._access_token_expires_minutes)
 
         access_token = self._repo.create_token(db, user.id, token_str, expires_at_utc)
 
@@ -151,7 +151,7 @@ class AuthService:
 
     def verify_token(self, token: str) -> dict[str, Any] | None:
         try:
-            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            payload = jwt.decode(token, self._auth_secret, algorithms=[self._auth_secret_algorithm])
             return payload
         except JWTError:
             return None

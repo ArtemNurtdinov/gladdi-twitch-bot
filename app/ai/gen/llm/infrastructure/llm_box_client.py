@@ -5,16 +5,16 @@ from app.ai.gen.conversation.domain.models import AIAssistantResponse, AIMessage
 from app.ai.gen.llm.domain.llm_client_exceptions import LLMClientError, LLMResponseFormatError
 from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
 from app.ai.gen.llm.infrastructure.llm_schemas import AIResponseSchema
-from core.config import config
 
 
 class LLMBoxClientPortImpl(LLMClientPort):
-    _LLMBOX_API_DOMAIN = config.llmbox.host
+    def __init__(self, llmbox_host: str):
+        self._llmbox_host = llmbox_host
 
     async def generate_ai_response(self, user_messages: list[AIMessage]) -> AIAssistantResponse:
         messages = [{"role": message.role.value, "content": message.content} for message in user_messages]
         payload = {"messages": messages, "assistant": "chat_gpt"}
-        api_url = f"{self._LLMBOX_API_DOMAIN}/generate-ai-response"
+        api_url = f"{self._llmbox_host}/generate-ai-response"
 
         try:
             async with httpx.AsyncClient(timeout=60) as client:
