@@ -1,5 +1,5 @@
 from collections.abc import Awaitable, Callable
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 
 class ChatMessage:
@@ -8,6 +8,7 @@ class ChatMessage:
     text: str
 
 
+@runtime_checkable
 class ChatContext(Protocol):
     channel: str
     author: str
