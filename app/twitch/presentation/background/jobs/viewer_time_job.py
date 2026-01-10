@@ -38,9 +38,8 @@ class ViewerTimeJob:
     async def run(self):
         while True:
             try:
-                viewer_time_dto = ViewerTimeDTO(
-                    bot_nick=self._bot_nick_provider().lower(), channel_name=self._channel_name, occurred_at=datetime.utcnow()
-                )
+                bot_nick = (self._bot_nick_provider() or "").lower()
+                viewer_time_dto = ViewerTimeDTO(bot_nick=bot_nick, channel_name=self._channel_name, occurred_at=datetime.utcnow())
 
                 await self._handle_viewer_time_use_case.handle(
                     db_session_provider=self._db_session_provider,

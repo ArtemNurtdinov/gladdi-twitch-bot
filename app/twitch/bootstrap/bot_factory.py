@@ -72,6 +72,7 @@ from app.viewer.bootstrap import ViewerProviders
 from core.bootstrap.background import BackgroundProviders
 from core.bootstrap.telegram import TelegramProviders
 from core.chat.interfaces import ChatMessage
+from core.chat.outbound import ChatOutbound
 from core.db import SessionLocal, db_ro_session
 
 
@@ -112,14 +113,15 @@ class BotFactory:
         self._telegram = telegram_providers
         self._settings = settings
 
-    def create(self) -> Bot:
+    def create(self, chat_outbound: ChatOutbound) -> Bot:
         bot = Bot(self._twitch, self._user, self._settings)
         system_prompt = self._ai.prompt_service.get_system_prompt_for_group()
         chat_response_use_case = self._create_chat_response_use_case(system_prompt)
 
         bot.set_minigame_orchestrator(self._create_minigame(bot, system_prompt))
-        bot.set_background_tasks(self._create_background_tasks(bot, chat_response_use_case))
-        command_registry = self._create_command_registry(bot, chat_response_use_case, system_prompt)
+        bot.set_chat_client(chat_outbound)
+        bot.set_background_tasks(self._create_background_tasks(bot, chat_response_use_case, chat_outbound))
+        command_registry = self._create_command_registry(bot, chat_response_use_case, system_prompt, chat_outbound)
         bot.set_command_registry(command_registry)
         bot.set_chat_event_handler(self._create_chat_event_handler(bot, chat_response_use_case, system_prompt))
         bot.set_command_router(self._create_command_router(bot, command_registry))
@@ -154,7 +156,8 @@ class BotFactory:
             conversation_service_provider=self._ai.conversation_service_provider,
         )
 
-    def _create_background_tasks(self, bot: Bot, chat_response_use_case: ChatResponseUseCase) -> BotBackgroundTasks:
+    def _create_background_tasks(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, outbound) -> BotBackgroundTasks:
+        send_channel_message = outbound.send_channel_message
         return BotBackgroundTasks(
             runner=self._background.background_runner,
             jobs=[
@@ -169,7 +172,7 @@ class BotFactory:
                         chat_use_case_provider=self._chat.chat_use_case_provider,
                     ),
                     db_session_provider=SessionLocal.begin,
-                    send_channel_message=bot.send_channel_message,
+                    send_channel_message=send_channel_message,
                     bot_nick_provider=lambda: bot.nick,
                 ),
                 TokenCheckerJob(
@@ -239,13 +242,15 @@ class BotFactory:
             ],
         )
 
-    def _create_command_registry(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str) -> CommandRegistry:
+    def _create_command_registry(
+        self, bot: Bot, chat_response_use_case: ChatResponseUseCase, system_prompt: str, outbound: ChatOutbound
+    ) -> CommandRegistry:
         prefix = self._settings.prefix
 
         def bot_nick_provider() -> str:
             return bot.nick
 
-        post_message_fn = bot.post_message_in_twitch_chat
+        post_message_fn = outbound.post_message
         moderation_service = ModerationService(moderation_port=self._twitch.streaming_platform, user_cache=self._user.user_cache)
         settings = self._settings
         ask_uow_factory = self._build_ask_uow_factory()
