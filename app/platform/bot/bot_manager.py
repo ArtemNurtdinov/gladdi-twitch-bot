@@ -23,7 +23,6 @@ from app.platform.providers import PlatformProviders
 from app.stream.bootstrap import build_stream_providers
 from app.user.bootstrap import build_user_providers
 from app.viewer.bootstrap import build_viewer_providers
-from bootstrap.config_provider import get_config
 from core.bootstrap.background import build_background_providers
 from core.bootstrap.telegram import build_telegram_providers
 from core.chat.interfaces import CommandRouter
@@ -34,7 +33,7 @@ logger = logging.getLogger(__name__)
 class BotManager:
     def __init__(
         self,
-        platform_auth_factory: Callable[[str, str], PlatformAuth],
+        platform_auth_factory: Callable[[str, str, str, str], PlatformAuth],
         platform_providers_builder: Callable[[PlatformAuth], PlatformProviders],
         chat_client_factory: Callable[[PlatformAuth, BotSettings], Any],
         command_router_builder: Callable[[BotSettings, CommandRegistry, Bot], CommandRouter],
@@ -94,12 +93,21 @@ class BotManager:
         started_at = self._started_at.isoformat() if self._started_at else None
         return BotStatus(status=self._status, started_at=started_at, last_error=self._last_error)
 
-    async def start_bot(self, access_token: str, refresh_token: str) -> BotActionResult:
+    async def start_bot(
+        self,
+        access_token: str,
+        refresh_token: str,
+        tg_bot_token: str,
+        llmbox_host: str,
+        intent_detector_host: str,
+        client_id: str,
+        client_secret: str,
+    ) -> BotActionResult:
         async with self._lock:
             if self._task and not self._task.done():
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            auth = self._platform_auth_factory(access_token, refresh_token)
+            auth = self._platform_auth_factory(access_token, refresh_token, client_id, client_secret)
             self._ensure_credentials(auth)
 
             platform_providers = self._platform_providers_builder(auth)
@@ -107,7 +115,7 @@ class BotManager:
             streaming_platform = platform_providers.streaming_platform
 
             stream_providers = build_stream_providers(streaming_platform)
-            ai_providers = build_ai_providers(config=get_config())
+            ai_providers = build_ai_providers(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
             chat_providers = build_chat_providers()
             follow_providers = build_follow_providers(streaming_platform)
             joke_providers = build_joke_providers()
@@ -119,7 +127,7 @@ class BotManager:
             battle_providers = build_battle_providers()
             betting_providers = build_betting_providers()
             background_providers = build_background_providers()
-            telegram_providers = build_telegram_providers()
+            telegram_providers = build_telegram_providers(tg_bot_token=tg_bot_token)
             self._chat_client = self._chat_client_factory(platform_providers.platform_auth, self._settings)
             self._bot = BotFactory(
                 platform_providers,

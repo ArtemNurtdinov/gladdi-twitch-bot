@@ -16,6 +16,7 @@ from app.twitch.infrastructure.twitch_chat_client import TwitchChatClient
 from app.twitch.presentation.twitch_schemas import AuthStartResponse
 from bootstrap.config_provider import get_config
 from core.chat.outbound import ChatOutbound
+from core.config import Config
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -25,7 +26,8 @@ PERMISSIONS_SCOPE = "chat:read chat:edit user:read:follows moderator:read:follow
 router = APIRouter(prefix="/bot")
 
 
-def get_bot_settings(cfg=Depends(get_config)) -> BotSettings:
+@lru_cache
+def get_bot_settings(cfg: Config = Depends(get_config)) -> BotSettings:
     return build_bot_settings(cfg)
 
 
@@ -40,8 +42,19 @@ def get_bot_manager(settings: BotSettings = Depends(get_bot_settings)) -> BotMan
     )
 
 
-def _twitch_auth_factory(access_token: str, refresh_token: str) -> TwitchAuth:
-    return TwitchAuth(access_token=access_token, refresh_token=refresh_token, logger=logging.getLogger(__name__))
+def _twitch_auth_factory(
+    access_token: str,
+    refresh_token: str,
+    client_id: str,
+    client_secret: str,
+) -> TwitchAuth:
+    return TwitchAuth(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        client_id=client_id,
+        client_secret=client_secret,
+        logger=logging.getLogger(__name__),
+    )
 
 
 def _twitch_chat_client_factory(auth: PlatformAuth, settings: BotSettings = DEFAULT_SETTINGS) -> ChatOutbound:
@@ -76,7 +89,7 @@ async def start_authorization(cfg=Depends(get_config)) -> AuthStartResponse:
 async def oauth_callback(
     code: str | None = None,
     state: str | None = None,
-    cfg=Depends(get_config),
+    cfg: Config = Depends(get_config),
     bot_manager: BotManager = Depends(get_bot_manager),
 ) -> BotActionResult:
     if not code:
@@ -101,7 +114,15 @@ async def oauth_callback(
         if not access_token or not refresh_token:
             raise ValueError("Не удалось получить токены по переданному коду")
 
-        return await bot_manager.start_bot(access_token=access_token, refresh_token=refresh_token)
+        return await bot_manager.start_bot(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            tg_bot_token=cfg.telegram.bot_token,
+            llmbox_host=cfg.llmbox.host,
+            intent_detector_host=cfg.intent_detector.host,
+            client_id=cfg.twitch.client_id,
+            client_secret=cfg.twitch.client_secret,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
