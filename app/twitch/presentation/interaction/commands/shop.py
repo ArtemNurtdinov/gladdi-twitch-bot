@@ -1,12 +1,12 @@
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.commands.shop.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.model import CommandBuyDTO, CommandShopDTO
+from core.chat.interfaces import ChatContext
 
 
 class ShopCommandHandler:
@@ -19,7 +19,7 @@ class ShopCommandHandler:
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick_provider: Callable[[], str],
-        post_message_fn: Callable[[str, Any], Awaitable[None]],
+        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_shop_name = command_shop_name
@@ -30,7 +30,7 @@ class ShopCommandHandler:
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
-    async def handle_shop(self, channel_name: str, display_name: str, ctx):
+    async def handle_shop(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
         bot_nick = self.bot_nick_provider().lower()
 
         dto = CommandShopDTO(
@@ -49,9 +49,9 @@ class ShopCommandHandler:
             command_shop=dto,
         )
 
-        await self.post_message_fn(result, ctx)
+        await self.post_message_fn(result, chat_ctx)
 
-    async def handle_buy(self, channel_name: str, display_name: str, ctx, item_name: str | None):
+    async def handle_buy(self, channel_name: str, display_name: str, chat_ctx: ChatContext, item_name: str | None):
         bot_nick = self.bot_nick_provider().lower()
 
         dto = CommandBuyDTO(
@@ -71,4 +71,4 @@ class ShopCommandHandler:
             command_buy=dto,
         )
 
-        await self.post_message_fn(result, ctx)
+        await self.post_message_fn(result, chat_ctx)

@@ -2,33 +2,14 @@ from __future__ import annotations
 
 import logging
 
-from twitchio import Message
 from twitchio.ext import commands
 
 from app.twitch.bootstrap.bot_settings import BotSettings
 from app.twitch.infrastructure.auth import TwitchAuth
+from app.twitch.presentation.interaction.chat_context_adapter import as_chat_context
 from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandHandler, CommandRouter
 
 logger = logging.getLogger(__name__)
-
-
-class TwitchChatContext(ChatContext):
-    def __init__(self, message: Message):
-        self._message = message
-
-    @property
-    def channel(self) -> str:
-        return self._message.channel.name
-
-    @property
-    def author(self) -> str:
-        return self._message.author.display_name
-
-    async def reply(self, text: str) -> None:
-        await self._message.channel.send(text)
-
-    async def send_channel(self, text: str) -> None:
-        await self._message.channel.send(text)
 
 
 class TwitchCommandRouter(CommandRouter):
@@ -96,7 +77,7 @@ class TwitchChatClient(commands.Bot, ChatClient):
         chat_message.author = message.author.display_name
         chat_message.text = message.content
 
-        chat_ctx = TwitchChatContext(message)
+        chat_ctx = as_chat_context(message)
         if isinstance(self._router, TwitchCommandRouter):
             self._router.set_runtime_context(chat_ctx)
 

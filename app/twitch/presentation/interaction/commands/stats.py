@@ -1,12 +1,12 @@
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.commands.stats.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.model import StatsDTO
+from core.chat.interfaces import ChatContext
 
 
 class StatsCommandHandler:
@@ -17,7 +17,7 @@ class StatsCommandHandler:
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         command_name: str,
         bot_nick_provider: Callable[[], str],
-        post_message_fn: Callable[[str, Any], Awaitable[None]],
+        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self._handle_stats_use_case = handle_stats_use_case
         self._db_session_provider = db_session_provider
@@ -26,7 +26,7 @@ class StatsCommandHandler:
         self.bot_nick_provider = bot_nick_provider
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str, ctx):
+    async def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
         dto = StatsDTO(
             channel_name=channel_name,
             display_name=display_name,
@@ -41,4 +41,4 @@ class StatsCommandHandler:
             command_stats=dto,
         )
 
-        await self.post_message_fn(result, ctx)
+        await self.post_message_fn(result, chat_ctx)

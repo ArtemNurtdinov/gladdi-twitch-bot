@@ -1,13 +1,13 @@
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.model import RollDTO
 from app.moderation.application.chat_moderation_port import ChatModerationPort
+from core.chat.interfaces import ChatContext
 
 
 class RollCommandHandler:
@@ -23,7 +23,7 @@ class RollCommandHandler:
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         chat_moderation: ChatModerationPort,
         bot_nick_provider: Callable[[], str],
-        post_message_fn: Callable[[str, Any], Awaitable[None]],
+        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
@@ -48,7 +48,7 @@ class RollCommandHandler:
         for nickname in nicknames:
             del self.roll_cooldowns[nickname]
 
-    async def handle(self, ctx, channel_name: str, display_name: str, amount: str | None = None):
+    async def handle(self, chat_ctx: ChatContext, channel_name: str, display_name: str, amount: str | None = None):
         self._cleanup_old_cooldowns()
 
         dto = RollDTO(
@@ -71,10 +71,10 @@ class RollCommandHandler:
             self.roll_cooldowns[display_name] = result.new_last_roll_time
 
         for message in result.messages:
-            await self.post_message_fn(message, ctx)
+            await self.post_message_fn(message, chat_ctx)
 
         if result.timeout_action:
-            await self.post_message_fn(result.timeout_action.reason, ctx)
+            await self.post_message_fn(result.timeout_action.reason, chat_ctx)
             await self._chat_moderation.timeout_user(
                 channel_name=channel_name,
                 moderator_name=self.bot_nick_provider(),
