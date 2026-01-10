@@ -124,6 +124,3 @@ def load_config() -> Config:
         raise RuntimeError("Ошибки конфигурации:\n" + "\n".join(errors))
 
     return cfg
-
-
-config = load_config()

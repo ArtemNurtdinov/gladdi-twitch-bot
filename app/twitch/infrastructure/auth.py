@@ -2,15 +2,13 @@ from logging import Logger
 
 import httpx
 
-from core.config import config
-
 
 class TwitchAuth:
-    def __init__(self, access_token: str, refresh_token: str, logger: Logger):
+    def __init__(self, access_token: str, refresh_token: str, client_id: str, client_secret: str, logger: Logger):
         self.access_token = access_token
         self.refresh_token = refresh_token
-        self.client_id = config.twitch.client_id
-        self.client_secret = config.twitch.client_secret
+        self.client_id = client_id
+        self.client_secret = client_secret
         self.logger = logger
 
     async def update_access_token(self):

@@ -11,12 +11,14 @@ from app.joke.presentation import joke_routes
 from app.stream.presentation import stream_routes
 from app.twitch.presentation import twitch_routes
 from app.viewer.presentation import viewer_routes
-from core.config import config
+from bootstrap.config_provider import get_config
+
+cfg = get_config()
 
 logging.basicConfig(
-    level=getattr(logging, config.logging.level.upper(), logging.INFO),
+    level=getattr(logging, cfg.logging.level.upper(), logging.INFO),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(config.logging.file, encoding="utf-8"), logging.StreamHandler()],
+    handlers=[logging.FileHandler(cfg.logging.file, encoding="utf-8"), logging.StreamHandler()],
 )
 
 logger = logging.getLogger(__name__)
@@ -59,4 +61,4 @@ async def health_check():
 
 if __name__ == "__main__":
     logger.info("Запуск сервера...")
-    uvicorn.run("main:app", host=config.dashboard.host, port=config.dashboard.port, log_level=config.dashboard.log_level)
+    uvicorn.run("main:app", host=cfg.dashboard.host, port=cfg.dashboard.port, log_level=cfg.dashboard.log_level)
