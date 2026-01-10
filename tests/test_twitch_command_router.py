@@ -1,8 +1,8 @@
 import asyncio
 import unittest
 
-from app.twitch.infrastructure.twitch_chat_client import TwitchCommandRouter
 from core.chat.interfaces import ChatContext, ChatMessage
+from core.chat.prefix_command_router import PrefixCommandRouter
 
 
 class FakeChatContext:
@@ -25,9 +25,9 @@ class FakeMessage(ChatMessage):
         self.text = text
 
 
-class TestTwitchCommandRouter(unittest.IsolatedAsyncioTestCase):
+class TestPrefixCommandRouter(unittest.IsolatedAsyncioTestCase):
     async def test_dispatch_passes_context_without_shared_state(self):
-        router = TwitchCommandRouter(prefix="!")
+        router = PrefixCommandRouter(prefix="!")
         seen: list[tuple[str, str]] = []
 
         async def handler(ctx: ChatContext, msg: ChatMessage):

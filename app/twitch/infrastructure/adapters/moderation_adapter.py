@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from app.moderation.application.moderation_port import ModerationPort
-from app.twitch.infrastructure.api_client import StreamingApiClient
+from core.platform.api_client import StreamingApiClient
 
 logger = logging.getLogger(__name__)
 
