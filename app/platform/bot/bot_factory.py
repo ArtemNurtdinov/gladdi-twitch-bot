@@ -37,8 +37,8 @@ from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.presentation.shop_command_handler import ShopCommandHandler
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
-from app.commands.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
-from app.commands.top_bottom.top_bottom import TopBottomCommandHandler
+from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
+from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
 from app.commands.transfer.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.transfer import TransferCommandHandler
 from app.economy.bootstrap import EconomyProviders
@@ -378,7 +378,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        top_bottom = TopBottomCommandHandler(
+        top_bottom_command_handler = TopBottomCommandHandler(
             handle_top_bottom_use_case=HandleTopBottomUseCase(
                 economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
@@ -460,7 +460,7 @@ class BotFactory:
             transfer=transfer,
             shop_command_handler=shop_command_handler,
             equipment=equipment,
-            top_bottom=top_bottom,
+            top_bottom_command_handler=top_bottom_command_handler,
             stats_command_handler=stats_command_handler,
             help_command_handler=help_command_handler,
             guess=guess,
