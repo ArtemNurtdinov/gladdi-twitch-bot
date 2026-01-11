@@ -26,9 +26,9 @@ from app.commands.follow.application.get_followage_use_case import GetFollowageU
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
 from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandler
-from app.commands.guess.guess_command_handler import GuessCommandHandler
-from app.commands.guess.handle_guess_use_case import HandleGuessUseCase
-from app.commands.guess.rps import RpsCommandHandler
+from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
+from app.commands.guess.presentation.guess_command_handler import GuessCommandHandler
+from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
 from app.commands.help.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.help import HelpCommandHandler
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase

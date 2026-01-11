@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.commands.guess.handle_guess_use_case import HandleGuessUseCase
-from app.commands.guess.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
+from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
+from app.commands.guess.application.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
 from core.chat.interfaces import ChatContext
 
 

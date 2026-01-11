@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.guess.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
+from app.commands.guess.application.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
