@@ -8,8 +8,8 @@ from app.chat.application.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.bootstrap import ChatProviders
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
-from app.commands.ask.ask_command_handler import AskCommandHandler
 from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
+from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.battle_command_handler import BattleCommandHandler
