@@ -19,8 +19,9 @@ from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHa
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.commands.chat.presentation.chat_event_handler import DefaultChatEventsHandler
-from app.commands.equipment.equipment_command_handler import EquipmentCommandHandler
-from app.commands.equipment.handle_equipment_use_case import HandleEquipmentUseCase
+from app.commands.commands_registry import CommandRegistry
+from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
+from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.followage_command_handler import FollowageCommandHandler
@@ -30,7 +31,6 @@ from app.commands.guess.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.rps import RpsCommandHandler
 from app.commands.help.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.help import HelpCommandHandler
-from app.commands.registry import CommandRegistry
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.roll import RollCommandHandler
 from app.commands.shop.handle_shop_use_case import HandleShopUseCase

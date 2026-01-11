@@ -4,7 +4,7 @@ from contextlib import AbstractContextManager
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.equipment.model import EquipmentDTO
+from app.commands.equipment.application.model import EquipmentDTO
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from core.provider import Provider
 
