@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.betting.application.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.roll.model import RollDTO, RollTimeoutAction, RollUseCaseResult
+from app.commands.roll.application.model import RollDTO, RollTimeoutAction, RollUseCaseResult
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import (
     JackpotPayoutMultiplierEffect,
