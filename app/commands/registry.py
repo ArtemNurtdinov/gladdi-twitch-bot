@@ -1,3 +1,4 @@
+from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
 from app.commands.follow.followage_command_handler import FollowageCommandHandler
 
 
@@ -5,7 +6,7 @@ class CommandRegistry:
     def __init__(
         self,
         followage: FollowageCommandHandler,
-        ask,
+        ask: AskCommandHandler,
         battle,
         roll,
         balance,
@@ -20,7 +21,7 @@ class CommandRegistry:
         rps,
     ):
         self.followage: FollowageCommandHandler = followage
-        self.ask = ask
+        self.ask: AskCommandHandler = ask
         self.battle = battle
         self.roll = roll
         self.balance = balance
