@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.commands.bonus.handle_bonus_use_case import HandleBonusUseCase
-from app.commands.bonus.model import BonusDTO
+from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
+from app.commands.bonus.application.model import BonusDTO
 from core.chat.interfaces import ChatContext
 
 

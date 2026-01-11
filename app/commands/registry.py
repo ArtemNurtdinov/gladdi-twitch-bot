@@ -1,5 +1,6 @@
 from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
 from app.commands.battle.presentation.battle_command_handler import BattleCommandHandler
+from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHandler
 from app.commands.follow.followage_command_handler import FollowageCommandHandler
 
 
@@ -11,7 +12,7 @@ class CommandRegistry:
         battle: BattleCommandHandler,
         roll,
         balance,
-        bonus,
+        bonus: BonusCommandHandler,
         transfer,
         shop,
         equipment,
@@ -26,7 +27,7 @@ class CommandRegistry:
         self.battle: BattleCommandHandler = battle
         self.roll = roll
         self.balance = balance
-        self.bonus = bonus
+        self.bonus: BonusCommandHandler = bonus
         self.transfer = transfer
         self.shop = shop
         self.equipment = equipment
