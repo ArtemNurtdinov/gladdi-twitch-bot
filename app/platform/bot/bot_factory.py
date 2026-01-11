@@ -39,8 +39,8 @@ from app.commands.stats.application.handle_stats_use_case import HandleStatsUseC
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
-from app.commands.transfer.handle_transfer_use_case import HandleTransferUseCase
-from app.commands.transfer.transfer import TransferCommandHandler
+from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
+from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandler
 from app.economy.bootstrap import EconomyProviders
 from app.equipment.bootstrap import EquipmentProviders
 from app.follow.application.handle_followers_sync_use_case import HandleFollowersSyncUseCase
@@ -255,7 +255,7 @@ class BotFactory:
         settings = self._settings
         ask_uow_factory = self._build_ask_uow_factory()
 
-        follow_age = FollowageCommandHandler(
+        followage_command_handler = FollowageCommandHandler(
             handle_follow_age_use_case=HandleFollowAgeUseCase(
                 chat_repo_provider=self._chat.chat_repo_provider,
                 conversation_repo_provider=self._ai.conversation_repo_provider,
@@ -269,7 +269,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        ask = AskCommandHandler(
+        ask_command_handler = AskCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_gladdi,
             handle_ask_use_case=HandleAskUseCase(
@@ -282,7 +282,7 @@ class BotFactory:
             post_message_fn=post_message_fn,
             bot_nick=bot_nick,
         )
-        battle = BattleCommandHandler(
+        battle_command_handler = BattleCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_fight,
             handle_battle_use_case=HandleBattleUseCase(
@@ -317,7 +317,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        balance = BalanceCommandHandler(
+        balance_command_handler = BalanceCommandHandler(
             handle_balance_use_case=HandleBalanceUseCase(
                 economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
@@ -325,7 +325,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        bonus = BonusCommandHandler(
+        bonus_command_handler = BonusCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_bonus,
             handle_bonus_use_case=HandleBonusUseCase(
@@ -339,7 +339,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        transfer = TransferCommandHandler(
+        transfer_command_handler = TransferCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_transfer,
             handle_transfer_use_case=HandleTransferUseCase(
@@ -365,7 +365,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        equipment = EquipmentCommandHandler(
+        equipment_command_handler = EquipmentCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_equipment,
             command_shop=settings.command_shop,
@@ -425,7 +425,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        guess = GuessCommandHandler(
+        guess_command_handler = GuessCommandHandler(
             command_prefix=prefix,
             command_guess=settings.command_guess,
             command_guess_letter=settings.command_guess_letter,
@@ -439,7 +439,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        rps = RpsCommandHandler(
+        rps_command_handler = RpsCommandHandler(
             handle_rps_use_case=HandleRpsUseCase(
                 minigame_service=self._minigame.minigame_service,
                 economy_policy_provider=self._economy.economy_policy_provider,
@@ -451,20 +451,20 @@ class BotFactory:
         )
 
         return CommandRegistry(
-            followage=follow_age,
-            ask=ask,
-            battle=battle,
+            followage_command_handler=followage_command_handler,
+            ask_command_handler=ask_command_handler,
+            battle_command_handler=battle_command_handler,
             roll_command_handler=roll_command_handler,
-            balance=balance,
-            bonus=bonus,
-            transfer=transfer,
+            balance_command_handler=balance_command_handler,
+            bonus_command_handler=bonus_command_handler,
+            transfer_command_handler=transfer_command_handler,
             shop_command_handler=shop_command_handler,
-            equipment=equipment,
+            equipment_command_handler=equipment_command_handler,
             top_bottom_command_handler=top_bottom_command_handler,
             stats_command_handler=stats_command_handler,
             help_command_handler=help_command_handler,
-            guess=guess,
-            rps=rps,
+            guess_command_handler=guess_command_handler,
+            rps_command_handler=rps_command_handler,
         )
 
     def _create_chat_event_handler(

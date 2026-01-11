@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.commands.transfer.handle_transfer_use_case import HandleTransferUseCase
-from app.commands.transfer.model import TransferDTO
+from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
+from app.commands.transfer.application.model import TransferDTO
 from core.chat.interfaces import ChatContext
 
 

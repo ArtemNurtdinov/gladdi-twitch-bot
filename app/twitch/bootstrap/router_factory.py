@@ -9,13 +9,17 @@ def build_twitch_command_router(settings: BotSettings, registry: CommandRegistry
     router = PrefixCommandRouter(settings.prefix)
 
     async def followage_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.followage.handle(channel_name=chat_ctx.channel, display_name=msg.author, author_id=msg.author_id, chat_ctx=chat_ctx)
+        await registry.followage_command_handler.handle(
+            channel_name=chat_ctx.channel, display_name=msg.author, author_id=msg.author_id, chat_ctx=chat_ctx
+        )
 
     async def ask_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.ask.handle(channel_name=chat_ctx.channel, full_message=msg.text, display_name=msg.author, chat_ctx=chat_ctx)
+        await registry.ask_command_handler.handle(
+            channel_name=chat_ctx.channel, full_message=msg.text, display_name=msg.author, chat_ctx=chat_ctx
+        )
 
     async def battle_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.battle.handle(
+        await registry.battle_command_handler.handle(
             channel_name=chat_ctx.channel,
             display_name=msg.author,
             battle_waiting_user_ref=bot.battle_waiting_user_ref,
@@ -28,10 +32,10 @@ def build_twitch_command_router(settings: BotSettings, registry: CommandRegistry
         await registry.roll_command_handler.handle(chat_ctx=chat_ctx, channel_name=chat_ctx.channel, display_name=msg.author, amount=amount)
 
     async def balance_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.balance.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
+        await registry.balance_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
 
     async def bonus_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.bonus.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
+        await registry.bonus_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
 
     async def transfer_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_transfer) :].strip()
@@ -43,7 +47,7 @@ def build_twitch_command_router(settings: BotSettings, registry: CommandRegistry
                 recipient = parts[0]
                 if len(parts) > 1:
                     amount = parts[1]
-        await registry.transfer.handle(
+        await registry.transfer_command_handler.handle(
             channel_name=chat_ctx.channel,
             sender_display_name=msg.author,
             chat_ctx=chat_ctx,
@@ -62,7 +66,7 @@ def build_twitch_command_router(settings: BotSettings, registry: CommandRegistry
         )
 
     async def equipment_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.equipment.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
+        await registry.equipment_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
 
     async def top_handler(chat_ctx: ChatContext, msg: ChatMessage):
         await registry.top_bottom_command_handler.handle_top(channel_name=chat_ctx.channel, chat_ctx=chat_ctx)
@@ -79,22 +83,28 @@ def build_twitch_command_router(settings: BotSettings, registry: CommandRegistry
     async def guess_number_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_guess) :].strip()
         number = tail or None
-        await registry.guess.handle_guess_number(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, number=number)
+        await registry.guess_command_handler.handle_guess_number(
+            channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, number=number
+        )
 
     async def guess_letter_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_guess_letter) :].strip()
         letter = tail or None
-        await registry.guess.handle_guess_letter(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, letter=letter)
+        await registry.guess_command_handler.handle_guess_letter(
+            channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, letter=letter
+        )
 
     async def guess_word_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_guess_word) :].strip()
         word = tail or None
-        await registry.guess.handle_guess_word(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, word=word)
+        await registry.guess_command_handler.handle_guess_word(
+            channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, word=word
+        )
 
     async def rps_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_rps) :].strip()
         choice = tail or None
-        await registry.rps.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, choice=choice)
+        await registry.rps_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, choice=choice)
 
     router.register(settings.command_followage, followage_handler)
     router.register(settings.command_gladdi, ask_handler)
