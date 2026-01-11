@@ -8,6 +8,7 @@ from app.commands.guess.presentation.rps_command_handler import RpsCommandHandle
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
 from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
 from app.commands.shop.presentation.shop_command_handler import ShopCommandHandler
+from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
 
 
 class CommandRegistry:
@@ -23,7 +24,7 @@ class CommandRegistry:
         shop_command_handler: ShopCommandHandler,
         equipment: EquipmentCommandHandler,
         top_bottom,
-        stats,
+        stats_command_handler: StatsCommandHandler,
         help_command_handler: HelpCommandHandler,
         guess: GuessCommandHandler,
         rps: RpsCommandHandler,
@@ -38,7 +39,7 @@ class CommandRegistry:
         self.shop_command_handler: ShopCommandHandler = shop_command_handler
         self.equipment: EquipmentCommandHandler = equipment
         self.top_bottom = top_bottom
-        self.stats = stats
+        self.stats_command_handler: StatsCommandHandler = stats_command_handler
         self.help_command_handler: HelpCommandHandler = help_command_handler
         self.guess: GuessCommandHandler = guess
         self.rps: RpsCommandHandler = rps

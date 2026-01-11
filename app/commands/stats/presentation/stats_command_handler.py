@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.commands.stats.handle_stats_use_case import HandleStatsUseCase
-from app.commands.stats.model import StatsDTO
+from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
+from app.commands.stats.application.model import StatsDTO
 from core.chat.interfaces import ChatContext
 
 
