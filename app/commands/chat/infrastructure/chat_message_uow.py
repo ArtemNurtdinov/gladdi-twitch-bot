@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
 from app.chat.domain.repo import ChatRepository
-from app.commands.chat.chat_message_uow import ChatMessageUnitOfWork, ChatMessageUnitOfWorkFactory
+from app.commands.chat.application.chat_message_uow import ChatMessageUnitOfWork, ChatMessageUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.domain.repo import StreamRepository
 from app.viewer.domain.repo import ViewerRepository
