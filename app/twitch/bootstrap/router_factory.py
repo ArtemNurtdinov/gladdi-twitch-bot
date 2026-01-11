@@ -69,7 +69,7 @@ def build_twitch_command_router(settings: BotSettings, registry: CommandRegistry
         await registry.top_bottom.handle_bottom(channel_name=chat_ctx.channel, chat_ctx=chat_ctx)
 
     async def help_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.help.handle(channel_name=chat_ctx.channel, chat_ctx=chat_ctx)
+        await registry.help_command_handler.handle(channel_name=chat_ctx.channel, chat_ctx=chat_ctx)
 
     async def stats_handler(chat_ctx: ChatContext, msg: ChatMessage):
         await registry.stats.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)

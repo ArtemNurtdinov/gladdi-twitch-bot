@@ -4,7 +4,7 @@ from contextlib import AbstractContextManager
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.help.model import HelpDTO
+from app.commands.help.application.model import HelpDTO
 from core.provider import Provider
 
 
