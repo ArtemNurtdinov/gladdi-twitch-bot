@@ -24,8 +24,8 @@ from app.commands.equipment.application.handle_equipment_use_case import HandleE
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
-from app.commands.follow.followage_command_handler import FollowageCommandHandler
 from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
+from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandler
 from app.commands.guess.guess_command_handler import GuessCommandHandler
 from app.commands.guess.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.rps import RpsCommandHandler
