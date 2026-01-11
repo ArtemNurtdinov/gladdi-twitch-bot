@@ -1,8 +1,8 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.chat.handle_chat_message_use_case import HandleChatMessageUseCase
-from app.commands.chat.model import ChatMessageDTO
+from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.commands.chat.application.model import ChatMessageDTO
 from core.chat.outbound import ChatEventsHandler
 
 
