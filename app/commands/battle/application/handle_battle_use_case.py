@@ -8,7 +8,7 @@ from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.battle.application.battle_use_case import BattleUseCase
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.battle.model import BattleDTO, BattleTimeoutAction, BattleUseCaseResult
+from app.commands.battle.application.model import BattleDTO, BattleTimeoutAction, BattleUseCaseResult
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase

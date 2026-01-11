@@ -5,8 +5,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.commands.battle.handle_battle_use_case import HandleBattleUseCase
-from app.commands.battle.model import BattleDTO
+from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
+from app.commands.battle.application.model import BattleDTO
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from core.chat.interfaces import ChatContext
 
