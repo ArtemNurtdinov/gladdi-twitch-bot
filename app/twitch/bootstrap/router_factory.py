@@ -52,12 +52,14 @@ def build_twitch_command_router(settings: BotSettings, registry: CommandRegistry
         )
 
     async def shop_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.shop.handle_shop(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
+        await registry.shop_command_handler.handle_shop(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
 
     async def buy_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_buy) :].strip()
         item_name = tail or None
-        await registry.shop.handle_buy(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, item_name=item_name)
+        await registry.shop_command_handler.handle_buy(
+            channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, item_name=item_name
+        )
 
     async def equipment_handler(chat_ctx: ChatContext, msg: ChatMessage):
         await registry.equipment.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)

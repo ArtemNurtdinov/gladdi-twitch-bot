@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.commands.shop.handle_shop_use_case import HandleShopUseCase
-from app.commands.shop.model import CommandBuyDTO, CommandShopDTO
+from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
+from app.commands.shop.application.model import CommandBuyDTO, CommandShopDTO
 from core.chat.interfaces import ChatContext
 
 
