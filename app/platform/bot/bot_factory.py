@@ -14,8 +14,8 @@ from app.commands.balance.application.handle_balance_use_case import HandleBalan
 from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.presentation.battle_command_handler import BattleCommandHandler
-from app.commands.bonus.bonus_command_handler import BonusCommandHandler
-from app.commands.bonus.handle_bonus_use_case import HandleBonusUseCase
+from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
+from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHandler
 from app.commands.chat.chat_event_handler import DefaultChatEventsHandler
 from app.commands.chat.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
