@@ -31,8 +31,8 @@ from app.commands.guess.presentation.guess_command_handler import GuessCommandHa
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
-from app.commands.roll.handle_roll_use_case import HandleRollUseCase
-from app.commands.roll.roll import RollCommandHandler
+from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
+from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
 from app.commands.shop.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.shop import ShopCommandHandler
 from app.commands.stats.handle_stats_use_case import HandleStatsUseCase
@@ -300,7 +300,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        roll = RollCommandHandler(
+        roll_command_handler = RollCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_roll,
             handle_roll_use_case=HandleRollUseCase(
@@ -454,7 +454,7 @@ class BotFactory:
             followage=follow_age,
             ask=ask,
             battle=battle,
-            roll=roll,
+            roll_command_handler=roll_command_handler,
             balance=balance,
             bonus=bonus,
             transfer=transfer,

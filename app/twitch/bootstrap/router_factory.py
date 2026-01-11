@@ -25,7 +25,7 @@ def build_twitch_command_router(settings: BotSettings, registry: CommandRegistry
     async def roll_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_roll) :].strip()
         amount = tail or None
-        await registry.roll.handle(chat_ctx=chat_ctx, channel_name=chat_ctx.channel, display_name=msg.author, amount=amount)
+        await registry.roll_command_handler.handle(chat_ctx=chat_ctx, channel_name=chat_ctx.channel, display_name=msg.author, amount=amount)
 
     async def balance_handler(chat_ctx: ChatContext, msg: ChatMessage):
         await registry.balance.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)

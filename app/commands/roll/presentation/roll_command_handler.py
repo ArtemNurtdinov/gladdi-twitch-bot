@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.commands.roll.handle_roll_use_case import HandleRollUseCase
-from app.commands.roll.model import RollDTO
+from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
+from app.commands.roll.application.model import RollDTO
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from core.chat.interfaces import ChatContext
 

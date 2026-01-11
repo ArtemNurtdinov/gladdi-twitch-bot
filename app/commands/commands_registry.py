@@ -6,6 +6,7 @@ from app.commands.follow.presentation.followage_command_handler import Followage
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandler
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
+from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
 
 
 class CommandRegistry:
@@ -14,7 +15,7 @@ class CommandRegistry:
         followage: FollowageCommandHandler,
         ask: AskCommandHandler,
         battle: BattleCommandHandler,
-        roll,
+        roll_command_handler: RollCommandHandler,
         balance,
         bonus: BonusCommandHandler,
         transfer,
@@ -29,7 +30,7 @@ class CommandRegistry:
         self.followage: FollowageCommandHandler = followage
         self.ask: AskCommandHandler = ask
         self.battle: BattleCommandHandler = battle
-        self.roll = roll
+        self.roll_command_handler: RollCommandHandler = roll_command_handler
         self.balance = balance
         self.bonus: BonusCommandHandler = bonus
         self.transfer = transfer
