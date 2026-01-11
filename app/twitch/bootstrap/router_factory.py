@@ -1,4 +1,4 @@
-from app.commands.registry import CommandRegistry
+from app.commands.commands_registry import CommandRegistry
 from app.platform.bot.bot import Bot
 from app.platform.bot.bot_settings import BotSettings
 from core.chat.interfaces import ChatContext, ChatMessage, CommandRouter

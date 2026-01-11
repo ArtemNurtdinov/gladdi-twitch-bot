@@ -8,7 +8,7 @@ from app.ai.bootstrap import build_ai_providers
 from app.battle.bootstrap import build_battle_providers
 from app.betting.bootstrap import build_betting_providers
 from app.chat.bootstrap import build_chat_providers
-from app.commands.registry import CommandRegistry
+from app.commands.commands_registry import CommandRegistry
 from app.economy.bootstrap import build_economy_providers
 from app.equipment.bootstrap import build_equipment_providers
 from app.follow.bootstrap import build_follow_providers
