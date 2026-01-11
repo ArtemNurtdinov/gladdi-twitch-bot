@@ -4,7 +4,7 @@ from contextlib import AbstractContextManager
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.balance.model import BalanceDTO
+from app.commands.balance.application.model import BalanceDTO
 from app.economy.domain.economy_policy import EconomyPolicy
 from core.provider import Provider
 

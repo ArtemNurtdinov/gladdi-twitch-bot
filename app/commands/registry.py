@@ -1,4 +1,4 @@
-from app.commands.follow.followage import FollowageCommandHandler
+from app.commands.follow.followage_command_handler import FollowageCommandHandler
 
 
 class CommandRegistry:

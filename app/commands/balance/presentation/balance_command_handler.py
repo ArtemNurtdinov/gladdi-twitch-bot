@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.commands.balance.handle_balance_use_case import HandleBalanceUseCase
-from app.commands.balance.model import BalanceDTO
+from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
+from app.commands.balance.application.model import BalanceDTO
 from core.chat.interfaces import ChatContext
 
 
