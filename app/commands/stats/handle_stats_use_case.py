@@ -6,9 +6,8 @@ from sqlalchemy.orm import Session
 from app.battle.application.battle_use_case import BattleUseCase
 from app.battle.domain.models import UserBattleStats
 from app.betting.application.betting_service import BettingService
-from app.betting.presentation.betting_schemas import UserBetStats
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.stats.model import StatsDTO
+from app.commands.stats.model import StatsDTO, UserBetStats
 from app.economy.domain.economy_policy import EconomyPolicy
 from core.provider import Provider
 
@@ -63,7 +62,7 @@ class HandleStatsUseCase:
         if bet_stats.total_bets > 0:
             result += f" 🎰 Ставки: {bet_stats.total_bets} | Джекпоты: {bet_stats.jackpots} ({bet_stats.jackpot_rate:.1f}%)."
 
-        if battle_stats.has_battles():
+        if battle_stats.total_battles > 0:
             result += f" ⚔️ Битвы: {battle_stats.total_battles} | Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%)."
 
         with db_session_provider() as db:
@@ -73,5 +72,4 @@ class HandleStatsUseCase:
                 content=result,
                 current_time=command_stats.occurred_at,
             )
-
         return result

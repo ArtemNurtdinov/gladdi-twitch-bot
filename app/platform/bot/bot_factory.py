@@ -55,10 +55,10 @@ from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.minigame.application.minigame_tick_job import MinigameTickJob
 from app.minigame.bootstrap import MinigameProviders
 from app.moderation.application.moderation_service import ModerationService
+from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.application.token_checker_job import TokenCheckerJob
 from app.platform.bot.bot import Bot
 from app.platform.bot.bot_settings import BotSettings
-from app.platform.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.providers import PlatformProviders
 from app.stream.application.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.application.handle_stream_status_use_case import HandleStreamStatusUseCase
