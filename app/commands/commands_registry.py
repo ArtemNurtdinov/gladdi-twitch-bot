@@ -3,6 +3,8 @@ from app.commands.battle.presentation.battle_command_handler import BattleComman
 from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHandler
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandler
+from app.commands.guess.presentation.guess_command_handler import GuessCommandHandler
+from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
 
 
 class CommandRegistry:
@@ -20,8 +22,8 @@ class CommandRegistry:
         top_bottom,
         stats,
         help,
-        guess,
-        rps,
+        guess: GuessCommandHandler,
+        rps: RpsCommandHandler,
     ):
         self.followage: FollowageCommandHandler = followage
         self.ask: AskCommandHandler = ask
@@ -35,5 +37,5 @@ class CommandRegistry:
         self.top_bottom = top_bottom
         self.stats = stats
         self.help = help
-        self.guess = guess
-        self.rps = rps
+        self.guess: GuessCommandHandler = guess
+        self.rps: RpsCommandHandler = rps
