@@ -4,7 +4,7 @@ from contextlib import AbstractContextManager
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.transfer.model import TransferDTO
+from app.commands.transfer.application.model import TransferDTO
 from app.economy.domain.economy_policy import EconomyPolicy
 from core.provider import Provider
 

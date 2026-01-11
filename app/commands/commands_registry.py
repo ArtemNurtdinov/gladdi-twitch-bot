@@ -1,4 +1,5 @@
 from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
+from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.presentation.battle_command_handler import BattleCommandHandler
 from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHandler
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
@@ -10,37 +11,38 @@ from app.commands.roll.presentation.roll_command_handler import RollCommandHandl
 from app.commands.shop.presentation.shop_command_handler import ShopCommandHandler
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
 from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
+from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandler
 
 
 class CommandRegistry:
     def __init__(
         self,
-        followage: FollowageCommandHandler,
-        ask: AskCommandHandler,
-        battle: BattleCommandHandler,
+        followage_command_handler: FollowageCommandHandler,
+        ask_command_handler: AskCommandHandler,
+        battle_command_handler: BattleCommandHandler,
         roll_command_handler: RollCommandHandler,
-        balance,
-        bonus: BonusCommandHandler,
-        transfer,
+        balance_command_handler: BalanceCommandHandler,
+        bonus_command_handler: BonusCommandHandler,
+        transfer_command_handler: TransferCommandHandler,
         shop_command_handler: ShopCommandHandler,
-        equipment: EquipmentCommandHandler,
+        equipment_command_handler: EquipmentCommandHandler,
         top_bottom_command_handler: TopBottomCommandHandler,
         stats_command_handler: StatsCommandHandler,
         help_command_handler: HelpCommandHandler,
-        guess: GuessCommandHandler,
-        rps: RpsCommandHandler,
+        guess_command_handler: GuessCommandHandler,
+        rps_command_handler: RpsCommandHandler,
     ):
-        self.followage: FollowageCommandHandler = followage
-        self.ask: AskCommandHandler = ask
-        self.battle: BattleCommandHandler = battle
-        self.roll_command_handler: RollCommandHandler = roll_command_handler
-        self.balance = balance
-        self.bonus: BonusCommandHandler = bonus
-        self.transfer = transfer
-        self.shop_command_handler: ShopCommandHandler = shop_command_handler
-        self.equipment: EquipmentCommandHandler = equipment
-        self.top_bottom_command_handler: TopBottomCommandHandler = top_bottom_command_handler
-        self.stats_command_handler: StatsCommandHandler = stats_command_handler
-        self.help_command_handler: HelpCommandHandler = help_command_handler
-        self.guess: GuessCommandHandler = guess
-        self.rps: RpsCommandHandler = rps
+        self.followage_command_handler = followage_command_handler
+        self.ask_command_handler = ask_command_handler
+        self.battle_command_handler = battle_command_handler
+        self.roll_command_handler = roll_command_handler
+        self.balance_command_handler = balance_command_handler
+        self.bonus_command_handler = bonus_command_handler
+        self.transfer_command_handler = transfer_command_handler
+        self.shop_command_handler = shop_command_handler
+        self.equipment_command_handler = equipment_command_handler
+        self.top_bottom_command_handler = top_bottom_command_handler
+        self.stats_command_handler = stats_command_handler
+        self.help_command_handler = help_command_handler
+        self.guess_command_handler = guess_command_handler
+        self.rps_command_handler = rps_command_handler
