@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.commands.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
-from app.commands.top_bottom.model import BottomDTO, TopDTO
+from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
+from app.commands.top_bottom.application.model import BottomDTO, TopDTO
 from core.chat.interfaces import ChatContext
 
 
