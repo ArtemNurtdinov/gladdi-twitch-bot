@@ -29,8 +29,8 @@ from app.commands.follow.presentation.followage_command_handler import Followage
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandler
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
-from app.commands.help.handle_help_use_case import HandleHelpUseCase
-from app.commands.help.help import HelpCommandHandler
+from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
+from app.commands.help.presentation.help_command_handler import HelpCommandHandler
 from app.commands.roll.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.roll import RollCommandHandler
 from app.commands.shop.handle_shop_use_case import HandleShopUseCase
@@ -417,7 +417,7 @@ class BotFactory:
             f"{settings.command_gladdi} текст",
             settings.command_followage,
         }
-        help_handler = HelpCommandHandler(
+        help_command_handler = HelpCommandHandler(
             command_prefix=prefix,
             handle_help_use_case=HandleHelpUseCase(chat_use_case_provider=self._chat.chat_use_case_provider),
             db_session_provider=lambda: db_rw_session(),
@@ -462,7 +462,7 @@ class BotFactory:
             equipment=equipment,
             top_bottom=top_bottom,
             stats=stats,
-            help=help_handler,
+            help_command_handler=help_command_handler,
             guess=guess,
             rps=rps,
         )

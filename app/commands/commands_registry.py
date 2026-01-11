@@ -5,6 +5,7 @@ from app.commands.equipment.presentation.equipment_command_handler import Equipm
 from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandler
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandler
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
+from app.commands.help.presentation.help_command_handler import HelpCommandHandler
 
 
 class CommandRegistry:
@@ -21,7 +22,7 @@ class CommandRegistry:
         equipment: EquipmentCommandHandler,
         top_bottom,
         stats,
-        help,
+        help_command_handler: HelpCommandHandler,
         guess: GuessCommandHandler,
         rps: RpsCommandHandler,
     ):
@@ -36,6 +37,6 @@ class CommandRegistry:
         self.equipment: EquipmentCommandHandler = equipment
         self.top_bottom = top_bottom
         self.stats = stats
-        self.help = help
+        self.help_command_handler: HelpCommandHandler = help_command_handler
         self.guess: GuessCommandHandler = guess
         self.rps: RpsCommandHandler = rps
