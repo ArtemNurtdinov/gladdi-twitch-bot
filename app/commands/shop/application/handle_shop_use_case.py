@@ -4,7 +4,7 @@ from contextlib import AbstractContextManager
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.shop.model import CommandBuyDTO, CommandShopDTO
+from app.commands.shop.application.model import CommandBuyDTO, CommandShopDTO
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import ShopItems, TransactionType
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase

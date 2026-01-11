@@ -33,8 +33,8 @@ from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
-from app.commands.shop.handle_shop_use_case import HandleShopUseCase
-from app.commands.shop.shop import ShopCommandHandler
+from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
+from app.commands.shop.presentation.shop_command_handler import ShopCommandHandler
 from app.commands.stats.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.stats import StatsCommandHandler
 from app.commands.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
@@ -350,7 +350,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        shop = ShopCommandHandler(
+        shop_command_handler = ShopCommandHandler(
             command_prefix=prefix,
             command_shop_name=settings.command_shop,
             command_buy_name=settings.command_buy,
@@ -458,7 +458,7 @@ class BotFactory:
             balance=balance,
             bonus=bonus,
             transfer=transfer,
-            shop=shop,
+            shop_command_handler=shop_command_handler,
             equipment=equipment,
             top_bottom=top_bottom,
             stats=stats,
