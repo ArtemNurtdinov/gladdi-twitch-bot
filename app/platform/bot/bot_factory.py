@@ -35,8 +35,8 @@ from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.presentation.shop_command_handler import ShopCommandHandler
-from app.commands.stats.handle_stats_use_case import HandleStatsUseCase
-from app.commands.stats.stats import StatsCommandHandler
+from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
+from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
 from app.commands.top_bottom.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.top_bottom import TopBottomCommandHandler
 from app.commands.transfer.handle_transfer_use_case import HandleTransferUseCase
@@ -389,7 +389,7 @@ class BotFactory:
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
-        stats = StatsCommandHandler(
+        stats_command_handler = StatsCommandHandler(
             handle_stats_use_case=HandleStatsUseCase(
                 economy_policy_provider=self._economy.economy_policy_provider,
                 betting_service_provider=self._betting.betting_service_provider,
@@ -461,7 +461,7 @@ class BotFactory:
             shop_command_handler=shop_command_handler,
             equipment=equipment,
             top_bottom=top_bottom,
-            stats=stats,
+            stats_command_handler=stats_command_handler,
             help_command_handler=help_command_handler,
             guess=guess,
             rps=rps,

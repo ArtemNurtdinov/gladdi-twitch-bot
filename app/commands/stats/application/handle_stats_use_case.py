@@ -7,7 +7,7 @@ from app.battle.application.battle_use_case import BattleUseCase
 from app.battle.domain.models import UserBattleStats
 from app.betting.application.betting_service import BettingService
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.stats.model import StatsDTO, UserBetStats
+from app.commands.stats.application.model import StatsDTO, UserBetStats
 from app.economy.domain.economy_policy import EconomyPolicy
 from core.provider import Provider
 
