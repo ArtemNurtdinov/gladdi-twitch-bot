@@ -27,12 +27,12 @@ class ChatResponseUseCase:
             history = self._conversation_service_provider.get(db).get_last_messages(
                 channel_name=channel_name, system_prompt=self._system_prompt
             )
-        history.append(AIMessage(Role.USER, prompt))
+        history.append(AIMessage(role=Role.USER, content=prompt))
         assistant_response = await self._llm_client.generate_ai_response(history)
         return assistant_response.message
 
     async def generate_response_from_history(self, history: list[AIMessage], prompt: str) -> str:
         messages = list(history)
-        messages.append(AIMessage(Role.USER, prompt))
+        messages.append(AIMessage(role=Role.USER, content=prompt))
         assistant_response = await self._llm_client.generate_ai_response(messages)
         return assistant_response.message

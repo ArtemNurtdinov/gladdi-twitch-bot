@@ -20,7 +20,7 @@ class ConversationRepositoryImpl(ConversationRepository):
             .limit(50)
         )
         rows = self._db.execute(stmt).scalars().all()
-        return [AIMessage(r.role, r.content) for r in rows]
+        return [AIMessage(role=r.role, content=r.content) for r in rows]
 
     def add_messages_to_db(self, channel_name: str, user_message: str, ai_message: str) -> None:
         user_message = AIDbMessage(channel_name=channel_name, role=Role.USER, content=user_message)

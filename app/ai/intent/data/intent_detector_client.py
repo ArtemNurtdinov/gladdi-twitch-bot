@@ -47,7 +47,7 @@ class IntentDetectorClientImpl(IntentDetectorClient):
             "Если intent определён верно, просто напиши его (одно слово, без пояснений). "
             "Если определён неверно — напиши правильный intent (одно слово, без пояснений)."
         )
-        ai_response = await llm_client.generate_ai_response([AIMessage(Role.USER, prompt)])
+        ai_response = await llm_client.generate_ai_response([AIMessage(role=Role.USER, content=prompt)])
         ai_message = ai_response.message.strip().lower()
         for intent in Intent:
             if ai_message == intent.value:
