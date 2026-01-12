@@ -12,11 +12,15 @@ from core.chat.interfaces import ChatContext
 class BalanceCommandHandler:
     def __init__(
         self,
+        command_prefix: str,
+        command_name: str,
         handle_balance_use_case: HandleBalanceUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
+        self._command_prefix = command_prefix
+        self._command_name = command_name
         self._handle_balance_use_case = handle_balance_use_case
         self._db_session_provider = db_session_provider
         self._bot_nick = bot_nick
@@ -27,6 +31,8 @@ class BalanceCommandHandler:
         bot_nick = self._bot_nick.lower()
 
         dto = BalanceDTO(
+            command_prefix=self._command_prefix,
+            command_name=self._command_name,
             channel_name=channel_name,
             display_name=display_name,
             user_name=user_name,

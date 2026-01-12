@@ -23,6 +23,8 @@ class HandleBalanceUseCase:
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_balance_dto: BalanceDTO,
     ) -> str:
+        user_message = command_balance_dto.command_prefix + command_balance_dto.command_name
+
         with db_session_provider() as db:
             user_balance = self._economy_policy_provider.get(db).get_user_balance(
                 channel_name=command_balance_dto.channel_name,
@@ -32,6 +34,12 @@ class HandleBalanceUseCase:
         result = f"💰 @{command_balance_dto.display_name}, твой баланс: {user_balance.balance} монет"
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_balance_dto.channel_name,
+                user_name=command_balance_dto.user_name,
+                content=user_message,
+                current_time=command_balance_dto.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=command_balance_dto.channel_name,
                 user_name=command_balance_dto.bot_nick,
