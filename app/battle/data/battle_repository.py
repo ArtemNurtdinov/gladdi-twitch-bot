@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import and_, or_
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.battle.data.db.battle_history import BattleHistory
@@ -31,23 +31,24 @@ class BattleRepositoryImpl(BattleRepository):
         self._db.add(battle)
 
     def get_user_battles(self, channel_name: str, user_name: str) -> list[BattleRecord]:
-        rows = (
-            self._db.query(BattleHistory)
-            .filter(
-                and_(
-                    or_(BattleHistory.opponent_1 == user_name, BattleHistory.opponent_2 == user_name),
-                    BattleHistory.channel_name == channel_name,
+        stmt = (
+            select(BattleHistory)
+            .where(BattleHistory.channel_name == channel_name)
+            .where(
+                or_(
+                    BattleHistory.opponent_1 == user_name,
+                    BattleHistory.opponent_2 == user_name,
                 )
             )
-            .all()
         )
+        rows = self._db.execute(stmt).scalars().all()
         return [map_battle_history(row) for row in rows]
 
     def get_battles(self, channel_name: str, from_time: datetime) -> list[BattleRecord]:
-        rows = (
-            self._db.query(BattleHistory)
-            .filter(BattleHistory.channel_name == channel_name)
-            .filter(BattleHistory.created_at >= from_time)
-            .all()
+        stmt = (
+            select(BattleHistory)
+            .where(BattleHistory.channel_name == channel_name)
+            .where(BattleHistory.created_at >= from_time)
         )
+        rows = self._db.execute(stmt).scalars().all()
         return [map_battle_history(row) for row in rows]
