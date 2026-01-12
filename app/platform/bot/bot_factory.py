@@ -383,13 +383,14 @@ class BotFactory:
             post_message_fn=post_message_fn,
         )
         top_bottom_command_handler = TopBottomCommandHandler(
+            command_prefix=prefix,
+            command_top=settings.command_top,
+            command_bottom=settings.command_bottom,
             handle_top_bottom_use_case=HandleTopBottomUseCase(
                 economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),
             db_session_provider=lambda: db_rw_session(),
             db_readonly_session_provider=lambda: db_ro_session(),
-            command_top=settings.command_top,
-            command_bottom=settings.command_bottom,
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
