@@ -27,6 +27,7 @@ class HandleFollowAgeUseCase:
 
     async def handle(self, command_follow_age: FollowageDTO) -> str | None:
         channel_name = command_follow_age.channel_name
+        user_message = command_follow_age.command_prefix + command_follow_age.command_name
 
         follow_info: FollowageInfo | None = await self._get_followage_use_case.get_followage(
             channel_name=channel_name,
@@ -36,6 +37,14 @@ class HandleFollowAgeUseCase:
         if not follow_info:
             result = f"@{command_follow_age.display_name}, вы не отслеживаете канал."
             with self._unit_of_work_factory.create() as uow:
+                uow.chat_repo.save(
+                    ChatMessage(
+                        channel_name=channel_name,
+                        user_name=command_follow_age.user_name,
+                        content=user_message,
+                        created_at=command_follow_age.occurred_at,
+                    )
+                )
                 uow.chat_repo.save(
                     ChatMessage(
                         channel_name=channel_name,
@@ -70,6 +79,14 @@ class HandleFollowAgeUseCase:
                 channel_name=channel_name,
                 user_message=prompt,
                 ai_message=assistant_message,
+            )
+            uow.chat_repo.save(
+                ChatMessage(
+                    channel_name=channel_name,
+                    user_name=command_follow_age.user_name,
+                    content=user_message,
+                    created_at=command_follow_age.occurred_at,
+                )
             )
             uow.chat_repo.save(
                 ChatMessage(

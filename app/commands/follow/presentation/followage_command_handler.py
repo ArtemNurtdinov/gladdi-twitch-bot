@@ -9,16 +9,22 @@ from core.chat.interfaces import ChatContext
 class FollowageCommandHandler:
     def __init__(
         self,
+        command_prefix: str,
+        command_name: str,
         handle_follow_age_use_case: HandleFollowAgeUseCase,
         bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
+        self._command_prefix = command_prefix
+        self._command_name = command_name
         self._handle_follow_age_use_case = handle_follow_age_use_case
         self.bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, author_id: str, chat_ctx: ChatContext):
         dto = FollowageDTO(
+            command_prefix=self._command_prefix,
+            command_name=self._command_name,
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
