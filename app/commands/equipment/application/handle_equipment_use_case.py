@@ -22,6 +22,7 @@ class HandleEquipmentUseCase:
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         dto: EquipmentDTO,
     ) -> str:
+        user_message = dto.command_prefix + dto.command_name
         with db_readonly_session_provider() as db:
             equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
                 channel_name=dto.channel_name, user_name=dto.user_name
@@ -37,6 +38,12 @@ class HandleEquipmentUseCase:
             result = "\n".join(lines)
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=dto.channel_name,
+                user_name=dto.user_name,
+                content=user_message,
+                current_time=dto.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=dto.channel_name,
                 user_name=dto.bot_nick,

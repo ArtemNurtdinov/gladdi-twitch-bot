@@ -32,12 +32,13 @@ class EquipmentCommandHandler:
 
     async def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
         dto = EquipmentDTO(
+            command_prefix=self.command_prefix,
             channel_name=channel_name,
+            command_name=self.command_name,
             display_name=display_name,
             user_name=display_name.lower(),
             bot_nick=self._bot_nick.lower(),
             occurred_at=datetime.utcnow(),
-            command_prefix=self.command_prefix,
             command_shop=self.command_shop,
         )
 
