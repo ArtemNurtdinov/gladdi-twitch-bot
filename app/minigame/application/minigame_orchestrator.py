@@ -146,7 +146,7 @@ class MinigameOrchestrator:
         )
 
         system_prompt = self._system_prompt
-        ai_messages = [AIMessage(Role.SYSTEM, system_prompt), AIMessage(Role.USER, prompt)]
+        ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt), AIMessage(role=Role.USER, content=prompt)]
 
         assistant_response = await self._llm_client.generate_ai_response(ai_messages)
         assistant_message = assistant_response.message
@@ -205,7 +205,7 @@ class MinigameOrchestrator:
         )
 
         await self._send_channel_message(channel_name, game_message)
-        with SessionLocal.begin() as db:
+        with db_rw_session() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
             )

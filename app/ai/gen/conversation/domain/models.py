@@ -8,10 +8,10 @@ class Role(Enum):
     ASSISTANT = "assistant"
 
 
+@dataclass(frozen=True)
 class AIMessage:
-    def __init__(self, role: Role, content: str):
-        self.role = role
-        self.content = content
+    role: Role
+    content: str
 
 
 @dataclass(frozen=True)

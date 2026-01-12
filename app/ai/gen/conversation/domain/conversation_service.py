@@ -9,8 +9,8 @@ class ConversationService:
     def get_last_messages(self, channel_name: str, system_prompt: str) -> list[AIMessage]:
         last_messages = self._message_repo.get_last_messages(channel_name)
         last_messages.reverse()
-        ai_messages: list[AIMessage] = [AIMessage(Role.SYSTEM, system_prompt)] + [
-            AIMessage(message.role, message.content) for message in last_messages
+        ai_messages: list[AIMessage] = [AIMessage(role=Role.SYSTEM, content=system_prompt)] + [
+            AIMessage(role=message.role, content=message.content) for message in last_messages
         ]
         return ai_messages
 
