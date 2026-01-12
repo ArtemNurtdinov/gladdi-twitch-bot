@@ -30,9 +30,18 @@ class HandleGuessUseCase:
     ) -> str:
         command_prefix = guess_number.command_prefix
         command_guess = guess_number.command_guess
+        user_message = guess_number.command_prefix + guess_number.command_guess
+        if guess_number.guess_input:
+            user_message += f" {guess_number.guess_input}"
         if not guess_number.guess_input:
             result = f"@{guess_number.display_name}, используй: {command_prefix}{command_guess} [число]"
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_number.channel_name,
+                    user_name=guess_number.user_name,
+                    content=user_message,
+                    current_time=guess_number.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
@@ -47,6 +56,12 @@ class HandleGuessUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_number.channel_name,
+                    user_name=guess_number.user_name,
+                    content=user_message,
+                    current_time=guess_number.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=result,
                     current_time=guess_number.occurred_at,
@@ -56,6 +71,12 @@ class HandleGuessUseCase:
         if not self._minigame_service.is_game_active(guess_number.channel_name):
             result = "Сейчас нет активной игры 'угадай число'"
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_number.channel_name,
+                    user_name=guess_number.user_name,
+                    content=user_message,
+                    current_time=guess_number.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
@@ -72,6 +93,12 @@ class HandleGuessUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_number.channel_name,
+                    user_name=guess_number.user_name,
+                    content=user_message,
+                    current_time=guess_number.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=result,
                     current_time=guess_number.occurred_at,
@@ -83,6 +110,12 @@ class HandleGuessUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_number.channel_name,
+                    user_name=guess_number.user_name,
+                    content=user_message,
+                    current_time=guess_number.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=result,
                     current_time=guess_number.occurred_at,
@@ -92,6 +125,12 @@ class HandleGuessUseCase:
         if not game.min_number <= guess <= game.max_number:
             result = f"Число должно быть от {game.min_number} до {game.max_number}"
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_number.channel_name,
+                    user_name=guess_number.user_name,
+                    content=user_message,
+                    current_time=guess_number.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
@@ -114,6 +153,12 @@ class HandleGuessUseCase:
                 )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_number.channel_name,
+                    user_name=guess_number.user_name,
+                    content=user_message,
+                    current_time=guess_number.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=message,
                     current_time=guess_number.occurred_at,
@@ -125,6 +170,12 @@ class HandleGuessUseCase:
             hint = "больше" if guess < game.target_number else "меньше"
             message = f"@{guess_number.display_name}, не угадал! Загаданное число {hint} {guess}."
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_number.channel_name,
+                    user_name=guess_number.user_name,
+                    content=user_message,
+                    current_time=guess_number.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
