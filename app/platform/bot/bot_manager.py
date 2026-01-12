@@ -54,20 +54,6 @@ class BotManager:
         self._lock = asyncio.Lock()
         self._platform_providers: PlatformProviders | None = None
 
-    def _ensure_credentials(self, auth: PlatformAuth) -> None:
-        missing = []
-        if not auth.client_id:
-            missing.append("client_id")
-        if not auth.client_secret:
-            missing.append("client_secret")
-        if not auth.refresh_token:
-            missing.append("refresh_token")
-        if not auth.access_token:
-            missing.append("access_token")
-
-        if missing:
-            raise ValueError(f"Недостаточно данных для авторизации платформы: {', '.join(missing)}")
-
     def _reset_state(self):
         self._bot = None
         self._chat_client = None
@@ -108,7 +94,6 @@ class BotManager:
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже запущен")
 
             auth = self._platform_auth_factory(access_token, refresh_token, client_id, client_secret)
-            self._ensure_credentials(auth)
 
             platform_providers = self._platform_providers_builder(auth)
             self._platform_providers = platform_providers

@@ -42,12 +42,28 @@ def get_bot_manager(settings: BotSettings = Depends(get_bot_settings)) -> BotMan
     )
 
 
+def _validate_credentials(access_token: str, refresh_token: str, client_id: str, client_secret: str) -> None:
+    missing = []
+    if not client_id:
+        missing.append("client_id")
+    if not client_secret:
+        missing.append("client_secret")
+    if not refresh_token:
+        missing.append("refresh_token")
+    if not access_token:
+        missing.append("access_token")
+
+    if missing:
+        raise ValueError(f"Недостаточно данных для авторизации платформы: {', '.join(missing)}")
+
+
 def _twitch_auth_factory(
     access_token: str,
     refresh_token: str,
     client_id: str,
     client_secret: str,
 ) -> TwitchAuth:
+    _validate_credentials(access_token, refresh_token, client_id, client_secret)
     return TwitchAuth(
         access_token=access_token,
         refresh_token=refresh_token,
