@@ -16,6 +16,8 @@ class GuessNumberDTO:
 
 @dataclass(frozen=True)
 class GuessLetterDTO:
+    command_prefix: str
+    command_name: str
     channel_name: str
     display_name: str
     user_name: str
