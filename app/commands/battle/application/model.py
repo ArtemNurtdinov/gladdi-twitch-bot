@@ -5,6 +5,8 @@ from app.commands.dto import ChatContextDTO
 
 @dataclass(frozen=True)
 class BattleDTO(ChatContextDTO):
+    command_prefix: str
+    command_name: str
     command_call: str
     waiting_user: str | None = field(default=None)
 
