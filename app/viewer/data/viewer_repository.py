@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.stream.infrastructure.mappers.stream_mapper import map_stream_row
@@ -34,7 +34,13 @@ class ViewerRepositoryImpl(ViewerRepository):
         )
 
     def get_viewer_session(self, stream_id: int, channel_name: str, user_name: str) -> ViewerSession | None:
-        row = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
+        stmt = (
+            select(StreamViewerSession)
+            .where(StreamViewerSession.stream_id == stream_id)
+            .where(StreamViewerSession.user_name == user_name)
+            .where(StreamViewerSession.channel_name == channel_name)
+        )
+        row = self._db.execute(stmt).scalars().first()
         if not row:
             return None
         return self._to_viewer_session(row)
@@ -51,41 +57,66 @@ class ViewerRepositoryImpl(ViewerRepository):
         self._db.add(session)
 
     def update_last_activity(self, stream_id: int, channel_name: str, user_name: str, current_time: datetime):
-        session = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
+        stmt = (
+            select(StreamViewerSession)
+            .where(StreamViewerSession.stream_id == stream_id)
+            .where(StreamViewerSession.user_name == user_name)
+            .where(StreamViewerSession.channel_name == channel_name)
+        )
+        session = self._db.execute(stmt).scalars().first()
+        if not session:
+            return
         session.last_activity = current_time
         session.updated_at = current_time
         session.is_watching = True
 
     def get_inactive_sessions(self, stream_id: int, current_time: datetime) -> list[ViewerSession]:
         cutoff_time = current_time - timedelta(minutes=self.ACTIVITY_TIMEOUT_MINUTES)
-        rows = (
-            self._db.query(StreamViewerSession)
-            .filter_by(stream_id=stream_id, is_watching=True)
-            .filter(StreamViewerSession.last_activity < cutoff_time)
-            .all()
+        stmt = (
+            select(StreamViewerSession)
+            .where(StreamViewerSession.stream_id == stream_id)
+            .where(StreamViewerSession.is_watching.is_(True))
+            .where(StreamViewerSession.last_activity < cutoff_time)
         )
+        rows = self._db.execute(stmt).scalars().all()
         return [self._to_viewer_session(row) for row in rows]
 
     def finish_session(self, stream_id: int, channel_name: str, user_name: str, total_minutes: int, current_time: datetime):
-        session = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, user_name=user_name, channel_name=channel_name).first()
+        stmt = (
+            select(StreamViewerSession)
+            .where(StreamViewerSession.stream_id == stream_id)
+            .where(StreamViewerSession.user_name == user_name)
+            .where(StreamViewerSession.channel_name == channel_name)
+        )
+        session = self._db.execute(stmt).scalars().first()
+        if not session:
+            return
         session.total_minutes = total_minutes
         session.session_end = current_time
         session.is_watching = False
         session.updated_at = current_time
 
     def get_active_sessions(self, stream_id: int) -> list[ViewerSession]:
-        rows = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, is_watching=True).all()
+        stmt = (
+            select(StreamViewerSession)
+            .where(StreamViewerSession.stream_id == stream_id)
+            .where(StreamViewerSession.is_watching.is_(True))
+        )
+        rows = self._db.execute(stmt).scalars().all()
         return [self._to_viewer_session(row) for row in rows]
 
     def get_unique_viewers_count(self, stream_id: int) -> int:
-        return self._db.query(StreamViewerSession.user_name).filter_by(stream_id=stream_id).distinct().count()
+        stmt = select(func.count(func.distinct(StreamViewerSession.user_name))).where(StreamViewerSession.stream_id == stream_id)
+        return self._db.execute(stmt).scalar_one()
 
     def get_viewer_sessions(self, stream_id: int) -> list[ViewerSession]:
-        rows = self._db.query(StreamViewerSession).filter_by(stream_id=stream_id).all()
+        stmt = select(StreamViewerSession).where(StreamViewerSession.stream_id == stream_id)
+        rows = self._db.execute(stmt).scalars().all()
         return [self._to_viewer_session(row) for row in rows]
 
     def update_session_rewards(self, session_id: int, rewards: str, current_time: datetime):
-        row = self._db.query(StreamViewerSession).filter_by(id=session_id).first()
+        stmt = select(StreamViewerSession).where(StreamViewerSession.id == session_id)
+        row = self._db.execute(stmt).scalars().first()
         if not row:
             return
         row.rewards_claimed = rewards
@@ -93,14 +124,21 @@ class ViewerRepositoryImpl(ViewerRepository):
         row.updated_at = current_time
 
     def get_user_sessions(self, channel_name: str, user_name: str) -> list[ViewerSession]:
-        rows = (
-            self._db.query(StreamViewerSession)
+        stmt = (
+            select(StreamViewerSession)
             .options(joinedload(StreamViewerSession.stream))
-            .filter_by(channel_name=channel_name, user_name=user_name)
+            .where(StreamViewerSession.channel_name == channel_name)
+            .where(StreamViewerSession.user_name == user_name)
             .order_by(desc(StreamViewerSession.session_start))
-            .all()
         )
+        rows = self._db.execute(stmt).scalars().all()
         return [self._to_viewer_session(row) for row in rows]
 
     def get_stream_watchers_count(self, stream_id: int) -> int:
-        return self._db.query(StreamViewerSession).filter_by(stream_id=stream_id, is_watching=True).count()
+        stmt = (
+            select(func.count())
+            .select_from(StreamViewerSession)
+            .where(StreamViewerSession.stream_id == stream_id)
+            .where(StreamViewerSession.is_watching.is_(True))
+        )
+        return self._db.execute(stmt).scalar_one()

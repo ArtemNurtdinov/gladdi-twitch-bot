@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from app.stream.domain.models import StreamInfo, StreamViewerSessionInfo
@@ -19,13 +19,19 @@ class StreamRepositoryImpl(StreamRepository):
         self._db.add(stream)
 
     def get_active_stream(self, channel_name: str) -> StreamInfo | None:
-        row = self._db.query(Stream).filter_by(channel_name=channel_name, is_active=True).first()
+        stmt = (
+            select(Stream)
+            .where(Stream.channel_name == channel_name)
+            .where(Stream.is_active.is_(True))
+        )
+        row = self._db.execute(stmt).scalars().first()
         if not row:
             return None
         return map_stream_row(row)
 
     def end_stream(self, active_stream_id: int, finish_time: datetime) -> None:
-        stream = self._db.query(Stream).filter_by(id=active_stream_id).first()
+        stmt = select(Stream).where(Stream.id == active_stream_id)
+        stream = self._db.execute(stmt).scalars().first()
         if not stream:
             return
         stream.ended_at = finish_time
@@ -33,14 +39,16 @@ class StreamRepositoryImpl(StreamRepository):
         stream.updated_at = datetime.utcnow()
 
     def update_stream_total_viewers(self, stream_id: int, total_viewers: int) -> None:
-        stream = self._db.query(Stream).filter_by(id=stream_id).first()
+        stmt = select(Stream).where(Stream.id == stream_id)
+        stream = self._db.execute(stmt).scalars().first()
         if not stream:
             return
         stream.total_viewers = total_viewers
         stream.updated_at = datetime.utcnow()
 
     def update_stream_metadata(self, stream_id: int, game_name: str | None, title: str | None) -> None:
-        stream = self._db.query(Stream).filter_by(id=stream_id).first()
+        stmt = select(Stream).where(Stream.id == stream_id)
+        stream = self._db.execute(stmt).scalars().first()
         if not stream:
             return
         if game_name is not None:
@@ -50,7 +58,8 @@ class StreamRepositoryImpl(StreamRepository):
         stream.updated_at = datetime.utcnow()
 
     def update_max_concurrent_viewers_count(self, active_stream_id: int, viewers_count: int) -> None:
-        stream = self._db.query(Stream).filter_by(id=active_stream_id).first()
+        stmt = select(Stream).where(Stream.id == active_stream_id)
+        stream = self._db.execute(stmt).scalars().first()
         if not stream:
             return
         stream.max_concurrent_viewers = viewers_count
@@ -59,26 +68,34 @@ class StreamRepositoryImpl(StreamRepository):
     def list_streams(
         self, skip: int, limit: int, date_from: datetime | None, date_to: datetime | None
     ) -> tuple[list[StreamInfo], int]:
-        query = self._db.query(Stream)
+        base_stmt = select(Stream)
+        count_stmt = select(func.count()).select_from(Stream)
         if date_from:
-            query = query.filter(Stream.started_at >= date_from)
+            base_stmt = base_stmt.where(Stream.started_at >= date_from)
+            count_stmt = count_stmt.where(Stream.started_at >= date_from)
         if date_to:
-            query = query.filter(Stream.started_at <= date_to)
-        total = query.count()
-        streams = query.order_by(Stream.started_at.desc()).offset(skip).limit(limit).all()
+            base_stmt = base_stmt.where(Stream.started_at <= date_to)
+            count_stmt = count_stmt.where(Stream.started_at <= date_to)
+
+        total = self._db.execute(count_stmt).scalar_one()
+
+        stmt = base_stmt.order_by(Stream.started_at.desc()).offset(skip).limit(limit)
+        streams = self._db.execute(stmt).scalars().all()
         items = [map_stream_row(row) for row in streams]
         return items, total
 
     def get_stream_with_sessions(self, stream_id: int) -> tuple[StreamInfo, list[StreamViewerSessionInfo]] | None:
-        stream = self._db.query(Stream).filter(Stream.id == stream_id).first()
+        stream_stmt = select(Stream).where(Stream.id == stream_id)
+        stream = self._db.execute(stream_stmt).scalars().first()
         if not stream:
             return None
-        sessions = (
-            self._db.query(StreamViewerSession)
-            .filter(StreamViewerSession.stream_id == stream_id)
+
+        sessions_stmt = (
+            select(StreamViewerSession)
+            .where(StreamViewerSession.stream_id == stream_id)
             .order_by(desc(StreamViewerSession.last_activity))
-            .all()
         )
+        sessions = self._db.execute(sessions_stmt).scalars().all()
         return (
             map_stream_row(stream),
             [
