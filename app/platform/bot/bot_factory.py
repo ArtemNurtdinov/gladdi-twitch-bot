@@ -500,7 +500,7 @@ class BotFactory:
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             chat_repo_provider=self._chat.chat_repo_provider,
-            conversation_repo_provider=self._ai.conversation_repo_provider,
+            conversation_service_provider=self._ai.conversation_service_provider,
         )
 
     def _build_chat_message_uow_factory(self) -> SqlAlchemyChatMessageUnitOfWorkFactory:
@@ -511,7 +511,7 @@ class BotFactory:
             economy_policy_provider=self._economy.economy_policy_provider,
             stream_repo_provider=self._stream.stream_repo_provider,
             viewer_repo_provider=self._viewer.viewer_repo_provider,
-            conversation_repo_provider=self._ai.conversation_repo_provider,
+            conversation_service_provider=self._ai.conversation_service_provider,
         )
 
     def _build_follow_age_uow_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkFactory:
@@ -519,5 +519,5 @@ class BotFactory:
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             chat_repo_provider=self._chat.chat_repo_provider,
-            conversation_repo_provider=self._ai.conversation_repo_provider,
+            conversation_service_provider=self._ai.conversation_service_provider,
         )

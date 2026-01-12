@@ -37,7 +37,7 @@ class HandleAskUseCase:
             prompt = self._prompt_service.get_default_prompt(command_ask.display_name, command_ask.message)
 
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            history = uow.conversation_repo.get_last_messages(
+            history = uow.conversation_service.get_last_messages(
                 channel_name=command_ask.channel_name,
                 system_prompt=self._system_prompt,
             )
@@ -45,7 +45,7 @@ class HandleAskUseCase:
         assistant_message = await self._chat_response_use_case.generate_response_from_history(history=history, prompt=prompt)
 
         with self._unit_of_work_factory.create() as uow:
-            uow.conversation_repo.add_messages_to_db(
+            uow.conversation_service.save_conversation_to_db(
                 channel_name=command_ask.channel_name,
                 user_message=prompt,
                 ai_message=assistant_message,
