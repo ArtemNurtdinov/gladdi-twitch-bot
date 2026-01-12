@@ -21,6 +21,11 @@ class HandleTransferUseCase:
     ) -> str:
         command_prefix = command_transfer.command_prefix
         command_name = command_transfer.channel_name
+        user_message = command_transfer.command_prefix + command_transfer.command_name
+        if command_transfer.recipient_input:
+            user_message += command_transfer.recipient_input
+        if command_transfer.amount_input:
+            user_message += command_transfer.amount_input
 
         if not command_transfer.recipient_input or not command_transfer.amount_input:
             result = (
@@ -28,6 +33,12 @@ class HandleTransferUseCase:
                 f"Например: {command_transfer.command_prefix}{command_transfer.command_name} @ArtemNeFRiT 100"
             )
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_transfer.channel_name,
+                    user_name=command_transfer.user_name,
+                    content=user_message,
+                    current_time=command_transfer.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.bot_nick,
@@ -46,6 +57,12 @@ class HandleTransferUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_transfer.channel_name,
+                    user_name=command_transfer.user_name,
+                    content=user_message,
+                    current_time=command_transfer.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_transfer.channel_name,
                     user_name=command_transfer.bot_nick,
                     content=result,
                     current_time=command_transfer.occurred_at,
@@ -55,6 +72,12 @@ class HandleTransferUseCase:
         if transfer_amount <= 0:
             result = f"@{command_transfer.display_name}, сумма должна быть больше 0!"
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_transfer.channel_name,
+                    user_name=command_transfer.user_name,
+                    content=user_message,
+                    current_time=command_transfer.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.bot_nick,
@@ -80,6 +103,12 @@ class HandleTransferUseCase:
             result = f"@{command_transfer.display_name}, {transfer_result.message}"
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_transfer.channel_name,
+                user_name=command_transfer.user_name,
+                content=user_message,
+                current_time=command_transfer.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=command_transfer.channel_name,
                 user_name=command_transfer.bot_nick,
