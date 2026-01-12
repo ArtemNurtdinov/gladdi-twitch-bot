@@ -31,6 +31,8 @@ class HandleStatsUseCase:
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         command_stats: StatsDTO,
     ) -> str:
+        user_message = command_stats.command_prefix + command_stats.command_name
+
         with db_session_provider() as db:
             balance = self._economy_policy_provider.get(db).get_user_balance(command_stats.channel_name, command_stats.user_name)
             bets = self._betting_service_provider.get(db).get_user_bets(command_stats.channel_name, command_stats.user_name)
@@ -66,6 +68,12 @@ class HandleStatsUseCase:
             result += f" ⚔️ Битвы: {battle_stats.total_battles} | Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%)."
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_stats.channel_name,
+                user_name=command_stats.user_name,
+                content=user_message,
+                current_time=command_stats.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=command_stats.channel_name,
                 user_name=command_stats.bot_nick,

@@ -394,6 +394,8 @@ class BotFactory:
             post_message_fn=post_message_fn,
         )
         stats_command_handler = StatsCommandHandler(
+            command_prefix=prefix,
+            command_name=settings.command_stats,
             handle_stats_use_case=HandleStatsUseCase(
                 economy_policy_provider=self._economy.economy_policy_provider,
                 betting_service_provider=self._betting.betting_service_provider,
@@ -402,7 +404,6 @@ class BotFactory:
             ),
             db_session_provider=lambda: db_rw_session(),
             db_readonly_session_provider=lambda: db_ro_session(),
-            command_name=settings.command_stats,
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
