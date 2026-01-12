@@ -20,6 +20,7 @@ class HandleTopBottomUseCase:
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_top: TopDTO,
     ) -> str:
+        user_message = command_top.command_prefix + command_top.command_name
         with db_readonly_session_provider() as db:
             top_users = self._economy_policy_provider.get(db).get_top_users(command_top.channel_name, limit=command_top.limit)
 
@@ -32,6 +33,12 @@ class HandleTopBottomUseCase:
             result = "\n".join(lines)
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_top.channel_name,
+                user_name=command_top.user_name,
+                content=user_message,
+                current_time=command_top.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=command_top.channel_name,
                 user_name=command_top.bot_nick,
@@ -47,6 +54,7 @@ class HandleTopBottomUseCase:
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_bottom: BottomDTO,
     ) -> str:
+        user_message = command_bottom.command_prefix + command_bottom.command_name
         with db_readonly_session_provider() as db:
             bottom_users = self._economy_policy_provider.get(db).get_bottom_users(command_bottom.channel_name, limit=command_bottom.limit)
 
@@ -59,6 +67,12 @@ class HandleTopBottomUseCase:
             result = "\n".join(lines)
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_bottom.channel_name,
+                user_name=command_bottom.user_name,
+                content=user_message,
+                current_time=command_bottom.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=command_bottom.channel_name,
                 user_name=command_bottom.bot_nick,
