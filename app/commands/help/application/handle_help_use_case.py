@@ -17,12 +17,19 @@ class HandleHelpUseCase:
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_help: HelpDTO,
     ) -> str:
+        user_message = command_help.command_prefix + command_help.command_name
         help_parts = ["📜 Доступные команды:"]
         for cmd in command_help.commands:
             help_parts.append(f"{command_help.command_prefix}{cmd}")
         help_text = " ".join(help_parts)
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_help.channel_name,
+                user_name=command_help.user_name,
+                content=user_message,
+                current_time=command_help.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=command_help.channel_name,
                 user_name=command_help.bot_nick,

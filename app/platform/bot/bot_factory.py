@@ -423,6 +423,7 @@ class BotFactory:
         }
         help_command_handler = HelpCommandHandler(
             command_prefix=prefix,
+            command_name=settings.command_help,
             handle_help_use_case=HandleHelpUseCase(chat_use_case_provider=self._chat.chat_use_case_provider),
             db_session_provider=lambda: db_rw_session(),
             commands=commands,
