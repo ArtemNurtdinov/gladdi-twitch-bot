@@ -51,6 +51,10 @@ class HandleRollUseCase:
         timeout_action: RollTimeoutAction | None = None
         current_time = datetime.now()
 
+        user_message = command_roll.command_prefix + command_roll.command_name
+        if command_roll.amount_input:
+            user_message += command_roll.amount_input
+
         with db_readonly_session_provider() as db:
             equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
                 channel_name=command_roll.channel_name, user_name=command_roll.user_name
@@ -65,6 +69,12 @@ class HandleRollUseCase:
                 remaining_time = cooldown_seconds - time_since_last
                 result = f"@{command_roll.display_name}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
                 with db_session_provider() as db:
+                    self._chat_use_case_provider.get(db).save_chat_message(
+                        channel_name=command_roll.channel_name,
+                        user_name=command_roll.user_name,
+                        content=user_message,
+                        current_time=command_roll.occurred_at,
+                    )
                     self._chat_use_case_provider.get(db).save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.bot_nick,
@@ -88,6 +98,12 @@ class HandleRollUseCase:
                 with db_session_provider() as db:
                     self._chat_use_case_provider.get(db).save_chat_message(
                         channel_name=command_roll.channel_name,
+                        user_name=command_roll.user_name,
+                        content=user_message,
+                        current_time=command_roll.occurred_at,
+                    )
+                    self._chat_use_case_provider.get(db).save_chat_message(
+                        channel_name=command_roll.channel_name,
                         user_name=command_roll.bot_nick,
                         content=result,
                         current_time=command_roll.occurred_at,
@@ -102,6 +118,12 @@ class HandleRollUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_roll.channel_name,
+                    user_name=command_roll.user_name,
+                    content=user_message,
+                    current_time=command_roll.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_roll.channel_name,
                     user_name=command_roll.bot_nick,
                     content=result,
                     current_time=command_roll.occurred_at,
@@ -112,6 +134,12 @@ class HandleRollUseCase:
         if bet_amount > BettingService.MAX_BET_AMOUNT:
             result = f"Максимальная сумма ставки: {BettingService.MAX_BET_AMOUNT} монет."
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_roll.channel_name,
+                    user_name=command_roll.user_name,
+                    content=user_message,
+                    current_time=command_roll.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.bot_nick,
@@ -149,6 +177,12 @@ class HandleRollUseCase:
             )
             if not user_balance:
                 result = f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет."
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_roll.channel_name,
+                    user_name=command_roll.user_name,
+                    content=user_message,
+                    current_time=command_roll.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.bot_nick,
@@ -231,6 +265,12 @@ class HandleRollUseCase:
         with db_session_provider() as db:
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=command_roll.channel_name,
+                user_name=command_roll.user_name,
+                content=user_message,
+                current_time=command_roll.occurred_at,
+            )
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_roll.channel_name,
                 user_name=command_roll.bot_nick,
                 content=final_result,
                 current_time=command_roll.occurred_at,
@@ -251,6 +291,12 @@ class HandleRollUseCase:
                     no_timeout_message = f"🛡️ @{command_roll.display_name}, {protection_message}"
 
                 with db_session_provider() as db:
+                    self._chat_use_case_provider.get(db).save_chat_message(
+                        channel_name=command_roll.channel_name,
+                        user_name=command_roll.user_name,
+                        content=user_message,
+                        current_time=command_roll.occurred_at,
+                    )
                     self._chat_use_case_provider.get(db).save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.bot_nick,
