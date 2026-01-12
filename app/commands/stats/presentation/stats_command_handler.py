@@ -12,22 +12,26 @@ from core.chat.interfaces import ChatContext
 class StatsCommandHandler:
     def __init__(
         self,
+        command_prefix: str,
+        command_name: str,
         handle_stats_use_case: HandleStatsUseCase,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
-        command_name: str,
         bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
+        self.command_prefix = command_prefix
+        self.command_name = command_name
         self._handle_stats_use_case = handle_stats_use_case
         self._db_session_provider = db_session_provider
         self._db_readonly_session_provider = db_readonly_session_provider
-        self.command_name = command_name
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
         dto = StatsDTO(
+            command_prefix=self.command_prefix,
+            command_name=self.command_name,
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
