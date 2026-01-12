@@ -12,6 +12,8 @@ class FollowageInfo:
 
 @dataclass(frozen=True)
 class FollowageDTO:
+    command_prefix: str
+    command_name: str
     channel_name: str
     display_name: str
     user_name: str

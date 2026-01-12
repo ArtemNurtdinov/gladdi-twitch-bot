@@ -256,6 +256,8 @@ class BotFactory:
         ask_uow_factory = self._build_ask_uow_factory()
 
         followage_command_handler = FollowageCommandHandler(
+            command_prefix=prefix,
+            command_name=settings.command_followage,
             handle_follow_age_use_case=HandleFollowAgeUseCase(
                 chat_repo_provider=self._chat.chat_repo_provider,
                 conversation_repo_provider=self._ai.conversation_repo_provider,
