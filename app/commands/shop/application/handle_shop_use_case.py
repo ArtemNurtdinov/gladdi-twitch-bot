@@ -33,6 +33,8 @@ class HandleShopUseCase:
         all_items = ShopItems.get_all_items()
         sorted_items = sorted(all_items.items(), key=lambda x: x[1].price)
 
+        user_message = command_shop.command_prefix + command_shop.command_name
+
         result_parts = ["МАГАЗИН АРТЕФАКТОВ:"]
         for _, item in sorted_items:
             result_parts.append(f"{item.emoji} {item.name} - {item.price} монет.")
@@ -44,6 +46,12 @@ class HandleShopUseCase:
         result = "\n".join(result_parts)
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_shop.channel_name,
+                user_name=command_shop.user_name,
+                content=user_message,
+                current_time=command_shop.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=command_shop.channel_name,
                 user_name=command_shop.bot_nick,
@@ -60,6 +68,8 @@ class HandleShopUseCase:
     ) -> str:
         user_name = command_buy.user_name
 
+        user_message = command_buy.command_prefix + command_buy.command_name
+
         if not command_buy.item_name_input:
             result = (
                 f"@{command_buy.display_name}, укажи название предмета! "
@@ -67,6 +77,12 @@ class HandleShopUseCase:
                 f"Пример: {command_buy.command_prefix}{command_buy.command_name} стул"
             )
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_buy.channel_name,
+                    user_name=command_buy.user_name,
+                    content=user_message,
+                    current_time=command_buy.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.bot_nick,
@@ -80,6 +96,12 @@ class HandleShopUseCase:
         except ValueError as e:
             result = str(e)
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_buy.channel_name,
+                    user_name=command_buy.user_name,
+                    content=user_message,
+                    current_time=command_buy.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.bot_nick,
@@ -100,6 +122,12 @@ class HandleShopUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_buy.channel_name,
+                    user_name=command_buy.user_name,
+                    content=user_message,
+                    current_time=command_buy.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_buy.channel_name,
                     user_name=command_buy.bot_nick,
                     content=result,
                     current_time=command_buy.occurred_at,
@@ -114,6 +142,12 @@ class HandleShopUseCase:
         if user_balance.balance < item.price:
             result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_buy.channel_name,
+                    user_name=command_buy.user_name,
+                    content=user_message,
+                    current_time=command_buy.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.bot_nick,
@@ -137,6 +171,12 @@ class HandleShopUseCase:
         result = f"@{command_buy.display_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_buy.channel_name,
+                user_name=command_buy.user_name,
+                content=user_message,
+                current_time=command_buy.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=command_buy.channel_name, user_name=command_buy.bot_nick, content=result, current_time=command_buy.occurred_at
             )
