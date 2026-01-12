@@ -23,14 +23,12 @@ class ChatResponseUseCase:
         self._db_readonly_session_provider = db_readonly_session_provider
 
     async def generate_response(self, prompt: str, channel_name: str) -> str:
-        messages = []
         with self._db_readonly_session_provider() as db:
             history = self._conversation_service_provider.get(db).get_last_messages(
                 channel_name=channel_name, system_prompt=self._system_prompt
             )
-        messages.extend(history)
-        messages.append(AIMessage(Role.USER, prompt))
-        assistant_response = await self._llm_client.generate_ai_response(messages)
+        history.append(AIMessage(Role.USER, prompt))
+        assistant_response = await self._llm_client.generate_ai_response(history)
         return assistant_response.message
 
     async def generate_response_from_history(self, history: list[AIMessage], prompt: str) -> str:

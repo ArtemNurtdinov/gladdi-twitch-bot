@@ -4,7 +4,7 @@ from contextlib import AbstractContextManager, contextmanager
 
 from sqlalchemy.orm import Session
 
-from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
+from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.chat.domain.repo import ChatRepository
 from app.commands.chat.application.chat_message_uow import ChatMessageUnitOfWork, ChatMessageUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
@@ -22,7 +22,7 @@ class SqlAlchemyChatMessageUnitOfWork(ChatMessageUnitOfWork):
         economy: EconomyPolicy,
         stream_repo: StreamRepository,
         viewer_repo: ViewerRepository,
-        conversation_repo: ConversationRepository,
+        conversation_service: ConversationService,
         read_only: bool,
     ):
         self._session = session
@@ -30,7 +30,7 @@ class SqlAlchemyChatMessageUnitOfWork(ChatMessageUnitOfWork):
         self._economy = economy
         self._stream_repo = stream_repo
         self._viewer_repo = viewer_repo
-        self._conversation_repo = conversation_repo
+        self._conversation_service = conversation_service
         self._read_only = read_only
 
     @property
@@ -50,8 +50,8 @@ class SqlAlchemyChatMessageUnitOfWork(ChatMessageUnitOfWork):
         return self._viewer_repo
 
     @property
-    def conversation_repo(self) -> ConversationRepository:
-        return self._conversation_repo
+    def conversation_service(self) -> ConversationService:
+        return self._conversation_service
 
     def commit(self) -> None:
         if not self._read_only:
@@ -70,7 +70,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
         economy_policy_provider: Provider[EconomyPolicy],
         stream_repo_provider: Provider[StreamRepository],
         viewer_repo_provider: Provider[ViewerRepository],
-        conversation_repo_provider: Provider[ConversationRepository],
+        conversation_service_provider: Provider[ConversationService],
     ):
         self._session_factory_rw = session_factory_rw
         self._session_factory_ro = session_factory_ro
@@ -78,7 +78,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
         self._economy_policy_provider = economy_policy_provider
         self._stream_repo_provider = stream_repo_provider
         self._viewer_repo_provider = viewer_repo_provider
-        self._conversation_repo_provider = conversation_repo_provider
+        self._conversation_service_provider = conversation_service_provider
 
     def create(self, read_only: bool = False) -> AbstractContextManager[ChatMessageUnitOfWork]:
         session_factory = self._session_factory_ro if read_only else self._session_factory_rw
@@ -92,7 +92,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(ChatMessageUnitOfWorkFactory):
                     economy=self._economy_policy_provider.get(db),
                     stream_repo=self._stream_repo_provider.get(db),
                     viewer_repo=self._viewer_repo_provider.get(db),
-                    conversation_repo=self._conversation_repo_provider.get(db),
+                    conversation_service=self._conversation_service_provider.get(db),
                     read_only=read_only,
                 )
                 try:

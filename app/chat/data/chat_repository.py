@@ -28,7 +28,7 @@ class ChatRepositoryImpl(ChatRepository):
             .where(ChatMessageORM.created_at < end)
             .order_by(ChatMessageORM.created_at.asc())
         )
-        rows = self._db.execute(stmt).scalars()
+        rows = self._db.execute(stmt).scalars().all()
         return [ChatMessage(r.channel_name, r.user_name, r.content, r.created_at) for r in rows]
 
     def list_last(self, channel_name: str, limit: int) -> list[ChatMessage]:
@@ -38,7 +38,7 @@ class ChatRepositoryImpl(ChatRepository):
             .order_by(ChatMessageORM.created_at.desc())
             .limit(limit)
         )
-        rows = list(self._db.execute(stmt).scalars())
+        rows = self._db.execute(stmt).scalars().all()
         return [ChatMessage(r.channel_name, r.user_name, r.content, r.created_at) for r in reversed(rows)]
 
     def top_chat_users(self, limit: int, date_from: datetime | None, date_to: datetime | None) -> Sequence[tuple[str, str, int]]:
@@ -59,5 +59,5 @@ class ChatRepositoryImpl(ChatRepository):
             .where(ChatMessageORM.created_at >= since)
             .order_by(ChatMessageORM.created_at.asc())
         )
-        rows = self._db.execute(stmt).scalars()
+        rows = self._db.execute(stmt).scalars().all()
         return [ChatMessage(r.channel_name, r.user_name, r.content, r.created_at) for r in rows]

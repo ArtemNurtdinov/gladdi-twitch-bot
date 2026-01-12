@@ -3,7 +3,7 @@ requests~=2.32.3
 cryptography==43.0.1
 fastapi==0.115.0
 pydantic==2.4.2
-SQLAlchemy==2.0.38
+SQLAlchemy==2.0.45
 uuid==1.30
 psycopg2-binary==2.9.10
 twitchio==2.10.0

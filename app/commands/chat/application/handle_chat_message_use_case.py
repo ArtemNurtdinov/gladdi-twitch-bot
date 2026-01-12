@@ -72,7 +72,7 @@ class HandleChatMessageUseCase:
                     )
 
         with self._unit_of_work_factory.create(read_only=True) as uow_ro:
-            history = uow_ro.conversation_repo.get_last_messages(
+            history = uow_ro.conversation_service.get_last_messages(
                 channel_name=dto.channel_name,
                 system_prompt=self._system_prompt,
             )
@@ -80,7 +80,7 @@ class HandleChatMessageUseCase:
         result = await self._chat_response_use_case.generate_response_from_history(history, prompt)
 
         with self._unit_of_work_factory.create() as uow:
-            uow.conversation_repo.add_messages_to_db(
+            uow.conversation_service.save_conversation_to_db(
                 channel_name=dto.channel_name,
                 user_message=prompt,
                 ai_message=result,

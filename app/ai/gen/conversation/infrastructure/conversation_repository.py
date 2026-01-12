@@ -1,4 +1,4 @@
-from sqlalchemy import case
+from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
@@ -10,23 +10,17 @@ class ConversationRepositoryImpl(ConversationRepository):
     def __init__(self, db: Session):
         self._db = db
 
-    def get_last_messages(self, channel_name: str, system_prompt: str) -> list[AIMessage]:
+    def get_last_messages(self, channel_name: str) -> list[AIMessage]:
         role_order = case((AIDbMessage.role == Role.USER, 2), (AIDbMessage.role == Role.ASSISTANT, 1), else_=3)
-
-        messages = (
-            self._db.query(AIDbMessage)
-            .filter_by(channel_name=channel_name)
-            .filter(AIDbMessage.role != Role.SYSTEM)
+        stmt = (
+            select(AIDbMessage)
+            .where(AIDbMessage.channel_name == channel_name)
+            .where(AIDbMessage.role != Role.SYSTEM)
             .order_by(AIDbMessage.created_at.desc(), role_order)
             .limit(50)
-            .all()
         )
-        messages.reverse()
-        ai_messages = [AIMessage(Role.SYSTEM, system_prompt)]
-
-        for message in messages:
-            ai_messages.append(AIMessage(message.role, message.content))
-        return ai_messages
+        rows = self._db.execute(stmt).scalars().all()
+        return [AIMessage(r.role, r.content) for r in rows]
 
     def add_messages_to_db(self, channel_name: str, user_message: str, ai_message: str) -> None:
         user_message = AIDbMessage(channel_name=channel_name, role=Role.USER, content=user_message)
