@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.economy.domain.models import ShopItems, ShopItemType
@@ -18,12 +19,13 @@ class EquipmentRepositoryImpl(EquipmentRepository):
         self._db = db
 
     def list_user_equipment(self, channel_name: str, user_name: str) -> list[UserEquipmentItem]:
-        rows = (
-            self._db.query(OrmUserEquipment)
-            .filter_by(channel_name=channel_name, user_name=user_name)
-            .filter(OrmUserEquipment.expires_at > datetime.utcnow())
-            .all()
+        stmt = (
+            select(OrmUserEquipment)
+            .where(OrmUserEquipment.channel_name == channel_name)
+            .where(OrmUserEquipment.user_name == user_name)
+            .where(OrmUserEquipment.expires_at > datetime.utcnow())
         )
+        rows = self._db.execute(stmt).scalars().all()
         return [_to_domain_item(r) for r in rows]
 
     def add_equipment(self, channel_name: str, user_name: str, item: UserEquipmentItem) -> None:
@@ -36,10 +38,12 @@ class EquipmentRepositoryImpl(EquipmentRepository):
         self._db.add(orm)
 
     def equipment_exists(self, channel_name: str, user_name: str, item_type: ShopItemType) -> bool:
-        existing_item = (
-            self._db.query(OrmUserEquipment)
-            .filter_by(channel_name=channel_name, user_name=user_name, item_type=item_type)
-            .filter(OrmUserEquipment.expires_at > datetime.utcnow())
-            .first()
+        stmt = (
+            select(OrmUserEquipment)
+            .where(OrmUserEquipment.channel_name == channel_name)
+            .where(OrmUserEquipment.user_name == user_name)
+            .where(OrmUserEquipment.item_type == item_type)
+            .where(OrmUserEquipment.expires_at > datetime.utcnow())
         )
+        existing_item = self._db.execute(stmt).scalars().first()
         return existing_item is not None
