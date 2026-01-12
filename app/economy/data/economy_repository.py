@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.economy.data.db.transaction_history import TransactionHistory
@@ -29,7 +30,12 @@ class EconomyRepositoryImpl(EconomyRepository):
         )
 
     def get_balance(self, channel_name: str, user_name: str) -> UserBalanceInfo | None:
-        row = self._db.query(UserBalance).filter_by(channel_name=channel_name, user_name=user_name).first()
+        stmt = (
+            select(UserBalance)
+            .where(UserBalance.channel_name == channel_name)
+            .where(UserBalance.user_name == user_name)
+        )
+        row = self._db.execute(stmt).scalars().first()
         return self._to_info(row) if row else None
 
     def create_balance(self, channel_name: str, user_name: str, starting_balance: int) -> UserBalanceInfo:
@@ -50,10 +56,10 @@ class EconomyRepositoryImpl(EconomyRepository):
         return self._to_info(row)
 
     def save_balance(self, balance: UserBalanceInfo) -> UserBalanceInfo:
+        row = None
         if balance.id:
-            row = self._db.query(UserBalance).filter_by(id=balance.id).first()
-        else:
-            row = None
+            stmt = select(UserBalance).where(UserBalance.id == balance.id)
+            row = self._db.execute(stmt).scalars().first()
 
         if not row:
             row = UserBalance(channel_name=balance.channel_name, user_name=balance.user_name)
@@ -87,9 +93,21 @@ class EconomyRepositoryImpl(EconomyRepository):
         )
 
     def get_top_users(self, channel_name: str, limit: int) -> list[BalanceBrief]:
-        rows = self._db.query(UserBalance).filter_by(channel_name=channel_name).order_by(UserBalance.balance.desc()).limit(limit).all()
+        stmt = (
+            select(UserBalance)
+            .where(UserBalance.channel_name == channel_name)
+            .order_by(UserBalance.balance.desc())
+            .limit(limit)
+        )
+        rows = self._db.execute(stmt).scalars().all()
         return [BalanceBrief(user_name=r.user_name, balance=r.balance) for r in rows]
 
     def get_bottom_users(self, channel_name: str, limit: int) -> list[BalanceBrief]:
-        rows = self._db.query(UserBalance).filter_by(channel_name=channel_name).order_by(UserBalance.balance.asc()).limit(limit).all()
+        stmt = (
+            select(UserBalance)
+            .where(UserBalance.channel_name == channel_name)
+            .order_by(UserBalance.balance.asc())
+            .limit(limit)
+        )
+        rows = self._db.execute(stmt).scalars().all()
         return [BalanceBrief(user_name=r.user_name, balance=r.balance) for r in rows]
