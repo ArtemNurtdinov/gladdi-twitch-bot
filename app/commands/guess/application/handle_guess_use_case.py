@@ -189,11 +189,22 @@ class HandleGuessUseCase:
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         guess_letter_dto: GuessLetterDTO,
     ) -> str:
+        user_message = guess_letter_dto.command_prefix + guess_letter_dto.command_name
+
+        if guess_letter_dto.letter_input:
+            user_message += guess_letter_dto.letter_input
+
         if not guess_letter_dto.letter_input:
             status = self._minigame_service.get_word_game_status(guess_letter_dto.channel_name)
             if status:
                 message = status
                 with db_session_provider() as db:
+                    self._chat_use_case_provider.get(db).save_chat_message(
+                        channel_name=guess_letter_dto.channel_name,
+                        user_name=guess_letter_dto.user_name,
+                        content=user_message,
+                        current_time=guess_letter_dto.occurred_at,
+                    )
                     self._chat_use_case_provider.get(db).save_chat_message(
                         channel_name=guess_letter_dto.channel_name,
                         user_name=guess_letter_dto.bot_nick,
@@ -209,6 +220,12 @@ class HandleGuessUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
+                    user_name=guess_letter_dto.user_name,
+                    content=user_message,
+                    current_time=guess_letter_dto.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
                     content=message,
                     current_time=guess_letter_dto.occurred_at,
@@ -222,6 +239,12 @@ class HandleGuessUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
+                    user_name=guess_letter_dto.user_name,
+                    content=user_message,
+                    current_time=guess_letter_dto.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
                     content=message,
                     current_time=guess_letter_dto.occurred_at,
@@ -231,6 +254,12 @@ class HandleGuessUseCase:
         if not game.is_active:
             message = "Игра уже завершена"
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_letter_dto.channel_name,
+                    user_name=guess_letter_dto.user_name,
+                    content=user_message,
+                    current_time=guess_letter_dto.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
@@ -243,6 +272,12 @@ class HandleGuessUseCase:
         if not len(letter) == 1 or not letter.isalpha():
             message = "Введите одну букву русского алфавита"
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_letter_dto.channel_name,
+                    user_name=guess_letter_dto.user_name,
+                    content=user_message,
+                    current_time=guess_letter_dto.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
@@ -286,6 +321,12 @@ class HandleGuessUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
+                    user_name=guess_letter_dto.user_name,
+                    content=user_message,
+                    current_time=guess_letter_dto.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
                     content=message,
                     current_time=guess_letter_dto.occurred_at,
@@ -293,6 +334,12 @@ class HandleGuessUseCase:
         else:
             message = f"Такой буквы нет. Слово: {masked}."
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_letter_dto.channel_name,
+                    user_name=guess_letter_dto.user_name,
+                    content=user_message,
+                    current_time=guess_letter_dto.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
