@@ -318,6 +318,8 @@ class BotFactory:
             post_message_fn=post_message_fn,
         )
         balance_command_handler = BalanceCommandHandler(
+            command_prefix=prefix,
+            command_name=settings.command_balance,
             handle_balance_use_case=HandleBalanceUseCase(
                 economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
             ),

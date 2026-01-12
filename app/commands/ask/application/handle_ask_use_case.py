@@ -53,6 +53,14 @@ class HandleAskUseCase:
             uow.chat_repo.save(
                 ChatMessage(
                     channel_name=command_ask.channel_name,
+                    user_name=command_ask.user_name,
+                    content=command_ask.message,
+                    created_at=command_ask.occurred_at,
+                )
+            )
+            uow.chat_repo.save(
+                ChatMessage(
+                    channel_name=command_ask.channel_name,
                     user_name=command_ask.bot_nick.lower(),
                     content=assistant_message,
                     created_at=command_ask.occurred_at,

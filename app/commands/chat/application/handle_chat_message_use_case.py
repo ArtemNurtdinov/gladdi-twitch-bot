@@ -25,17 +25,6 @@ class HandleChatMessageUseCase:
     async def handle(self, dto: ChatMessageDTO) -> str | None:
         intent = await self._get_intent_from_text_use_case.get_intent_from_text(dto.message)
 
-        prompt = None
-        if intent == Intent.JACKBOX:
-            prompt = self._prompt_service.get_jackbox_prompt(dto.display_name, dto.message)
-        elif intent == Intent.DANKAR_CUT:
-            prompt = self._prompt_service.get_dankar_cut_prompt(dto.display_name, dto.message)
-        elif intent == Intent.HELLO:
-            prompt = self._prompt_service.get_hello_prompt(dto.display_name, dto.message)
-
-        if prompt is None:
-            return None
-
         with self._unit_of_work_factory.create() as uow:
             uow.chat_repo.save(
                 ChatMessage(
@@ -70,6 +59,17 @@ class HandleChatMessageUseCase:
                         user_name=dto.user_name,
                         current_time=dto.occurred_at,
                     )
+
+        prompt = None
+        if intent == Intent.JACKBOX:
+            prompt = self._prompt_service.get_jackbox_prompt(dto.display_name, dto.message)
+        elif intent == Intent.DANKAR_CUT:
+            prompt = self._prompt_service.get_dankar_cut_prompt(dto.display_name, dto.message)
+        elif intent == Intent.HELLO:
+            prompt = self._prompt_service.get_hello_prompt(dto.display_name, dto.message)
+
+        if prompt is None:
+            return None
 
         with self._unit_of_work_factory.create(read_only=True) as uow_ro:
             history = uow_ro.conversation_service.get_last_messages(
