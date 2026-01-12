@@ -356,7 +356,7 @@ class HandleGuessUseCase:
     ) -> str:
         user_message = guess_word_dto.command_prefix + guess_word_dto.command_name
         if guess_word_dto.word_input:
-            guess_word_dto += guess_word_dto.word_input
+            user_message += guess_word_dto.word_input
 
         if not guess_word_dto.word_input:
             status = self._minigame_service.get_word_game_status(guess_word_dto.channel_name)
