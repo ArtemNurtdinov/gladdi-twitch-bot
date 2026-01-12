@@ -4,7 +4,7 @@ from contextlib import AbstractContextManager
 from sqlalchemy.orm import Session
 
 from app.chat.application.chat_use_case import ChatUseCase
-from app.commands.dto import ChatContextDTO
+from app.commands.bonus.application.model import BonusDTO
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.stream.domain.stream_service import StreamService
@@ -28,8 +28,10 @@ class HandleBonusUseCase:
         self,
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
-        chat_context_dto: ChatContextDTO,
+        chat_context_dto: BonusDTO,
     ) -> str:
+        user_message = chat_context_dto.command_prefix + chat_context_dto.command_name
+
         with db_readonly_session_provider() as db:
             active_stream = self._stream_service_provider.get(db).get_active_stream(chat_context_dto.channel_name)
 
@@ -63,6 +65,12 @@ class HandleBonusUseCase:
                         result = f"❌ @{chat_context_dto.display_name}, бонус недоступен!"
 
         with db_session_provider() as db:
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=chat_context_dto.channel_name,
+                user_name=chat_context_dto.user_name,
+                content=user_message,
+                current_time=chat_context_dto.occurred_at,
+            )
             self._chat_use_case_provider.get(db).save_chat_message(
                 channel_name=chat_context_dto.channel_name,
                 user_name=chat_context_dto.bot_nick,

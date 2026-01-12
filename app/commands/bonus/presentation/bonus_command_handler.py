@@ -32,6 +32,8 @@ class BonusCommandHandler:
         bot_nick = self._bot_nick.lower()
 
         bonus = BonusDTO(
+            command_prefix=self.command_prefix,
+            command_name=self.command_name,
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
