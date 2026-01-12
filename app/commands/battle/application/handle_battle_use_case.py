@@ -44,6 +44,7 @@ class HandleBattleUseCase:
         challenger_display = command_battle.display_name
         challenger_user = command_battle.user_name
         bot_nick = command_battle.bot_nick
+        user_message = command_battle.command_prefix + command_battle.command_name
 
         fee = EconomyPolicy.BATTLE_ENTRY_FEE
 
@@ -55,6 +56,12 @@ class HandleBattleUseCase:
         if user_balance.balance < fee:
             result = f"@{challenger_display}, недостаточно монет для участия в битве! Необходимо: {EconomyPolicy.BATTLE_ENTRY_FEE} монет."
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_battle.channel_name,
+                    user_name=command_battle.user_name,
+                    content=user_message,
+                    current_time=command_battle.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=bot_nick,
@@ -81,6 +88,12 @@ class HandleBattleUseCase:
                     error_result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
                     self._chat_use_case_provider.get(db).save_chat_message(
                         channel_name=command_battle.channel_name,
+                        user_name=command_battle.user_name,
+                        content=user_message,
+                        current_time=command_battle.occurred_at,
+                    )
+                    self._chat_use_case_provider.get(db).save_chat_message(
+                        channel_name=command_battle.channel_name,
                         user_name=bot_nick,
                         content=error_result,
                         current_time=command_battle.occurred_at,
@@ -101,6 +114,12 @@ class HandleBattleUseCase:
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_battle.channel_name,
+                    user_name=command_battle.user_name,
+                    content=user_message,
+                    current_time=command_battle.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_battle.channel_name,
                     user_name=bot_nick,
                     content=result,
                     current_time=command_battle.occurred_at,
@@ -115,6 +134,12 @@ class HandleBattleUseCase:
         if command_battle.waiting_user == challenger_display:
             result = f"@{challenger_display}, ты не можешь сражаться сам с собой. Подожди достойного противника."
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_battle.channel_name,
+                    user_name=command_battle.user_name,
+                    content=user_message,
+                    current_time=command_battle.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=bot_nick,
@@ -138,6 +163,12 @@ class HandleBattleUseCase:
         if not challenger_balance:
             result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
             with db_session_provider() as db:
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=command_battle.channel_name,
+                    user_name=command_battle.user_name,
+                    content=user_message,
+                    current_time=command_battle.occurred_at,
+                )
                 self._chat_use_case_provider.get(db).save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=bot_nick,
@@ -175,7 +206,16 @@ class HandleBattleUseCase:
                 channel_name=command_battle.channel_name, user_message=prompt, ai_message=result_story
             )
             self._chat_use_case_provider.get(db).save_chat_message(
-                channel_name=command_battle.channel_name, user_name=bot_nick, content=result_story, current_time=command_battle.occurred_at
+                channel_name=command_battle.channel_name,
+                user_name=command_battle.user_name,
+                content=user_message,
+                current_time=command_battle.occurred_at,
+            )
+            self._chat_use_case_provider.get(db).save_chat_message(
+                channel_name=command_battle.channel_name,
+                user_name=bot_nick,
+                content=result_story,
+                current_time=command_battle.occurred_at,
             )
             self._battle_use_case_provider.get(db).save_battle_history(
                 channel_name=command_battle.channel_name,

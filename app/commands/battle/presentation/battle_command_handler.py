@@ -34,6 +34,8 @@ class BattleCommandHandler:
 
     async def handle(self, channel_name: str, display_name: str, battle_waiting_user_ref, chat_ctx: ChatContext):
         battle_dto = BattleDTO(
+            command_prefix=self.command_prefix,
+            command_name=self.command_name,
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
