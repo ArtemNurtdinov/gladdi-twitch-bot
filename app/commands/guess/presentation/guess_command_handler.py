@@ -68,6 +68,8 @@ class GuessCommandHandler:
 
     async def handle_guess_word(self, channel_name: str, display_name: str, chat_ctx: ChatContext, word: str | None):
         dto = GuessWordDTO(
+            command_prefix=self.command_prefix,
+            command_name=self.command_guess_word,
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),

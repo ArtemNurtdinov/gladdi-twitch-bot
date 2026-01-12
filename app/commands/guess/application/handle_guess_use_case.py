@@ -354,11 +354,21 @@ class HandleGuessUseCase:
         db_session_provider: Callable[[], AbstractContextManager[Session]],
         guess_word_dto: GuessWordDTO,
     ) -> str:
+        user_message = guess_word_dto.command_prefix + guess_word_dto.command_name
+        if guess_word_dto.word_input:
+            guess_word_dto += guess_word_dto.word_input
+
         if not guess_word_dto.word_input:
             status = self._minigame_service.get_word_game_status(guess_word_dto.channel_name)
             if status:
                 message = status
                 with db_session_provider() as db:
+                    self._chat_use_case_provider.get(db).save_chat_message(
+                        channel_name=guess_word_dto.channel_name,
+                        user_name=guess_word_dto.user_name,
+                        content=user_message,
+                        current_time=guess_word_dto.occurred_at,
+                    )
                     self._chat_use_case_provider.get(db).save_chat_message(
                         channel_name=guess_word_dto.channel_name,
                         user_name=guess_word_dto.bot_nick,
@@ -374,7 +384,16 @@ class HandleGuessUseCase:
             message = "Сейчас нет активной игры 'поле чудес'"
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    guess_word_dto.channel_name, guess_word_dto.bot_nick, message, guess_word_dto.occurred_at
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.user_name,
+                    content=user_message,
+                    current_time=guess_word_dto.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.bot_nick,
+                    content=message,
+                    current_time=guess_word_dto.occurred_at,
                 )
             return message
 
@@ -384,7 +403,16 @@ class HandleGuessUseCase:
             message = f"Время игры истекло! Слово было '{game.target_word}'"
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    guess_word_dto.channel_name, guess_word_dto.bot_nick, message, guess_word_dto.occurred_at
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.user_name,
+                    content=user_message,
+                    current_time=guess_word_dto.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.bot_nick,
+                    content=message,
+                    current_time=guess_word_dto.occurred_at,
                 )
             return message
 
@@ -392,7 +420,16 @@ class HandleGuessUseCase:
             message = "Игра уже завершена"
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    guess_word_dto.channel_name, guess_word_dto.bot_nick, message, guess_word_dto.occurred_at
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.user_name,
+                    content=user_message,
+                    current_time=guess_word_dto.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.bot_nick,
+                    content=message,
+                    current_time=guess_word_dto.occurred_at,
                 )
             return message
 
@@ -414,14 +451,32 @@ class HandleGuessUseCase:
             )
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    guess_word_dto.channel_name, guess_word_dto.bot_nick, message, guess_word_dto.occurred_at
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.user_name,
+                    content=user_message,
+                    current_time=guess_word_dto.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.bot_nick,
+                    content=message,
+                    current_time=guess_word_dto.occurred_at,
                 )
         else:
             masked = game.get_masked_word()
             message = f"Неверное слово. Слово: {masked}."
             with db_session_provider() as db:
                 self._chat_use_case_provider.get(db).save_chat_message(
-                    guess_word_dto.channel_name, guess_word_dto.bot_nick, message, guess_word_dto.occurred_at
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.user_name,
+                    content=user_message,
+                    current_time=guess_word_dto.occurred_at,
+                )
+                self._chat_use_case_provider.get(db).save_chat_message(
+                    channel_name=guess_word_dto.channel_name,
+                    user_name=guess_word_dto.bot_nick,
+                    content=message,
+                    current_time=guess_word_dto.occurred_at,
                 )
 
         return message

@@ -28,6 +28,8 @@ class GuessLetterDTO:
 
 @dataclass(frozen=True)
 class GuessWordDTO:
+    command_prefix: str
+    command_name: str
     channel_name: str
     display_name: str
     user_name: str
