@@ -3,10 +3,12 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from twitchio.ext import commands
+from twitchio import Client
+from twitchio.eventsub import ChatMessageSubscription
+from twitchio.exceptions import HTTPException
+from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.platform.bot.bot_settings import BotSettings
-from app.twitch.infrastructure.chat.chat_context_adapter import CtxChatContext
 from app.twitch.infrastructure.helix.auth import TwitchAuth
 from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandRouter
 from core.chat.outbound import ChatEventsHandler, ChatOutbound
@@ -15,64 +17,140 @@ from core.chat.prefix_command_router import PrefixCommandRouter
 logger = logging.getLogger(__name__)
 
 
-class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
-    def __init__(self, twitch_auth: TwitchAuth, settings: BotSettings):
+class _EventChatContext(ChatContext):
+    def __init__(self, client: TwitchChatClient, channel_login: str):
+        self._client = client
+        self._channel_login = channel_login
+
+    @property
+    def channel(self) -> str:
+        return self._channel_login
+
+    async def send_channel(self, text: str) -> None:
+        await self._client.send_chat_message_internal(text)
+
+
+class TwitchChatClient(Client, ChatClient, ChatOutbound):
+    def __init__(self, twitch_auth: TwitchAuth, settings: BotSettings, bot_id: str | None = None):
+        self._twitch_auth = twitch_auth
+        self._settings = settings
         self._command_router: PrefixCommandRouter | None = None
         self._chat_event_handler: ChatEventsHandler | None = None
         self.bot_nick = settings.bot_name
         self._prefix = settings.prefix
-        self._initial_channels = [settings.channel_name] if settings.channel_name else []
-        super().__init__(token=twitch_auth.access_token, prefix=self._prefix, initial_channels=self._initial_channels)
+        self._channel_login = settings.channel_name
+
+        self._token_user_id: str | None = None
+        self._broadcaster_id: str | None = None
+
+        super().__init__(
+            client_id=twitch_auth.client_id,
+            client_secret=twitch_auth.client_secret,
+            bot_id=bot_id,
+            fetch_client_user=bool(bot_id),
+        )
 
     def set_router(self, router: CommandRouter) -> None:
         self._command_router = router
 
-    def set_chat_event_handler(self, handler: ChatEventsHandler):
+    def set_chat_event_handler(self, handler: ChatEventsHandler) -> None:
         self._chat_event_handler = handler
 
-    async def start(self) -> None:
-        await super().start()
+    async def setup_hook(self) -> None:
+        await self._register_token()
+        await self._ensure_broadcaster_id()
+        await self._subscribe_chat_message()
 
     async def stop(self) -> None:
         await super().close()
 
-    async def event_ready(self):
-        logger.info("TwitchChatClient ready. Channels: %s", ", ".join(self._initial_channels))
+    async def event_ready(self) -> None:
+        logger.info("TwitchChatClient ready. Broadcaster: %s", self._broadcaster_id or "unknown")
 
-    async def event_message(self, message):
+    async def event_message(self, payload: EventSubChatMessage) -> None:
         if not self._command_router:
             logger.error("CommandRouter is not set for TwitchChatClient")
             return
 
-        if message.author is None:
+        chatter = getattr(payload, "chatter", None)
+        if chatter is None:
             return
 
-        chat_message = ChatMessage(author=message.author.display_name, text=message.content, author_id=message.author.id)
-
-        chat_ctx = CtxChatContext(message)
+        author_name = chatter.display_name or chatter.name or ""
+        chat_message = ChatMessage(author=author_name, text=payload.text, author_id=chatter.id)
+        chat_ctx = _EventChatContext(self, channel_login=self._channel_login)
 
         handled = False
         try:
             handled = await self._command_router.dispatch(chat_message, chat_ctx)
         except Exception:
-            logger.exception("Ошибка обработки сообщения: %s", message.content)
+            logger.exception("Ошибка обработки сообщения: %s", payload.text)
         if handled:
             return
 
-        if message.content.startswith(self._prefix):
-            logger.debug("Неизвестная команда: %s", message.content)
+        if self._is_self_message(payload):
+            return
+
+        if payload.text.startswith(self._prefix):
+            logger.debug("Неизвестная команда: %s", payload.text)
             return
 
         if self._chat_event_handler:
             try:
                 await self._chat_event_handler.handle(
-                    channel_name=message.channel.name,
+                    channel_name=self._channel_login,
                     display_name=chat_message.author,
-                    message=message.content,
+                    message=payload.text,
                     bot_nick=self.bot_nick,
                 )
             except Exception:
-                logger.exception("Ошибка в ChatEventHandler для сообщения: %s", message.content)
+                logger.exception("Ошибка в ChatEventHandler для сообщения: %s", payload.text)
+
+    async def _register_token(self) -> None:
+        if self._token_user_id:
+            return
+        try:
+            validate = await self.add_token(self._twitch_auth.access_token, self._twitch_auth.refresh_token)
+            self._token_user_id = validate.user_id
+            if not self._token_user_id:
+                logger.warning("Не удалось получить user_id из validate токена")
+        except Exception:
+            logger.exception("Не удалось добавить токен в TwitchIO Client")
+
+    async def _ensure_broadcaster_id(self) -> None:
+        if self._broadcaster_id:
+            return
+
+        if self._channel_login:
+            try:
+                users = await self.fetch_users(logins=[self._channel_login])
+                if users:
+                    self._broadcaster_id = users[0].id
+            except Exception:
+                logger.exception("Не удалось получить broadcaster_id по логину %s", self._channel_login)
+
+        if not self._broadcaster_id and self._token_user_id:
+            self._broadcaster_id = self._token_user_id
+
+    async def _subscribe_chat_message(self) -> None:
+        if not self._broadcaster_id or not self._token_user_id:
+            logger.error("Нельзя подписаться на чат: broadcaster_id=%s token_user_id=%s", self._broadcaster_id, self._token_user_id)
+            return
+        try:
+            payload = ChatMessageSubscription(
+                broadcaster_user_id=self._broadcaster_id,
+                user_id=self._token_user_id,
+            )
+            await self.subscribe_websocket(payload, token_for=self._token_user_id)
+            logger.info("Подписка на channel.chat.message оформлена для %s", self._broadcaster_id)
+        except HTTPException as e:
+            logger.error(
+                "Не удалось подписаться на channel.chat.message: status=%s text=%s",
+                getattr(e, "status", None),
+                getattr(e, "text", None),
+            )
+        except Exception:
+            logger.exception("Не удалось подписаться на channel.chat.message")
 
     @staticmethod
     def _split_text(text: str, max_length: int = 500) -> list[str]:
@@ -93,16 +171,43 @@ class TwitchChatClient(commands.Bot, ChatClient, ChatOutbound):
             text = text[split_pos:].strip()
         return messages
 
-    async def send_channel_message(self, channel_name: str, message: str):
-        channel = self.get_channel(channel_name)
-        if not channel:
-            logger.warning("Канал %s недоступен для отправки сообщения", channel_name)
+    async def send_chat_message_internal(self, message: str) -> None:
+        if not self._broadcaster_id or not self._token_user_id:
+            logger.warning("Нельзя отправить сообщение: broadcaster_id=%s token_user_id=%s", self._broadcaster_id, self._token_user_id)
             return
         for msg in self._split_text(message):
-            await channel.send(msg)
-            await asyncio.sleep(0.3)
+            try:
+                await self._http.post_chat_message(
+                    broadcaster_id=self._broadcaster_id,
+                    sender_id=self._token_user_id,
+                    message=msg,
+                    token_for=self._token_user_id,
+                )
+                await asyncio.sleep(0.3)
+            except HTTPException as e:
+                logger.error(
+                    "Ошибка отправки сообщения в чат: status=%s text=%s msg=%s",
+                    getattr(e, "status", None),
+                    getattr(e, "text", None),
+                    msg,
+                )
+            except Exception:
+                logger.exception("Ошибка отправки сообщения в чат: %s", msg)
 
-    async def post_message(self, message: str, chat_ctx: ChatContext):
+    async def send_channel_message(self, channel_name: str, message: str) -> None:
+        await self.send_chat_message_internal(message)
+
+    async def post_message(self, message: str, chat_ctx: ChatContext) -> None:
         for msg in self._split_text(message):
             await chat_ctx.send_channel(msg)
             await asyncio.sleep(0.3)
+
+    def _is_self_message(self, payload: EventSubChatMessage) -> bool:
+        chatter = getattr(payload, "chatter", None)
+        if chatter is None:
+            return False
+        if self._token_user_id and chatter.id == self._token_user_id:
+            return True
+        if chatter.name and chatter.name.lower() == (self.bot_nick or "").lower():
+            return True
+        return False

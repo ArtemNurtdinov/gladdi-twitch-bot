@@ -10,7 +10,7 @@ from app.platform.bot.bot_manager import BotManager
 from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings, build_bot_settings
 from app.platform.bot.schemas import BotActionResult, BotStatus
 from app.twitch.bootstrap.router_factory import build_twitch_command_router
-from app.twitch.bootstrap.twitch import build_twitch_providers
+from app.twitch.bootstrap.twitch import build_twitch_api_service, build_twitch_providers
 from app.twitch.infrastructure.chat.twitch_chat_client import TwitchChatClient
 from app.twitch.infrastructure.helix.auth import TwitchAuth
 from app.twitch.presentation.twitch_schemas import AuthStartResponse
@@ -21,7 +21,12 @@ from core.config import Config
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 
-PERMISSIONS_SCOPE = "chat:read chat:edit user:read:follows moderator:read:followers moderator:manage:banned_users moderator:read:chatters"
+PERMISSIONS_SCOPE = (
+    "chat:read chat:edit "
+    "user:read:follows "
+    "moderator:read:followers moderator:manage:banned_users moderator:read:chatters "
+    "user:read:chat user:write:chat user:bot channel:bot"
+)
 
 router = APIRouter(prefix="/bot")
 
@@ -73,9 +78,9 @@ def _twitch_auth_factory(
     )
 
 
-def _twitch_chat_client_factory(auth: PlatformAuth, settings: BotSettings = DEFAULT_SETTINGS) -> ChatOutbound:
+def _twitch_chat_client_factory(auth: PlatformAuth, settings: BotSettings = DEFAULT_SETTINGS, bot_id: str | None = None) -> ChatOutbound:
     twitch_auth: TwitchAuth = auth  # type: ignore[assignment]
-    return TwitchChatClient(twitch_auth=twitch_auth, settings=settings)
+    return TwitchChatClient(twitch_auth=twitch_auth, settings=settings, bot_id=bot_id)
 
 
 @router.get("/status", summary="Получить состояние бота", response_model=BotStatus)
