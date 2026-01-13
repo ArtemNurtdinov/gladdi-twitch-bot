@@ -6,7 +6,7 @@ pydantic==2.4.2
 SQLAlchemy==2.0.45
 uuid==1.30
 psycopg2-binary==2.9.10
-twitchio==2.10.0
+twitchio==3.1.0
 pandas==2.2.3
 openpyxl==3.1.5
 uvicorn~=0.34.2

@@ -35,7 +35,7 @@ class BotManager:
         self,
         platform_auth_factory: Callable[[str, str, str, str], PlatformAuth],
         platform_providers_builder: Callable[[PlatformAuth], PlatformProviders],
-        chat_client_factory: Callable[[PlatformAuth, BotSettings], Any],
+        chat_client_factory: Callable[[PlatformAuth, BotSettings, str | None], Any],
         command_router_builder: Callable[[BotSettings, CommandRegistry, Bot], CommandRouter],
         settings: BotSettings = DEFAULT_SETTINGS,
     ):
@@ -113,7 +113,9 @@ class BotManager:
             betting_providers = build_betting_providers()
             background_providers = build_background_providers()
             telegram_providers = build_telegram_providers(tg_bot_token=tg_bot_token)
-            self._chat_client = self._chat_client_factory(platform_providers.platform_auth, self._settings)
+            bot_user = await streaming_platform.get_user_by_login(self._settings.bot_name)
+            bot_user_id = bot_user.id if bot_user else None
+            self._chat_client = self._chat_client_factory(platform_providers.platform_auth, self._settings, bot_user_id)
             self._bot = BotFactory(
                 platform_providers,
                 ai_providers,
