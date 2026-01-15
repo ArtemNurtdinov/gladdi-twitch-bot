@@ -8,3 +8,4 @@ __pycache__/
 **/__pycache__/
 *.log
 /config
+.tio.tokens.json
