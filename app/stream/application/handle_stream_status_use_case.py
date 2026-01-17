@@ -20,7 +20,7 @@ from app.stream.application.start_new_stream_use_case import StartNewStreamUseCa
 from app.stream.application.stream_status_port import StreamStatusPort
 from app.stream.domain.models import StreamInfo, StreamStatistics
 from app.stream.domain.stream_service import StreamService
-from app.user.infrastructure.cache.user_cache_service import UserCacheService
+from app.user.application.user_cache_port import UserCachePort
 from app.viewer.domain.viewer_session_service import ViewerTimeService
 from core.provider import Provider
 
@@ -35,7 +35,7 @@ class ChatSummaryStateProtocol(Protocol):
 class HandleStreamStatusUseCase:
     def __init__(
         self,
-        user_cache: UserCacheService,
+        user_cache: UserCachePort,
         stream_status_port: StreamStatusPort,
         stream_service_provider: Provider[StreamService],
         start_stream_use_case_provider: Provider[StartNewStreamUseCase],
