@@ -9,7 +9,7 @@ from app.chat.application.chat_use_case import ChatUseCase
 from app.joke.application.model import PostJokeDTO
 from app.joke.domain.joke_service import JokeService
 from app.stream.application.stream_info_port import StreamInfoPort
-from app.user.infrastructure.cache.user_cache_service import UserCacheService
+from app.user.application.user_cache_port import UserCachePort
 from core.provider import Provider
 
 
@@ -17,7 +17,7 @@ class HandlePostJokeUseCase:
     def __init__(
         self,
         joke_service: JokeService,
-        user_cache: UserCacheService,
+        user_cache: UserCachePort,
         stream_info: StreamInfoPort,
         chat_response_use_case: ChatResponseUseCase,
         conversation_service_provider: Provider[ConversationService],

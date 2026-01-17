@@ -2,13 +2,13 @@ import logging
 
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.moderation.application.moderation_port import ModerationPort
-from app.user.infrastructure.cache.user_cache_service import UserCacheService
+from app.user.application.user_cache_port import UserCachePort
 
 logger = logging.getLogger(__name__)
 
 
 class ModerationService(ChatModerationPort):
-    def __init__(self, moderation_port: ModerationPort, user_cache: UserCacheService):
+    def __init__(self, moderation_port: ModerationPort, user_cache: UserCachePort):
         self._moderation_port = moderation_port
         self._user_cache = user_cache
 

@@ -1,12 +1,13 @@
 import logging
 from datetime import datetime, timedelta
 
+from app.user.application.user_cache_port import UserCachePort
 from app.user.application.user_info_port import UserInfoPort
 
 logger = logging.getLogger(__name__)
 
 
-class UserCacheService:
+class UserCacheService(UserCachePort):
     def __init__(self, user_info_port: UserInfoPort, ttl_minutes: int = 30):
         self._user_info_port = user_info_port
         self._ttl = timedelta(minutes=ttl_minutes)

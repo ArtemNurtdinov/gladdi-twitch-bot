@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.stream.domain.stream_service import StreamService
-from app.user.infrastructure.cache.user_cache_service import UserCacheService
+from app.user.application.user_cache_port import UserCachePort
 from app.viewer.application.model import ViewerTimeDTO
 from app.viewer.application.stream_chatters_port import StreamChattersPort
 from app.viewer.domain.viewer_session_service import ViewerTimeService
@@ -19,7 +19,7 @@ class HandleViewerTimeUseCase:
         viewer_service_provider: Provider[ViewerTimeService],
         stream_service_provider: Provider[StreamService],
         economy_policy_provider: Provider[EconomyPolicy],
-        user_cache: UserCacheService,
+        user_cache: UserCachePort,
         stream_chatters_port: StreamChattersPort,
     ):
         self._viewer_service_provider = viewer_service_provider
