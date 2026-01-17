@@ -1,46 +1,36 @@
-from collections.abc import Callable
-from contextlib import AbstractContextManager
-
-from sqlalchemy.orm import Session
-
-from app.chat.application.chat_use_case import ChatUseCase
+from app.commands.balance.application.balance_uow import BalanceUnitOfWorkFactory
 from app.commands.balance.application.model import BalanceDTO
-from app.economy.domain.economy_policy import EconomyPolicy
-from core.provider import Provider
 
 
 class HandleBalanceUseCase:
     def __init__(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
-        chat_use_case_provider: Provider[ChatUseCase],
+        unit_of_work_factory: BalanceUnitOfWorkFactory,
     ):
-        self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._unit_of_work_factory = unit_of_work_factory
 
     async def handle(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_balance_dto: BalanceDTO,
     ) -> str:
         user_message = command_balance_dto.command_prefix + command_balance_dto.command_name
 
-        with db_session_provider() as db:
-            user_balance = self._economy_policy_provider.get(db).get_user_balance(
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            user_balance = uow.economy_policy.get_user_balance(
                 channel_name=command_balance_dto.channel_name,
                 user_name=command_balance_dto.user_name,
             )
 
         result = f"💰 @{command_balance_dto.display_name}, твой баланс: {user_balance.balance} монет"
 
-        with db_session_provider() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_balance_dto.channel_name,
                 user_name=command_balance_dto.user_name,
                 content=user_message,
                 current_time=command_balance_dto.occurred_at,
             )
-            self._chat_use_case_provider.get(db).save_chat_message(
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_balance_dto.channel_name,
                 user_name=command_balance_dto.bot_nick,
                 content=result,

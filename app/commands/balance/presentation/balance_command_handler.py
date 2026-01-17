@@ -1,8 +1,5 @@
 from collections.abc import Awaitable, Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
-
-from sqlalchemy.orm import Session
 
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.balance.application.model import BalanceDTO
@@ -15,14 +12,12 @@ class BalanceCommandHandler:
         command_prefix: str,
         command_name: str,
         handle_balance_use_case: HandleBalanceUseCase,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self._command_prefix = command_prefix
         self._command_name = command_name
         self._handle_balance_use_case = handle_balance_use_case
-        self._db_session_provider = db_session_provider
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
@@ -40,5 +35,5 @@ class BalanceCommandHandler:
             occurred_at=datetime.utcnow(),
         )
 
-        result = await self._handle_balance_use_case.handle(self._db_session_provider, dto)
+        result = await self._handle_balance_use_case.handle(dto)
         await self.post_message_fn(result, chat_ctx)
