@@ -11,6 +11,7 @@ from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
 from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
+from app.commands.balance.infrastructure.balance_uow import SqlAlchemyBalanceUnitOfWorkFactory
 from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.presentation.battle_command_handler import BattleCommandHandler
@@ -323,9 +324,8 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_balance,
             handle_balance_use_case=HandleBalanceUseCase(
-                economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
+                unit_of_work_factory=self._build_balance_uow_factory(),
             ),
-            db_session_provider=lambda: db_rw_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -519,6 +519,14 @@ class BotFactory:
             stream_repo_provider=self._stream.stream_repo_provider,
             viewer_repo_provider=self._viewer.viewer_repo_provider,
             conversation_service_provider=self._ai.conversation_service_provider,
+        )
+
+    def _build_balance_uow_factory(self) -> SqlAlchemyBalanceUnitOfWorkFactory:
+        return SqlAlchemyBalanceUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
     def _build_follow_age_uow_factory(self) -> SqlAlchemyFollowAgeUnitOfWorkFactory:
