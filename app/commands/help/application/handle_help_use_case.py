@@ -1,20 +1,13 @@
-from collections.abc import Callable
-from contextlib import AbstractContextManager
-
-from sqlalchemy.orm import Session
-
-from app.chat.application.chat_use_case import ChatUseCase
+from app.commands.help.application.help_uow import HelpUnitOfWorkFactory
 from app.commands.help.application.model import HelpDTO
-from core.provider import Provider
 
 
 class HandleHelpUseCase:
-    def __init__(self, chat_use_case_provider: Provider[ChatUseCase]):
-        self._chat_use_case_provider = chat_use_case_provider
+    def __init__(self, unit_of_work_factory: HelpUnitOfWorkFactory):
+        self._unit_of_work_factory = unit_of_work_factory
 
     async def handle(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_help: HelpDTO,
     ) -> str:
         user_message = command_help.command_prefix + command_help.command_name
@@ -23,14 +16,14 @@ class HandleHelpUseCase:
             help_parts.append(f"{command_help.command_prefix}{cmd}")
         help_text = " ".join(help_parts)
 
-        with db_session_provider() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_help.channel_name,
                 user_name=command_help.user_name,
                 content=user_message,
                 current_time=command_help.occurred_at,
             )
-            self._chat_use_case_provider.get(db).save_chat_message(
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_help.channel_name,
                 user_name=command_help.bot_nick,
                 content=help_text,

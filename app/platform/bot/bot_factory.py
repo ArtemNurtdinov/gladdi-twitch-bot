@@ -34,6 +34,7 @@ from app.commands.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWor
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandler
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
+from app.commands.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
@@ -421,8 +422,7 @@ class BotFactory:
         help_command_handler = HelpCommandHandler(
             command_prefix=prefix,
             command_name=settings.command_help,
-            handle_help_use_case=HandleHelpUseCase(chat_use_case_provider=self._chat.chat_use_case_provider),
-            db_session_provider=lambda: db_rw_session(),
+            handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=self._build_help_uow_factory()),
             commands=commands,
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
@@ -545,6 +545,13 @@ class BotFactory:
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             economy_policy_provider=self._economy.economy_policy_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_help_uow_factory(self) -> SqlAlchemyHelpUnitOfWorkFactory:
+        return SqlAlchemyHelpUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
