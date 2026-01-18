@@ -30,6 +30,7 @@ from app.commands.follow.application.handle_followage_use_case import HandleFoll
 from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
 from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandler
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
+from app.commands.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandler
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
@@ -433,10 +434,8 @@ class BotFactory:
             command_guess_word=settings.command_guess_word,
             handle_guess_use_case=HandleGuessUseCase(
                 minigame_service=self._minigame.minigame_service,
-                economy_policy_provider=self._economy.economy_policy_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider,
+                unit_of_work_factory=self._build_guess_uow_factory(),
             ),
-            db_session_provider=lambda: db_rw_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -538,6 +537,14 @@ class BotFactory:
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_guess_uow_factory(self) -> SqlAlchemyGuessUnitOfWorkFactory:
+        return SqlAlchemyGuessUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
