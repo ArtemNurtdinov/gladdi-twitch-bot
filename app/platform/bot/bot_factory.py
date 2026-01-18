@@ -23,6 +23,7 @@ from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMess
 from app.commands.chat.presentation.chat_event_handler import DefaultChatEventsHandler
 from app.commands.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
+from app.commands.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
@@ -370,11 +371,8 @@ class BotFactory:
             command_name=settings.command_equipment,
             command_shop=settings.command_shop,
             handle_equipment_use_case=HandleEquipmentUseCase(
-                get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider,
+                unit_of_work_factory=self._build_equipment_uow_factory(),
             ),
-            db_session_provider=lambda: db_rw_session(),
-            db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -532,6 +530,14 @@ class BotFactory:
             stream_service_provider=self._stream.stream_service_provider,
             get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
             economy_policy_provider=self._economy.economy_policy_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_equipment_uow_factory(self) -> SqlAlchemyEquipmentUnitOfWorkFactory:
+        return SqlAlchemyEquipmentUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
