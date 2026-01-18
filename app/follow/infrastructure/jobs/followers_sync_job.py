@@ -1,10 +1,6 @@
 import asyncio
 import logging
-from collections.abc import Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
-
-from sqlalchemy.orm import Session
 
 from app.follow.application.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.application.model import FollowersSyncJobDTO
@@ -20,12 +16,10 @@ class FollowersSyncJob:
         self,
         channel_name: str,
         handle_followers_sync_use_case: HandleFollowersSyncUseCase,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         interval_seconds: int = 24 * 60 * 60,
     ):
         self._channel_name = channel_name
         self._handle_followers_sync_use_case = handle_followers_sync_use_case
-        self._db_session_provider = db_session_provider
         self._interval_seconds = interval_seconds
 
     def register(self, runner: BackgroundTaskRunner):
@@ -35,7 +29,7 @@ class FollowersSyncJob:
         while True:
             try:
                 dto = FollowersSyncJobDTO(channel_name=self._channel_name, occurred_at=datetime.utcnow())
-                await self._handle_followers_sync_use_case.handle(db_session_provider=self._db_session_provider, sync_job=dto)
+                await self._handle_followers_sync_use_case.handle(sync_job=dto)
             except asyncio.CancelledError:
                 logger.info("FollowersSyncJob cancelled")
                 break

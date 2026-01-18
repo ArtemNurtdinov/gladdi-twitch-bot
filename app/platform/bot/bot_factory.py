@@ -56,6 +56,7 @@ from app.economy.bootstrap import EconomyProviders
 from app.equipment.bootstrap import EquipmentProviders
 from app.follow.application.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.bootstrap import FollowProviders
+from app.follow.infrastructure.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.handle_post_joke_use_case import HandlePostJokeUseCase
 from app.joke.application.post_joke_job import PostJokeJob
@@ -238,9 +239,8 @@ class BotFactory:
                     channel_name=self._settings.channel_name,
                     handle_followers_sync_use_case=HandleFollowersSyncUseCase(
                         followers_port=self._follow.followers_port,
-                        followers_repository_provider=self._follow.followers_repository_provider,
+                        unit_of_work_factory=self._build_followers_sync_uow_factory(),
                     ),
-                    db_session_provider=lambda: db_rw_session(),
                     interval_seconds=self._settings.sync_followers_interval_seconds,
                 ),
             ],
@@ -605,6 +605,13 @@ class BotFactory:
             session_factory_ro=db_ro_session,
             chat_repo_provider=self._chat.chat_repo_provider,
             conversation_service_provider=self._ai.conversation_service_provider,
+        )
+
+    def _build_followers_sync_uow_factory(self) -> SqlAlchemyFollowersSyncUnitOfWorkFactory:
+        return SqlAlchemyFollowersSyncUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            followers_repository_provider=self._follow.followers_repository_provider,
         )
 
     def _build_stream_status_uow_factory(self) -> SqlAlchemyStreamStatusUnitOfWorkFactory:
