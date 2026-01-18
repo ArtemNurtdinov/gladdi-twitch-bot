@@ -1,22 +1,13 @@
-from collections.abc import Callable
-from contextlib import AbstractContextManager
-
-from sqlalchemy.orm import Session
-
-from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.transfer.application.model import TransferDTO
-from app.economy.domain.economy_policy import EconomyPolicy
-from core.provider import Provider
+from app.commands.transfer.application.transfer_uow import TransferUnitOfWorkFactory
 
 
 class HandleTransferUseCase:
-    def __init__(self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case_provider: Provider[ChatUseCase]):
-        self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
+    def __init__(self, unit_of_work_factory: TransferUnitOfWorkFactory):
+        self._unit_of_work_factory = unit_of_work_factory
 
     async def handle(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         command_transfer: TransferDTO,
     ) -> str:
         command_prefix = command_transfer.command_prefix
@@ -32,14 +23,14 @@ class HandleTransferUseCase:
                 f"@{command_transfer.display_name}, используй: {command_prefix}{command_name} [никнейм] [сумма]. "
                 f"Например: {command_transfer.command_prefix}{command_transfer.command_name} @ArtemNeFRiT 100"
             )
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.user_name,
                     content=user_message,
                     current_time=command_transfer.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.bot_nick,
                     content=result,
@@ -54,14 +45,14 @@ class HandleTransferUseCase:
                 f"@{command_transfer.display_name}, неверная сумма! Укажи число. "
                 f"Например: {command_transfer.command_prefix}{command_transfer.command_name} {command_transfer.recipient_input} 100"
             )
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.user_name,
                     content=user_message,
                     current_time=command_transfer.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.bot_nick,
                     content=result,
@@ -71,14 +62,14 @@ class HandleTransferUseCase:
 
         if transfer_amount <= 0:
             result = f"@{command_transfer.display_name}, сумма должна быть больше 0!"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.user_name,
                     content=user_message,
                     current_time=command_transfer.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.bot_nick,
                     content=result,
@@ -89,8 +80,8 @@ class HandleTransferUseCase:
         recipient = command_transfer.recipient_input.lstrip("@")
         normalized_receiver_name = recipient.lower()
 
-        with db_session_provider() as db:
-            transfer_result = self._economy_policy_provider.get(db).transfer_money(
+        with self._unit_of_work_factory.create() as uow:
+            transfer_result = uow.economy_policy.transfer_money(
                 channel_name=command_transfer.channel_name,
                 sender_name=command_transfer.user_name,
                 receiver_name=normalized_receiver_name,
@@ -102,14 +93,14 @@ class HandleTransferUseCase:
         else:
             result = f"@{command_transfer.display_name}, {transfer_result.message}"
 
-        with db_session_provider() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_transfer.channel_name,
                 user_name=command_transfer.user_name,
                 content=user_message,
                 current_time=command_transfer.occurred_at,
             )
-            self._chat_use_case_provider.get(db).save_chat_message(
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_transfer.channel_name,
                 user_name=command_transfer.bot_nick,
                 content=result,
