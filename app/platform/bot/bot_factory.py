@@ -46,6 +46,7 @@ from app.commands.stats.application.handle_stats_use_case import HandleStatsUseC
 from app.commands.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
+from app.commands.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
 from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandler
@@ -376,10 +377,8 @@ class BotFactory:
             command_top=settings.command_top,
             command_bottom=settings.command_bottom,
             handle_top_bottom_use_case=HandleTopBottomUseCase(
-                economy_policy_provider=self._economy.economy_policy_provider, chat_use_case_provider=self._chat.chat_use_case_provider
+                unit_of_work_factory=self._build_top_bottom_uow_factory(),
             ),
-            db_session_provider=lambda: db_rw_session(),
-            db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -570,6 +569,14 @@ class BotFactory:
             economy_policy_provider=self._economy.economy_policy_provider,
             betting_service_provider=self._betting.betting_service_provider,
             battle_use_case_provider=self._battle.battle_use_case_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_top_bottom_uow_factory(self) -> SqlAlchemyTopBottomUnitOfWorkFactory:
+        return SqlAlchemyTopBottomUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
