@@ -1,41 +1,24 @@
-from collections.abc import Callable
-from contextlib import AbstractContextManager
-
-from sqlalchemy.orm import Session
-
-from app.battle.application.battle_use_case import BattleUseCase
 from app.battle.domain.models import UserBattleStats
-from app.betting.application.betting_service import BettingService
-from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.stats.application.model import StatsDTO, UserBetStats
-from app.economy.domain.economy_policy import EconomyPolicy
-from core.provider import Provider
+from app.commands.stats.application.stats_uow import StatsUnitOfWorkFactory
 
 
 class HandleStatsUseCase:
     def __init__(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
-        battle_use_case_provider: Provider[BattleUseCase],
-        chat_use_case_provider: Provider[ChatUseCase],
+        unit_of_work_factory: StatsUnitOfWorkFactory,
     ):
-        self._economy_policy_provider = economy_policy_provider
-        self._betting_service_provider = betting_service_provider
-        self._battle_use_case_provider = battle_use_case_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._unit_of_work_factory = unit_of_work_factory
 
     async def handle(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         command_stats: StatsDTO,
     ) -> str:
         user_message = command_stats.command_prefix + command_stats.command_name
 
-        with db_session_provider() as db:
-            balance = self._economy_policy_provider.get(db).get_user_balance(command_stats.channel_name, command_stats.user_name)
-            bets = self._betting_service_provider.get(db).get_user_bets(command_stats.channel_name, command_stats.user_name)
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            balance = uow.economy_policy.get_user_balance(command_stats.channel_name, command_stats.user_name)
+            bets = uow.betting_service.get_user_bets(command_stats.channel_name, command_stats.user_name)
 
         if not bets:
             bet_stats = UserBetStats(total_bets=0, jackpots=0, jackpot_rate=0)
@@ -45,8 +28,8 @@ class HandleStatsUseCase:
             jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
             bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
 
-        with db_readonly_session_provider() as db:
-            battles = self._battle_use_case_provider.get(db).get_user_battles(
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            battles = uow.battle_use_case.get_user_battles(
                 channel_name=command_stats.channel_name, user_name=command_stats.display_name
             )
 
@@ -67,14 +50,14 @@ class HandleStatsUseCase:
         if battle_stats.total_battles > 0:
             result += f" ⚔️ Битвы: {battle_stats.total_battles} | Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%)."
 
-        with db_session_provider() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_stats.channel_name,
                 user_name=command_stats.user_name,
                 content=user_message,
                 current_time=command_stats.occurred_at,
             )
-            self._chat_use_case_provider.get(db).save_chat_message(
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_stats.channel_name,
                 user_name=command_stats.bot_nick,
                 content=result,

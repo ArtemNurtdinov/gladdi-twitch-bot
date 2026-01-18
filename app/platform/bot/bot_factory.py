@@ -43,6 +43,7 @@ from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
 from app.commands.shop.presentation.shop_command_handler import ShopCommandHandler
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
+from app.commands.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
@@ -386,13 +387,8 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_stats,
             handle_stats_use_case=HandleStatsUseCase(
-                economy_policy_provider=self._economy.economy_policy_provider,
-                betting_service_provider=self._betting.betting_service_provider,
-                battle_use_case_provider=self._battle.battle_use_case_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider,
+                unit_of_work_factory=self._build_stats_uow_factory(),
             ),
-            db_session_provider=lambda: db_rw_session(),
-            db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -564,6 +560,16 @@ class BotFactory:
             economy_policy_provider=self._economy.economy_policy_provider,
             add_equipment_use_case_provider=self._equipment.add_equipment_use_case_provider,
             equipment_exists_use_case_provider=self._equipment.equipment_exists_use_case_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_stats_uow_factory(self) -> SqlAlchemyStatsUnitOfWorkFactory:
+        return SqlAlchemyStatsUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            betting_service_provider=self._betting.betting_service_provider,
+            battle_use_case_provider=self._battle.battle_use_case_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
