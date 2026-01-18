@@ -1,31 +1,22 @@
-from collections.abc import Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
 
-from sqlalchemy.orm import Session
-
-from app.chat.application.chat_use_case import ChatUseCase
+from app.commands.guess.application.guess_uow import GuessUnitOfWorkFactory
 from app.commands.guess.application.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
-from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
-from core.provider import Provider
 
 
 class HandleGuessUseCase:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_policy_provider: Provider[EconomyPolicy],
-        chat_use_case_provider: Provider[ChatUseCase],
+        unit_of_work_factory: GuessUnitOfWorkFactory,
     ):
         self._minigame_service = minigame_service
-        self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._unit_of_work_factory = unit_of_work_factory
 
     async def handle_number(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         guess_number: GuessNumberDTO,
     ) -> str:
         command_prefix = guess_number.command_prefix
@@ -35,14 +26,14 @@ class HandleGuessUseCase:
             user_message += f" {guess_number.guess_input}"
         if not guess_number.guess_input:
             result = f"@{guess_number.display_name}, используй: {command_prefix}{command_guess} [число]"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     content=user_message,
                     current_time=guess_number.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=result,
@@ -53,14 +44,14 @@ class HandleGuessUseCase:
             guess = int(guess_number.guess_input)
         except ValueError:
             result = f"@{guess_number.display_name}, укажи число! Например: {command_prefix}{command_guess} 42"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     content=user_message,
                     current_time=guess_number.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=result,
@@ -70,14 +61,14 @@ class HandleGuessUseCase:
 
         if not self._minigame_service.is_game_active(guess_number.channel_name):
             result = "Сейчас нет активной игры 'угадай число'"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     content=user_message,
                     current_time=guess_number.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=result,
@@ -90,14 +81,14 @@ class HandleGuessUseCase:
         if datetime.utcnow() > game.end_time:
             self._minigame_service.finish_guess_game_timeout(guess_number.channel_name)
             result = f"Время игры истекло! Загаданное число было {game.target_number}"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     content=user_message,
                     current_time=guess_number.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=result,
@@ -107,14 +98,14 @@ class HandleGuessUseCase:
 
         if not game.is_active:
             result = "Игра уже завершена"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     content=user_message,
                     current_time=guess_number.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=result,
@@ -124,14 +115,14 @@ class HandleGuessUseCase:
 
         if not game.min_number <= guess <= game.max_number:
             result = f"Число должно быть от {game.min_number} до {game.max_number}"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     content=user_message,
                     current_time=guess_number.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=result,
@@ -143,21 +134,21 @@ class HandleGuessUseCase:
             self._minigame_service.finish_game_with_winner(game, guess_number.channel_name, guess_number.display_name)
             message = f"ПОЗДРАВЛЯЕМ! @{guess_number.display_name} угадал число {guess} и выиграл {game.prize_amount} монет!"
 
-            with db_session_provider() as db:
-                self._economy_policy_provider.get(db).add_balance(
+            with self._unit_of_work_factory.create() as uow:
+                uow.economy_policy.add_balance(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     amount=game.prize_amount,
                     transaction_type=TransactionType.MINIGAME_WIN,
                     description=f"Победа в игре 'угадай число': {guess}",
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     content=user_message,
                     current_time=guess_number.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=message,
@@ -169,14 +160,14 @@ class HandleGuessUseCase:
                 game.prize_amount = max(300, game.prize_amount - MinigameService.GUESS_PRIZE_DECREASE_PER_ATTEMPT)
             hint = "больше" if guess < game.target_number else "меньше"
             message = f"@{guess_number.display_name}, не угадал! Загаданное число {hint} {guess}."
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
                     content=user_message,
                     current_time=guess_number.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.bot_nick,
                     content=message,
@@ -186,7 +177,6 @@ class HandleGuessUseCase:
 
     async def handle_letter(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         guess_letter_dto: GuessLetterDTO,
     ) -> str:
         user_message = guess_letter_dto.command_prefix + guess_letter_dto.command_name
@@ -198,14 +188,14 @@ class HandleGuessUseCase:
             status = self._minigame_service.get_word_game_status(guess_letter_dto.channel_name)
             if status:
                 message = status
-                with db_session_provider() as db:
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                with self._unit_of_work_factory.create() as uow:
+                    uow.chat_use_case.save_chat_message(
                         channel_name=guess_letter_dto.channel_name,
                         user_name=guess_letter_dto.user_name,
                         content=user_message,
                         current_time=guess_letter_dto.occurred_at,
                     )
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                    uow.chat_use_case.save_chat_message(
                         channel_name=guess_letter_dto.channel_name,
                         user_name=guess_letter_dto.bot_nick,
                         content=status,
@@ -217,14 +207,14 @@ class HandleGuessUseCase:
         word_game_is_active = self._minigame_service.is_word_game_active(guess_letter_dto.channel_name)
         if not word_game_is_active:
             message = "Сейчас нет активной игры 'поле чудес'"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.user_name,
                     content=user_message,
                     current_time=guess_letter_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
                     content=message,
@@ -236,14 +226,14 @@ class HandleGuessUseCase:
         if datetime.utcnow() > game.end_time:
             self._minigame_service.finish_word_game_timeout(guess_letter_dto.channel_name)
             message = f"Время игры истекло! Слово было '{game.target_word}'"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.user_name,
                     content=user_message,
                     current_time=guess_letter_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
                     content=message,
@@ -253,14 +243,14 @@ class HandleGuessUseCase:
 
         if not game.is_active:
             message = "Игра уже завершена"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.user_name,
                     content=user_message,
                     current_time=guess_letter_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
                     content=message,
@@ -271,14 +261,14 @@ class HandleGuessUseCase:
         letter = guess_letter_dto.letter_input
         if not len(letter) == 1 or not letter.isalpha():
             message = "Введите одну букву русского алфавита"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.user_name,
                     content=user_message,
                     current_time=guess_letter_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
                     content=message,
@@ -303,8 +293,8 @@ class HandleGuessUseCase:
             letters_in_word = {ch for ch in game.target_word if ch.isalpha()}
             all_letters_revealed = letters_in_word.issubset(game.guessed_letters)
             if all_letters_revealed:
-                with db_session_provider() as db:
-                    winner_balance = self._economy_policy_provider.get(db).add_balance(
+                with self._unit_of_work_factory.create() as uow:
+                    winner_balance = uow.economy_policy.add_balance(
                         channel_name=guess_letter_dto.channel_name,
                         user_name=guess_letter_dto.user_name,
                         amount=game.prize_amount,
@@ -318,14 +308,14 @@ class HandleGuessUseCase:
                 self._minigame_service.finish_word_game_with_winner(game, guess_letter_dto.channel_name, guess_letter_dto.display_name)
             else:
                 message = f"Буква есть! Слово: {masked}."
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.user_name,
                     content=user_message,
                     current_time=guess_letter_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
                     content=message,
@@ -333,14 +323,14 @@ class HandleGuessUseCase:
                 )
         else:
             message = f"Такой буквы нет. Слово: {masked}."
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.user_name,
                     content=user_message,
                     current_time=guess_letter_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter_dto.channel_name,
                     user_name=guess_letter_dto.bot_nick,
                     content=message,
@@ -351,7 +341,6 @@ class HandleGuessUseCase:
 
     async def handle_word(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         guess_word_dto: GuessWordDTO,
     ) -> str:
         user_message = guess_word_dto.command_prefix + guess_word_dto.command_name
@@ -362,14 +351,14 @@ class HandleGuessUseCase:
             status = self._minigame_service.get_word_game_status(guess_word_dto.channel_name)
             if status:
                 message = status
-                with db_session_provider() as db:
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                with self._unit_of_work_factory.create() as uow:
+                    uow.chat_use_case.save_chat_message(
                         channel_name=guess_word_dto.channel_name,
                         user_name=guess_word_dto.user_name,
                         content=user_message,
                         current_time=guess_word_dto.occurred_at,
                     )
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                    uow.chat_use_case.save_chat_message(
                         channel_name=guess_word_dto.channel_name,
                         user_name=guess_word_dto.bot_nick,
                         content=status,
@@ -382,14 +371,14 @@ class HandleGuessUseCase:
         word_game_is_active = self._minigame_service.is_word_game_active(guess_word_dto.channel_name)
         if not word_game_is_active:
             message = "Сейчас нет активной игры 'поле чудес'"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.user_name,
                     content=user_message,
                     current_time=guess_word_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.bot_nick,
                     content=message,
@@ -401,14 +390,14 @@ class HandleGuessUseCase:
         if datetime.utcnow() > game.end_time:
             self._minigame_service.finish_word_game_timeout(guess_word_dto.channel_name)
             message = f"Время игры истекло! Слово было '{game.target_word}'"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.user_name,
                     content=user_message,
                     current_time=guess_word_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.bot_nick,
                     content=message,
@@ -418,14 +407,14 @@ class HandleGuessUseCase:
 
         if not game.is_active:
             message = "Игра уже завершена"
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.user_name,
                     content=user_message,
                     current_time=guess_word_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.bot_nick,
                     content=message,
@@ -436,8 +425,8 @@ class HandleGuessUseCase:
         if guess_word_dto.word_input.strip().lower() == game.target_word:
             self._minigame_service.finish_word_game_with_winner(game, guess_word_dto.channel_name, guess_word_dto.display_name)
 
-            with db_session_provider() as db:
-                winner_balance = self._economy_policy_provider.get(db).add_balance(
+            with self._unit_of_work_factory.create() as uow:
+                winner_balance = uow.economy_policy.add_balance(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.user_name,
                     amount=game.prize_amount,
@@ -449,14 +438,14 @@ class HandleGuessUseCase:
                 f"ПОЗДРАВЛЯЕМ! @{guess_word_dto.display_name} угадал слово '{game.target_word}' и выиграл "
                 f"{game.prize_amount} монет! Баланс: {winner_balance.balance} монет"
             )
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.user_name,
                     content=user_message,
                     current_time=guess_word_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.bot_nick,
                     content=message,
@@ -465,14 +454,14 @@ class HandleGuessUseCase:
         else:
             masked = game.get_masked_word()
             message = f"Неверное слово. Слово: {masked}."
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.user_name,
                     content=user_message,
                     current_time=guess_word_dto.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=guess_word_dto.channel_name,
                     user_name=guess_word_dto.bot_nick,
                     content=message,

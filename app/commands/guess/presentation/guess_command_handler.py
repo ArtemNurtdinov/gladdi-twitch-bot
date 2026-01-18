@@ -1,8 +1,5 @@
 from collections.abc import Awaitable, Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
-
-from sqlalchemy.orm import Session
 
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.application.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
@@ -17,7 +14,6 @@ class GuessCommandHandler:
         command_guess_letter: str,
         command_guess_word: str,
         handle_guess_use_case: HandleGuessUseCase,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
@@ -26,7 +22,6 @@ class GuessCommandHandler:
         self.command_guess_letter = command_guess_letter
         self.command_guess_word = command_guess_word
         self._handle_guess_use_case = handle_guess_use_case
-        self._db_session_provider = db_session_provider
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
@@ -43,7 +38,6 @@ class GuessCommandHandler:
         )
 
         message = await self._handle_guess_use_case.handle_number(
-            db_session_provider=self._db_session_provider,
             guess_number=dto,
         )
         await self.post_message_fn(message, chat_ctx)
@@ -61,7 +55,6 @@ class GuessCommandHandler:
         )
 
         message = await self._handle_guess_use_case.handle_letter(
-            db_session_provider=self._db_session_provider,
             guess_letter_dto=dto,
         )
         await self.post_message_fn(message, chat_ctx)
@@ -78,5 +71,5 @@ class GuessCommandHandler:
             word_input=word,
         )
 
-        message = await self._handle_guess_use_case.handle_word(db_session_provider=self._db_session_provider, guess_word_dto=dto)
+        message = await self._handle_guess_use_case.handle_word(guess_word_dto=dto)
         await self.post_message_fn(message, chat_ctx)
