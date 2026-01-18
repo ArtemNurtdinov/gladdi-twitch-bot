@@ -1,8 +1,5 @@
 from collections.abc import Awaitable, Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
-
-from sqlalchemy.orm import Session
 
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.application.model import StatsDTO
@@ -15,16 +12,12 @@ class StatsCommandHandler:
         command_prefix: str,
         command_name: str,
         handle_stats_use_case: HandleStatsUseCase,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
         self._handle_stats_use_case = handle_stats_use_case
-        self._db_session_provider = db_session_provider
-        self._db_readonly_session_provider = db_readonly_session_provider
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
@@ -40,8 +33,6 @@ class StatsCommandHandler:
         )
 
         result = await self._handle_stats_use_case.handle(
-            db_session_provider=self._db_session_provider,
-            db_readonly_session_provider=self._db_readonly_session_provider,
             command_stats=dto,
         )
 
