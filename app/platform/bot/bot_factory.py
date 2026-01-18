@@ -40,6 +40,7 @@ from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
 from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
+from app.commands.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
 from app.commands.shop.presentation.shop_command_handler import ShopCommandHandler
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
@@ -354,13 +355,8 @@ class BotFactory:
             command_shop_name=settings.command_shop,
             command_buy_name=settings.command_buy,
             handle_shop_use_case=HandleShopUseCase(
-                economy_policy_provider=self._economy.economy_policy_provider,
-                add_equipment_use_case_provider=self._equipment.add_equipment_use_case_provider,
-                equipment_exists_use_case_provider=self._equipment.equipment_exists_use_case_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider,
+                unit_of_work_factory=self._build_shop_uow_factory(),
             ),
-            db_session_provider=lambda: db_rw_session(),
-            db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -558,6 +554,16 @@ class BotFactory:
             economy_policy_provider=self._economy.economy_policy_provider,
             betting_service_provider=self._betting.betting_service_provider,
             get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_shop_uow_factory(self) -> SqlAlchemyShopUnitOfWorkFactory:
+        return SqlAlchemyShopUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            add_equipment_use_case_provider=self._equipment.add_equipment_use_case_provider,
+            equipment_exists_use_case_provider=self._equipment.equipment_exists_use_case_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
