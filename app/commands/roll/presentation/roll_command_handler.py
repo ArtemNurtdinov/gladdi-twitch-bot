@@ -1,8 +1,5 @@
 from collections.abc import Awaitable, Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
-
-from sqlalchemy.orm import Session
 
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.application.model import RollDTO
@@ -19,8 +16,6 @@ class RollCommandHandler:
         command_prefix: str,
         command_name: str,
         handle_roll_use_case: HandleRollUseCase,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         chat_moderation: ChatModerationPort,
         bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
@@ -28,8 +23,6 @@ class RollCommandHandler:
         self.command_prefix = command_prefix
         self.command_name = command_name
         self._handle_roll_use_case = handle_roll_use_case
-        self._db_session_provider = db_session_provider
-        self._db_readonly_session_provider = db_readonly_session_provider
         self.roll_cooldowns: dict[str, datetime] = {}
         self._chat_moderation = chat_moderation
         self._bot_nick = bot_nick
@@ -63,9 +56,7 @@ class RollCommandHandler:
             last_roll_time=self.roll_cooldowns.get(display_name),
         )
 
-        result = await self._handle_roll_use_case.handle(
-            db_session_provider=self._db_session_provider, db_readonly_session_provider=self._db_readonly_session_provider, command_roll=dto
-        )
+        result = await self._handle_roll_use_case.handle(command_roll=dto)
 
         if result.new_last_roll_time:
             self.roll_cooldowns[display_name] = result.new_last_roll_time

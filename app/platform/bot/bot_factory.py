@@ -37,6 +37,7 @@ from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
+from app.commands.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
 from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.presentation.shop_command_handler import ShopCommandHandler
@@ -311,15 +312,10 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_roll,
             handle_roll_use_case=HandleRollUseCase(
-                economy_policy_provider=self._economy.economy_policy_provider,
-                betting_service_provider=self._betting.betting_service_provider,
+                unit_of_work_factory=self._build_roll_uow_factory(),
                 roll_cooldown_use_case_provider=self._equipment.roll_cooldown_use_case_provider,
-                get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider,
                 calculate_timeout_use_case_provider=self._equipment.calculate_timeout_use_case_provider,
             ),
-            db_session_provider=lambda: db_rw_session(),
-            db_readonly_session_provider=lambda: db_ro_session(),
             chat_moderation=moderation_service,
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
@@ -552,6 +548,16 @@ class BotFactory:
         return SqlAlchemyHelpUnitOfWorkFactory(
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_roll_uow_factory(self) -> SqlAlchemyRollUnitOfWorkFactory:
+        return SqlAlchemyRollUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            betting_service_provider=self._betting.betting_service_provider,
+            get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
