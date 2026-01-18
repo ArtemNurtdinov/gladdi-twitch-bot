@@ -4,18 +4,11 @@ import random
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
-from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
-from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
+from app.minigame.application.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_service import MinigameService
-from app.stream.domain.stream_service import StreamService
-from core.db import db_ro_session, db_rw_session
-from core.provider import Provider
 
 
 class MinigameOrchestrator:
@@ -24,12 +17,7 @@ class MinigameOrchestrator:
     def __init__(
         self,
         minigame_service: MinigameService,
-        economy_policy_provider: Provider[EconomyPolicy],
-        chat_use_case_provider: Provider[ChatUseCase],
-        stream_service_provider: Provider[StreamService],
-        get_used_words_use_case_provider: Provider[GetUsedWordsUseCase],
-        add_used_words_use_case_provider: Provider[AddUsedWordsUseCase],
-        conversation_service_provider: Provider[ConversationService],
+        unit_of_work_factory: MinigameUnitOfWorkFactory,
         llm_client: LLMClientPort,
         system_prompt: str,
         prefix: str,
@@ -41,12 +29,7 @@ class MinigameOrchestrator:
         send_channel_message: Callable[[str, str], Awaitable[None]],
     ):
         self.minigame_service = minigame_service
-        self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
-        self._stream_service_provider = stream_service_provider
-        self._get_used_words_use_case_provider = get_used_words_use_case_provider
-        self._add_used_words_use_case_provider = add_used_words_use_case_provider
-        self._conversation_service_provider = conversation_service_provider
+        self._unit_of_work_factory = unit_of_work_factory
         self._llm_client = llm_client
         self._system_prompt = system_prompt
         self._prefix = prefix
@@ -68,8 +51,8 @@ class MinigameOrchestrator:
 
         await self._finish_expired_games()
 
-        with db_ro_session() as db:
-            active_stream = self._stream_service_provider.get(db).get_active_stream(channel_name)
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            active_stream = uow.stream_service.get_active_stream(channel_name)
 
         if not active_stream:
             return self.DEFAULT_SLEEP_SECONDS
@@ -94,9 +77,9 @@ class MinigameOrchestrator:
 
         if winners:
             share = max(1, game.bank // len(winners))
-            with db_rw_session() as db:
+            with self._unit_of_work_factory.create() as uow:
                 for winner in winners:
-                    self._economy_policy_provider.get(db).add_balance(
+                    uow.economy_policy.add_balance(
                         channel_name=channel_name,
                         user_name=winner,
                         amount=share,
@@ -111,8 +94,8 @@ class MinigameOrchestrator:
         else:
             message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
 
-        with db_rw_session() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name_lower(), content=message, current_time=datetime.utcnow()
             )
 
@@ -123,15 +106,15 @@ class MinigameOrchestrator:
         expired_games = self.minigame_service.check_expired_games()
         for channel, timeout_message in expired_games.items():
             await self._send_channel_message(channel, timeout_message)
-            with db_rw_session() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=channel, user_name=self._bot_name_lower(), content=timeout_message, current_time=datetime.utcnow()
                 )
 
     async def _start_word_game(self, channel_name: str):
-        with db_ro_session() as db:
-            used_words = self._get_used_words_use_case_provider.get(db).get_used_words(channel_name, limit=50)
-            last_messages = self._chat_use_case_provider.get(db).get_last_chat_messages(channel_name, limit=50)
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            used_words = uow.get_used_words_use_case.get_used_words(channel_name, limit=50)
+            last_messages = uow.chat_use_case.get_last_chat_messages(channel_name, limit=50)
 
         chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
         avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words))) if used_words else ""
@@ -151,8 +134,8 @@ class MinigameOrchestrator:
         assistant_response = await self._llm_client.generate_ai_response(ai_messages)
         assistant_message = assistant_response.message
 
-        with db_rw_session() as db:
-            self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, assistant_message)
+        with self._unit_of_work_factory.create() as uow:
+            uow.conversation_service.save_conversation_to_db(channel_name, prompt, assistant_message)
 
         data = json.loads(assistant_message)
         word = str(data.get("word", "")).strip()
@@ -160,8 +143,8 @@ class MinigameOrchestrator:
         final_word = word.strip().lower()
 
         game = self.minigame_service.start_word_guess_game(channel_name, final_word, hint)
-        with db_rw_session() as db:
-            self._add_used_words_use_case_provider.get(db).add_used_words(channel_name, final_word)
+        with self._unit_of_work_factory.create() as uow:
+            uow.add_used_words_use_case.add_used_words(channel_name, final_word)
 
         masked = game.get_masked_word()
         game_message = (
@@ -174,8 +157,8 @@ class MinigameOrchestrator:
 
         await self._send_channel_message(channel_name, game_message)
 
-        with db_rw_session() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
             )
 
@@ -189,8 +172,8 @@ class MinigameOrchestrator:
         )
 
         await self._send_channel_message(channel_name, game_message)
-        with db_rw_session() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
             )
 
@@ -205,7 +188,7 @@ class MinigameOrchestrator:
         )
 
         await self._send_channel_message(channel_name, game_message)
-        with db_rw_session() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
             )

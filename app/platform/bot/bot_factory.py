@@ -67,6 +67,7 @@ from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.minigame.application.minigame_tick_job import MinigameTickJob
 from app.minigame.bootstrap import MinigameProviders
+from app.minigame.infrastructure.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
@@ -156,11 +157,7 @@ class BotFactory:
     def _create_minigame(self, bot: Bot, system_prompt: str, outbound: ChatOutbound) -> MinigameOrchestrator:
         return MinigameOrchestrator(
             minigame_service=self._minigame.minigame_service,
-            economy_policy_provider=self._economy.economy_policy_provider,
-            chat_use_case_provider=self._chat.chat_use_case_provider,
-            stream_service_provider=self._stream.stream_service_provider,
-            get_used_words_use_case_provider=self._minigame.get_used_words_use_case_provider,
-            add_used_words_use_case_provider=self._minigame.add_used_words_use_case_provider,
+            unit_of_work_factory=self._build_minigame_uow_factory(),
             llm_client=self._ai.llm_client,
             system_prompt=system_prompt,
             prefix=self._settings.prefix,
@@ -170,7 +167,6 @@ class BotFactory:
             command_rps=self._settings.command_rps,
             bot_nick=bot.nick,
             send_channel_message=outbound.send_channel_message,
-            conversation_service_provider=self._ai.conversation_service_provider,
         )
 
     def _create_background_tasks(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, outbound) -> BackgroundTasks:
@@ -589,6 +585,18 @@ class BotFactory:
             session_factory_ro=db_ro_session,
             economy_policy_provider=self._economy.economy_policy_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_minigame_uow_factory(self) -> SqlAlchemyMinigameUnitOfWorkFactory:
+        return SqlAlchemyMinigameUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+            stream_service_provider=self._stream.stream_service_provider,
+            get_used_words_use_case_provider=self._minigame.get_used_words_use_case_provider,
+            add_used_words_use_case_provider=self._minigame.add_used_words_use_case_provider,
+            conversation_service_provider=self._ai.conversation_service_provider,
         )
 
     def _build_rps_uow_factory(self) -> SqlAlchemyRpsUnitOfWorkFactory:
