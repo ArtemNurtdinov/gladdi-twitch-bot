@@ -64,6 +64,7 @@ from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.minigame.application.minigame_tick_job import MinigameTickJob
 from app.minigame.bootstrap import MinigameProviders
+from app.minigame.infrastructure.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.application.token_checker_job import TokenCheckerJob
@@ -426,12 +427,12 @@ class BotFactory:
             post_message_fn=post_message_fn,
         )
         rps_command_handler = RpsCommandHandler(
+            command_prefix=prefix,
+            command_name=settings.command_rps,
             handle_rps_use_case=HandleRpsUseCase(
                 minigame_service=self._minigame.minigame_service,
-                economy_policy_provider=self._economy.economy_policy_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider,
+                unit_of_work_factory=self._build_rps_uow_factory(),
             ),
-            db_session_provider=lambda: db_rw_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -581,6 +582,14 @@ class BotFactory:
 
     def _build_transfer_uow_factory(self) -> SqlAlchemyTransferUnitOfWorkFactory:
         return SqlAlchemyTransferUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_rps_uow_factory(self) -> SqlAlchemyRpsUnitOfWorkFactory:
+        return SqlAlchemyRpsUnitOfWorkFactory(
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             economy_policy_provider=self._economy.economy_policy_provider,
