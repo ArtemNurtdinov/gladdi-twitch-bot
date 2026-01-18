@@ -14,6 +14,7 @@ from app.commands.balance.application.handle_balance_use_case import HandleBalan
 from app.commands.balance.infrastructure.balance_uow import SqlAlchemyBalanceUnitOfWorkFactory
 from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
+from app.commands.battle.infrastructure.battle_uow import SqlAlchemyBattleUnitOfWorkFactory
 from app.commands.battle.presentation.battle_command_handler import BattleCommandHandler
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
@@ -82,6 +83,7 @@ from app.user.bootstrap import UserProviders
 from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from app.viewer.application.viewer_time_job import ViewerTimeJob
 from app.viewer.bootstrap import ViewerProviders
+from app.viewer.infrastructure.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
 from bootstrap.telegram_provider import TelegramProviders
 from core.background.tasks import BackgroundTasks
 from core.bootstrap.background import BackgroundProviders
@@ -225,14 +227,10 @@ class BotFactory:
                 ViewerTimeJob(
                     channel_name=self._settings.channel_name,
                     handle_viewer_time_use_case=HandleViewerTimeUseCase(
-                        viewer_service_provider=self._viewer.viewer_service_provider,
-                        stream_service_provider=self._stream.stream_service_provider,
-                        economy_policy_provider=self._economy.economy_policy_provider,
+                        unit_of_work_factory=self._build_viewer_time_uow_factory(),
                         user_cache=self._user.user_cache,
                         stream_chatters_port=self._stream.stream_chatters_port,
                     ),
-                    db_session_provider=lambda: db_rw_session(),
-                    db_readonly_session_provider=lambda: db_ro_session(),
                     bot_nick=bot.nick,
                     check_interval_seconds=self._settings.check_viewers_interval_seconds,
                 ),
@@ -291,16 +289,10 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_fight,
             handle_battle_use_case=HandleBattleUseCase(
-                economy_policy_provider=self._economy.economy_policy_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider,
-                conversation_service_provider=self._ai.conversation_service_provider,
-                battle_use_case_provider=self._battle.battle_use_case_provider,
-                get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
+                unit_of_work_factory=self._build_battle_uow_factory(),
                 chat_response_use_case=chat_response_use_case,
                 calculate_timeout_use_case_provider=self._equipment.calculate_timeout_use_case_provider,
             ),
-            db_session_provider=lambda: db_rw_session(),
-            db_readonly_session_provider=lambda: db_ro_session(),
             chat_moderation=moderation_service,
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
@@ -509,6 +501,17 @@ class BotFactory:
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
+    def _build_battle_uow_factory(self) -> SqlAlchemyBattleUnitOfWorkFactory:
+        return SqlAlchemyBattleUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+            conversation_service_provider=self._ai.conversation_service_provider,
+            battle_use_case_provider=self._battle.battle_use_case_provider,
+            get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
+        )
+
     def _build_bonus_uow_factory(self) -> SqlAlchemyBonusUnitOfWorkFactory:
         return SqlAlchemyBonusUnitOfWorkFactory(
             session_factory_rw=db_rw_session,
@@ -615,4 +618,13 @@ class BotFactory:
             economy_policy_provider=self._economy.economy_policy_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
             conversation_service_provider=self._ai.conversation_service_provider,
+        )
+
+    def _build_viewer_time_uow_factory(self) -> SqlAlchemyViewerTimeUnitOfWorkFactory:
+        return SqlAlchemyViewerTimeUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            viewer_service_provider=self._viewer.viewer_service_provider,
+            stream_service_provider=self._stream.stream_service_provider,
+            economy_policy_provider=self._economy.economy_policy_provider,
         )
