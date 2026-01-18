@@ -1,15 +1,10 @@
 import random
-from collections.abc import Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
-
-from sqlalchemy.orm import Session
 
 from app.betting.application.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
-from app.chat.application.chat_use_case import ChatUseCase
 from app.commands.roll.application.model import RollDTO, RollTimeoutAction, RollUseCaseResult
-from app.economy.domain.economy_policy import EconomyPolicy
+from app.commands.roll.application.roll_uow import RollUnitOfWorkFactory
 from app.economy.domain.models import (
     JackpotPayoutMultiplierEffect,
     MissPayoutMultiplierEffect,
@@ -18,8 +13,7 @@ from app.economy.domain.models import (
 )
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
-from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
-from core.provider import Provider, SingletonProvider
+from core.provider import SingletonProvider
 
 
 class HandleRollUseCase:
@@ -27,24 +21,16 @@ class HandleRollUseCase:
 
     def __init__(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
+        unit_of_work_factory: RollUnitOfWorkFactory,
         roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase],
-        get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
-        chat_use_case_provider: Provider[ChatUseCase],
         calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase],
     ):
-        self._economy_policy_provider = economy_policy_provider
-        self._betting_service_provider = betting_service_provider
+        self._unit_of_work_factory = unit_of_work_factory
         self._roll_cooldown_use_case_provider = roll_cooldown_use_case_provider
-        self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
-        self._chat_use_case_provider = chat_use_case_provider
         self._calculate_timeout_use_case_provider = calculate_timeout_use_case_provider
 
     async def handle(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         command_roll: RollDTO,
     ) -> RollUseCaseResult:
         messages: list[str] = []
@@ -55,8 +41,8 @@ class HandleRollUseCase:
         if command_roll.amount_input:
             user_message += command_roll.amount_input
 
-        with db_readonly_session_provider() as db:
-            equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            equipment = uow.get_user_equipment_use_case.get_user_equipment(
                 channel_name=command_roll.channel_name, user_name=command_roll.user_name
             )
             cooldown_seconds = self._roll_cooldown_use_case_provider.get().calc_seconds(
@@ -68,14 +54,14 @@ class HandleRollUseCase:
             if time_since_last < cooldown_seconds:
                 remaining_time = cooldown_seconds - time_since_last
                 result = f"@{command_roll.display_name}, подожди ещё {remaining_time:.0f} секунд перед следующей ставкой! ⏰"
-                with db_session_provider() as db:
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                with self._unit_of_work_factory.create() as uow:
+                    uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.user_name,
                         content=user_message,
                         current_time=command_roll.occurred_at,
                     )
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                    uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.bot_nick,
                         content=result,
@@ -95,14 +81,14 @@ class HandleRollUseCase:
                     f"(например: {command_roll.command_prefix}{command_roll.command_name} 100). "
                     f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{BettingService.MAX_BET_AMOUNT} монет."
                 )
-                with db_session_provider() as db:
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                with self._unit_of_work_factory.create() as uow:
+                    uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.user_name,
                         content=user_message,
                         current_time=command_roll.occurred_at,
                     )
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                    uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.bot_nick,
                         content=result,
@@ -115,14 +101,14 @@ class HandleRollUseCase:
 
         if bet_amount < BettingService.MIN_BET_AMOUNT:
             result = f"Минимальная сумма ставки: {BettingService.MIN_BET_AMOUNT} монет."
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
                     content=user_message,
                     current_time=command_roll.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.bot_nick,
                     content=result,
@@ -133,14 +119,14 @@ class HandleRollUseCase:
 
         if bet_amount > BettingService.MAX_BET_AMOUNT:
             result = f"Максимальная сумма ставки: {BettingService.MAX_BET_AMOUNT} монет."
-            with db_session_provider() as db:
-                self._chat_use_case_provider.get(db).save_chat_message(
+            with self._unit_of_work_factory.create() as uow:
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
                     content=user_message,
                     current_time=command_roll.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.bot_nick,
                     content=result,
@@ -162,13 +148,13 @@ class HandleRollUseCase:
         else:
             result_type = "miss"
 
-        with db_readonly_session_provider() as db:
-            rarity_level = self._betting_service_provider.get(db).determine_correct_rarity(
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            rarity_level = uow.betting_service.determine_correct_rarity(
                 slot_result=slot_result_string, result_type=result_type
             )
 
-        with db_session_provider() as db:
-            user_balance = self._economy_policy_provider.get(db).subtract_balance(
+        with self._unit_of_work_factory.create() as uow:
+            user_balance = uow.economy_policy.subtract_balance(
                 channel_name=command_roll.channel_name,
                 user_name=command_roll.user_name,
                 amount=bet_amount,
@@ -177,13 +163,13 @@ class HandleRollUseCase:
             )
             if not user_balance:
                 result = f"Недостаточно средств для ставки! Необходимо: {bet_amount} монет."
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
                     content=user_message,
                     current_time=command_roll.occurred_at,
                 )
-                self._chat_use_case_provider.get(db).save_chat_message(
+                uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.bot_nick,
                     content=result,
@@ -242,14 +228,14 @@ class HandleRollUseCase:
                 description = (
                     f"Выигрыш в слот-машине: {slot_result_string}" if result_type != "miss" else f"Консольный приз: {slot_result_string}"
                 )
-                user_balance = self._economy_policy_provider.get(db).add_balance(
+                user_balance = uow.economy_policy.add_balance(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
                     amount=payout,
                     transaction_type=transaction_type,
                     description=description,
                 )
-            self._betting_service_provider.get(db).save_bet(
+            uow.betting_service.save_bet(
                 channel_name=command_roll.channel_name,
                 user_name=command_roll.user_name,
                 slot_result=slot_result_string,
@@ -262,14 +248,14 @@ class HandleRollUseCase:
         profit_display = self._get_profit_display(result_type, payout, profit)
         final_result = f"{slot_result_string} {result_emoji} Баланс: {user_balance.balance} монет ({profit_display})"
 
-        with db_session_provider() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_roll.channel_name,
                 user_name=command_roll.user_name,
                 content=user_message,
                 current_time=command_roll.occurred_at,
             )
-            self._chat_use_case_provider.get(db).save_chat_message(
+            uow.chat_use_case.save_chat_message(
                 channel_name=command_roll.channel_name,
                 user_name=command_roll.bot_nick,
                 content=final_result,
@@ -290,14 +276,14 @@ class HandleRollUseCase:
                 else:
                     no_timeout_message = f"🛡️ @{command_roll.display_name}, {protection_message}"
 
-                with db_session_provider() as db:
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                with self._unit_of_work_factory.create() as uow:
+                    uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.user_name,
                         content=user_message,
                         current_time=command_roll.occurred_at,
                     )
-                    self._chat_use_case_provider.get(db).save_chat_message(
+                    uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.bot_nick,
                         content=no_timeout_message,
