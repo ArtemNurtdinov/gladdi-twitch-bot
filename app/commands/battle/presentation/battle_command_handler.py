@@ -1,9 +1,6 @@
 import asyncio
 from collections.abc import Awaitable, Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
-
-from sqlalchemy.orm import Session
 
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.application.model import BattleDTO
@@ -17,8 +14,6 @@ class BattleCommandHandler:
         command_prefix: str,
         command_name: str,
         handle_battle_use_case: HandleBattleUseCase,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         chat_moderation: ChatModerationPort,
         bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
@@ -26,8 +21,6 @@ class BattleCommandHandler:
         self.command_prefix = command_prefix
         self.command_name = command_name
         self._handle_battle_use_case = handle_battle_use_case
-        self._db_session_provider = db_session_provider
-        self._db_readonly_session_provider = db_readonly_session_provider
         self._chat_moderation = chat_moderation
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
@@ -46,8 +39,6 @@ class BattleCommandHandler:
         )
 
         result = await self._handle_battle_use_case.handle(
-            db_session_provider=self._db_session_provider,
-            db_readonly_session_provider=self._db_readonly_session_provider,
             command_battle=battle_dto,
         )
 
