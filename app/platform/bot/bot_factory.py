@@ -59,6 +59,7 @@ from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.handle_post_joke_use_case import HandlePostJokeUseCase
 from app.joke.application.post_joke_job import PostJokeJob
 from app.joke.bootstrap import JokeProviders
+from app.joke.infrastructure.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
 from app.minigame.application.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
@@ -180,10 +181,8 @@ class BotFactory:
                         user_cache=self._user.user_cache,
                         stream_info=self._stream.stream_info_port,
                         chat_response_use_case=chat_response_use_case,
-                        conversation_service_provider=self._ai.conversation_service_provider,
-                        chat_use_case_provider=self._chat.chat_use_case_provider,
+                        unit_of_work_factory=self._build_joke_uow_factory(),
                     ),
-                    db_session_provider=lambda: db_rw_session(),
                     send_channel_message=send_channel_message,
                     bot_nick=bot.nick,
                 ),
@@ -499,6 +498,14 @@ class BotFactory:
             stream_repo_provider=self._stream.stream_repo_provider,
             viewer_repo_provider=self._viewer.viewer_repo_provider,
             conversation_service_provider=self._ai.conversation_service_provider,
+        )
+
+    def _build_joke_uow_factory(self) -> SqlAlchemyJokeUnitOfWorkFactory:
+        return SqlAlchemyJokeUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            conversation_service_provider=self._ai.conversation_service_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
     def _build_balance_uow_factory(self) -> SqlAlchemyBalanceUnitOfWorkFactory:

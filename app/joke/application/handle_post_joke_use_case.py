@@ -1,16 +1,9 @@
-from collections.abc import Callable
-from contextlib import AbstractContextManager
-
-from sqlalchemy.orm import Session
-
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.conversation.domain.conversation_service import ConversationService
-from app.chat.application.chat_use_case import ChatUseCase
+from app.joke.application.joke_uow import JokeUnitOfWorkFactory
 from app.joke.application.model import PostJokeDTO
 from app.joke.domain.joke_service import JokeService
 from app.stream.application.stream_info_port import StreamInfoPort
 from app.user.application.user_cache_port import UserCachePort
-from core.provider import Provider
 
 
 class HandlePostJokeUseCase:
@@ -20,19 +13,16 @@ class HandlePostJokeUseCase:
         user_cache: UserCachePort,
         stream_info: StreamInfoPort,
         chat_response_use_case: ChatResponseUseCase,
-        conversation_service_provider: Provider[ConversationService],
-        chat_use_case_provider: Provider[ChatUseCase],
+        unit_of_work_factory: JokeUnitOfWorkFactory,
     ):
         self._joke_service = joke_service
         self._user_cache = user_cache
         self._stream_info = stream_info
         self._chat_response_use_case = chat_response_use_case
-        self._conversation_service_provider = conversation_service_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._unit_of_work_factory = unit_of_work_factory
 
     async def handle(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
         post_joke: PostJokeDTO,
     ) -> str | None:
         if not self._joke_service.should_generate_jokes():
@@ -51,11 +41,11 @@ class HandlePostJokeUseCase:
         prompt = f"Придумай анекдот, связанный с категорией трансляции: {stream_info.game_name}."
         joke_text = await self._chat_response_use_case.generate_response(prompt, post_joke.channel_name)
 
-        with db_session_provider() as db:
-            self._conversation_service_provider.get(db).save_conversation_to_db(
+        with self._unit_of_work_factory.create() as uow:
+            uow.conversation_service.save_conversation_to_db(
                 channel_name=post_joke.channel_name, user_message=prompt, ai_message=joke_text
             )
-            self._chat_use_case_provider.get(db).save_chat_message(
+            uow.chat_use_case.save_chat_message(
                 channel_name=post_joke.channel_name,
                 user_name=post_joke.bot_nick,
                 content=joke_text,
