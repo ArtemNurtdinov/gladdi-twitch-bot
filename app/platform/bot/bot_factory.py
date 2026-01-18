@@ -49,6 +49,7 @@ from app.commands.top_bottom.application.handle_top_bottom_use_case import Handl
 from app.commands.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
 from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
+from app.commands.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandler
 from app.economy.bootstrap import EconomyProviders
 from app.equipment.bootstrap import EquipmentProviders
@@ -345,10 +346,8 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_transfer,
             handle_transfer_use_case=HandleTransferUseCase(
-                economy_policy_provider=self._economy.economy_policy_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider,
+                unit_of_work_factory=self._build_transfer_uow_factory(),
             ),
-            db_session_provider=lambda: db_rw_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -574,6 +573,14 @@ class BotFactory:
 
     def _build_top_bottom_uow_factory(self) -> SqlAlchemyTopBottomUnitOfWorkFactory:
         return SqlAlchemyTopBottomUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_transfer_uow_factory(self) -> SqlAlchemyTransferUnitOfWorkFactory:
+        return SqlAlchemyTransferUnitOfWorkFactory(
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             economy_policy_provider=self._economy.economy_policy_provider,
