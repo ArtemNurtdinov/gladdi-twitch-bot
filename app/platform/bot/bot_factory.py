@@ -16,6 +16,7 @@ from app.commands.balance.presentation.balance_command_handler import BalanceCom
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.presentation.battle_command_handler import BattleCommandHandler
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
+from app.commands.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
 from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHandler
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
@@ -333,13 +334,8 @@ class BotFactory:
             command_prefix=prefix,
             command_name=settings.command_bonus,
             handle_bonus_use_case=HandleBonusUseCase(
-                stream_service_provider=self._stream.stream_service_provider,
-                get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
-                economy_policy_provider=self._economy.economy_policy_provider,
-                chat_use_case_provider=self._chat.chat_use_case_provider,
+                unit_of_work_factory=self._build_bonus_uow_factory(),
             ),
-            db_session_provider=lambda: db_rw_session(),
-            db_readonly_session_provider=lambda: db_ro_session(),
             bot_nick=bot_nick,
             post_message_fn=post_message_fn,
         )
@@ -525,6 +521,16 @@ class BotFactory:
         return SqlAlchemyBalanceUnitOfWorkFactory(
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_bonus_uow_factory(self) -> SqlAlchemyBonusUnitOfWorkFactory:
+        return SqlAlchemyBonusUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            stream_service_provider=self._stream.stream_service_provider,
+            get_user_equipment_use_case_provider=self._equipment.get_user_equipment_use_case_provider,
             economy_policy_provider=self._economy.economy_policy_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
