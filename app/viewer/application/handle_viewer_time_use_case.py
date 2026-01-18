@@ -1,81 +1,67 @@
-from collections.abc import Callable
-from contextlib import AbstractContextManager
-
-from sqlalchemy.orm import Session
-
-from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
-from app.stream.domain.stream_service import StreamService
 from app.user.application.user_cache_port import UserCachePort
 from app.viewer.application.model import ViewerTimeDTO
 from app.viewer.application.stream_chatters_port import StreamChattersPort
-from app.viewer.domain.viewer_session_service import ViewerTimeService
-from core.provider import Provider
+from app.viewer.application.viewer_time_uow import ViewerTimeUnitOfWorkFactory
 
 
 class HandleViewerTimeUseCase:
     def __init__(
         self,
-        viewer_service_provider: Provider[ViewerTimeService],
-        stream_service_provider: Provider[StreamService],
-        economy_policy_provider: Provider[EconomyPolicy],
+        unit_of_work_factory: ViewerTimeUnitOfWorkFactory,
         user_cache: UserCachePort,
         stream_chatters_port: StreamChattersPort,
     ):
-        self._viewer_service_provider = viewer_service_provider
-        self._stream_service_provider = stream_service_provider
-        self._economy_policy_provider = economy_policy_provider
+        self._unit_of_work_factory = unit_of_work_factory
         self._user_cache = user_cache
         self._stream_chatters_port = stream_chatters_port
 
     async def handle(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         viewer_time_dto: ViewerTimeDTO,
     ):
-        with db_readonly_session_provider() as db:
-            active_stream = self._stream_service_provider.get(db).get_active_stream(viewer_time_dto.channel_name)
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            active_stream = uow.stream_service.get_active_stream(viewer_time_dto.channel_name)
 
         if not active_stream:
             return
 
-        with db_session_provider() as db:
-            self._viewer_service_provider.get(db).check_inactive_viewers(active_stream.id, viewer_time_dto.occurred_at)
+        with self._unit_of_work_factory.create() as uow:
+            uow.viewer_service.check_inactive_viewers(active_stream.id, viewer_time_dto.occurred_at)
 
         broadcaster_id = await self._user_cache.get_user_id(viewer_time_dto.channel_name)
         moderator_id = await self._user_cache.get_user_id(viewer_time_dto.bot_nick or viewer_time_dto.channel_name)
         chatters = await self._stream_chatters_port.get_stream_chatters(broadcaster_id, moderator_id)
         if chatters:
-            with db_session_provider() as db:
-                self._viewer_service_provider.get(db).update_viewers(
+            with self._unit_of_work_factory.create() as uow:
+                uow.viewer_service.update_viewers(
                     active_stream_id=active_stream.id,
                     channel_name=viewer_time_dto.channel_name,
                     chatters=chatters,
                     current_time=viewer_time_dto.occurred_at,
                 )
 
-        with db_readonly_session_provider() as db:
-            viewers_count = self._viewer_service_provider.get(db).get_stream_watchers_count(active_stream.id)
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            viewers_count = uow.viewer_service.get_stream_watchers_count(active_stream.id)
 
         if viewers_count > active_stream.max_concurrent_viewers:
-            with db_session_provider() as db:
-                self._stream_service_provider.get(db).update_max_concurrent_viewers_count(active_stream.id, viewers_count)
+            with self._unit_of_work_factory.create() as uow:
+                uow.stream_service.update_max_concurrent_viewers_count(active_stream.id, viewers_count)
 
-        with db_session_provider() as db:
-            viewer_sessions = self._viewer_service_provider.get(db).get_stream_viewer_sessions(active_stream.id)
+        with self._unit_of_work_factory.create() as uow:
+            viewer_sessions = uow.viewer_service.get_stream_viewer_sessions(active_stream.id)
             for session in viewer_sessions:
-                available_rewards = self._viewer_service_provider.get(db).get_available_rewards(session)
+                available_rewards = uow.viewer_service.get_available_rewards(session)
                 for minutes_threshold, reward_amount in available_rewards:
                     claimed_list = session.get_claimed_rewards_list()
                     claimed_list.append(minutes_threshold)
                     rewards = ",".join(map(str, sorted(claimed_list)))
-                    self._viewer_service_provider.get(db).update_session_rewards(
+                    uow.viewer_service.update_session_rewards(
                         session_id=session.id,
                         rewards=rewards,
                         current_time=viewer_time_dto.occurred_at
                     )
-                    self._economy_policy_provider.get(db).add_balance(
+                    uow.economy_policy.add_balance(
                         channel_name=viewer_time_dto.channel_name,
                         user_name=session.user_name,
                         amount=reward_amount,
