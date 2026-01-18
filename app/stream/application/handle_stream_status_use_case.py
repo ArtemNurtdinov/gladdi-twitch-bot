@@ -1,28 +1,18 @@
 import logging
 from collections import Counter
-from collections.abc import Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
 from typing import Protocol
 
 import telegram
-from sqlalchemy.orm import Session
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.conversation.domain.conversation_service import ConversationService
-from app.battle.application.battle_use_case import BattleUseCase
-from app.chat.application.chat_use_case import ChatUseCase
-from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.model import StatusJobDTO
-from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.application.stream_status_port import StreamStatusPort
+from app.stream.application.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.models import StreamInfo, StreamStatistics
-from app.stream.domain.stream_service import StreamService
 from app.user.application.user_cache_port import UserCachePort
-from app.viewer.domain.viewer_session_service import ViewerTimeService
-from core.provider import Provider
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +27,7 @@ class HandleStreamStatusUseCase:
         self,
         user_cache: UserCachePort,
         stream_status_port: StreamStatusPort,
-        stream_service_provider: Provider[StreamService],
-        start_stream_use_case_provider: Provider[StartNewStreamUseCase],
-        viewer_service_provider: Provider[ViewerTimeService],
-        battle_use_case_provider: Provider[BattleUseCase],
-        economy_policy_provider: Provider[EconomyPolicy],
-        chat_use_case_provider: Provider[ChatUseCase],
-        conversation_service_provider: Provider[ConversationService],
+        unit_of_work_factory: StreamStatusUnitOfWorkFactory,
         minigame_service: MinigameService,
         telegram_bot: telegram.Bot,
         telegram_group_id: int,
@@ -52,13 +36,7 @@ class HandleStreamStatusUseCase:
     ):
         self._user_cache = user_cache
         self._stream_status_port = stream_status_port
-        self._stream_service_provider = stream_service_provider
-        self._start_stream_use_case_provider = start_stream_use_case_provider
-        self._viewer_service_provider = viewer_service_provider
-        self._battle_use_case_provider = battle_use_case_provider
-        self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
-        self._conversation_service_provider = conversation_service_provider
+        self._unit_of_work_factory = unit_of_work_factory
         self._minigame_service = minigame_service
         self._telegram_bot = telegram_bot
         self._telegram_group_id = telegram_group_id
@@ -67,8 +45,6 @@ class HandleStreamStatusUseCase:
 
     async def handle(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         status_job_dto: StatusJobDTO,
     ) -> None:
         broadcaster_id = await self._user_cache.get_user_id(status_job_dto.channel_name)
@@ -87,25 +63,23 @@ class HandleStreamStatusUseCase:
 
         logger.info(f"Статус стрима: {stream_status}")
 
-        with db_readonly_session_provider() as db:
-            active_stream = self._stream_service_provider.get(db).get_active_stream(status_job_dto.channel_name)
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            active_stream = uow.stream_service.get_active_stream(status_job_dto.channel_name)
 
         if stream_status.is_online and active_stream is None:
             logger.info(f"Стрим начался: {game_name} - {title}")
-            await self._handle_stream_start(status_job_dto.channel_name, game_name, title, db_session_provider)
+            await self._handle_stream_start(status_job_dto.channel_name, game_name, title)
 
         elif not stream_status.is_online and active_stream is not None:
             await self._handle_stream_end(
                 channel_name=status_job_dto.channel_name,
                 active_stream=active_stream,
-                db_session_provider=db_session_provider,
-                db_readonly_session_provider=db_readonly_session_provider,
             )
 
         elif stream_status.is_online and active_stream:
             if active_stream.game_name != game_name or active_stream.title != title:
-                with db_session_provider() as db:
-                    self._stream_service_provider.get(db).update_stream_metadata(active_stream.id, game_name, title)
+                with self._unit_of_work_factory.create() as uow:
+                    uow.stream_service.update_stream_metadata(active_stream.id, game_name, title)
                 logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
     async def _handle_stream_start(
@@ -113,12 +87,11 @@ class HandleStreamStatusUseCase:
         channel_name: str,
         game_name: str | None,
         title: str | None,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
     ):
         started_at = datetime.utcnow()
         try:
-            with db_session_provider() as db:
-                self._start_stream_use_case_provider.get(db).execute(channel_name, started_at, game_name, title)
+            with self._unit_of_work_factory.create() as uow:
+                uow.start_stream_use_case.execute(channel_name, started_at, game_name, title)
             self._minigame_service.set_stream_start_time(channel_name, started_at)
             await self._stream_announcement(channel_name, game_name, title)
             self._state.current_stream_summaries = []
@@ -129,25 +102,23 @@ class HandleStreamStatusUseCase:
         self,
         channel_name: str,
         active_stream: StreamInfo,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
     ):
         finish_time = datetime.utcnow()
         logger.info("Стрим завершён")
-        with db_session_provider() as db:
-            self._stream_service_provider.get(db).end_stream(active_stream.id, finish_time)
-            self._viewer_service_provider.get(db).finish_stream_sessions(active_stream.id, finish_time)
-            total_viewers = self._viewer_service_provider.get(db).get_unique_viewers_count(active_stream.id)
-            self._stream_service_provider.get(db).update_stream_total_viewers(active_stream.id, total_viewers)
+        with self._unit_of_work_factory.create() as uow:
+            uow.stream_service.end_stream(active_stream.id, finish_time)
+            uow.viewer_service.finish_stream_sessions(active_stream.id, finish_time)
+            total_viewers = uow.viewer_service.get_unique_viewers_count(active_stream.id)
+            uow.stream_service.update_stream_total_viewers(active_stream.id, total_viewers)
             logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
         self._minigame_service.reset_stream_state(channel_name)
 
-        with db_readonly_session_provider() as db:
-            battles = self._battle_use_case_provider.get(db).get_battles(channel_name, active_stream.started_at)
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            battles = uow.battle_use_case.get_battles(channel_name, active_stream.started_at)
 
-        with db_readonly_session_provider() as db:
-            chat_messages = self._chat_use_case_provider.get(db).get_chat_messages(
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            chat_messages = uow.chat_use_case.get_chat_messages(
                 channel_name=channel_name,
                 from_time=active_stream.started_at,
                 to_time=finish_time,
@@ -161,8 +132,6 @@ class HandleStreamStatusUseCase:
                 channel_name=channel_name,
                 stream_start_dt=active_stream.started_at,
                 stream_end_dt=finish_time,
-                db_session_provider=db_session_provider,
-                db_readonly_session_provider=db_readonly_session_provider,
             )
         except Exception as e:
             logger.error(f"Ошибка при вызове stream_summarize: {e}")
@@ -197,16 +166,14 @@ class HandleStreamStatusUseCase:
         channel_name: str,
         stream_start_dt,
         stream_end_dt,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
     ):
         logger.info("Создание итогового отчёта о стриме")
 
         if self._state.last_chat_summary_time is None:
             self._state.last_chat_summary_time = stream_start_dt
 
-        with db_readonly_session_provider() as db:
-            last_messages = self._chat_use_case_provider.get(db).get_chat_messages(
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            last_messages = uow.chat_use_case.get_chat_messages(
                 channel_name=channel_name,
                 from_time=self._state.last_chat_summary_time,
                 to_time=stream_end_dt,
@@ -235,8 +202,8 @@ class HandleStreamStatusUseCase:
 
         if stream_stat.top_user and stream_stat.top_user != "нет":
             reward_amount = 200
-            with db_session_provider() as db:
-                user_balance = self._economy_policy_provider.get(db).add_balance(
+            with self._unit_of_work_factory.create() as uow:
+                user_balance = uow.economy_policy.add_balance(
                     channel_name=channel_name,
                     user_name=stream_stat.top_user,
                     amount=reward_amount,
@@ -258,8 +225,8 @@ class HandleStreamStatusUseCase:
         prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции"
         result = await self._chat_response_use_case.generate_response(prompt, channel_name)
 
-        with db_session_provider() as db:
-            self._conversation_service_provider.get(db).save_conversation_to_db(channel_name, prompt, result)
+        with self._unit_of_work_factory.create() as uow:
+            uow.conversation_service.save_conversation_to_db(channel_name, prompt, result)
 
         self._state.current_stream_summaries = []
         self._state.last_chat_summary_time = None
