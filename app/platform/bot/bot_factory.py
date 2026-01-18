@@ -77,6 +77,7 @@ from app.stream.application.handle_stream_status_use_case import HandleStreamSta
 from app.stream.application.model import RestoreStreamJobDTO
 from app.stream.application.stream_status_job import StreamStatusJob
 from app.stream.bootstrap import StreamProviders
+from app.stream.infrastructure.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
 from app.user.bootstrap import UserProviders
 from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from app.viewer.application.viewer_time_job import ViewerTimeJob
@@ -196,21 +197,13 @@ class BotFactory:
                     handle_stream_status_use_case=HandleStreamStatusUseCase(
                         user_cache=self._user.user_cache,
                         stream_status_port=self._stream.stream_status_port,
-                        stream_service_provider=self._stream.stream_service_provider,
-                        start_stream_use_case_provider=self._stream.start_stream_use_case_provider,
-                        viewer_service_provider=self._viewer.viewer_service_provider,
-                        battle_use_case_provider=self._battle.battle_use_case_provider,
-                        economy_policy_provider=self._economy.economy_policy_provider,
-                        chat_use_case_provider=self._chat.chat_use_case_provider,
-                        conversation_service_provider=self._ai.conversation_service_provider,
+                        unit_of_work_factory=self._build_stream_status_uow_factory(),
                         minigame_service=self._minigame.minigame_service,
                         telegram_bot=self._telegram.telegram_bot,
                         telegram_group_id=self._settings.group_id,
                         chat_response_use_case=chat_response_use_case,
                         state=bot.chat_summary_state,
                     ),
-                    db_session_provider=lambda: db_rw_session(),
-                    db_readonly_session_provider=lambda: db_ro_session(),
                     stream_status_interval_seconds=self._settings.check_stream_status_interval_seconds,
                 ),
                 ChatSummarizerJob(
@@ -608,5 +601,18 @@ class BotFactory:
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             chat_repo_provider=self._chat.chat_repo_provider,
+            conversation_service_provider=self._ai.conversation_service_provider,
+        )
+
+    def _build_stream_status_uow_factory(self) -> SqlAlchemyStreamStatusUnitOfWorkFactory:
+        return SqlAlchemyStreamStatusUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            stream_service_provider=self._stream.stream_service_provider,
+            start_stream_use_case_provider=self._stream.start_stream_use_case_provider,
+            viewer_service_provider=self._viewer.viewer_service_provider,
+            battle_use_case_provider=self._battle.battle_use_case_provider,
+            economy_policy_provider=self._economy.economy_policy_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
             conversation_service_provider=self._ai.conversation_service_provider,
         )
