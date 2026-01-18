@@ -1,48 +1,31 @@
-from collections.abc import Callable
-from contextlib import AbstractContextManager
-
-from sqlalchemy.orm import Session
-
-from app.chat.application.chat_use_case import ChatUseCase
+from app.commands.bonus.application.bonus_uow import BonusUnitOfWorkFactory
 from app.commands.bonus.application.model import BonusDTO
-from app.economy.domain.economy_policy import EconomyPolicy
-from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
-from app.stream.domain.stream_service import StreamService
-from core.provider import Provider
 
 
 class HandleBonusUseCase:
     def __init__(
         self,
-        stream_service_provider: Provider[StreamService],
-        get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
-        economy_policy_provider: Provider[EconomyPolicy],
-        chat_use_case_provider: Provider[ChatUseCase],
+        unit_of_work_factory: BonusUnitOfWorkFactory,
     ):
-        self._stream_service_provider = stream_service_provider
-        self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
-        self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._unit_of_work_factory = unit_of_work_factory
 
     async def handle(
         self,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         chat_context_dto: BonusDTO,
     ) -> str:
         user_message = chat_context_dto.command_prefix + chat_context_dto.command_name
 
-        with db_readonly_session_provider() as db:
-            active_stream = self._stream_service_provider.get(db).get_active_stream(chat_context_dto.channel_name)
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            active_stream = uow.stream_service.get_active_stream(chat_context_dto.channel_name)
 
         if not active_stream:
             result = f"🚫 @{chat_context_dto.display_name}, бонус доступен только во время стрима!"
         else:
-            with db_session_provider() as db:
-                user_equipment = self._get_user_equipment_use_case_provider.get(db).get_user_equipment(
+            with self._unit_of_work_factory.create() as uow:
+                user_equipment = uow.get_user_equipment_use_case.get_user_equipment(
                     channel_name=chat_context_dto.channel_name, user_name=chat_context_dto.user_name
                 )
-                bonus_result = self._economy_policy_provider.get(db).claim_daily_bonus(
+                bonus_result = uow.economy_policy.claim_daily_bonus(
                     active_stream_id=active_stream.id,
                     channel_name=chat_context_dto.channel_name,
                     user_name=chat_context_dto.user_name,
@@ -64,14 +47,14 @@ class HandleBonusUseCase:
                     else:
                         result = f"❌ @{chat_context_dto.display_name}, бонус недоступен!"
 
-        with db_session_provider() as db:
-            self._chat_use_case_provider.get(db).save_chat_message(
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_use_case.save_chat_message(
                 channel_name=chat_context_dto.channel_name,
                 user_name=chat_context_dto.user_name,
                 content=user_message,
                 current_time=chat_context_dto.occurred_at,
             )
-            self._chat_use_case_provider.get(db).save_chat_message(
+            uow.chat_use_case.save_chat_message(
                 channel_name=chat_context_dto.channel_name,
                 user_name=chat_context_dto.bot_nick,
                 content=result,
