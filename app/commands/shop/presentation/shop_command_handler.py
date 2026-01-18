@@ -1,8 +1,5 @@
 from collections.abc import Awaitable, Callable
-from contextlib import AbstractContextManager
 from datetime import datetime
-
-from sqlalchemy.orm import Session
 
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.application.model import CommandBuyDTO, CommandShopDTO
@@ -16,8 +13,6 @@ class ShopCommandHandler:
         command_shop_name: str,
         command_buy_name: str,
         handle_shop_use_case: HandleShopUseCase,
-        db_session_provider: Callable[[], AbstractContextManager[Session]],
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         bot_nick: str,
         post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
     ):
@@ -25,8 +20,6 @@ class ShopCommandHandler:
         self.command_shop_name = command_shop_name
         self.command_buy_name = command_buy_name
         self._handle_shop_use_case = handle_shop_use_case
-        self._db_session_provider = db_session_provider
-        self._db_readonly_session_provider = db_readonly_session_provider
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
@@ -45,7 +38,6 @@ class ShopCommandHandler:
         )
 
         result = await self._handle_shop_use_case.handle_shop(
-            db_session_provider=self._db_session_provider,
             command_shop=dto,
         )
 
@@ -66,8 +58,6 @@ class ShopCommandHandler:
         )
 
         result = await self._handle_shop_use_case.handle_buy(
-            db_session_provider=self._db_session_provider,
-            db_readonly_session_provider=self._db_readonly_session_provider,
             command_buy=dto,
         )
 
