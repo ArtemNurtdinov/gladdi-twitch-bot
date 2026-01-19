@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from twitchio import Client
+from twitchio import Client, WebsocketWelcome
 from twitchio.eventsub import ChatMessageSubscription
 from twitchio.exceptions import HTTPException
 from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
@@ -42,6 +42,8 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
         self._token_user_id: str | None = None
         self._broadcaster_id: str | None = None
+        self._subscribed_session_id: str | None = None
+        self._eventsub_lock = asyncio.Lock()
 
         super().__init__(
             client_id=twitch_auth.client_id,
@@ -59,7 +61,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
     async def setup_hook(self) -> None:
         await self._register_token()
         await self._ensure_broadcaster_id()
-        await self._subscribe_chat_message()
+        await self._subscribe_chat_message_with_retry(reason="startup")
 
     async def stop(self) -> None:
         await super().close()
@@ -106,6 +108,14 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
             except Exception:
                 logger.exception("Ошибка в ChatEventHandler для сообщения: %s", payload.text)
 
+    async def event_websocket_welcome(self, payload: WebsocketWelcome) -> None:
+        session_id = payload.id
+        logger.info("Получен EventSub session_welcome: session_id=%s", session_id)
+        await self._subscribe_chat_message_with_retry(reason="welcome", session_id=session_id)
+
+    async def event_eventsub_welcome(self, payload: WebsocketWelcome) -> None:
+        await self.event_websocket_welcome(payload)
+
     async def _register_token(self) -> None:
         if self._token_user_id:
             return
@@ -134,23 +144,48 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
     async def _subscribe_chat_message(self) -> None:
         if not self._broadcaster_id or not self._token_user_id:
-            logger.error("Нельзя подписаться на чат: broadcaster_id=%s token_user_id=%s", self._broadcaster_id, self._token_user_id)
-            return
-        try:
-            payload = ChatMessageSubscription(
-                broadcaster_user_id=self._broadcaster_id,
-                user_id=self._token_user_id,
+            raise RuntimeError(
+                f"Нельзя подписаться на чат: broadcaster_id={self._broadcaster_id} token_user_id={self._token_user_id}"
             )
-            await self.subscribe_websocket(payload, token_for=self._token_user_id)
-            logger.info("Подписка на channel.chat.message оформлена для %s", self._broadcaster_id)
-        except HTTPException as e:
-            logger.error(
-                "Не удалось подписаться на channel.chat.message: status=%s text=%s",
-                getattr(e, "status", None),
-                getattr(e, "text", None),
-            )
-        except Exception:
-            logger.exception("Не удалось подписаться на channel.chat.message")
+        payload = ChatMessageSubscription(
+            broadcaster_user_id=self._broadcaster_id,
+            user_id=self._token_user_id,
+        )
+        await self.subscribe_websocket(payload, token_for=self._token_user_id)
+        logger.info("Подписка на channel.chat.message оформлена для %s", self._broadcaster_id)
+
+    async def _subscribe_chat_message_with_retry(self, reason: str, session_id: str | None = None) -> None:
+        async with self._eventsub_lock:
+            if session_id and session_id == self._subscribed_session_id:
+                logger.info("Подписка уже актуальна для session_id=%s", session_id)
+                return
+
+            delay = 1.0
+            for attempt in range(1, 4):
+                try:
+                    await self._subscribe_chat_message()
+                    if session_id:
+                        self._subscribed_session_id = session_id
+                    logger.info("Подписка EventSub восстановлена (%s)", reason)
+                    return
+                except HTTPException as e:
+                    status = getattr(e, "status", None)
+                    text = getattr(e, "text", None)
+                    logger.warning(
+                        "Попытка подписки %s/%s не удалась: status=%s text=%s",
+                        attempt,
+                        3,
+                        status,
+                        text,
+                    )
+                    if status not in {400, 409, 429, 500, 502, 503, 504}:
+                        break
+                except Exception:
+                    logger.exception("Попытка подписки %s/%s завершилась ошибкой", attempt, 3)
+                await asyncio.sleep(delay)
+                delay *= 2
+
+            logger.error("Не удалось восстановить подписку EventSub (%s)", reason)
 
     @staticmethod
     def _split_text(text: str, max_length: int = 500) -> list[str]:
