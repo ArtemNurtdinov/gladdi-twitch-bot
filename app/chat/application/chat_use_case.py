@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from app.chat.application.chat_use_case_uow import ChatUseCaseUnitOfWorkFactory
 from app.chat.domain.models import ChatMessage, TopChatUserInfo
-from app.chat.domain.repo import ChatRepository
 
 
 class ChatUseCase:
-    def __init__(self, repo: ChatRepository):
-        self._repo = repo
+    def __init__(self, unit_of_work_factory: ChatUseCaseUnitOfWorkFactory):
+        self._unit_of_work_factory = unit_of_work_factory
 
     def save_chat_message(self, channel_name: str, user_name: str, content: str, current_time: datetime) -> None:
         normalized_channel = channel_name.strip()
@@ -28,25 +28,30 @@ class ChatUseCase:
             content=normalized_content,
             created_at=current_time,
         )
-        self._repo.save(message)
+        with self._unit_of_work_factory.create() as uow:
+            uow.chat_repo.save(message)
 
     def get_chat_messages(self, channel_name: str, from_time: datetime, to_time: datetime) -> list[ChatMessage]:
         if from_time > to_time:
             raise ValueError("from_time must be earlier or equal to to_time")
-        return list(self._repo.list_between(channel_name, from_time, to_time))
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            return list(uow.chat_repo.list_between(channel_name, from_time, to_time))
 
     def get_last_chat_messages(self, channel_name: str, limit: int) -> list[ChatMessage]:
         if limit <= 0:
             raise ValueError("limit must be positive")
-        return list(self._repo.list_last(channel_name, limit))
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            return list(uow.chat_repo.list_last(channel_name, limit))
 
     def get_top_chat_users(self, limit: int, date_from: datetime | None, date_to: datetime | None) -> list[TopChatUserInfo]:
         if limit <= 0:
             raise ValueError("limit must be positive")
         if date_from and date_to and date_from > date_to:
             raise ValueError("date_from must not be greater than date_to")
-        stats = self._repo.top_chat_users(limit, date_from, date_to)
-        return [TopChatUserInfo(channel_name=channel, username=user, message_count=count) for channel, user, count in stats]
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            stats = uow.chat_repo.top_chat_users(limit, date_from, date_to)
+            return [TopChatUserInfo(channel_name=channel, username=user, message_count=count) for channel, user, count in stats]
 
     def get_last_chat_messages_since(self, channel_name: str, since: datetime) -> list[ChatMessage]:
-        return self._repo.get_last_chat_messages_since(channel_name, since)
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            return uow.chat_repo.get_last_chat_messages_since(channel_name, since)
