@@ -1,40 +1,30 @@
-from collections.abc import Callable
-from contextlib import AbstractContextManager
 from datetime import timedelta
 
-from sqlalchemy.orm import Session
-
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.chat.application.chat_use_case import ChatUseCase
+from app.chat.application.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
 from app.chat.application.model import SummarizerJobDTO
-from app.stream.domain.stream_service import StreamService
-from core.provider import Provider
 
 
 class HandleChatSummarizerUseCase:
     def __init__(
         self,
-        stream_service_provider: Provider[StreamService],
-        chat_use_case_provider: Provider[ChatUseCase],
+        unit_of_work_factory: ChatSummarizerUnitOfWorkFactory,
         chat_response_use_case: ChatResponseUseCase,
     ):
-        self._stream_service_provider = stream_service_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._unit_of_work_factory = unit_of_work_factory
         self._chat_response_use_case = chat_response_use_case
 
     async def handle(
         self,
-        db_readonly_session_provider: Callable[[], AbstractContextManager[Session]],
         summarizer_job: SummarizerJobDTO,
     ) -> str | None:
-        with db_readonly_session_provider() as db:
-            active_stream = self._stream_service_provider.get(db).get_active_stream(summarizer_job.channel_name)
-        if not active_stream:
-            return None
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            active_stream = uow.stream_service.get_active_stream(summarizer_job.channel_name)
+            if not active_stream:
+                return None
 
-        since = summarizer_job.occurred_at - timedelta(minutes=summarizer_job.interval_minutes)
-        with db_readonly_session_provider() as db:
-            messages = self._chat_use_case_provider.get(db).get_last_chat_messages_since(summarizer_job.channel_name, since)
+            since = summarizer_job.occurred_at - timedelta(minutes=summarizer_job.interval_minutes)
+            messages = uow.chat_use_case.get_last_chat_messages_since(summarizer_job.channel_name, since)
 
         if not messages:
             return None

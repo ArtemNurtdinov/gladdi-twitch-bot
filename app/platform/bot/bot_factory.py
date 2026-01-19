@@ -7,6 +7,7 @@ from app.betting.bootstrap import BettingProviders
 from app.chat.application.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.bootstrap import ChatProviders
+from app.chat.infrastructure.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
 from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
@@ -208,11 +209,9 @@ class BotFactory:
                 ChatSummarizerJob(
                     channel_name=self._settings.channel_name,
                     handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
-                        stream_service_provider=self._stream.stream_service_provider,
-                        chat_use_case_provider=self._chat.chat_use_case_provider,
+                        unit_of_work_factory=self._build_chat_summarizer_uow_factory(),
                         chat_response_use_case=chat_response_use_case,
                     ),
-                    db_readonly_session_provider=lambda: db_ro_session(),
                     chat_summary_state=bot.chat_summary_state,
                 ),
                 MinigameTickJob(
@@ -486,6 +485,14 @@ class BotFactory:
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             conversation_service_provider=self._ai.conversation_service_provider,
+            chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_chat_summarizer_uow_factory(self) -> SqlAlchemyChatSummarizerUnitOfWorkFactory:
+        return SqlAlchemyChatSummarizerUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            stream_service_provider=self._stream.stream_service_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
         )
 
