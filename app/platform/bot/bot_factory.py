@@ -81,6 +81,7 @@ from app.stream.application.handle_stream_status_use_case import HandleStreamSta
 from app.stream.application.model import RestoreStreamJobDTO
 from app.stream.application.stream_status_job import StreamStatusJob
 from app.stream.bootstrap import StreamProviders
+from app.stream.infrastructure.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
 from app.stream.infrastructure.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
 from app.user.bootstrap import UserProviders
 from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
@@ -456,9 +457,8 @@ class BotFactory:
         restore_stream_job_dto = RestoreStreamJobDTO(self._settings.channel_name)
 
         HandleRestoreStreamContextUseCase(
-            stream_service_provider=self._stream.stream_service_provider,
+            unit_of_work_factory=self._build_restore_stream_context_uow_factory(),
             minigame_service=self._minigame.minigame_service,
-            db_readonly_session_provider=lambda: db_ro_session(),
         ).handle(restore_stream_job_dto)
 
     def _build_ask_uow_factory(self) -> SqlAlchemyAskUnitOfWorkFactory:
@@ -627,6 +627,13 @@ class BotFactory:
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             followers_repository_provider=self._follow.followers_repository_provider,
+        )
+
+    def _build_restore_stream_context_uow_factory(self) -> SqlAlchemyRestoreStreamContextUnitOfWorkFactory:
+        return SqlAlchemyRestoreStreamContextUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            stream_service_provider=self._stream.stream_service_provider,
         )
 
     def _build_stream_status_uow_factory(self) -> SqlAlchemyStreamStatusUnitOfWorkFactory:
