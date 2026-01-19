@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from app.ai.bootstrap import AIProviders
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.battle.bootstrap import BattleProviders
 from app.betting.bootstrap import BettingProviders
 from app.chat.application.chat_summarizer_job import ChatSummarizerJob
@@ -150,10 +151,9 @@ class BotFactory:
 
     def _create_chat_response_use_case(self, system_prompt: str) -> ChatResponseUseCase:
         return ChatResponseUseCase(
-            conversation_service_provider=self._ai.conversation_service_provider,
+            unit_of_work_factory=self._build_chat_response_uow_factory(),
             llm_client=self._ai.llm_client,
             system_prompt=system_prompt,
-            db_readonly_session_provider=lambda: db_ro_session(),
         )
 
     def _create_minigame(self, bot: Bot, system_prompt: str, outbound: ChatOutbound) -> MinigameOrchestrator:
@@ -486,6 +486,13 @@ class BotFactory:
             session_factory_ro=db_ro_session,
             conversation_service_provider=self._ai.conversation_service_provider,
             chat_use_case_provider=self._chat.chat_use_case_provider,
+        )
+
+    def _build_chat_response_uow_factory(self) -> SqlAlchemyChatResponseUnitOfWorkFactory:
+        return SqlAlchemyChatResponseUnitOfWorkFactory(
+            session_factory_rw=db_rw_session,
+            session_factory_ro=db_ro_session,
+            conversation_service_provider=self._ai.conversation_service_provider,
         )
 
     def _build_chat_summarizer_uow_factory(self) -> SqlAlchemyChatSummarizerUnitOfWorkFactory:
