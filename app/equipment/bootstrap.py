@@ -6,6 +6,8 @@ from app.equipment.application.defense.roll_cooldown_use_case import RollCooldow
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.equipment.data.equipment_repository import EquipmentRepositoryImpl
+from app.equipment.infrastructure.equipment_use_case_uow import SqlAlchemyEquipmentUseCaseUnitOfWorkFactory
+from core.db import db_ro_session, db_rw_session
 from core.provider import Provider, SingletonProvider
 
 
@@ -19,14 +21,35 @@ class EquipmentProviders:
 
 
 def build_equipment_providers() -> EquipmentProviders:
+    def equipment_repo(db):
+        return EquipmentRepositoryImpl(db)
+
     def get_user_equipment_use_case(db):
-        return GetUserEquipmentUseCase(EquipmentRepositoryImpl(db))
+        return GetUserEquipmentUseCase(
+            unit_of_work_factory=SqlAlchemyEquipmentUseCaseUnitOfWorkFactory(
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                equipment_repo_provider=Provider(equipment_repo),
+            )
+        )
 
     def equipment_exists_use_case(db):
-        return EquipmentExistsUseCase(EquipmentRepositoryImpl(db))
+        return EquipmentExistsUseCase(
+            unit_of_work_factory=SqlAlchemyEquipmentUseCaseUnitOfWorkFactory(
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                equipment_repo_provider=Provider(equipment_repo),
+            )
+        )
 
     def add_equipment_use_case(db):
-        return AddEquipmentUseCase(EquipmentRepositoryImpl(db))
+        return AddEquipmentUseCase(
+            unit_of_work_factory=SqlAlchemyEquipmentUseCaseUnitOfWorkFactory(
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                equipment_repo_provider=Provider(equipment_repo),
+            )
+        )
 
     def roll_cooldown_use_case():
         return RollCooldownUseCase()
