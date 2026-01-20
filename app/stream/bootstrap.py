@@ -9,12 +9,13 @@ from app.stream.application.stream_info_port import StreamInfoPort
 from app.stream.application.stream_status_port import StreamStatusPort
 from app.stream.domain.repo import StreamRepository
 from app.stream.domain.stream_service import StreamService
+from app.stream.infrastructure.start_new_stream_uow import SqlAlchemyStartNewStreamUnitOfWorkFactory
 from app.stream.infrastructure.stream_chatters_adapter import StreamChattersAdapter
 from app.stream.infrastructure.stream_info_adapter import StreamInfoAdapter
 from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
 from app.stream.infrastructure.stream_status_adapter import StreamStatusAdapter
 from app.viewer.application.stream_chatters_port import StreamChattersPort
-from core.db import get_db_ro, get_db_rw
+from core.db import db_ro_session, db_rw_session, get_db_ro, get_db_rw
 from core.provider import Provider
 
 
@@ -45,14 +46,20 @@ class StreamProviders:
 
 
 def build_stream_providers(platform: StreamingPlatformPort) -> StreamProviders:
+    def stream_repo(db):
+        return StreamRepositoryImpl(db)
+
     def stream_service(db):
         return StreamService(StreamRepositoryImpl(db))
 
     def start_stream_use_case(db):
-        return StartNewStreamUseCase(StreamRepositoryImpl(db))
-
-    def stream_repo(db):
-        return StreamRepositoryImpl(db)
+        return StartNewStreamUseCase(
+            unit_of_work_factory=SqlAlchemyStartNewStreamUnitOfWorkFactory(
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                stream_repo_provider=Provider(stream_repo),
+            )
+        )
 
     return StreamProviders(
         stream_info_port=StreamInfoAdapter(platform),
