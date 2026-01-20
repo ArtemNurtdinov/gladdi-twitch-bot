@@ -7,6 +7,7 @@ from app.ai.gen.llm.infrastructure.llm_box_client import LLMBoxClientPortImpl
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
+from app.ai.intent.infrastructure.intent_uow import SimpleIntentUnitOfWorkFactory
 from core.provider import Provider
 
 
@@ -23,7 +24,9 @@ class AIProviders:
 def build_ai_providers(llmbox_host: str, intent_detector_host: str) -> AIProviders:
     llm_client = LLMBoxClientPortImpl(llmbox_host)
     intent_detector = IntentDetectorClientImpl(intent_detector_host)
-    get_intent_from_text_use_case = GetIntentFromTextUseCase(intent_detector, llm_client)
+    get_intent_from_text_use_case = GetIntentFromTextUseCase(
+        unit_of_work_factory=SimpleIntentUnitOfWorkFactory(intent_detector, llm_client)
+    )
     prompt_service = PromptService()
 
     def conversation_service(db):
