@@ -31,6 +31,7 @@ from app.commands.equipment.presentation.equipment_command_handler import Equipm
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
+from app.commands.follow.infrastructure.followage_uow import SimpleFollowageUnitOfWorkFactory
 from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandler
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
@@ -259,7 +260,7 @@ class BotFactory:
                 chat_repo_provider=self._chat.chat_repo_provider,
                 conversation_repo_provider=self._ai.conversation_repo_provider,
                 get_followage_use_case=GetFollowageUseCase(
-                    followage_port=self._follow.followage_port,
+                    unit_of_work_factory=SimpleFollowageUnitOfWorkFactory(self._follow.followage_port),
                 ),
                 chat_response_use_case=chat_response_use_case,
                 unit_of_work_factory=self._build_follow_age_uow_factory(),
