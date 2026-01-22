@@ -3,8 +3,6 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.auth.data.db.access_token import AccessToken as OrmAccessToken
-from app.auth.data.db.user import User as OrmUser
 from app.auth.domain.models import (
     AccessToken as DomainAccessToken,
 )
@@ -17,6 +15,8 @@ from app.auth.domain.models import (
     UserUpdateData,
 )
 from app.auth.domain.repo import AuthRepository
+from app.auth.infrastructure.db.access_token import AccessToken as OrmAccessToken
+from app.auth.infrastructure.db.user import User as OrmUser
 
 
 def _to_domain_user(orm_user: OrmUser) -> DomainUser:

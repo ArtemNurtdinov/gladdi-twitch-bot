@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.application.auth_service import AuthService
 from app.auth.domain.models import User, UserRole
-from app.auth.infrastructure.db.auth_repository import AuthRepositoryImpl
+from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
 from app.auth.infrastructure.jwt_token_service import JwtTokenService
 from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from bootstrap.config_provider import get_config

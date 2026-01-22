@@ -2,10 +2,10 @@ from sqlalchemy import text
 
 from app.ai.gen.conversation.infrastructure.db.ai_message import AIMessage
 from app.auth.application.auth_service import AuthService
-from app.auth.data.db.access_token import AccessToken
-from app.auth.data.db.user import User
 from app.auth.domain.models import UserCreateData, UserRole
-from app.auth.infrastructure.db.auth_repository import AuthRepositoryImpl
+from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
+from app.auth.infrastructure.db.access_token import AccessToken
+from app.auth.infrastructure.db.user import User
 from app.auth.infrastructure.jwt_token_service import JwtTokenService
 from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from app.battle.data.db.battle_history import BattleHistory
