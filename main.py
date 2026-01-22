@@ -12,8 +12,10 @@ from app.stream.presentation import stream_routes
 from app.twitch.presentation import twitch_routes
 from app.viewer.presentation import viewer_routes
 from bootstrap.config_provider import get_config
+from core.db import configure_db
 
 cfg = get_config()
+configure_db(cfg.database.url)
 
 logging.basicConfig(
     level=getattr(logging, cfg.logging.level.upper(), logging.INFO),

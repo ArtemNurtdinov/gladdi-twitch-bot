@@ -83,8 +83,10 @@ from app.stream.application.handle_stream_status_use_case import HandleStreamSta
 from app.stream.application.model import RestoreStreamJobDTO
 from app.stream.application.stream_status_job import StreamStatusJob
 from app.stream.bootstrap import StreamProviders
+from app.stream.infrastructure.chat_response_adapter import ChatResponseAdapter
 from app.stream.infrastructure.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
 from app.stream.infrastructure.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
+from app.stream.infrastructure.telegram_adapter import TelegramNotificationAdapter
 from app.user.bootstrap import UserProviders
 from app.viewer.application.handle_viewer_time_use_case import HandleViewerTimeUseCase
 from app.viewer.application.viewer_time_job import ViewerTimeJob
@@ -174,6 +176,8 @@ class BotFactory:
 
     def _create_background_tasks(self, bot: Bot, chat_response_use_case: ChatResponseUseCase, outbound) -> BackgroundTasks:
         send_channel_message = outbound.send_channel_message
+        notification_port = TelegramNotificationAdapter(self._telegram.telegram_bot)
+        chat_response_port = ChatResponseAdapter(chat_response_use_case)
         return BackgroundTasks(
             runner=self._background.runner,
             jobs=[
@@ -201,9 +205,9 @@ class BotFactory:
                         stream_status_port=self._stream.stream_status_port,
                         unit_of_work_factory=self._build_stream_status_uow_factory(),
                         minigame_service=self._minigame.minigame_service,
-                        telegram_bot=self._telegram.telegram_bot,
-                        telegram_group_id=self._settings.group_id,
-                        chat_response_use_case=chat_response_use_case,
+                        notification_port=notification_port,
+                        notification_group_id=self._settings.group_id,
+                        chat_response_port=chat_response_port,
                         state=bot.chat_summary_state,
                     ),
                     stream_status_interval_seconds=self._settings.check_stream_status_interval_seconds,

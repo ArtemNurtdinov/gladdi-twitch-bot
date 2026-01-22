@@ -2,13 +2,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer
-from sqlalchemy.orm import Session
 
-from app.auth.domain.auth_service import AuthService
+from app.auth.application.auth_service import AuthService
 from app.auth.domain.models import User, UserCreateData, UserUpdateData
 from app.auth.presentation.auth_schemas import LoginResponse, TokenResponse, UserCreate, UserLogin, UserResponse, UserUpdate
-from app.auth.presentation.dependencies import get_admin_user, get_auth_service, get_current_user
-from core.db import get_db
+from bootstrap.auth_provider import get_admin_user, get_auth_service, get_current_user
 
 router = APIRouter(prefix="/auth")
 admin_router = APIRouter(prefix="/admin")
@@ -20,9 +18,8 @@ async def create_user(
     user_data: UserCreate,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
-    existing_user = auth_service.get_user_by_email(db, user_data.email)
+    existing_user = auth_service.get_user_by_email(user_data.email)
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь с таким email уже существует")
 
@@ -37,7 +34,7 @@ async def create_user(
         role=user_data.role,
         is_active=user_data.is_active,
     )
-    user = auth_service.create_user_from_admin(db, domain_input)
+    user = auth_service.create_user_from_admin(domain_input)
     return UserResponse.model_validate(user)
 
 
@@ -52,9 +49,8 @@ async def get_users(
     limit: int = 100,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
-    users = auth_service.get_users(db, skip, limit)
+    users = auth_service.get_users(skip, limit)
     return [UserResponse.model_validate(user) for user in users]
 
 
@@ -63,9 +59,8 @@ async def get_user(
     user_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
-    user = auth_service.get_user_by_id(db, user_id)
+    user = auth_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     return UserResponse.model_validate(user)
@@ -77,10 +72,9 @@ async def update_user(
     user_data: UserUpdate,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
     if user_data.email:
-        existing_user = auth_service.get_user_by_email(db, user_data.email)
+        existing_user = auth_service.get_user_by_email(user_data.email)
         if existing_user and existing_user.id != user_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь с таким email уже существует")
 
@@ -92,7 +86,7 @@ async def update_user(
         role=user_data.role,
         is_active=user_data.is_active,
     )
-    user = auth_service.update_user(db, user_id, domain_update)
+    user = auth_service.update_user(user_id, domain_update)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     return UserResponse.model_validate(user)
@@ -103,12 +97,11 @@ async def delete_user(
     user_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
     if user_id == current_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Нельзя удалить самого себя")
 
-    success = auth_service.delete_user(db, user_id)
+    success = auth_service.delete_user(user_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
 
@@ -121,9 +114,8 @@ async def get_tokens(
     limit: int = 100,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
-    tokens = auth_service.get_tokens(db, skip, limit)
+    tokens = auth_service.get_tokens(skip, limit)
     return [TokenResponse.model_validate(token) for token in tokens]
 
 
@@ -132,9 +124,8 @@ async def get_token(
     token_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
-    token = auth_service.get_token_by_id(db, token_id)
+    token = auth_service.get_token_by_id(token_id)
     if not token:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Токен не найден")
     return TokenResponse.model_validate(token)
@@ -145,9 +136,8 @@ async def deactivate_token(
     token_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
-    success = auth_service.deactivate_token(db, token_id)
+    success = auth_service.deactivate_token(token_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Токен не найден")
     return {"message": "Токен деактивирован"}
@@ -158,9 +148,8 @@ async def delete_token(
     token_id: UUID,
     current_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
-    success = auth_service.delete_token(db, token_id)
+    success = auth_service.delete_token(token_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Токен не найден")
     return {"message": "Токен удален"}
@@ -170,16 +159,15 @@ async def delete_token(
 async def login(
     user_data: UserLogin,
     auth_service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db),
 ):
-    user = auth_service.authenticate_user(db, user_data.email, user_data.password)
+    user = auth_service.authenticate_user(user_data.email, user_data.password)
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль", headers={"WWW-Authenticate": "Bearer"}
         )
 
-    access_token = auth_service.create_token(db, user)
+    access_token = auth_service.create_token(user)
     user_response = UserResponse.model_validate(user)
 
     return LoginResponse(

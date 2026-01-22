@@ -1,8 +1,5 @@
 from dataclasses import dataclass
 
-from fastapi import Depends
-from sqlalchemy.orm import Session
-
 from app.platform.streaming import StreamingPlatformPort
 from app.stream.application.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.application.stream_info_port import StreamInfoPort
@@ -15,24 +12,8 @@ from app.stream.infrastructure.stream_info_adapter import StreamInfoAdapter
 from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
 from app.stream.infrastructure.stream_status_adapter import StreamStatusAdapter
 from app.viewer.application.stream_chatters_port import StreamChattersPort
-from core.db import db_ro_session, db_rw_session, get_db_ro, get_db_rw
+from core.db import db_ro_session, db_rw_session
 from core.provider import Provider
-
-
-def get_stream_repo_ro(db: Session = Depends(get_db_ro)) -> StreamRepository:
-    return StreamRepositoryImpl(db)
-
-
-def get_stream_repo_rw(db: Session = Depends(get_db_rw)) -> StreamRepository:
-    return StreamRepositoryImpl(db)
-
-
-def get_stream_service_ro(repo: StreamRepositoryImpl = Depends(get_stream_repo_ro)) -> StreamService:
-    return StreamService(repo)
-
-
-def get_stream_service_rw(repo: StreamRepositoryImpl = Depends(get_stream_repo_rw)) -> StreamService:
-    return StreamService(repo)
 
 
 @dataclass

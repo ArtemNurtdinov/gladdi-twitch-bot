@@ -1,11 +1,13 @@
 from sqlalchemy import text
 
 from app.ai.gen.conversation.infrastructure.db.ai_message import AIMessage
-from app.auth.data.auth_repository import AuthRepositoryImpl
+from app.auth.application.auth_service import AuthService
 from app.auth.data.db.access_token import AccessToken
 from app.auth.data.db.user import User
-from app.auth.domain.auth_service import AuthService
 from app.auth.domain.models import UserCreateData, UserRole
+from app.auth.infrastructure.db.auth_repository import AuthRepositoryImpl
+from app.auth.infrastructure.jwt_token_service import JwtTokenService
+from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from app.battle.data.db.battle_history import BattleHistory
 from app.betting.data.db.bet_history import BetHistory
 from app.chat.data.db.chat_message import ChatMessage
@@ -69,14 +71,19 @@ def create_tables():
 def create_admin():
     try:
         config = get_config()
-        auth_service = AuthService(
-            auth_secret=config.application.auth_secret,
-            auth_secret_algorithm=config.application.auth_secret_algorithm,
+        token_service = JwtTokenService(
+            secret=config.application.auth_secret,
+            algorithm=config.application.auth_secret_algorithm,
             access_token_expires_minutes=config.application.access_token_expire_minutes,
-            repo=AuthRepositoryImpl(),
         )
+        password_hasher = BcryptPasswordHasher()
         with db_ro_session() as db:
-            existing_user = auth_service.get_user_by_email(db, "artem.nefrit@gmail.com")
+            auth_service = AuthService(
+                repo=AuthRepositoryImpl(db),
+                password_hasher=password_hasher,
+                token_service=token_service,
+            )
+            existing_user = auth_service.get_user_by_email("artem.nefrit@gmail.com")
             if existing_user:
                 print("   Пользователь с email 'artem.nefrit@gmail.com' уже существует!")
                 print(f"   ID: {existing_user.id}")
@@ -88,7 +95,12 @@ def create_admin():
         )
 
         with db_rw_session() as db:
-            user = auth_service.create_user_from_admin(db, user_data)
+            auth_service = AuthService(
+                repo=AuthRepositoryImpl(db),
+                password_hasher=password_hasher,
+                token_service=token_service,
+            )
+            user = auth_service.create_user_from_admin(user_data)
             print("    Администратор успешно создан!")
             print(f"   ID: {user.id}")
             print(f"   Email: {user.email}")

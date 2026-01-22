@@ -3,12 +3,11 @@ from collections import Counter
 from datetime import datetime
 from typing import Protocol
 
-import telegram
-
-from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_service import MinigameService
 from app.stream.application.model import StatusJobDTO
+from app.stream.application.ports.chat_response_port import ChatResponsePort
+from app.stream.application.ports.notification_port import NotificationPort
 from app.stream.application.stream_status_port import StreamStatusPort
 from app.stream.application.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.models import StreamInfo, StreamStatistics
@@ -29,18 +28,18 @@ class HandleStreamStatusUseCase:
         stream_status_port: StreamStatusPort,
         unit_of_work_factory: StreamStatusUnitOfWorkFactory,
         minigame_service: MinigameService,
-        telegram_bot: telegram.Bot,
-        telegram_group_id: int,
-        chat_response_use_case: ChatResponseUseCase,
+        notification_port: NotificationPort,
+        notification_group_id: int,
+        chat_response_port: ChatResponsePort,
         state: ChatSummaryStateProtocol,
     ):
         self._user_cache = user_cache
         self._stream_status_port = stream_status_port
         self._unit_of_work_factory = unit_of_work_factory
         self._minigame_service = minigame_service
-        self._telegram_bot = telegram_bot
-        self._telegram_group_id = telegram_group_id
-        self._chat_response_use_case = chat_response_use_case
+        self._notification_port = notification_port
+        self._notification_group_id = notification_group_id
+        self._chat_response_port = chat_response_port
         self._state = state
 
     async def handle(
@@ -154,9 +153,9 @@ class HandleStreamStatusUseCase:
             f"Начался стрим. Категория: {game_name}, название: {title}. "
             f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
         )
-        result = await self._chat_response_use_case.generate_response(prompt, channel_name)
+        result = await self._chat_response_port.generate_response(prompt, channel_name)
         try:
-            await self._telegram_bot.send_message(chat_id=self._telegram_group_id, text=result)
+            await self._notification_port.send_message(chat_id=self._notification_group_id, text=result)
         except Exception as e:
             logger.error(f"Ошибка отправки анонса в Telegram: {e}")
 
@@ -184,7 +183,7 @@ class HandleStreamStatusUseCase:
                     f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
                     f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
                 )
-                result = await self._chat_response_use_case.generate_response(prompt, channel_name)
+                result = await self._chat_response_port.generate_response(prompt, channel_name)
                 self._state.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
@@ -223,7 +222,7 @@ class HandleStreamStatusUseCase:
             prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
 
         prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции"
-        result = await self._chat_response_use_case.generate_response(prompt, channel_name)
+        result = await self._chat_response_port.generate_response(prompt, channel_name)
 
         with self._unit_of_work_factory.create() as uow:
             uow.conversation_service.save_conversation_to_db(channel_name, prompt, result)
@@ -231,4 +230,4 @@ class HandleStreamStatusUseCase:
         self._state.current_stream_summaries = []
         self._state.last_chat_summary_time = None
 
-        await self._telegram_bot.send_message(chat_id=self._telegram_group_id, text=result)
+        await self._notification_port.send_message(chat_id=self._notification_group_id, text=result)
