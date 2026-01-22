@@ -5,15 +5,25 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
-from bootstrap.config_provider import get_config
+from core.config import load_config
 
 Base = declarative_base()
 
 
+_database_url: str | None = None
+
+
+def configure_db(database_url: str) -> None:
+    global _database_url
+    _database_url = database_url
+    _get_engine.cache_clear()
+    _get_session_local.cache_clear()
+
+
 @lru_cache
 def _get_engine():
-    cfg = get_config()
-    return create_engine(cfg.database.url, echo=False)
+    database_url = _database_url or load_config().database.url
+    return create_engine(database_url, echo=False)
 
 
 @lru_cache

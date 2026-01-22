@@ -3,9 +3,9 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.stream.bootstrap import get_stream_service_ro
 from app.stream.domain.stream_service import StreamService
 from app.stream.presentation.stream_schemas import StreamDetailResponse, StreamListResponse, StreamResponse
+from bootstrap.stream_provider import get_stream_service_ro
 
 router = APIRouter()
 
