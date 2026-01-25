@@ -113,9 +113,6 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
         logger.info("Получен EventSub session_welcome: session_id=%s", session_id)
         await self._subscribe_chat_message_with_retry(reason="welcome", session_id=session_id)
 
-    async def event_eventsub_welcome(self, payload: WebsocketWelcome) -> None:
-        await self.event_websocket_welcome(payload)
-
     async def _register_token(self) -> None:
         if self._token_user_id:
             return
