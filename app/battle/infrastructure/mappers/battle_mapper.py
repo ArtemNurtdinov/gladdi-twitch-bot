@@ -1,5 +1,5 @@
-from app.battle.data.db.battle_history import BattleHistory
 from app.battle.domain.models import BattleRecord
+from app.battle.infrastructure.db.battle_history import BattleHistory
 
 
 def map_battle_history(row: BattleHistory | None) -> BattleRecord | None:

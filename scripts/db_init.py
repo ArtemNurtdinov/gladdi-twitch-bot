@@ -8,7 +8,7 @@ from app.auth.infrastructure.db.access_token import AccessToken
 from app.auth.infrastructure.db.user import User
 from app.auth.infrastructure.jwt_token_service import JwtTokenService
 from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
-from app.battle.data.db.battle_history import BattleHistory
+from app.battle.infrastructure.db.battle_history import BattleHistory
 from app.betting.data.db.bet_history import BetHistory
 from app.chat.data.db.chat_message import ChatMessage
 from app.economy.data.db.transaction_history import TransactionHistory
