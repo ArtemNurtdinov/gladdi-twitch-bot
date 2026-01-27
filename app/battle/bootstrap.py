@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from app.battle.application.battle_use_case import BattleUseCase
-from app.battle.data.battle_repository import BattleRepositoryImpl
+from app.battle.infrastructure.battle_repository import BattleRepositoryImpl
 from app.battle.infrastructure.battle_use_case_uow import SqlAlchemyBattleUseCaseUnitOfWorkFactory
 from core.db import db_ro_session, db_rw_session
 from core.provider import Provider

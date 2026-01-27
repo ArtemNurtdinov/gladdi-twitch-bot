@@ -3,10 +3,10 @@ from datetime import datetime
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.battle.data.db.battle_history import BattleHistory
-from app.battle.data.mappers.battle_mapper import map_battle_history
 from app.battle.domain.models import BattleRecord
 from app.battle.domain.repo import BattleRepository
+from app.battle.infrastructure.db.battle_history import BattleHistory
+from app.battle.infrastructure.mappers.battle_mapper import map_battle_history
 
 
 class BattleRepositoryImpl(BattleRepository):
@@ -45,10 +45,6 @@ class BattleRepositoryImpl(BattleRepository):
         return [map_battle_history(row) for row in rows]
 
     def get_battles(self, channel_name: str, from_time: datetime) -> list[BattleRecord]:
-        stmt = (
-            select(BattleHistory)
-            .where(BattleHistory.channel_name == channel_name)
-            .where(BattleHistory.created_at >= from_time)
-        )
+        stmt = select(BattleHistory).where(BattleHistory.channel_name == channel_name).where(BattleHistory.created_at >= from_time)
         rows = self._db.execute(stmt).scalars().all()
         return [map_battle_history(row) for row in rows]
