@@ -13,7 +13,7 @@ from app.betting.data.db.bet_history import BetHistory
 from app.chat.infrastructure.db.chat_message import ChatMessage
 from app.economy.data.db.transaction_history import TransactionHistory
 from app.economy.data.db.user_balance import UserBalance
-from app.equipment.data.db.user_equipment import UserEquipment
+from app.equipment.infrastructure.db.user_equipment import UserEquipment
 from app.follow.infrastructure.db.follower import ChannelFollowerRow
 from app.minigame.data.db.word_history import WordHistory
 from app.stream.infrastructure.db.stream import Stream

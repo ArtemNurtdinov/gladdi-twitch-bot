@@ -5,7 +5,7 @@ from app.equipment.application.defense.calculate_timeout_use_case import Calcula
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
-from app.equipment.data.equipment_repository import EquipmentRepositoryImpl
+from app.equipment.infrastructure.equipment_repository import EquipmentRepositoryImpl
 from app.equipment.infrastructure.equipment_use_case_uow import SqlAlchemyEquipmentUseCaseUnitOfWorkFactory
 from core.db import db_ro_session, db_rw_session
 from core.provider import Provider, SingletonProvider
