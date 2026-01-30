@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
-from app.joke.data.settings_repository import FileJokeSettingsRepository
 from app.joke.domain.joke_service import JokeService
+from app.joke.infrastructure.settings_repository import FileJokeSettingsRepository
 from app.joke.presentation.joke_schemas import (
     JokeInterval,
     JokesIntervalRequest,
