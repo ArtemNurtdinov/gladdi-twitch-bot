@@ -17,7 +17,7 @@ from app.equipment.infrastructure.db.user_equipment import UserEquipment
 from app.follow.infrastructure.db.follower import ChannelFollowerRow
 from app.minigame.infrastructure.db.word_history import WordHistory
 from app.stream.infrastructure.db.stream import Stream
-from app.viewer.data.db.viewer_session import StreamViewerSession
+from app.viewer.infrastructure.db.viewer_session import StreamViewerSession
 from bootstrap.config_provider import get_config
 from core.db import db_ro_session, db_rw_session, get_engine
 

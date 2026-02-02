@@ -7,7 +7,7 @@ from app.stream.domain.models import StreamInfo, StreamViewerSessionInfo
 from app.stream.domain.repo import StreamRepository
 from app.stream.infrastructure.db.stream import Stream
 from app.stream.infrastructure.mappers.stream_mapper import map_stream_row
-from app.viewer.data.db.viewer_session import StreamViewerSession
+from app.viewer.infrastructure.db.viewer_session import StreamViewerSession
 
 
 class StreamRepositoryImpl(StreamRepository):
@@ -19,11 +19,7 @@ class StreamRepositoryImpl(StreamRepository):
         self._db.add(stream)
 
     def get_active_stream(self, channel_name: str) -> StreamInfo | None:
-        stmt = (
-            select(Stream)
-            .where(Stream.channel_name == channel_name)
-            .where(Stream.is_active.is_(True))
-        )
+        stmt = select(Stream).where(Stream.channel_name == channel_name).where(Stream.is_active.is_(True))
         row = self._db.execute(stmt).scalars().first()
         if not row:
             return None
@@ -65,9 +61,7 @@ class StreamRepositoryImpl(StreamRepository):
         stream.max_concurrent_viewers = viewers_count
         stream.updated_at = datetime.utcnow()
 
-    def list_streams(
-        self, skip: int, limit: int, date_from: datetime | None, date_to: datetime | None
-    ) -> tuple[list[StreamInfo], int]:
+    def list_streams(self, skip: int, limit: int, date_from: datetime | None, date_to: datetime | None) -> tuple[list[StreamInfo], int]:
         base_stmt = select(Stream)
         count_stmt = select(func.count()).select_from(Stream)
         if date_from:
@@ -91,9 +85,7 @@ class StreamRepositoryImpl(StreamRepository):
             return None
 
         sessions_stmt = (
-            select(StreamViewerSession)
-            .where(StreamViewerSession.stream_id == stream_id)
-            .order_by(desc(StreamViewerSession.last_activity))
+            select(StreamViewerSession).where(StreamViewerSession.stream_id == stream_id).order_by(desc(StreamViewerSession.last_activity))
         )
         sessions = self._db.execute(sessions_stmt).scalars().all()
         return (

@@ -4,9 +4,9 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.stream.infrastructure.mappers.stream_mapper import map_stream_row
-from app.viewer.data.db.viewer_session import StreamViewerSession
 from app.viewer.domain.models import ViewerSession
 from app.viewer.domain.repo import ViewerRepository
+from app.viewer.infrastructure.db.viewer_session import StreamViewerSession
 
 
 class ViewerRepositoryImpl(ViewerRepository):
@@ -98,9 +98,7 @@ class ViewerRepositoryImpl(ViewerRepository):
 
     def get_active_sessions(self, stream_id: int) -> list[ViewerSession]:
         stmt = (
-            select(StreamViewerSession)
-            .where(StreamViewerSession.stream_id == stream_id)
-            .where(StreamViewerSession.is_watching.is_(True))
+            select(StreamViewerSession).where(StreamViewerSession.stream_id == stream_id).where(StreamViewerSession.is_watching.is_(True))
         )
         rows = self._db.execute(stmt).scalars().all()
         return [self._to_viewer_session(row) for row in rows]
