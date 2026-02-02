@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.viewer.data.viewer_repository import ViewerRepositoryImpl
 from app.viewer.domain.repo import ViewerRepository
 from app.viewer.domain.viewer_session_service import ViewerTimeService
+from app.viewer.infrastructure.viewer_repository import ViewerRepositoryImpl
 from core.db import get_db_ro, get_db_rw
 from core.provider import Provider
 
