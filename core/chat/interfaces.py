@@ -20,7 +20,7 @@ class ChatContext(Protocol):
 CommandHandler = Callable[[ChatContext, ChatMessage], Awaitable[None]]
 
 
-class CommandRouter1(Protocol):
+class CommandRouter(Protocol):
     def register(self, name: str, handler: CommandHandler) -> None: ...
     async def dispatch(self, message: ChatMessage, ctx: ChatContext) -> bool: ...
 
