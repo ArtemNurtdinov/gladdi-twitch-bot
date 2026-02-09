@@ -1,13 +1,25 @@
 from __future__ import annotations
 
-from typing import Any, Protocol
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any
 
-import httpx
+
+@dataclass(frozen=True)
+class StreamingApiResponse:
+    status_code: int
+    text: str
+    json_data: Any
 
 
-class StreamingApiClient(Protocol):
-    async def get(self, url: str, *, params: dict[str, Any] | None = None, headers: dict[str, str] | None = None) -> httpx.Response: ...
+class StreamingApiClient(ABC):
 
+    @abstractmethod
+    async def get(
+        self, url: str, *, params: dict[str, Any] | None = None, headers: dict[str, str] | None = None
+    ) -> StreamingApiResponse: ...
+
+    @abstractmethod
     async def post(
         self,
         url: str,
@@ -15,6 +27,7 @@ class StreamingApiClient(Protocol):
         params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         json: dict[str, Any] | None = None,
-    ) -> httpx.Response: ...
+    ) -> StreamingApiResponse: ...
 
+    @abstractmethod
     async def aclose(self) -> None: ...

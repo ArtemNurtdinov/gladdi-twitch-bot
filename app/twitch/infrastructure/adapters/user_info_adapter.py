@@ -32,7 +32,7 @@ class UserInfoApiAdapter(UserInfoPort):
                 return None
 
             try:
-                parsed = UsersResponse.model_validate(response.json())
+                parsed = UsersResponse.model_validate(response.json_data)
             except ValidationError as e:
                 logger.error(f"Валидация пользователя {login} не прошла: {e}")
                 return None
