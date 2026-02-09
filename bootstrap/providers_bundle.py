@@ -3,8 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.ai.bootstrap import AIProviders, build_ai_providers
-from app.battle.bootstrap import BattleProviders
-from app.battle.bootstrap import build_battle_providers
+from app.battle.bootstrap import BattleProviders, build_battle_providers
 from app.betting.bootstrap import BettingProviders, build_betting_providers
 from app.chat.bootstrap import ChatProviders, build_chat_providers
 from app.economy.bootstrap import EconomyProviders, build_economy_providers
@@ -16,10 +15,8 @@ from app.platform.streaming import StreamingPlatformPort
 from app.stream.bootstrap import StreamProviders, build_stream_providers
 from app.user.bootstrap import UserProviders, build_user_providers
 from app.viewer.bootstrap import ViewerProviders, build_viewer_providers
-from bootstrap.telegram_provider import TelegramProviders
-from bootstrap.telegram_provider import build_telegram_providers
-from core.bootstrap.background import BackgroundProviders
-from core.bootstrap.background import build_background_providers
+from bootstrap.telegram_provider import TelegramProviders, build_telegram_providers
+from core.bootstrap.background import BackgroundProviders, build_background_providers
 
 
 @dataclass(frozen=True)
