@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
-from app.auth.domain.models import UserRole
+from app.auth.application.dto import UserRole
 
 
 class UserResponse(BaseModel):
@@ -44,11 +44,11 @@ class LoginResponse(BaseModel):
 
 class UserCreate(BaseModel):
     email: str
-    first_name: str | None = None
-    last_name: str | None = None
-    password: str | None = None
+    first_name: str
+    last_name: str
+    password: str
     role: UserRole
-    is_active: bool = True
+    is_active: bool
 
 
 class UserUpdate(BaseModel):
