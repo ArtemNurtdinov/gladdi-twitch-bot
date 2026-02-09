@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.economy.domain.models import ShopItemType
+from app.shop.domain.models import ShopItemType
 from core.db import Base
 
 
