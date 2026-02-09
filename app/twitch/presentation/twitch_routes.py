@@ -78,7 +78,9 @@ def _twitch_auth_factory(
     )
 
 
-def _twitch_chat_client_factory(auth: PlatformAuth, settings: BotSettings = DEFAULT_SETTINGS, bot_id: str | None = None) -> ChatOutbound:
+def _twitch_chat_client_factory(
+    auth: PlatformAuth, settings: BotSettings = DEFAULT_SETTINGS, bot_id: str | None = None
+) -> ChatOutbound:
     twitch_auth: TwitchAuth = auth  # type: ignore[assignment]
     return TwitchChatClient(twitch_auth=twitch_auth, settings=settings, bot_id=bot_id)
 
