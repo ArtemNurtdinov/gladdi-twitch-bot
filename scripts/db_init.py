@@ -9,7 +9,7 @@ from app.auth.infrastructure.db.user import User
 from app.auth.infrastructure.jwt_token_service import JwtTokenService
 from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from app.battle.infrastructure.db.battle_history import BattleHistory
-from app.betting.data.db.bet_history import BetHistory
+from app.betting.infrastructure.db.bet_history import BetHistory
 from app.chat.infrastructure.db.chat_message import ChatMessage
 from app.economy.infrastructure.db.transaction_history import TransactionHistory
 from app.economy.infrastructure.db.user_balance import UserBalance

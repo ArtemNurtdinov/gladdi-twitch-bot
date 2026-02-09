@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from app.betting.application.betting_service import BettingService
-from app.betting.data.betting_repository import BettingRepositoryImpl
+from app.betting.infrastructure.betting_repository import BettingRepositoryImpl
 from core.provider import Provider
 
 
