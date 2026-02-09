@@ -10,6 +10,7 @@ from app.chat.application.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.bootstrap import build_chat_providers
 from app.chat.infrastructure.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
+from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
 from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
@@ -25,7 +26,6 @@ from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHa
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.commands.chat.presentation.chat_event_handler import DefaultChatEventsHandler
-from app.commands.presentation.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
@@ -41,6 +41,7 @@ from app.commands.guess.presentation.rps_command_handler import RpsCommandHandle
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
+from app.commands.presentation.commands_registry import CommandRegistry
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
 from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
@@ -122,7 +123,7 @@ async def build_bot_composition(
     platform_auth_factory: Callable[[str, str, str, str], PlatformAuth],
     platform_providers_builder: Callable[[PlatformAuth], PlatformProviders],
     chat_client_factory: Callable[[PlatformAuth, BotSettings, str | None], ChatOutbound],
-    command_router_builder: Callable[[BotSettings, CommandRegistry, Bot], CommandRouter],
+    command_router_builder: Callable[[BotSettings, CommandRegistryProtocol, Bot], CommandRouter],
 ) -> BotComposition:
     auth = platform_auth_factory(access_token, refresh_token, client_id, client_secret)
     platform_providers = platform_providers_builder(auth)
@@ -448,7 +449,7 @@ async def build_bot_composition(
 
     def build_command_registry(
         bot_nick: str, chat_response_use_case: ChatResponseUseCase, system_prompt: str, outbound: ChatOutbound
-    ) -> CommandRegistry:
+    ) -> CommandRegistryProtocol:
         prefix = settings.prefix
         post_message_fn = outbound.post_message
         moderation_service = ModerationService(moderation_port=platform_providers.streaming_platform, user_cache=user_providers.user_cache)

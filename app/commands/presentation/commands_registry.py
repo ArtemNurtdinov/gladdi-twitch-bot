@@ -1,3 +1,4 @@
+from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
 from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.presentation.battle_command_handler import BattleCommandHandler
@@ -14,7 +15,7 @@ from app.commands.top_bottom.presentation.top_bottom_command_handler import TopB
 from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandler
 
 
-class CommandRegistry:
+class CommandRegistry(CommandRegistryProtocol):
     def __init__(
         self,
         followage_command_handler: FollowageCommandHandler,

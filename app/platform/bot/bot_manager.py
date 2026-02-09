@@ -3,7 +3,7 @@ import logging
 from collections.abc import Callable
 from datetime import datetime
 
-from app.commands.presentation.commands_registry import CommandRegistry
+from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.platform.auth import PlatformAuth
 from app.platform.bot.bot import Bot
 from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings
@@ -22,7 +22,7 @@ class BotManager:
         platform_auth_factory: Callable[[str, str, str, str], PlatformAuth],
         platform_providers_builder: Callable[[PlatformAuth], PlatformProviders],
         chat_client_factory: Callable[[PlatformAuth, BotSettings, str | None], ChatOutbound],
-        command_router_builder: Callable[[BotSettings, CommandRegistry, Bot], CommandRouter],
+        command_router_builder: Callable[[BotSettings, CommandRegistryProtocol, Bot], CommandRouter],
         settings: BotSettings = DEFAULT_SETTINGS,
     ):
         self._platform_auth_factory = platform_auth_factory
