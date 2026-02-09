@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from app.economy.data.economy_repository import EconomyRepositoryImpl
 from app.economy.domain.economy_policy import EconomyPolicy
+from app.economy.infrastructure.economy_repository import EconomyRepositoryImpl
 from core.provider import Provider
 
 

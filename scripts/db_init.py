@@ -11,8 +11,8 @@ from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from app.battle.infrastructure.db.battle_history import BattleHistory
 from app.betting.data.db.bet_history import BetHistory
 from app.chat.infrastructure.db.chat_message import ChatMessage
-from app.economy.data.db.transaction_history import TransactionHistory
-from app.economy.data.db.user_balance import UserBalance
+from app.economy.infrastructure.db.transaction_history import TransactionHistory
+from app.economy.infrastructure.db.user_balance import UserBalance
 from app.equipment.infrastructure.db.user_equipment import UserEquipment
 from app.follow.infrastructure.db.follower import ChannelFollowerRow
 from app.minigame.infrastructure.db.word_history import WordHistory
