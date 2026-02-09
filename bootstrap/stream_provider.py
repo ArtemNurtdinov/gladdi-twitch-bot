@@ -1,6 +1,7 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from app.stream.application.stream_query_use_case import StreamQueryUseCase
 from app.stream.domain.repo import StreamRepository
 from app.stream.domain.stream_service import StreamService
 from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
@@ -21,3 +22,7 @@ def get_stream_service_ro(repo: StreamRepositoryImpl = Depends(get_stream_repo_r
 
 def get_stream_service_rw(repo: StreamRepositoryImpl = Depends(get_stream_repo_rw)) -> StreamService:
     return StreamService(repo)
+
+
+def get_stream_query_use_case_ro(repo: StreamRepositoryImpl = Depends(get_stream_repo_ro)) -> StreamQueryUseCase:
+    return StreamQueryUseCase(repo)
