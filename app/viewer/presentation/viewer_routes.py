@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.viewer.bootstrap import get_viewer_service_ro
-from app.viewer.domain.viewer_session_service import ViewerTimeService
-from app.viewer.presentation.viewer_schemas import (
+from app.viewer.application.contracts import (
     ViewerSessionResponse,
     ViewerSessionsResponse,
     ViewerSessionStreamInfo,
     ViewerSessionWithStreamResponse,
 )
+from app.viewer.application.viewer_query_service import ViewerQueryService
+from app.viewer.bootstrap import get_viewer_service_ro
 
 router = APIRouter()
 
@@ -19,7 +19,7 @@ router = APIRouter()
     description="Получить все сессии просмотра конкретного пользователя на канале",
 )
 async def get_viewer_sessions(
-    channel_name: str, user_name: str, viewer_service: ViewerTimeService = Depends(get_viewer_service_ro)
+    channel_name: str, user_name: str, viewer_service: ViewerQueryService = Depends(get_viewer_service_ro)
 ) -> ViewerSessionsResponse:
     try:
         sessions_dto = viewer_service.get_user_sessions(channel_name, user_name)

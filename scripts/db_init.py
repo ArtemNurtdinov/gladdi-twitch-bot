@@ -2,7 +2,7 @@ from sqlalchemy import text
 
 from app.ai.gen.conversation.infrastructure.db.ai_message import AIMessage
 from app.auth.application.auth_service import AuthService
-from app.auth.domain.models import UserCreateData, UserRole
+from app.auth.application.dto import UserCreateDto, UserRole
 from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
 from app.auth.infrastructure.db.access_token import AccessToken
 from app.auth.infrastructure.db.user import User
@@ -90,7 +90,7 @@ def create_admin():
                 print(f"   Роль: {existing_user.role.value}")
                 return
 
-        user_data = UserCreateData(
+        user_data = UserCreateDto(
             email="artem.nefrit@gmail.com", first_name="Артем", last_name="Нуртдинов", password="12345", role=UserRole.ADMIN, is_active=True
         )
 
