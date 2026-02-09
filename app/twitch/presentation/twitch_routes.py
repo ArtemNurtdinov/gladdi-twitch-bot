@@ -5,17 +5,14 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.platform.auth import PlatformAuth
 from app.platform.bot.bot_manager import BotManager
-from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings, build_bot_settings
+from app.platform.bot.bot_settings import BotSettings, build_bot_settings
 from app.platform.bot.schemas import BotActionResult, BotStatus
+from app.twitch.bootstrap.factories import twitch_auth_factory, twitch_chat_client_factory
 from app.twitch.bootstrap.router_factory import build_twitch_command_router
 from app.twitch.bootstrap.twitch import build_twitch_providers
-from app.twitch.infrastructure.chat.twitch_chat_client import TwitchChatClient
-from app.twitch.infrastructure.helix.auth import TwitchAuth
 from app.twitch.presentation.twitch_schemas import AuthStartResponse
 from bootstrap.config_provider import get_config
-from core.chat.outbound import ChatOutbound
 from core.config import Config
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
@@ -39,50 +36,12 @@ def get_bot_settings(cfg: Config = Depends(get_config)) -> BotSettings:
 @lru_cache
 def get_bot_manager(settings: BotSettings = Depends(get_bot_settings)) -> BotManager:
     return BotManager(
-        platform_auth_factory=_twitch_auth_factory,
+        platform_auth_factory=twitch_auth_factory,
         platform_providers_builder=build_twitch_providers,
-        chat_client_factory=_twitch_chat_client_factory,
+        chat_client_factory=twitch_chat_client_factory,
         command_router_builder=build_twitch_command_router,
         settings=settings,
     )
-
-
-def _validate_credentials(access_token: str, refresh_token: str, client_id: str, client_secret: str) -> None:
-    missing = []
-    if not client_id:
-        missing.append("client_id")
-    if not client_secret:
-        missing.append("client_secret")
-    if not refresh_token:
-        missing.append("refresh_token")
-    if not access_token:
-        missing.append("access_token")
-
-    if missing:
-        raise ValueError(f"Недостаточно данных для авторизации платформы: {', '.join(missing)}")
-
-
-def _twitch_auth_factory(
-    access_token: str,
-    refresh_token: str,
-    client_id: str,
-    client_secret: str,
-) -> TwitchAuth:
-    _validate_credentials(access_token, refresh_token, client_id, client_secret)
-    return TwitchAuth(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        client_id=client_id,
-        client_secret=client_secret,
-        logger=logging.getLogger(__name__),
-    )
-
-
-def _twitch_chat_client_factory(
-    auth: PlatformAuth, settings: BotSettings = DEFAULT_SETTINGS, bot_id: str | None = None
-) -> ChatOutbound:
-    twitch_auth: TwitchAuth = auth  # type: ignore[assignment]
-    return TwitchChatClient(twitch_auth=twitch_auth, settings=settings, bot_id=bot_id)
 
 
 @router.get("/status", summary="Получить состояние бота", response_model=BotStatus)
