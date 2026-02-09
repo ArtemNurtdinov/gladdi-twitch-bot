@@ -1,6 +1,7 @@
 from app.commands.shop.application.model import CommandBuyDTO, CommandShopDTO
 from app.commands.shop.application.shop_uow import ShopUnitOfWorkFactory
-from app.economy.domain.models import ShopItems, TransactionType
+from app.economy.domain.models import TransactionType
+from app.shop.domain.models import ShopItems
 
 
 class HandleShopUseCase:

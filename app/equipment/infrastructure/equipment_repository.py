@@ -3,10 +3,10 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.economy.domain.models import ShopItems, ShopItemType
 from app.equipment.domain.models import UserEquipmentItem
 from app.equipment.domain.repo import EquipmentRepository
 from app.equipment.infrastructure.db.user_equipment import UserEquipment as OrmUserEquipment
+from app.shop.domain.models import ShopItems, ShopItemType
 
 
 def _to_domain_item(row: OrmUserEquipment) -> UserEquipmentItem:

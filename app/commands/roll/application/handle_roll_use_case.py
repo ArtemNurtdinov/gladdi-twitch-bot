@@ -5,14 +5,14 @@ from app.betting.application.betting_service import BettingService
 from app.betting.domain.models import EmojiConfig, RarityLevel
 from app.commands.roll.application.model import RollDTO, RollTimeoutAction, RollUseCaseResult
 from app.commands.roll.application.roll_uow import RollUnitOfWorkFactory
-from app.economy.domain.models import (
+from app.economy.domain.models import TransactionType
+from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
+from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
+from app.shop.domain.models import (
     JackpotPayoutMultiplierEffect,
     MissPayoutMultiplierEffect,
     PartialPayoutMultiplierEffect,
-    TransactionType,
 )
-from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
-from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 from core.provider import SingletonProvider
 
 
@@ -149,9 +149,7 @@ class HandleRollUseCase:
             result_type = "miss"
 
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            rarity_level = uow.betting_service.determine_correct_rarity(
-                slot_result=slot_result_string, result_type=result_type
-            )
+            rarity_level = uow.betting_service.determine_correct_rarity(slot_result=slot_result_string, result_type=result_type)
 
         with self._unit_of_work_factory.create() as uow:
             user_balance = uow.economy_policy.subtract_balance(
