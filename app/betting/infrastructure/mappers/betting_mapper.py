@@ -1,5 +1,5 @@
-from app.betting.data.db.bet_history import BetHistory
 from app.betting.domain.models import BetRecord
+from app.betting.infrastructure.db.bet_history import BetHistory
 
 
 def map_bet_history(row: BetHistory | None) -> BetRecord | None:

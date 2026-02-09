@@ -1,10 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.betting.data.db.bet_history import BetHistory
-from app.betting.data.mappers.betting_mapper import map_bet_history
 from app.betting.domain.models import BetRecord, RarityLevel
 from app.betting.domain.repo import BettingRepository
+from app.betting.infrastructure.db.bet_history import BetHistory
+from app.betting.infrastructure.mappers.betting_mapper import map_bet_history
 
 
 class BettingRepositoryImpl(BettingRepository):
@@ -29,10 +29,6 @@ class BettingRepositoryImpl(BettingRepository):
         self._db.add(bet)
 
     def get_user_bets(self, channel_name: str, user_name: str) -> list[BetRecord]:
-        stmt = (
-            select(BetHistory)
-            .where(BetHistory.channel_name == channel_name)
-            .where(BetHistory.user_name == user_name)
-        )
+        stmt = select(BetHistory).where(BetHistory.channel_name == channel_name).where(BetHistory.user_name == user_name)
         rows = self._db.execute(stmt).scalars().all()
         return [map_bet_history(row) for row in rows]
