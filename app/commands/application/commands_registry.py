@@ -1,4 +1,4 @@
-from collections.abc import Awaitable
+from collections.abc import Awaitable, MutableMapping
 from typing import Any, Protocol
 
 from core.chat.interfaces import ChatContext
@@ -20,7 +20,11 @@ class FollowageCommandHandler(Protocol):
 
 class BattleCommandHandler(Protocol):
     def handle(
-        self, channel_name: str, display_name: str, battle_waiting_user_ref: dict[str, Any], chat_ctx: ChatContext
+        self,
+        channel_name: str,
+        display_name: str,
+        battle_waiting_user_ref: MutableMapping[str, str | None],
+        chat_ctx: ChatContext,
     ) -> Awaitable[None]: ...
 
 
