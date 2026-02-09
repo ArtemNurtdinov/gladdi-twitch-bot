@@ -31,7 +31,7 @@ class StreamApiAdapter(StreamInfoPort, StreamStatusPort):
                 return None
 
             try:
-                parsed = StreamsResponse.model_validate(response.json())
+                parsed = StreamsResponse.model_validate(response.json_data)
             except ValidationError as e:
                 logger.error(f"Валидация статуса стрима {broadcaster_id} не прошла: {e}")
                 return None

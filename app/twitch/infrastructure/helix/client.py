@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 
 from app.twitch.infrastructure.helix.auth import TwitchAuth
-from core.platform.api_client import StreamingApiClient
+from core.platform.api_client import StreamingApiClient, StreamingApiResponse
 
 
 class TwitchHelixClient(StreamingApiClient):
@@ -23,8 +23,13 @@ class TwitchHelixClient(StreamingApiClient):
             base.update(extra)
         return base
 
-    async def get(self, url: str, *, params: dict[str, Any] | None = None, headers: dict[str, str] | None = None) -> httpx.Response:
-        return await self._client.get(url, params=params, headers=self._headers(headers))
+    async def get(self, url: str, *, params: dict[str, Any] | None = None, headers: dict[str, str] | None = None) -> StreamingApiResponse:
+        response = await self._client.get(url, params=params, headers=self._headers(headers))
+        return StreamingApiResponse(
+            status_code=response.status_code,
+            text=response.text,
+            json_data=response.json(),
+        )
 
     async def post(
         self,
@@ -33,9 +38,14 @@ class TwitchHelixClient(StreamingApiClient):
         params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         json: dict[str, Any] | None = None,
-    ) -> httpx.Response:
+    ) -> StreamingApiResponse:
         merged_headers = self._headers(headers)
-        return await self._client.post(url, params=params, headers=merged_headers, json=json)
+        response = await self._client.post(url, params=params, headers=merged_headers, json=json)
+        return StreamingApiResponse(
+            status_code=response.status_code,
+            text=response.text,
+            json_data=response.json(),
+        )
 
     async def aclose(self) -> None:
         await self._client.aclose()
