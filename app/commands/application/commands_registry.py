@@ -1,5 +1,5 @@
 from collections.abc import Awaitable, MutableMapping
-from typing import Any, Protocol
+from typing import Protocol
 
 from core.chat.interfaces import ChatContext
 
@@ -13,9 +13,7 @@ class AskCommandHandler(Protocol):
 
 
 class FollowageCommandHandler(Protocol):
-    def handle(
-        self, channel_name: str, display_name: str, author_id: str, chat_ctx: ChatContext
-    ) -> Awaitable[None]: ...
+    def handle(self, channel_name: str, display_name: str, author_id: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
 
 
 class BattleCommandHandler(Protocol):
@@ -29,9 +27,7 @@ class BattleCommandHandler(Protocol):
 
 
 class RollCommandHandler(Protocol):
-    def handle(
-        self, chat_ctx: ChatContext, channel_name: str, display_name: str, amount: str | None = None
-    ) -> Awaitable[None]: ...
+    def handle(self, chat_ctx: ChatContext, channel_name: str, display_name: str, amount: str | None = None) -> Awaitable[None]: ...
 
 
 class TransferCommandHandler(Protocol):
@@ -47,9 +43,7 @@ class TransferCommandHandler(Protocol):
 
 class ShopCommandHandler(Protocol):
     def handle_shop(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-    def handle_buy(
-        self, channel_name: str, display_name: str, chat_ctx: ChatContext, item_name: str | None
-    ) -> Awaitable[None]: ...
+    def handle_buy(self, channel_name: str, display_name: str, chat_ctx: ChatContext, item_name: str | None) -> Awaitable[None]: ...
 
 
 class TopBottomCommandHandler(Protocol):
@@ -58,21 +52,13 @@ class TopBottomCommandHandler(Protocol):
 
 
 class GuessCommandHandler(Protocol):
-    def handle_guess_number(
-        self, channel_name: str, display_name: str, chat_ctx: ChatContext, number: str | None
-    ) -> Awaitable[None]: ...
-    def handle_guess_letter(
-        self, channel_name: str, display_name: str, chat_ctx: ChatContext, letter: str | None
-    ) -> Awaitable[None]: ...
-    def handle_guess_word(
-        self, channel_name: str, display_name: str, chat_ctx: ChatContext, word: str | None
-    ) -> Awaitable[None]: ...
+    def handle_guess_number(self, channel_name: str, display_name: str, chat_ctx: ChatContext, number: str | None) -> Awaitable[None]: ...
+    def handle_guess_letter(self, channel_name: str, display_name: str, chat_ctx: ChatContext, letter: str | None) -> Awaitable[None]: ...
+    def handle_guess_word(self, channel_name: str, display_name: str, chat_ctx: ChatContext, word: str | None) -> Awaitable[None]: ...
 
 
 class RpsCommandHandler(Protocol):
-    def handle(
-        self, channel_name: str, display_name: str, chat_ctx: ChatContext, choice: str | None
-    ) -> Awaitable[None]: ...
+    def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext, choice: str | None) -> Awaitable[None]: ...
 
 
 class CommandRegistryProtocol(Protocol):
