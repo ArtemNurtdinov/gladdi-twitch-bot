@@ -12,7 +12,7 @@ class StreamInfoDto:
 
 
 @dataclass(frozen=True)
-class ViewerSessionDto1:
+class ViewerSessionDto:
     id: int
     stream_id: int
     channel_name: str
