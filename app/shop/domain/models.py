@@ -75,7 +75,7 @@ class ShopItems:
         ShopItemType.CHAIR: ShopItem(
             name="стул",
             description="Надёжная опора artemn3STUL",
-            price=25000,
+            price=22000,
             emoji="🪑",
             effects=[TimeoutReductionEffect(reduction_factor=0.5)],
         ),
