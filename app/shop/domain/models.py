@@ -110,14 +110,11 @@ class ShopItems:
         ),
         ShopItemType.GAMBLER_AMULET: ShopItem(
             name="амулет лудомана",
-            description="Снимает ограничения и умножает удачу",
+            description="Снимает ограничения на ставки",
             price=66666,
             emoji="🎰",
             effects=[
                 RollCooldownOverrideEffect(cooldown_seconds=5),
-                JackpotPayoutMultiplierEffect(multiplier=2),
-                PartialPayoutMultiplierEffect(multiplier=1.2),
-                MissPayoutMultiplierEffect(multiplier=0.1),
                 DailyBonusMultiplierEffect(multiplier=3.0),
                 TimeoutProtectionEffect(),
             ],
