@@ -70,14 +70,7 @@ class ShopItems:
             description="Холодная сила сибирских пельменей. Дает бафф к размеру живота",
             price=18000,
             emoji="🥟",
-            effects=[DailyBonusMultiplierEffect(multiplier=1.15)],
-        ),
-        ShopItemType.OCTOPUSES: ShopItem(
-            name="осьминоги",
-            description="Щупальца дают дополнительные атаки. Осьминогами можно бросать во врагов и получать неожиданные эффекты",
-            price=20000,
-            emoji="🐙",
-            effects=[DailyBonusMultiplierEffect(multiplier=1.3)],
+            effects=[DailyBonusMultiplierEffect(multiplier=1.25)],
         ),
         ShopItemType.CHAIR: ShopItem(
             name="стул",
@@ -86,38 +79,19 @@ class ShopItems:
             emoji="🪑",
             effects=[TimeoutReductionEffect(reduction_factor=0.5)],
         ),
-        ShopItemType.BONFIRE: ShopItem(
-            name="костёр",
-            description="Согревающая сила огня служит чекпоинтом после тяжелых сражений",
-            price=28000,
-            emoji="🔥",
-            effects=[TimeoutReductionEffect(reduction_factor=0.5)],
-        ),
         ShopItemType.MAEL_EXPEDITION: ShopItem(
             name="маэль из expedition 33",
-            description='Умеет рисовать, может в моменте перерисовывать судьбы и жизни. Фоном играет песня "Алиииинаааа аииииии", '
-            "которая может свести с ума любого",
+            description='Умеет рисовать, может перерисовывать судьбы и жизни. Фоном играет песня "Алиииинаааа аииииии"',
             price=33333,
             emoji="⚔️",
-            effects=[DailyBonusMultiplierEffect(multiplier=1.5), TimeoutProtectionEffect()],
-        ),
-        ShopItemType.COMMUNIST_PARTY: ShopItem(
-            name="партия коммунистов",
-            description="Сила народа. Единство.",
-            price=40000,
-            emoji="☭",
-            effects=[DailyBonusMultiplierEffect(multiplier=2.0), TimeoutProtectionEffect()],
+            effects=[DailyBonusMultiplierEffect(multiplier=2), TimeoutProtectionEffect()],
         ),
         ShopItemType.GAMBLER_AMULET: ShopItem(
             name="амулет лудомана",
             description="Снимает ограничения на ставки",
             price=66666,
             emoji="🎰",
-            effects=[
-                RollCooldownOverrideEffect(cooldown_seconds=5),
-                DailyBonusMultiplierEffect(multiplier=3.0),
-                TimeoutProtectionEffect(),
-            ],
+            effects=[DailyBonusMultiplierEffect(multiplier=3.0), TimeoutProtectionEffect(), RollCooldownOverrideEffect(cooldown_seconds=5)],
         ),
     }
 

@@ -231,12 +231,8 @@ class EconomyPolicy:
 
                     if item.item_type == ShopItemType.FREEZER_DUMPLINGS:
                         bonus_messages.append("Нашелся счастливый пельмень, который увеличил бонус!")
-                    elif item.item_type == ShopItemType.OCTOPUSES:
-                        bonus_messages.append("Осьминоги принесли сокровища со дна и увеличили бонус!")
                     elif item.item_type == ShopItemType.MAEL_EXPEDITION:
                         bonus_messages.append('Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет "Алиииинаааа аииииии"...')
-                    elif item.item_type == ShopItemType.COMMUNIST_PARTY:
-                        bonus_messages.append("Партия коммунистов обеспечила тебе увеличенный бонус! Единство силу даёт, товарищ!")
 
         bonus_amount = int(self.DAILY_BONUS * total_multiplier)
 
