@@ -61,7 +61,6 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
     async def setup_hook(self) -> None:
         await self._register_token()
         await self._ensure_broadcaster_id()
-        await self._subscribe_chat_message_with_retry(reason="startup")
 
     async def stop(self) -> None:
         await super().close()
@@ -111,7 +110,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
     async def event_websocket_welcome(self, payload: WebsocketWelcome) -> None:
         session_id = payload.id
         logger.info("Получен EventSub session_welcome: session_id=%s", session_id)
-        await self._subscribe_chat_message_with_retry(reason="welcome", session_id=session_id)
+        await self._subscribe_chat_message_with_retry(session_id=session_id)
 
     async def _register_token(self) -> None:
         if self._token_user_id:
@@ -141,9 +140,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
     async def _subscribe_chat_message(self) -> None:
         if not self._broadcaster_id or not self._token_user_id:
-            raise RuntimeError(
-                f"Нельзя подписаться на чат: broadcaster_id={self._broadcaster_id} token_user_id={self._token_user_id}"
-            )
+            raise RuntimeError(f"Нельзя подписаться на чат: broadcaster_id={self._broadcaster_id} token_user_id={self._token_user_id}")
         payload = ChatMessageSubscription(
             broadcaster_user_id=self._broadcaster_id,
             user_id=self._token_user_id,
@@ -151,7 +148,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
         await self.subscribe_websocket(payload, token_for=self._token_user_id)
         logger.info("Подписка на channel.chat.message оформлена для %s", self._broadcaster_id)
 
-    async def _subscribe_chat_message_with_retry(self, reason: str, session_id: str | None = None) -> None:
+    async def _subscribe_chat_message_with_retry(self, session_id: str | None = None) -> None:
         async with self._eventsub_lock:
             if session_id and session_id == self._subscribed_session_id:
                 logger.info("Подписка уже актуальна для session_id=%s", session_id)
@@ -163,7 +160,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
                     await self._subscribe_chat_message()
                     if session_id:
                         self._subscribed_session_id = session_id
-                    logger.info("Подписка EventSub восстановлена (%s)", reason)
+                    logger.info("Подписка EventSub восстановлена (%s)")
                     return
                 except HTTPException as e:
                     status = getattr(e, "status", None)
@@ -182,7 +179,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
                 await asyncio.sleep(delay)
                 delay *= 2
 
-            logger.error("Не удалось восстановить подписку EventSub (%s)", reason)
+            logger.error("Не удалось восстановить подписку EventSub (%s)")
 
     @staticmethod
     def _split_text(text: str, max_length: int = 500) -> list[str]:
