@@ -7,9 +7,13 @@ from app.joke.infrastructure.settings_repository import FileJokeSettingsReposito
 
 @dataclass
 class JokeProviders:
+    joke_service: JokeService
     joke_use_case: JokeUseCase
 
 
 def build_joke_providers() -> JokeProviders:
     domain_service = JokeService(FileJokeSettingsRepository())
-    return JokeProviders(joke_use_case=JokeUseCase(domain_service))
+    return JokeProviders(
+        joke_service=domain_service,
+        joke_use_case=JokeUseCase(domain_service),
+    )
