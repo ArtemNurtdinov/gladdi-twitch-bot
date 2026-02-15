@@ -71,7 +71,7 @@ class ShopItem:
 class ShopItems:
     ITEMS: dict[ShopItemType, ShopItem] = {
         ShopItemType.FREEZER_DUMPLINGS: ShopItem(
-            name="холодильник пельменей",
+            name="пельмени",
             description="Холодная сила сибирских пельменей. Дает бафф к размеру живота",
             price=18000,
             emoji="🥟",
