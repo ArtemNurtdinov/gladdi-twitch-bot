@@ -55,19 +55,19 @@ class ShopItem:
 
 class ShopItems:
     ITEMS: dict[ShopItemType, ShopItem] = {
-        ShopItemType.FREEZER_DUMPLINGS: ShopItem(
-            name="пельмени",
-            description="Холодная сила сибирских пельменей. Дает бафф к размеру живота",
-            price=18000,
-            emoji="🥟",
-            effects=[DailyBonusMultiplierEffect(multiplier=1.25)],
-        ),
         ShopItemType.CHAIR: ShopItem(
             name="стул",
             description="Надёжная опора artemn3STUL",
-            price=22000,
+            price=10000,
             emoji="🪑",
             effects=[TimeoutReductionEffect(reduction_factor=0.5)],
+        ),
+        ShopItemType.FREEZER_DUMPLINGS: ShopItem(
+            name="пельмени",
+            description="Холодная сила сибирских пельменей. Дает бафф к размеру живота",
+            price=15000,
+            emoji="🥟",
+            effects=[DailyBonusMultiplierEffect(multiplier=1.25)],
         ),
         ShopItemType.MAEL_EXPEDITION: ShopItem(
             name="маэль",
