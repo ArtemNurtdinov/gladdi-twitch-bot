@@ -26,7 +26,7 @@ class HandleShopUseCase:
 
         result_parts.append(
             f"Используй: {command_shop.command_prefix}{command_shop.command_buy_name} [название предмета]. "
-            f"Пример: {command_shop.command_prefix}{command_shop.command_buy_name} стул. Все предметы действуют 30 дней!"
+            f"Пример: {command_shop.command_prefix}{command_shop.command_buy_name} стул. Все предметы действуют 3 месяца!"
         )
         result = "\n".join(result_parts)
 
