@@ -42,11 +42,7 @@ def run_one_spin(bet_amount: int, betting_service: BettingService) -> tuple[str,
     elif result_type == "partial":
         payout = base_payout * BettingService.PARTIAL_MULTIPLIER
     else:
-        consolation_prize = BettingService.CONSOLATION_PRIZES.get(rarity_level, 0)
-        if consolation_prize > 0:
-            payout = max(consolation_prize, bet_amount * 0.1)
-        else:
-            payout = 0
+        payout = 0
     payout = int(payout) if payout > 0 else 0
 
     return slot_result_string, result_type, rarity_level, payout
