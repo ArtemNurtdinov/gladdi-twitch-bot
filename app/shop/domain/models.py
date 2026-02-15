@@ -55,6 +55,11 @@ class MissPayoutMultiplierEffect(ItemEffect):
 
 
 @dataclass
+class MaxBetIncreaseEffect(ItemEffect):
+    max_bet_amount: int
+
+
+@dataclass
 class ShopItem:
     name: str
     description: str
@@ -91,7 +96,12 @@ class ShopItems:
             description="Снимает ограничения на ставки",
             price=66666,
             emoji="🎰",
-            effects=[DailyBonusMultiplierEffect(multiplier=3.0), TimeoutProtectionEffect(), RollCooldownOverrideEffect(cooldown_seconds=5)],
+            effects=[
+                DailyBonusMultiplierEffect(multiplier=3.0),
+                TimeoutProtectionEffect(),
+                RollCooldownOverrideEffect(cooldown_seconds=5),
+                MaxBetIncreaseEffect(max_bet_amount=1_000_000),
+            ],
         ),
     }
 

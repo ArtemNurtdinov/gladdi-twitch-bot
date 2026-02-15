@@ -8,12 +8,23 @@ from app.commands.roll.application.roll_uow import RollUnitOfWorkFactory
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
+from app.equipment.domain.models import UserEquipmentItem
 from app.shop.domain.models import (
     JackpotPayoutMultiplierEffect,
+    MaxBetIncreaseEffect,
     MissPayoutMultiplierEffect,
     PartialPayoutMultiplierEffect,
 )
 from core.provider import SingletonProvider
+
+
+def _get_max_bet_amount(equipment: list[UserEquipmentItem]) -> int:
+    result = BettingService.MAX_BET_AMOUNT
+    for item in equipment:
+        for effect in item.shop_item.effects:
+            if isinstance(effect, MaxBetIncreaseEffect) and effect.max_bet_amount > result:
+                result = effect.max_bet_amount
+    return result
 
 
 class HandleRollUseCase:
@@ -49,6 +60,8 @@ class HandleRollUseCase:
                 default_cooldown_seconds=HandleRollUseCase.DEFAULT_COOLDOWN_SECONDS, equipment=equipment
             )
 
+        max_bet_amount = _get_max_bet_amount(equipment)
+
         if command_roll.last_roll_time:
             time_since_last = (current_time - command_roll.last_roll_time).total_seconds()
             if time_since_last < cooldown_seconds:
@@ -79,7 +92,7 @@ class HandleRollUseCase:
                     f"@{command_roll.display_name}, неверная сумма ставки! Используй: "
                     f"{command_roll.command_prefix}{command_roll.command_name} [сумма] "
                     f"(например: {command_roll.command_prefix}{command_roll.command_name} 100). "
-                    f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{BettingService.MAX_BET_AMOUNT} монет."
+                    f"Диапазон: {BettingService.MIN_BET_AMOUNT}-{max_bet_amount} монет."
                 )
                 with self._unit_of_work_factory.create() as uow:
                     uow.chat_use_case.save_chat_message(
@@ -117,8 +130,8 @@ class HandleRollUseCase:
             messages.append(result)
             return RollUseCaseResult(messages=messages, timeout_action=None, new_last_roll_time=new_last_roll_time)
 
-        if bet_amount > BettingService.MAX_BET_AMOUNT:
-            result = f"Максимальная сумма ставки: {BettingService.MAX_BET_AMOUNT} монет."
+        if bet_amount > max_bet_amount:
+            result = f"Максимальная сумма ставки: {max_bet_amount} монет."
             with self._unit_of_work_factory.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
