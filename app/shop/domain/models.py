@@ -71,7 +71,7 @@ class ShopItem:
 class ShopItems:
     ITEMS: dict[ShopItemType, ShopItem] = {
         ShopItemType.FREEZER_DUMPLINGS: ShopItem(
-            name="холодильник замороженных пельменей",
+            name="холодильник пельменей",
             description="Холодная сила сибирских пельменей. Дает бафф к размеру живота",
             price=18000,
             emoji="🥟",
@@ -85,7 +85,7 @@ class ShopItems:
             effects=[TimeoutReductionEffect(reduction_factor=0.5)],
         ),
         ShopItemType.MAEL_EXPEDITION: ShopItem(
-            name="маэль из expedition 33",
+            name="маэль",
             description='Умеет рисовать, может перерисовывать судьбы и жизни. Фоном играет песня "Алиииинаааа аииииии"',
             price=33333,
             emoji="⚔️",
