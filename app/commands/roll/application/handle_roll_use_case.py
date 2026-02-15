@@ -196,17 +196,14 @@ class HandleRollUseCase:
             elif result_type == "partial":
                 payout = base_payout * BettingService.PARTIAL_MULTIPLIER
             else:
-                consolation_prize = BettingService.CONSOLATION_PRIZES.get(rarity_level, 0)
-                if consolation_prize > 0:
-                    payout = max(consolation_prize, bet_amount * 0.1)
-                    if rarity_level in [RarityLevel.MYTHICAL, RarityLevel.LEGENDARY]:
-                        timeout_seconds = 0
-                    elif rarity_level == RarityLevel.EPIC:
-                        timeout_seconds = 60
-                    else:
-                        timeout_seconds = 120
+                payout = 0
+                if rarity_level in [RarityLevel.MYTHICAL, RarityLevel.LEGENDARY]:
+                    timeout_seconds = 0
+                elif rarity_level == RarityLevel.EPIC:
+                    timeout_seconds = 60
+                elif rarity_level == RarityLevel.RARE:
+                    timeout_seconds = 120
                 else:
-                    payout = 0
                     timeout_seconds = 180
 
             if payout > 0:
@@ -236,9 +233,7 @@ class HandleRollUseCase:
 
             if payout > 0:
                 transaction_type = TransactionType.BET_WIN
-                description = (
-                    f"Выигрыш в слот-машине: {slot_result_string}" if result_type != "miss" else f"Консольный приз: {slot_result_string}"
-                )
+                description = f"Выигрыш в слот-машине: {slot_result_string}"
                 user_balance = uow.economy_policy.add_balance(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
@@ -282,10 +277,7 @@ class HandleRollUseCase:
             )
 
             if final_timeout == 0:
-                if self._is_consolation_prize(result_type, payout):
-                    no_timeout_message = f"🎁 @{command_roll.display_name}, {protection_message} Консольный приз: {payout} монет"
-                else:
-                    no_timeout_message = f"🛡️ @{command_roll.display_name}, {protection_message}"
+                no_timeout_message = f"🛡️ @{command_roll.display_name}, {protection_message}"
 
                 with self._unit_of_work_factory.create() as uow:
                     uow.chat_use_case.save_chat_message(
@@ -302,10 +294,7 @@ class HandleRollUseCase:
                     )
                 messages.append(no_timeout_message)
             else:
-                if self._is_consolation_prize(result_type, payout):
-                    reason = f"Промах с редким эмодзи! Консольный приз: {payout} монет. Таймаут: {final_timeout} сек ⏰"
-                else:
-                    reason = f"Промах в слот-машине! Время на размышления: {final_timeout} сек ⏰"
+                reason = f"Промах в слот-машине! Время на размышления: {final_timeout} сек ⏰"
 
                 if protection_message:
                     reason += f" {protection_message}"
@@ -316,13 +305,7 @@ class HandleRollUseCase:
                     reason=reason,
                 )
         elif self._is_miss(result_type):
-            if self._is_consolation_prize(result_type, payout):
-                no_timeout_message = (
-                    f"🎁 @{command_roll.display_name}, повезло! Редкий эмодзи спас от таймаута! Консольный приз: {payout} монет"
-                )
-            else:
-                no_timeout_message = f"✨ @{command_roll.display_name}, редкий эмодзи спас от таймаута!"
-
+            no_timeout_message = f"✨ @{command_roll.display_name}, редкий эмодзи спас от таймаута!"
             messages.append(no_timeout_message)
 
         return RollUseCaseResult(messages=messages, timeout_action=timeout_action, new_last_roll_time=new_last_roll_time)
@@ -330,10 +313,6 @@ class HandleRollUseCase:
     @staticmethod
     def _is_miss(result_type: str) -> bool:
         return result_type == "miss"
-
-    @staticmethod
-    def _is_consolation_prize(result_type: str, payout: int) -> bool:
-        return result_type == "miss" and payout > 0
 
     @staticmethod
     def _is_jackpot(result_type: str) -> bool:
@@ -344,8 +323,6 @@ class HandleRollUseCase:
         return result_type == "partial"
 
     def _get_result_emoji(self, result_type: str, payout: int) -> str:
-        if self._is_consolation_prize(result_type, payout):
-            return "🎁"
         if self._is_jackpot(result_type):
             return "🎰"
         if self._is_partial_match(result_type):
@@ -355,13 +332,6 @@ class HandleRollUseCase:
         return "💰"
 
     def _get_profit_display(self, result_type: str, payout: int, profit: int) -> str:
-        if self._is_consolation_prize(result_type, payout):
-            net_result = profit
-            if net_result > 0:
-                return f"+{net_result}"
-            if net_result < 0:
-                return f"{net_result}"
-            return "±0"
         if profit > 0:
             return f"+{profit}"
         if profit < 0:

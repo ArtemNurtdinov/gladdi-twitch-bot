@@ -21,15 +21,6 @@ class BettingService:
         RarityLevel.MYTHICAL: 100,
     }
 
-    CONSOLATION_PRIZES = {
-        RarityLevel.MYTHICAL: 5000,
-        RarityLevel.LEGENDARY: 50,
-        RarityLevel.EPIC: 25,
-        RarityLevel.RARE: 0,
-        RarityLevel.UNCOMMON: 0,
-        RarityLevel.COMMON: 0,
-    }
-
     def __init__(self, repo: BettingRepository):
         self._repo = repo
 
