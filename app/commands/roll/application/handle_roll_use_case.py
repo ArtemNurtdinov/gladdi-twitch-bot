@@ -10,10 +10,7 @@ from app.equipment.application.defense.calculate_timeout_use_case import Calcula
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 from app.equipment.domain.models import UserEquipmentItem
 from app.shop.domain.models import (
-    JackpotPayoutMultiplierEffect,
     MaxBetIncreaseEffect,
-    MissPayoutMultiplierEffect,
-    PartialPayoutMultiplierEffect,
 )
 from core.provider import SingletonProvider
 
@@ -205,29 +202,6 @@ class HandleRollUseCase:
                     timeout_seconds = 120
                 else:
                     timeout_seconds = 180
-
-            if payout > 0:
-                if result_type in ("jackpot", "partial"):
-                    jackpot_multiplier = 1.0
-                    partial_multiplier = 1.0
-                    for item in equipment:
-                        for effect in item.shop_item.effects:
-                            if isinstance(effect, JackpotPayoutMultiplierEffect) and result_type == "jackpot":
-                                jackpot_multiplier *= effect.multiplier
-                            if isinstance(effect, PartialPayoutMultiplierEffect) and result_type == "partial":
-                                partial_multiplier *= effect.multiplier
-                    if result_type == "jackpot" and jackpot_multiplier != 1.0:
-                        payout *= jackpot_multiplier
-                    if result_type == "partial" and partial_multiplier != 1.0:
-                        payout *= partial_multiplier
-                elif result_type == "miss":
-                    miss_multiplier = 1.0
-                    for item in equipment:
-                        for effect in item.shop_item.effects:
-                            if isinstance(effect, MissPayoutMultiplierEffect):
-                                miss_multiplier *= effect.multiplier
-                    if miss_multiplier != 1.0:
-                        payout *= miss_multiplier
 
             payout = int(payout) if payout > 0 else 0
 

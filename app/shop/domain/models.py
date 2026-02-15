@@ -40,21 +40,6 @@ class RollCooldownOverrideEffect(ItemEffect):
 
 
 @dataclass
-class JackpotPayoutMultiplierEffect(ItemEffect):
-    multiplier: float
-
-
-@dataclass
-class PartialPayoutMultiplierEffect(ItemEffect):
-    multiplier: float
-
-
-@dataclass
-class MissPayoutMultiplierEffect(ItemEffect):
-    multiplier: float
-
-
-@dataclass
 class MaxBetIncreaseEffect(ItemEffect):
     max_bet_amount: int
 
