@@ -25,12 +25,13 @@ class RarityLevel(Enum):
 
 class EmojiConfig:
     EMOJI_SYSTEM = {
-        "artemn3STUL": {"rank": 1, "weight": 40, "rarity": RarityLevel.COMMON},
-        "LUL": {"rank": 2, "weight": 30, "rarity": RarityLevel.UNCOMMON},
-        "artemn3BOSS": {"rank": 3, "weight": 20, "rarity": RarityLevel.RARE},
-        "artemn3Facepalm2": {"rank": 4, "weight": 7, "rarity": RarityLevel.EPIC},
-        "artemn3Chair": {"rank": 5, "weight": 3, "rarity": RarityLevel.LEGENDARY},
-        "DinoDance": {"rank": 6, "weight": 0.0001, "rarity": RarityLevel.MYTHICAL},
+        "artemn3STUL": {"weight": 40, "rarity": RarityLevel.COMMON},
+        "LUL": {"weight": 30, "rarity": RarityLevel.UNCOMMON},
+        "artemn3SUDA": {"weight": 15, "rarity": RarityLevel.RARE},
+        "artemn3BOSS": {"weight": 10, "rarity": RarityLevel.RARE},
+        "artemn3Facepalm2": {"weight": 7, "rarity": RarityLevel.EPIC},
+        "artemn3Chair": {"weight": 3, "rarity": RarityLevel.LEGENDARY},
+        "DinoDance": {"weight": 0.001, "rarity": RarityLevel.MYTHICAL},
     }
 
     @classmethod
