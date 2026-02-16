@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.infrastructure.followage_adapter import FollowageAdapter
+from app.economy.bootstrap import get_economy_policy_ro
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.follow.application.followers_port import FollowersPort
 from app.follow.application.followers_query_use_cases import (
     GetFollowerDetailUseCase,
@@ -12,6 +14,7 @@ from app.follow.application.followers_query_use_cases import (
     ListUnfollowedFollowersUseCase,
 )
 from app.follow.domain.repo import FollowersRepository
+from app.follow.infrastructure.economy_balance_query_adapter import EconomyBalanceQueryAdapter
 from app.follow.infrastructure.followers_adapter import FollowersAdapter
 from app.follow.infrastructure.followers_repository import FollowersRepositoryImpl
 from app.platform.streaming import StreamingPlatformPort
@@ -58,5 +61,7 @@ def get_list_unfollowed_followers_use_case(
 
 def get_follower_detail_use_case(
     repo: FollowersRepositoryImpl = Depends(get_followers_repo_ro),
+    economy_policy: EconomyPolicy = Depends(get_economy_policy_ro),
 ) -> GetFollowerDetailUseCase:
-    return GetFollowerDetailUseCase(repo)
+    balance_port = EconomyBalanceQueryAdapter(economy_policy)
+    return GetFollowerDetailUseCase(repo, balance_port=balance_port)

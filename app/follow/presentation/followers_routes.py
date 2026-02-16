@@ -12,7 +12,11 @@ from app.follow.bootstrap import (
     get_list_active_followers_use_case,
     get_list_unfollowed_followers_use_case,
 )
-from app.follow.presentation.followers_schemas import FollowerResponse, FollowersListResponse
+from app.follow.presentation.followers_schemas import (
+    FollowerDetailResponse,
+    FollowerResponse,
+    FollowersListResponse,
+)
 
 router = APIRouter(prefix="/followers", tags=["Followers"])
 
@@ -37,13 +41,15 @@ async def get_unfollowed_followers(
     return FollowersListResponse(followers=[FollowerResponse.model_validate(f, from_attributes=True) for f in followers])
 
 
-@router.get("/{channel_name}/{user_name}", response_model=FollowerResponse, summary="Детали подписчика")
+@router.get("/{channel_name}/{user_name}", response_model=FollowerDetailResponse, summary="Детали подписчика")
 async def get_follower_detail(
     channel_name: str,
     user_name: str,
     use_case: GetFollowerDetailUseCase = Depends(get_follower_detail_use_case),
 ):
-    follower = use_case.handle(channel_name, user_name)
-    if not follower:
+    result = use_case.handle(channel_name, user_name)
+    if not result:
         raise HTTPException(status_code=404, detail="Подписчик не найден")
-    return FollowerResponse.model_validate(follower, from_attributes=True)
+    return FollowerDetailResponse(
+        **FollowerResponse.model_validate(result.follower, from_attributes=True).model_dump(), balance=result.balance.balance
+    )

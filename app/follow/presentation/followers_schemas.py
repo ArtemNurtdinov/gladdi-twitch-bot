@@ -18,5 +18,9 @@ class FollowerResponse(BaseModel):
     updated_at: datetime
 
 
+class FollowerDetailResponse(FollowerResponse):
+    balance: int
+
+
 class FollowersListResponse(BaseModel):
     followers: list[FollowerResponse]
