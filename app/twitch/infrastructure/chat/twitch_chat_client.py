@@ -71,11 +71,22 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
         logger.info("TwitchChatClient ready. Broadcaster: %s", self._broadcaster_id or "unknown")
 
     async def event_message(self, payload: EventSubChatMessage) -> None:
+        message_id = getattr(payload, "message_id", None)
+        chatter = getattr(payload, "chatter", None)
+        author = (chatter.display_name or chatter.name or "") if chatter else ""
+        text_preview = (payload.text[:50] + "…") if len(payload.text) > 50 else payload.text
+        logger.info(
+            "EventSub event_message: message_id=%s author=%s text=%r subscribed_session=%s",
+            message_id,
+            author,
+            text_preview,
+            self._subscribed_session_id,
+        )
+
         if not self._command_router:
             logger.error("CommandRouter is not set for TwitchChatClient")
             return
 
-        chatter = getattr(payload, "chatter", None)
         if chatter is None:
             return
 
@@ -111,7 +122,12 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
     async def event_websocket_welcome(self, payload: WebsocketWelcome) -> None:
         session_id = payload.id
-        logger.info("Получен EventSub session_welcome: session_id=%s", session_id)
+        logger.info(
+            "EventSub session_welcome: new_session_id=%s current_subscribed_session=%s has_active_sub=%s",
+            session_id,
+            self._subscribed_session_id,
+            self._has_active_subscription,
+        )
         if self._subscribed_session_id is None and self._has_active_subscription:
             self._subscribed_session_id = session_id
             logger.info("Привязали существующую подписку к session_id=%s", session_id)
@@ -121,6 +137,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
             logger.info("Подписка уже актуальна для session_id=%s", session_id)
             return
 
+        logger.info("EventSub welcome: подписываемся на новую сессию (реконнект?) session_id=%s", session_id)
         await self._subscribe_chat_message_with_retry(session_id=session_id, reason="welcome")
 
     async def _register_token(self) -> None:
@@ -160,6 +177,13 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
         logger.info("Подписка на channel.chat.message оформлена для %s", self._broadcaster_id)
 
     async def _subscribe_chat_message_with_retry(self, session_id: str | None = None, reason: str = "unknown") -> None:
+        logger.info(
+            "EventSub _subscribe_chat_message_with_retry: reason=%s session_id=%s current_subscribed=%s has_active=%s",
+            reason,
+            session_id,
+            self._subscribed_session_id,
+            self._has_active_subscription,
+        )
         async with self._eventsub_lock:
             if session_id and session_id == self._subscribed_session_id:
                 logger.info("Подписка уже актуальна для session_id=%s", session_id)
@@ -172,7 +196,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
                     self._has_active_subscription = True
                     if session_id:
                         self._subscribed_session_id = session_id
-                    logger.info("Подписка EventSub восстановлена (%s)", reason)
+                    logger.info("Подписка EventSub восстановлена (%s) session_id=%s", reason, session_id)
                     return
                 except HTTPException as e:
                     status = getattr(e, "status", None)
@@ -216,6 +240,8 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
         if not self._broadcaster_id or not self._token_user_id:
             logger.warning("Нельзя отправить сообщение: broadcaster_id=%s token_user_id=%s", self._broadcaster_id, self._token_user_id)
             return
+        msg_preview = (message[:60] + "…") if len(message) > 60 else message
+        logger.info("EventSub отправка в чат: subscribed_session=%s msg=%r", self._subscribed_session_id, msg_preview)
         for msg in self._split_text(message):
             try:
                 await self._http.post_chat_message(
