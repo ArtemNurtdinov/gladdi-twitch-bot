@@ -25,7 +25,7 @@ PERMISSIONS_SCOPE = (
     "user:read:chat user:write:chat user:bot channel:bot"
 )
 
-router = APIRouter(prefix="/bot")
+router = APIRouter()
 
 
 @lru_cache

@@ -8,8 +8,8 @@ from app.auth.application.contracts import LoginResponse, TokenResponse, UserCre
 from app.auth.application.dto import UserCreateDto, UserDto, UserUpdateDto
 from bootstrap.auth_provider import get_admin_user, get_auth_service, get_current_user
 
-router = APIRouter(prefix="/auth")
-admin_router = APIRouter(prefix="/admin")
+router = APIRouter()
+admin_router = APIRouter()
 security = HTTPBearer()
 
 

@@ -7,7 +7,7 @@ from app.ai.gen.prompt.deps import get_get_system_prompt_use_case, get_update_sy
 from app.auth.application.dto import UserDto
 from bootstrap.auth_provider import get_admin_user
 
-admin_router = APIRouter(prefix="/ai", tags=["AI"])
+admin_router = APIRouter()
 
 
 @admin_router.get("/system-prompt/{channel_name}", response_model=SystemPromptResponse, summary="Получить системный промпт канала")
