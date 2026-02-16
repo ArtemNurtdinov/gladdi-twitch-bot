@@ -4,12 +4,15 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from app.follow.application.user_balance_port import BalanceDetail
+from app.follow.application.user_sessions_port import SessionDetail
+from app.follow.domain.models import ChannelFollower
 
 
 @dataclass
 class FollowerDetailResult:
-    follower: ChannelFollowerя
+    follower: ChannelFollower
     balance: BalanceDetail
+    sessions: list[SessionDetail]
 
 
 @dataclass(frozen=True)

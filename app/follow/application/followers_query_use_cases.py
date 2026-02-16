@@ -4,6 +4,7 @@ from datetime import datetime
 
 from app.follow.application.model import FollowerDetailResult
 from app.follow.application.user_balance_port import UserBalanceQueryPort
+from app.follow.application.user_sessions_port import UserSessionsQueryPort
 from app.follow.domain.models import ChannelFollower
 from app.follow.domain.repo import FollowersRepository
 
@@ -30,13 +31,20 @@ class ListUnfollowedFollowersUseCase:
 
 
 class GetFollowerDetailUseCase:
-    def __init__(self, repo: FollowersRepository, balance_port: UserBalanceQueryPort):
+    def __init__(
+        self,
+        repo: FollowersRepository,
+        balance_port: UserBalanceQueryPort,
+        sessions_port: UserSessionsQueryPort,
+    ):
         self._repo = repo
         self._balance_port = balance_port
+        self._sessions_port = sessions_port
 
     def handle(self, channel_name: str, user_name: str) -> FollowerDetailResult | None:
         follower = self._repo.get_by_user_name(channel_name, user_name)
         if not follower:
             return None
         balance = self._balance_port.get_balance(channel_name, user_name)
-        return FollowerDetailResult(follower=follower, balance=balance)
+        sessions = self._sessions_port.get_user_sessions(channel_name, user_name)
+        return FollowerDetailResult(follower=follower, balance=balance, sessions=sessions)
