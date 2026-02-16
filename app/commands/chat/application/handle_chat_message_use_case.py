@@ -13,13 +13,11 @@ class HandleChatMessageUseCase:
         unit_of_work_factory: ChatMessageUnitOfWorkFactory,
         get_intent_from_text_use_case: GetIntentFromTextUseCase,
         prompt_service: PromptService,
-        system_prompt: str,
         chat_response_use_case: ChatResponseUseCase,
     ):
         self._unit_of_work_factory = unit_of_work_factory
         self._get_intent_from_text_use_case = get_intent_from_text_use_case
         self._prompt_service = prompt_service
-        self._system_prompt = system_prompt
         self._chat_response_use_case = chat_response_use_case
 
     async def handle(self, dto: ChatMessageDTO) -> str | None:
@@ -71,10 +69,11 @@ class HandleChatMessageUseCase:
         if prompt is None:
             return None
 
+        system_prompt = self._prompt_service.get_system_prompt_for_group(dto.channel_name)
         with self._unit_of_work_factory.create(read_only=True) as uow_ro:
             history = uow_ro.conversation_service.get_last_messages(
                 channel_name=dto.channel_name,
-                system_prompt=self._system_prompt,
+                system_prompt=system_prompt,
             )
 
         result = await self._chat_response_use_case.generate_response_from_history(history, prompt)

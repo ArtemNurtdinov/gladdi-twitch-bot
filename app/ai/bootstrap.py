@@ -4,11 +4,13 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.conversation.infrastructure.conversation_repository import ConversationRepositoryImpl
 from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
 from app.ai.gen.llm.infrastructure.llm_box_client import LLMBoxClientPortImpl
+from app.ai.gen.infrastructure.system_prompt_repository import SystemPromptRepository
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
 from app.ai.intent.infrastructure.intent_uow import SimpleIntentUnitOfWorkFactory
 from core.provider import Provider
+from core.types import SessionFactory
 
 
 @dataclass
@@ -21,13 +23,23 @@ class AIProviders:
     conversation_repo_provider: Provider[ConversationRepositoryImpl]
 
 
-def build_ai_providers(llmbox_host: str, intent_detector_host: str) -> AIProviders:
+def build_ai_providers(
+    llmbox_host: str,
+    intent_detector_host: str,
+    session_factory_ro: SessionFactory,
+) -> AIProviders:
     llm_client = LLMBoxClientPortImpl(llmbox_host)
     intent_detector = IntentDetectorClientImpl(intent_detector_host)
     get_intent_from_text_use_case = GetIntentFromTextUseCase(
         unit_of_work_factory=SimpleIntentUnitOfWorkFactory(intent_detector, llm_client)
     )
-    prompt_service = PromptService()
+    system_prompt_repo_provider: Provider[SystemPromptRepository] = Provider(
+        lambda db: SystemPromptRepository(db)
+    )
+    prompt_service = PromptService(
+        system_prompt_repo_provider=system_prompt_repo_provider,
+        session_factory_ro=session_factory_ro,
+    )
 
     def conversation_service(db):
         return ConversationService(ConversationRepositoryImpl(db))

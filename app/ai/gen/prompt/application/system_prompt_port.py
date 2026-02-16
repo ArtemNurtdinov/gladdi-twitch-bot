@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class SystemPromptPort(Protocol):
+    def get(self, channel_name: str) -> str | None: ...
+    def set(self, channel_name: str, content: str) -> None: ...

@@ -1,5 +1,6 @@
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
+from app.ai.gen.prompt.prompt_service import PromptService
 from app.chat.domain.models import ChatMessage
 from app.chat.domain.repo import ChatRepository
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
@@ -16,14 +17,14 @@ class HandleFollowAgeUseCase:
         get_followage_use_case: GetFollowageUseCase,
         chat_response_use_case: ChatResponseUseCase,
         unit_of_work_factory: FollowAgeUnitOfWorkFactory,
-        system_prompt: str,
+        prompt_service: PromptService,
     ):
         self._chat_repo_provider = chat_repo_provider
         self._conversation_repo_provider = conversation_repo_provider
         self._get_followage_use_case = get_followage_use_case
         self._chat_response_use_case = chat_response_use_case
         self._unit_of_work_factory = unit_of_work_factory
-        self._system_prompt = system_prompt
+        self._prompt_service = prompt_service
 
     async def handle(self, command_follow_age: FollowageDTO) -> str | None:
         channel_name = command_follow_age.channel_name
@@ -66,10 +67,11 @@ class HandleFollowAgeUseCase:
             f"Сообщи ему об этом кратко и оригинально."
         )
 
+        system_prompt = self._prompt_service.get_system_prompt_for_group(channel_name)
         with self._unit_of_work_factory.create(read_only=True) as uow:
             history = uow.conversation_service.get_last_messages(
                 channel_name=command_follow_age.channel_name,
-                system_prompt=self._system_prompt,
+                system_prompt=system_prompt,
             )
 
         assistant_message = await self._chat_response_use_case.generate_response_from_history(history=history, prompt=prompt)

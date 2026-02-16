@@ -18,6 +18,7 @@ from app.follow.infrastructure.db.follower import ChannelFollowerRow
 from app.minigame.infrastructure.db.word_history import WordHistory
 from app.stream.infrastructure.db.stream import Stream
 from app.viewer.infrastructure.db.viewer_session import StreamViewerSession
+from app.ai.gen.infrastructure.db.system_prompt import SystemPromptRow
 from bootstrap.config_provider import get_config
 from core.db import db_ro_session, db_rw_session, get_engine
 
@@ -57,6 +58,7 @@ def create_tables():
             User.__table__.create(bind=connection, checkfirst=True)
             AccessToken.__table__.create(bind=connection, checkfirst=True)
             ChannelFollowerRow.__table__.create(bind=connection, checkfirst=True)
+            SystemPromptRow.__table__.create(bind=connection, checkfirst=True)
         print("Таблицы успешно созданы!")
 
         with get_engine().connect() as connection:

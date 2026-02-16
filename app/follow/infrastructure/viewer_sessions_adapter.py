@@ -1,12 +1,8 @@
-"""Адаптер: получение сессий просмотра из контекста viewer для use case follow."""
-
 from app.follow.application.user_sessions_port import SessionDetail, StreamBrief, UserSessionsQueryPort
 from app.viewer.application.viewer_query_service import ViewerQueryService
 
 
 class ViewerSessionsAdapter(UserSessionsQueryPort):
-    """Реализация UserSessionsQueryPort через ViewerQueryService (контекст viewer)."""
-
     def __init__(self, viewer_query_service: ViewerQueryService):
         self._viewer_service = viewer_query_service
 
