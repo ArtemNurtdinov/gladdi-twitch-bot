@@ -20,7 +20,7 @@ from app.follow.presentation.followers_schemas import (
     FollowersListResponse,
 )
 
-router = APIRouter(prefix="/followers", tags=["Followers"])
+router = APIRouter()
 
 
 @router.get("", response_model=FollowersListResponse, summary="Текущие подписчики (активные)")
@@ -52,6 +52,7 @@ async def get_follower_detail(
     result = use_case.handle(channel_name, user_name)
     if not result:
         raise HTTPException(status_code=404, detail="Подписчик не найден")
+
     def to_session_item(s):
         stream_info = None
         if s.stream:

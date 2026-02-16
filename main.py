@@ -4,8 +4,8 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from app.auth.presentation import auth_routes
 from app.ai.gen.presentation import ai_routes
+from app.auth.presentation import auth_routes
 from app.chat.presentation import chat_routes
 from app.follow.presentation import followers_routes
 from app.joke.presentation import joke_routes
@@ -41,14 +41,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_routes.router, prefix="/api/v1", tags=["Authentication"])
-app.include_router(auth_routes.admin_router, prefix="/api/v1", tags=["Administration"])
-app.include_router(ai_routes.admin_router, prefix="/api/v1", tags=["AI"])
+app.include_router(auth_routes.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(auth_routes.admin_router, prefix="/api/v1/admin", tags=["Administration"])
+app.include_router(ai_routes.admin_router, prefix="/api/v1/ai", tags=["AI"])
 app.include_router(chat_routes.router, prefix="/api/v1/messages", tags=["Chat"])
-app.include_router(twitch_routes.router, prefix="/api/v1", tags=["Twitch Bot"])
-app.include_router(joke_routes.router, prefix="/api/v1", tags=["Jokes"])
-app.include_router(stream_routes.router, prefix="/api/v1", tags=["Streams"])
-app.include_router(followers_routes.router, prefix="/api/v1", tags=["Followers"])
+app.include_router(twitch_routes.router, prefix="/api/v1/bot", tags=["Twitch Bot"])
+app.include_router(joke_routes.router, prefix="/api/v1/jokes", tags=["Jokes"])
+app.include_router(stream_routes.router, prefix="/api/v1/streams", tags=["Streams"])
+app.include_router(followers_routes.router, prefix="/api/v1/followers", tags=["Followers"])
 
 
 @app.get("/", tags=["Health"])

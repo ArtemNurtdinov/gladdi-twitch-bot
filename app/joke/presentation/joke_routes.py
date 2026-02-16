@@ -2,8 +2,6 @@ from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.joke.application.dto import JokeIntervalDto, JokesIntervalResultDto, JokesResponseDto, JokesStatusDto, NextJokeDto
-from app.joke.application.joke_use_case import JokeUseCase
 from app.joke.application.contracts import (
     JokeInterval,
     JokesIntervalRequest,
@@ -12,6 +10,8 @@ from app.joke.application.contracts import (
     JokesStatus,
     NextJoke,
 )
+from app.joke.application.dto import JokeIntervalDto, JokesIntervalResultDto, JokesResponseDto, JokesStatusDto, NextJokeDto
+from app.joke.application.joke_use_case import JokeUseCase
 from app.joke.bootstrap import JokeProviders, build_joke_providers
 
 router = APIRouter()
@@ -41,7 +41,7 @@ def _to_interval_model(dto_interval: JokeIntervalDto) -> JokeInterval:
 
 
 @router.get(
-    "/jokes/status",
+    "/status",
     response_model=JokesStatus,
     summary="Статус анекдотов",
     description="Получить текущий статус включения/отключения анекдотов в Twitch боте",
@@ -59,7 +59,7 @@ async def get_jokes_status(joke_service: JokeUseCase = Depends(get_joke_use_case
         raise HTTPException(status_code=500, detail=f"Ошибка получения статуса анекдотов: {str(e)}")
 
 
-@router.post("/jokes/enable", response_model=JokesResponse, summary="Включить анекдоты", description="Включить анекдоты в Twitch боте")
+@router.post("/enable", response_model=JokesResponse, summary="Включить анекдоты", description="Включить анекдоты в Twitch боте")
 async def enable_jokes(joke_service: JokeUseCase = Depends(get_joke_use_case)) -> JokesResponse:
     try:
         dto: JokesResponseDto = joke_service.enable_jokes()
@@ -68,7 +68,7 @@ async def enable_jokes(joke_service: JokeUseCase = Depends(get_joke_use_case)) -
         raise HTTPException(status_code=500, detail=f"Ошибка включения анекдотов: {str(e)}")
 
 
-@router.post("/jokes/disable", response_model=JokesResponse, summary="Отключить анекдоты", description="Отключить анекдоты в Twitch боте")
+@router.post("/disable", response_model=JokesResponse, summary="Отключить анекдоты", description="Отключить анекдоты в Twitch боте")
 async def disable_jokes(joke_service: JokeUseCase = Depends(get_joke_use_case)) -> JokesResponse:
     try:
         dto: JokesResponseDto = joke_service.disable_jokes()
@@ -78,7 +78,7 @@ async def disable_jokes(joke_service: JokeUseCase = Depends(get_joke_use_case)) 
 
 
 @router.post(
-    "/jokes/interval",
+    "/interval",
     response_model=JokesIntervalResponse,
     summary="Установить интервал между анекдотами",
     description="Установить интервал между генерацией анекдотов в минутах. "

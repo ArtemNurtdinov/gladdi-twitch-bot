@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.get(
-    "/streams",
+    "",
     response_model=StreamListResponse,
     summary="Список стримов",
     description="Получить список стримов с пагинацией и фильтром по диапазону дат начала",
@@ -38,7 +38,7 @@ async def get_streams(
 
 
 @router.get(
-    "/streams/{stream_id}",
+    "/{stream_id}",
     response_model=StreamDetailResponse,
     summary="Детали стрима",
     description="Получить детальную информацию о стриме",
