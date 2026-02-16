@@ -42,19 +42,6 @@ class FollowersRepositoryImpl(FollowersRepository):
         rows = self._db.execute(stmt).scalars().all()
         return [self._to_domain(row) for row in rows]
 
-    def list_new_since(self, channel_name: str, since: datetime, until: datetime | None = None) -> list[ChannelFollower]:
-        stmt = (
-            select(ChannelFollowerRow)
-            .where(ChannelFollowerRow.channel_name == channel_name)
-            .where(ChannelFollowerRow.is_active.is_(True))
-            .where(ChannelFollowerRow.followed_at.is_not(None))
-            .where(ChannelFollowerRow.followed_at >= since)
-        )
-        if until:
-            stmt = stmt.where(ChannelFollowerRow.followed_at <= until)
-        rows = self._db.execute(stmt).scalars().all()
-        return [self._to_domain(row) for row in rows]
-
     def list_unfollowed_since(self, channel_name: str, since: datetime, until: datetime | None = None) -> list[ChannelFollower]:
         stmt = (
             select(ChannelFollowerRow)

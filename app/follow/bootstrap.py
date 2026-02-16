@@ -9,7 +9,6 @@ from app.follow.application.followers_port import FollowersPort
 from app.follow.application.followers_query_use_cases import (
     GetFollowerDetailUseCase,
     ListActiveFollowersUseCase,
-    ListNewFollowersUseCase,
     ListUnfollowedFollowersUseCase,
 )
 from app.follow.domain.repo import FollowersRepository
@@ -49,12 +48,6 @@ def get_list_active_followers_use_case(
     repo: FollowersRepositoryImpl = Depends(get_followers_repo_ro),
 ) -> ListActiveFollowersUseCase:
     return ListActiveFollowersUseCase(repo)
-
-
-def get_list_new_followers_use_case(
-    repo: FollowersRepositoryImpl = Depends(get_followers_repo_ro),
-) -> ListNewFollowersUseCase:
-    return ListNewFollowersUseCase(repo)
 
 
 def get_list_unfollowed_followers_use_case(

@@ -5,13 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.follow.application.followers_query_use_cases import (
     GetFollowerDetailUseCase,
     ListActiveFollowersUseCase,
-    ListNewFollowersUseCase,
     ListUnfollowedFollowersUseCase,
 )
 from app.follow.bootstrap import (
     get_follower_detail_use_case,
     get_list_active_followers_use_case,
-    get_list_new_followers_use_case,
     get_list_unfollowed_followers_use_case,
 )
 from app.follow.presentation.followers_schemas import FollowerResponse, FollowersListResponse
@@ -25,17 +23,6 @@ async def get_active_followers(
     use_case: ListActiveFollowersUseCase = Depends(get_list_active_followers_use_case),
 ):
     followers = use_case.handle(channel_name)
-    return FollowersListResponse(followers=[FollowerResponse.model_validate(f, from_attributes=True) for f in followers])
-
-
-@router.get("/new", response_model=FollowersListResponse, summary="Новые подписчики с даты")
-async def get_new_followers(
-    channel_name: str,
-    since: datetime = Query(..., description="Дата/время, от которой считать новых (followed_at >=)"),
-    until: datetime | None = Query(None, description="Опционально: верхняя граница (followed_at <=)"),
-    use_case: ListNewFollowersUseCase = Depends(get_list_new_followers_use_case),
-):
-    followers = use_case.handle(channel_name, since, until)
     return FollowersListResponse(followers=[FollowerResponse.model_validate(f, from_attributes=True) for f in followers])
 
 
