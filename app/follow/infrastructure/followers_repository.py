@@ -35,9 +35,7 @@ class FollowersRepositoryImpl(FollowersRepository):
 
     def list_active(self, channel_name: str) -> list[ChannelFollower]:
         stmt = (
-            select(ChannelFollowerRow)
-            .where(ChannelFollowerRow.channel_name == channel_name)
-            .where(ChannelFollowerRow.is_active.is_(True))
+            select(ChannelFollowerRow).where(ChannelFollowerRow.channel_name == channel_name).where(ChannelFollowerRow.is_active.is_(True))
         )
         rows = self._db.execute(stmt).scalars().all()
         return [self._to_domain(row) for row in rows]
@@ -74,9 +72,7 @@ class FollowersRepositoryImpl(FollowersRepository):
         seen_at: datetime,
     ):
         stmt = (
-            select(ChannelFollowerRow)
-            .where(ChannelFollowerRow.channel_name == channel_name)
-            .where(ChannelFollowerRow.user_id == user_id)
+            select(ChannelFollowerRow).where(ChannelFollowerRow.channel_name == channel_name).where(ChannelFollowerRow.user_id == user_id)
         )
         row = self._db.execute(stmt).scalars().first()
         if row:
