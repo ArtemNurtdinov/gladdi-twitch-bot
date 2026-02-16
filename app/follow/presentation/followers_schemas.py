@@ -10,12 +10,12 @@ class FollowerResponse(BaseModel):
     user_name: str
     display_name: str
     followed_at: datetime | None = None
-    first_seen_at: datetime
-    last_seen_at: datetime
+    first_seen_at: datetime | None = None
+    last_seen_at: datetime | None = None
     unfollowed_at: datetime | None = None
     is_active: bool
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class FollowerSessionStreamInfo(BaseModel):

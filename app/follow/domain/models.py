@@ -10,9 +10,9 @@ class ChannelFollower:
     user_name: str
     display_name: str
     followed_at: datetime | None
-    first_seen_at: datetime
-    last_seen_at: datetime
+    first_seen_at: datetime | None
+    last_seen_at: datetime | None
     unfollowed_at: datetime | None
     is_active: bool
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime | None
+    updated_at: datetime | None

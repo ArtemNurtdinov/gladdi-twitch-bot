@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.follow.application.followers_query_use_cases import (
     GetFollowerDetailUseCase,
@@ -50,8 +50,6 @@ async def get_follower_detail(
     use_case: GetFollowerDetailUseCase = Depends(get_follower_detail_use_case),
 ):
     result = use_case.handle(channel_name, user_name)
-    if not result:
-        raise HTTPException(status_code=404, detail="Подписчик не найден")
 
     def to_session_item(s):
         stream_info = None

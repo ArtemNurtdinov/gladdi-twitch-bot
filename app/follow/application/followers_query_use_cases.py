@@ -41,10 +41,23 @@ class GetFollowerDetailUseCase:
         self._balance_port = balance_port
         self._sessions_port = sessions_port
 
-    def handle(self, channel_name: str, user_name: str) -> FollowerDetailResult | None:
+    def handle(self, channel_name: str, user_name: str) -> FollowerDetailResult:
         follower = self._repo.get_by_user_name(channel_name, user_name)
         if not follower:
-            return None
+            follower = ChannelFollower(
+                id=0,
+                channel_name=channel_name,
+                user_id="",
+                user_name=user_name,
+                display_name=user_name,
+                followed_at=None,
+                first_seen_at=None,
+                last_seen_at=None,
+                unfollowed_at=None,
+                is_active=False,
+                created_at=None,
+                updated_at=None,
+            )
         balance = self._balance_port.get_balance(channel_name, user_name)
         sessions = self._sessions_port.get_user_sessions(channel_name, user_name)
         return FollowerDetailResult(follower=follower, balance=balance, sessions=sessions)
