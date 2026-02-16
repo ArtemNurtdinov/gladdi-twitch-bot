@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.auth.presentation import auth_routes
+from app.ai.gen.presentation import ai_routes
 from app.chat.presentation import chat_routes
 from app.follow.presentation import followers_routes
 from app.joke.presentation import joke_routes
@@ -42,6 +43,7 @@ app.add_middleware(
 
 app.include_router(auth_routes.router, prefix="/api/v1", tags=["Authentication"])
 app.include_router(auth_routes.admin_router, prefix="/api/v1", tags=["Administration"])
+app.include_router(ai_routes.admin_router, prefix="/api/v1", tags=["AI"])
 app.include_router(chat_routes.router, prefix="/api/v1/messages", tags=["Chat"])
 app.include_router(twitch_routes.router, prefix="/api/v1", tags=["Twitch Bot"])
 app.include_router(joke_routes.router, prefix="/api/v1", tags=["Jokes"])

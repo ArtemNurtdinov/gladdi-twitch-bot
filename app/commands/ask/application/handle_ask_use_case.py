@@ -13,13 +13,11 @@ class HandleAskUseCase:
         get_intent_from_text_use_case: GetIntentFromTextUseCase,
         prompt_service: PromptService,
         unit_of_work_factory: AskUnitOfWorkFactory,
-        system_prompt: str,
         chat_response_use_case: ChatResponseUseCase,
     ):
         self._get_intent_from_text_use_case = get_intent_from_text_use_case
         self._prompt_service = prompt_service
         self._unit_of_work_factory = unit_of_work_factory
-        self._system_prompt = system_prompt
         self._chat_response_use_case = chat_response_use_case
 
     async def handle(self, command_ask: AskCommandDTO) -> str:
@@ -36,10 +34,11 @@ class HandleAskUseCase:
         else:
             prompt = self._prompt_service.get_default_prompt(command_ask.display_name, command_ask.message)
 
+        system_prompt = self._prompt_service.get_system_prompt_for_group(command_ask.channel_name)
         with self._unit_of_work_factory.create(read_only=True) as uow:
             history = uow.conversation_service.get_last_messages(
                 channel_name=command_ask.channel_name,
-                system_prompt=self._system_prompt,
+                system_prompt=system_prompt,
             )
 
         assistant_message = await self._chat_response_use_case.generate_response_from_history(history=history, prompt=prompt)

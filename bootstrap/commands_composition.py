@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.prompt.prompt_service import PromptService
 from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
@@ -49,7 +50,7 @@ def build_command_registry(
     settings: BotSettings,
     bot: Bot,
     chat_response_use_case: ChatResponseUseCase,
-    system_prompt: str,
+    prompt_service: PromptService,
     streaming_platform: StreamingPlatformPort,
     outbound: ChatOutbound,
 ) -> CommandRegistryProtocol:
@@ -72,7 +73,7 @@ def build_command_registry(
             ),
             chat_response_use_case=chat_response_use_case,
             unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
-            system_prompt=system_prompt,
+            prompt_service=prompt_service,
         ),
         bot_nick=bot.nick,
         post_message_fn=post_message_fn,
@@ -84,7 +85,6 @@ def build_command_registry(
             get_intent_from_text_use_case=providers.ai_providers.get_intent_use_case,
             prompt_service=providers.ai_providers.prompt_service,
             unit_of_work_factory=ask_uow_factory,
-            system_prompt=system_prompt,
             chat_response_use_case=chat_response_use_case,
         ),
         post_message_fn=post_message_fn,

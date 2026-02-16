@@ -1,6 +1,7 @@
 from app.ai.gen.application.chat_response_uow import ChatResponseUnitOfWorkFactory
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
+from app.ai.gen.prompt.prompt_service import PromptService
 
 
 class ChatResponseUseCase:
@@ -8,15 +9,16 @@ class ChatResponseUseCase:
         self,
         unit_of_work_factory: ChatResponseUnitOfWorkFactory,
         llm_client: LLMClientPort,
-        system_prompt: str,
+        prompt_service: PromptService,
     ):
         self._unit_of_work_factory = unit_of_work_factory
         self._llm_client = llm_client
-        self._system_prompt = system_prompt
+        self._prompt_service = prompt_service
 
     async def generate_response(self, prompt: str, channel_name: str) -> str:
+        system_prompt = self._prompt_service.get_system_prompt_for_group(channel_name)
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            history = uow.conversation_service.get_last_messages(channel_name=channel_name, system_prompt=self._system_prompt)
+            history = uow.conversation_service.get_last_messages(channel_name=channel_name, system_prompt=system_prompt)
         history.append(AIMessage(role=Role.USER, content=prompt))
         assistant_response = await self._llm_client.generate_ai_response(history)
         return assistant_response.message

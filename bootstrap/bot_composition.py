@@ -49,6 +49,7 @@ async def build_bot_composition(
         tg_bot_token=tg_bot_token,
         llmbox_host=llmbox_host,
         intent_detector_host=intent_detector_host,
+        session_factory_ro=db_ro_session,
     )
     uow_factories = create_uow_factories(
         session_factory_rw=db_rw_session,
@@ -60,16 +61,17 @@ async def build_bot_composition(
     bot_user_id = bot_user.id if bot_user else None
     chat_client = chat_client_factory(platform_providers.platform_auth, settings, bot_user_id)
 
-    def build_chat_response_use_case(system_prompt: str) -> ChatResponseUseCase:
+    prompt_service = providers_bundle.ai_providers.prompt_service
+
+    def build_chat_response_use_case() -> ChatResponseUseCase:
         return ChatResponseUseCase(
             unit_of_work_factory=uow_factories.build_chat_response_uow_factory(),
             llm_client=providers_bundle.ai_providers.llm_client,
-            system_prompt=system_prompt,
+            prompt_service=prompt_service,
         )
 
     bot = Bot(platform_providers, providers_bundle.user_providers, settings)
-    system_prompt = providers_bundle.ai_providers.prompt_service.get_system_prompt_for_group()
-    chat_response_use_case = build_chat_response_use_case(system_prompt)
+    chat_response_use_case = build_chat_response_use_case()
 
     bot.set_minigame_orchestrator(
         build_minigame(
@@ -77,7 +79,7 @@ async def build_bot_composition(
             uow_factories=uow_factories,
             settings=settings,
             bot=bot,
-            system_prompt=system_prompt,
+            prompt_service=prompt_service,
             outbound=chat_client,
         )
     )
@@ -98,7 +100,7 @@ async def build_bot_composition(
         settings=settings,
         bot=bot,
         chat_response_use_case=chat_response_use_case,
-        system_prompt=system_prompt,
+        prompt_service=prompt_service,
         streaming_platform=platform_providers.streaming_platform,
         outbound=chat_client,
     )
@@ -106,7 +108,7 @@ async def build_bot_composition(
         build_chat_event_handler(
             providers=providers_bundle,
             uow_factories=uow_factories,
-            system_prompt=system_prompt,
+            prompt_service=prompt_service,
             chat_response_use_case=chat_response_use_case,
             outbound=chat_client,
         )
