@@ -10,7 +10,6 @@ from app.follow.presentation import followers_routes
 from app.joke.presentation import joke_routes
 from app.stream.presentation import stream_routes
 from app.twitch.presentation import twitch_routes
-from app.viewer.presentation import viewer_routes
 from bootstrap.config_provider import get_config
 from core.db import configure_db
 
@@ -47,7 +46,6 @@ app.include_router(chat_routes.router, prefix="/api/v1/messages", tags=["Chat"])
 app.include_router(twitch_routes.router, prefix="/api/v1", tags=["Twitch Bot"])
 app.include_router(joke_routes.router, prefix="/api/v1", tags=["Jokes"])
 app.include_router(stream_routes.router, prefix="/api/v1", tags=["Streams"])
-app.include_router(viewer_routes.router, prefix="/api/v1", tags=["Viewers"])
 app.include_router(followers_routes.router, prefix="/api/v1", tags=["Followers"])
 
 

@@ -17,7 +17,10 @@ from app.follow.domain.repo import FollowersRepository
 from app.follow.infrastructure.economy_balance_query_adapter import EconomyBalanceQueryAdapter
 from app.follow.infrastructure.followers_adapter import FollowersAdapter
 from app.follow.infrastructure.followers_repository import FollowersRepositoryImpl
+from app.follow.infrastructure.viewer_sessions_adapter import ViewerSessionsAdapter
 from app.platform.streaming import StreamingPlatformPort
+from app.viewer.application.viewer_query_service import ViewerQueryService
+from app.viewer.bootstrap import get_viewer_service_ro
 from core.db import get_db_ro
 from core.provider import Provider
 
@@ -62,6 +65,8 @@ def get_list_unfollowed_followers_use_case(
 def get_follower_detail_use_case(
     repo: FollowersRepositoryImpl = Depends(get_followers_repo_ro),
     economy_policy: EconomyPolicy = Depends(get_economy_policy_ro),
+    viewer_query_service: ViewerQueryService = Depends(get_viewer_service_ro),
 ) -> GetFollowerDetailUseCase:
     balance_port = EconomyBalanceQueryAdapter(economy_policy)
-    return GetFollowerDetailUseCase(repo, balance_port=balance_port)
+    sessions_port = ViewerSessionsAdapter(viewer_query_service)
+    return GetFollowerDetailUseCase(repo, balance_port=balance_port, sessions_port=sessions_port)
