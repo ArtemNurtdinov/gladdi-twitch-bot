@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from app.commands.top_bottom.application.model import BottomDTO, TopDTO
 from app.commands.top_bottom.application.top_bottom_uow import TopBottomUnitOfWorkFactory
 
@@ -44,7 +46,10 @@ class HandleTopBottomUseCase:
     ) -> str:
         user_message = command_bottom.command_prefix + command_bottom.command_name
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            bottom_users = uow.economy_policy.get_bottom_users(command_bottom.channel_name, limit=command_bottom.limit)
+            active_since = datetime.utcnow() - timedelta(days=30)
+            bottom_users = uow.economy_policy.get_bottom_users(
+                channel_name=command_bottom.channel_name, limit=command_bottom.limit, active_since=active_since
+            )
 
         if not bottom_users:
             result = "Нет данных для отображения бомжей."

@@ -271,5 +271,5 @@ class EconomyPolicy:
     def get_top_users(self, channel_name: str, limit: int) -> list[BalanceBrief]:
         return self._repo.get_top_users(channel_name, limit)
 
-    def get_bottom_users(self, channel_name: str, limit: int) -> list[BalanceBrief]:
-        return self._repo.get_bottom_users(channel_name, limit)
+    def get_bottom_users(self, channel_name: str, limit: int, active_since: datetime) -> list[BalanceBrief]:
+        return self._repo.get_bottom_users(channel_name, limit, active_since)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Protocol
 
 from app.economy.domain.models import BalanceBrief, TransactionData, UserBalanceInfo
@@ -14,4 +15,4 @@ class EconomyRepository(Protocol):
 
     def get_top_users(self, channel_name: str, limit: int) -> list[BalanceBrief]: ...
 
-    def get_bottom_users(self, channel_name: str, limit: int) -> list[BalanceBrief]: ...
+    def get_bottom_users(self, channel_name: str, limit: int, active_since: datetime) -> list[BalanceBrief]: ...
