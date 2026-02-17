@@ -5,22 +5,15 @@ from sqlalchemy.orm import Session
 
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.infrastructure.followage_adapter import FollowageAdapter
-from app.economy.bootstrap import get_economy_policy_ro
-from app.economy.domain.economy_policy import EconomyPolicy
 from app.follow.application.followers_port import FollowersPort
 from app.follow.application.followers_query_use_cases import (
-    GetFollowerDetailUseCase,
     ListActiveFollowersUseCase,
     ListUnfollowedFollowersUseCase,
 )
 from app.follow.domain.repo import FollowersRepository
-from app.follow.infrastructure.economy_balance_query_adapter import EconomyBalanceQueryAdapter
 from app.follow.infrastructure.followers_adapter import FollowersAdapter
 from app.follow.infrastructure.followers_repository import FollowersRepositoryImpl
-from app.follow.infrastructure.viewer_sessions_adapter import ViewerSessionsAdapter
 from app.platform.streaming import StreamingPlatformPort
-from app.viewer.application.viewer_query_service import ViewerQueryService
-from app.viewer.bootstrap import get_viewer_service_ro
 from core.db import get_db_ro
 from core.provider import Provider
 
@@ -60,13 +53,3 @@ def get_list_unfollowed_followers_use_case(
     repo: FollowersRepositoryImpl = Depends(get_followers_repo_ro),
 ) -> ListUnfollowedFollowersUseCase:
     return ListUnfollowedFollowersUseCase(repo)
-
-
-def get_follower_detail_use_case(
-    repo: FollowersRepositoryImpl = Depends(get_followers_repo_ro),
-    economy_policy: EconomyPolicy = Depends(get_economy_policy_ro),
-    viewer_query_service: ViewerQueryService = Depends(get_viewer_service_ro),
-) -> GetFollowerDetailUseCase:
-    balance_port = EconomyBalanceQueryAdapter(economy_policy)
-    sessions_port = ViewerSessionsAdapter(viewer_query_service)
-    return GetFollowerDetailUseCase(repo, balance_port=balance_port, sessions_port=sessions_port)
