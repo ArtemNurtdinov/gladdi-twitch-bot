@@ -1,5 +1,5 @@
 from app.economy.domain.models import TransactionType
-from app.user.application.user_cache_port import UserCachePort
+from app.user.application.ports.user_cache_port import UserCachePort
 from app.viewer.application.model import ViewerTimeDTO
 from app.viewer.application.stream_chatters_port import StreamChattersPort
 from app.viewer.application.viewer_time_uow import ViewerTimeUnitOfWorkFactory
@@ -57,9 +57,7 @@ class HandleViewerTimeUseCase:
                     claimed_list.append(minutes_threshold)
                     rewards = ",".join(map(str, sorted(claimed_list)))
                     uow.viewer_service.update_session_rewards(
-                        session_id=session.id,
-                        rewards=rewards,
-                        current_time=viewer_time_dto.occurred_at
+                        session_id=session.id, rewards=rewards, current_time=viewer_time_dto.occurred_at
                     )
                     uow.economy_policy.add_balance(
                         channel_name=viewer_time_dto.channel_name,

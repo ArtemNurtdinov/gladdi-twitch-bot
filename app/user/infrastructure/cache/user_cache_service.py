@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime, timedelta
 
-from app.user.application.user_cache_port import UserCachePort
-from app.user.application.user_info_port import UserInfoPort
+from app.user.application.ports.user_cache_port import UserCachePort
+from app.user.application.ports.user_info_port import UserInfoPort
 
 logger = logging.getLogger(__name__)
 

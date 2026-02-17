@@ -1,7 +1,6 @@
-
 from app.platform.streaming import StreamingPlatformPort
-from app.user.application.model import UserInfoDTO
-from app.user.application.user_info_port import UserInfoPort
+from app.user.application.model.model import UserInfoDTO
+from app.user.application.ports.user_info_port import UserInfoPort
 
 
 class UserInfoAdapter(UserInfoPort):

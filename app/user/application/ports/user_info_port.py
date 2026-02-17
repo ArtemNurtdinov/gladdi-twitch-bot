@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.user.application.model import UserInfoDTO
+from app.user.application.model.model import UserInfoDTO
 
 
 class UserInfoPort(Protocol):

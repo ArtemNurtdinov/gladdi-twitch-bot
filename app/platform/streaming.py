@@ -3,7 +3,7 @@ from typing import Protocol
 from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.model import ChannelFollowerDTO
 from app.stream.application.model import StreamDataDTO, StreamStatusDTO
-from app.user.application.model import UserInfoDTO
+from app.user.application.model.model import UserInfoDTO
 
 
 class StreamingPlatformPort(Protocol):
