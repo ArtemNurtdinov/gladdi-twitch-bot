@@ -7,8 +7,8 @@ from app.moderation.application.moderation_port import ModerationPort
 from app.stream.application.model import StreamDataDTO, StreamStatusDTO
 from app.stream.application.stream_info_port import StreamInfoPort
 from app.stream.application.stream_status_port import StreamStatusPort
-from app.user.application.model import UserInfoDTO
-from app.user.application.user_info_port import UserInfoPort
+from app.user.application.model.model import UserInfoDTO
+from app.user.application.ports.user_info_port import UserInfoPort
 from app.viewer.application.stream_chatters_port import StreamChattersPort
 from core.platform.api_client import StreamingApiClient
 

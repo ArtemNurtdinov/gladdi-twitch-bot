@@ -11,7 +11,7 @@ from app.stream.application.ports.notification_port import NotificationPort
 from app.stream.application.stream_status_port import StreamStatusPort
 from app.stream.application.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.models import StreamInfo, StreamStatistics
-from app.user.application.user_cache_port import UserCachePort
+from app.user.application.ports.user_cache_port import UserCachePort
 
 logger = logging.getLogger(__name__)
 

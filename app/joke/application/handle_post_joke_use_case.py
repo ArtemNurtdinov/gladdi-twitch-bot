@@ -3,7 +3,7 @@ from app.joke.application.joke_uow import JokeUnitOfWorkFactory
 from app.joke.application.model import PostJokeDTO
 from app.joke.domain.joke_service import JokeService
 from app.stream.application.stream_info_port import StreamInfoPort
-from app.user.application.user_cache_port import UserCachePort
+from app.user.application.ports.user_cache_port import UserCachePort
 
 
 class HandlePostJokeUseCase:
@@ -42,9 +42,7 @@ class HandlePostJokeUseCase:
         joke_text = await self._chat_response_use_case.generate_response(prompt, post_joke.channel_name)
 
         with self._unit_of_work_factory.create() as uow:
-            uow.conversation_service.save_conversation_to_db(
-                channel_name=post_joke.channel_name, user_message=prompt, ai_message=joke_text
-            )
+            uow.conversation_service.save_conversation_to_db(channel_name=post_joke.channel_name, user_message=prompt, ai_message=joke_text)
             uow.chat_use_case.save_chat_message(
                 channel_name=post_joke.channel_name,
                 user_name=post_joke.bot_nick,

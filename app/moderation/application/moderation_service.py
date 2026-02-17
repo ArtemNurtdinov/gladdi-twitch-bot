@@ -2,7 +2,7 @@ import logging
 
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.moderation.application.moderation_port import ModerationPort
-from app.user.application.user_cache_port import UserCachePort
+from app.user.application.ports.user_cache_port import UserCachePort
 
 logger = logging.getLogger(__name__)
 
