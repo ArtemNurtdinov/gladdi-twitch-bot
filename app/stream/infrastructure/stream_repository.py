@@ -85,7 +85,9 @@ class StreamRepositoryImpl(StreamRepository):
             return None
 
         sessions_stmt = (
-            select(StreamViewerSession).where(StreamViewerSession.stream_id == stream_id).order_by(desc(StreamViewerSession.last_activity))
+            select(StreamViewerSession)
+            .where(StreamViewerSession.stream_id == stream_id)
+            .order_by(desc(StreamViewerSession.last_activity), desc(StreamViewerSession.id))
         )
         sessions = self._db.execute(sessions_stmt).scalars().all()
         return (
