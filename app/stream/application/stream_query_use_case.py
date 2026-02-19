@@ -18,4 +18,5 @@ class StreamQueryUseCase:
         if not result:
             return None
         stream_info, sessions = result
-        return StreamDetail(stream=stream_info, sessions=sessions)
+        total_watch_minutes = sum(s.total_minutes for s in sessions)
+        return StreamDetail(stream=stream_info, sessions=sessions, total_watch_minutes=total_watch_minutes)

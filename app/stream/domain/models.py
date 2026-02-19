@@ -47,3 +47,4 @@ class StreamViewerSessionInfo:
 class StreamDetail:
     stream: StreamInfo
     sessions: list[StreamViewerSessionInfo]
+    total_watch_minutes: int
