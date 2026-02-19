@@ -48,3 +48,4 @@ class StreamDetail:
     stream: StreamInfo
     sessions: list[StreamViewerSessionInfo]
     total_watch_minutes: int
+    total_messages: int

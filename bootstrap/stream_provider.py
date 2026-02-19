@@ -1,6 +1,9 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
+from app.chat.infrastructure.stream_chat_stats_adapter import StreamChatStatsAdapter
+from app.stream.application.stream_chat_stats_port import StreamChatStatsPort
 from app.stream.application.stream_query_use_case import StreamQueryUseCase
 from app.stream.domain.repo import StreamRepository
 from app.stream.domain.stream_service import StreamService
@@ -24,5 +27,12 @@ def get_stream_service_rw(repo: StreamRepositoryImpl = Depends(get_stream_repo_r
     return StreamService(repo)
 
 
-def get_stream_query_use_case_ro(repo: StreamRepositoryImpl = Depends(get_stream_repo_ro)) -> StreamQueryUseCase:
-    return StreamQueryUseCase(repo)
+def get_stream_chat_stats_ro(db: Session = Depends(get_db_ro)) -> StreamChatStatsPort:
+    return StreamChatStatsAdapter(ChatRepositoryImpl(db))
+
+
+def get_stream_query_use_case_ro(
+    repo: StreamRepositoryImpl = Depends(get_stream_repo_ro),
+    chat_stats: StreamChatStatsPort = Depends(get_stream_chat_stats_ro),
+) -> StreamQueryUseCase:
+    return StreamQueryUseCase(repo, chat_stats)

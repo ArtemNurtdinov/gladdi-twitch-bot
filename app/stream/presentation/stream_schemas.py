@@ -40,6 +40,7 @@ class StreamResponse(BaseModel):
 class StreamDetailResponse(StreamResponse):
     viewer_sessions: list[StreamViewerSessionResponse] = Field(default_factory=list, description="Список сессий зрителей для стрима")
     total_watch_minutes: int = Field(..., description="Суммарное количество минут просмотра всех сессий")
+    total_messages: int = Field(..., description="Суммарное количество сообщений в чате за стрим (по диапазону дат)")
 
 
 class StreamListResponse(BaseModel):
