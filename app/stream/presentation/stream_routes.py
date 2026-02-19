@@ -54,5 +54,6 @@ async def get_stream_detail(
         **asdict(dto.stream),
         "viewer_sessions": [asdict(s) for s in dto.sessions],
         "total_watch_minutes": dto.total_watch_minutes,
+        "total_messages": dto.total_messages,
     }
     return StreamDetailResponse(**payload)

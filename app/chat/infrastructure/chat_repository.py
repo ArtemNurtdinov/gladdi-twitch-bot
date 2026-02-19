@@ -61,3 +61,12 @@ class ChatRepositoryImpl(ChatRepository):
         )
         rows = self._db.execute(stmt).scalars().all()
         return [ChatMessage(r.channel_name, r.user_name, r.content, r.created_at) for r in rows]
+
+    def count_between(self, channel_name: str, start: datetime, end: datetime) -> int:
+        stmt = (
+            select(func.count(ChatMessageORM.id))
+            .where(ChatMessageORM.channel_name == channel_name)
+            .where(ChatMessageORM.created_at >= start)
+            .where(ChatMessageORM.created_at < end)
+        )
+        return self._db.execute(stmt).scalar() or 0
