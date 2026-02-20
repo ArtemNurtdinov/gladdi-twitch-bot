@@ -137,7 +137,12 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
             logger.info("Подписка уже актуальна для session_id=%s", session_id)
             return
 
-        logger.info("EventSub welcome: подписываемся на новую сессию (реконнект?) session_id=%s", session_id)
+        if self._has_active_subscription:
+            self._subscribed_session_id = session_id
+            logger.info("EventSub реконнект: обновили session_id на %s (подписку восстанавливает TwitchIO)", session_id)
+            return
+
+        logger.info("EventSub welcome: подписываемся на новую сессию session_id=%s", session_id)
         await self._subscribe_chat_message_with_retry(session_id=session_id, reason="welcome")
 
     async def _register_token(self) -> None:
