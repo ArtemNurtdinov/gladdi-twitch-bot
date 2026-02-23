@@ -154,7 +154,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
             if not self._token_user_id:
                 logger.warning("Не удалось получить user_id из validate токена")
         except Exception:
-            logger.exception("Не удалось добавить токен в TwitchIO Client")
+            logger.exception("Не удалось добавить токен в TwitchIO Client"
 
     async def _ensure_broadcaster_id(self) -> None:
         if self._broadcaster_id:
