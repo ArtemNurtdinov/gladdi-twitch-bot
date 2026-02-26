@@ -81,7 +81,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
             author,
             text_preview,
             self._subscribed_session_id,
-
+        )
 
         if not self._command_router:
             logger.error("CommandRouter is not set for TwitchChatClient")
