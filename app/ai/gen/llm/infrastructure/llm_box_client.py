@@ -25,7 +25,7 @@ class LLMBoxClientPortImpl(LLMClientPort):
         if response.status_code != 200:
             raise LLMClientError(f"LLMBox вернул {response.status_code}: {response.text}")
 
-        try
+        try:
             response_data = response.json()
         except ValueError as exc:
             raise LLMResponseFormatError("LLMBox вернул некорректный JSON") from exc
