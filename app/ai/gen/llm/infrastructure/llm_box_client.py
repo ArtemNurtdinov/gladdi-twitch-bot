@@ -16,7 +16,7 @@ class LLMBoxClientPortImpl(LLMClientPort):
         payload = {"messages": messages, "assistant": "chat_gpt"}
         api_url = f"{self._llmbox_host}/generate-ai-response"
 
-        try
+        try:
             async with httpx.AsyncClient(timeout=60) as client:
                 response = await client.post(api_url, json=payload)
         except httpx.RequestError as exc:
