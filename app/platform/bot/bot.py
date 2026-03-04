@@ -1,21 +1,17 @@
 from __future__ import annotations
 
-import logging
-
 from app.chat.application.model import ChatSummaryState
 from app.platform.bot.bot_settings import BotSettings
 from app.platform.providers import PlatformProviders
-from app.user.bootstrap import UserProviders
+from app.user.application.ports.user_cache_port import UserCachePort
 from core.background.tasks import BackgroundTasks
-
-logger = logging.getLogger(__name__)
 
 
 class Bot:
-    def __init__(self, platform_providers: PlatformProviders, user_providers: UserProviders, settings: BotSettings):
+    def __init__(self, platform_providers: PlatformProviders, user_cache: UserCachePort, settings: BotSettings):
         self._settings = settings
         self._platform = platform_providers
-        self._user = user_providers
+        self._user_cache = user_cache
         self.nick = settings.bot_name
 
         self._chat_summary_state = ChatSummaryState()
@@ -45,13 +41,10 @@ class Bot:
         await self._start_background_tasks()
 
     async def _warmup_broadcaster_id(self):
-        try:
-            if not self._settings.channel_name:
-                return
-            channel_name = self._settings.channel_name
-            await self._user.user_cache.warmup(channel_name)
-        except Exception as e:
-            logger.error(f"Не удалось прогреть кеш ID канала: {e}")
+        if not self._settings.channel_name:
+            return
+        channel_name = self._settings.channel_name
+        await self._user_cache.warmup(channel_name)
 
     async def _start_background_tasks(self):
         if not self._background_tasks:
