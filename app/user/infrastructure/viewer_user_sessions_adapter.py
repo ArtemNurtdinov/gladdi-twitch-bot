@@ -1,18 +1,18 @@
 from app.user.application.model.user_detail_models import UserSessionDetail, UserStreamBrief
 from app.user.application.ports.user_detail_sessions_port import UserDetailSessionsPort
-from app.viewer.application.dto import ViewerSessionDto
-from app.viewer.application.viewer_query_service import ViewerQueryService
+from app.viewer.application.models.viewer_session import ViewerSessionDTO
+from app.viewer.application.usecases.get_user_sessions_use_case import GetUserSessionsUseCase
 
 
 class ViewerUserSessionsAdapter(UserDetailSessionsPort):
-    def __init__(self, viewer_query_service: ViewerQueryService):
+    def __init__(self, viewer_query_service: GetUserSessionsUseCase):
         self._viewer_service = viewer_query_service
 
     def get_user_sessions(self, channel_name: str, user_name: str) -> list[UserSessionDetail]:
         user_sessions = self._viewer_service.get_user_sessions(channel_name, user_name)
         return [self._to_session_detail(session) for session in user_sessions]
 
-    def _to_session_detail(self, session: ViewerSessionDto) -> UserSessionDetail:
+    def _to_session_detail(self, session: ViewerSessionDTO) -> UserSessionDetail:
         stream = None
         if session.stream:
             stream = UserStreamBrief(

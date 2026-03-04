@@ -13,4 +13,4 @@ class PlatformApiClient(Protocol):
 class PlatformProviders:
     platform_auth: PlatformAuth
     streaming_platform: StreamingPlatformPort
-    api_client: PlatformApiClient | None = None
+    api_client: PlatformApiClient

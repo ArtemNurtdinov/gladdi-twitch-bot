@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
-from app.chat.infrastructure.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
+from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
 from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
 from app.commands.balance.infrastructure.balance_uow import SqlAlchemyBalanceUnitOfWorkFactory
 from app.commands.battle.infrastructure.battle_uow import SqlAlchemyBattleUnitOfWorkFactory
@@ -19,13 +19,13 @@ from app.commands.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFa
 from app.commands.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
 from app.commands.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
 from app.commands.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
-from app.follow.infrastructure.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
+from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
 from app.joke.infrastructure.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
 from app.minigame.infrastructure.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
-from app.stream.infrastructure.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
-from app.stream.infrastructure.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
-from app.viewer.infrastructure.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
+from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
+from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
+from app.viewer.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
 from bootstrap.providers_bundle import ProvidersBundle
 from core.types import SessionFactory
 
@@ -58,7 +58,6 @@ class UowFactories:
 
 
 def create_uow_factories(
-    *,
     session_factory_rw: SessionFactory,
     session_factory_ro: SessionFactory,
     providers: ProvidersBundle,
@@ -73,12 +72,14 @@ def create_uow_factories(
     betting_providers = providers.betting_providers
     follow_providers = providers.follow_providers
     viewer_providers = providers.viewer_providers
+
     def build_ask_uow_factory() -> SqlAlchemyAskUnitOfWorkFactory:
         return SqlAlchemyAskUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             chat_repo_provider=chat_providers.chat_repo_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
+            system_prompt_repository_provider=ai_providers.system_prompt_repo_provider,
         )
 
     def build_chat_message_uow_factory() -> SqlAlchemyChatMessageUnitOfWorkFactory:
@@ -239,6 +240,7 @@ def create_uow_factories(
             session_factory_ro=session_factory_ro,
             chat_repo_provider=chat_providers.chat_repo_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
+            system_prompt_repository_provider=ai_providers.system_prompt_repo_provider,
         )
 
     def build_followers_sync_uow_factory() -> SqlAlchemyFollowersSyncUnitOfWorkFactory:
@@ -261,7 +263,7 @@ def create_uow_factories(
             session_factory_ro=session_factory_ro,
             stream_service_provider=stream_providers.stream_service_provider,
             start_stream_use_case_provider=stream_providers.start_stream_use_case_provider,
-            viewer_service_provider=viewer_providers.viewer_service_provider,
+            viewer_repository_provider=viewer_providers.viewer_repo_provider,
             battle_use_case_provider=battle_providers.battle_use_case_provider,
             economy_policy_provider=economy_providers.economy_policy_provider,
             chat_use_case_provider=chat_providers.chat_use_case_provider,
@@ -272,8 +274,8 @@ def create_uow_factories(
         return SqlAlchemyViewerTimeUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            viewer_service_provider=viewer_providers.viewer_service_provider,
             stream_service_provider=stream_providers.stream_service_provider,
+            viewer_repository_provider=viewer_providers.viewer_repo_provider,
             economy_policy_provider=economy_providers.economy_policy_provider,
         )
 

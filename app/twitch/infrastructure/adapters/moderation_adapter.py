@@ -14,7 +14,7 @@ class ModerationApiAdapter(ModerationPort):
 
     async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool:
         response = await self._client.post(
-            "/moderation/bans",
+            url="/moderation/bans",
             params={"broadcaster_id": broadcaster_id, "moderator_id": moderator_id},
             headers={"Content-Type": "application/json"},
             json={"data": {"user_id": user_id, "duration": duration_seconds, "reason": reason}},

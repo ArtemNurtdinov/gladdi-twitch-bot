@@ -20,7 +20,10 @@ class UserInfoApiAdapter(UserInfoPort):
     async def get_user_by_login(self, login: str) -> UserInfoDTO | None:
         logger.debug(f"Получение информации о пользователе для логина: {login}")
         try:
-            response = await self._client.get("/users", params={"login": login})
+            response = await self._client.get(
+                url="/users",
+                params={"login": login}
+            )
             if response.status_code == 401:
                 logger.error(f"Ошибка авторизации при получении пользователя {login}. Проверьте токен.")
                 return None

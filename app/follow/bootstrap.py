@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.infrastructure.followage_adapter import FollowageAdapter
-from app.follow.application.followers_port import FollowersPort
-from app.follow.application.followers_query_use_cases import (
+from app.follow.application.ports.followers_port import FollowersPort
+from app.follow.application.usecases.followers_query_use_cases import (
     ListActiveFollowersUseCase,
     ListUnfollowedFollowersUseCase,
 )
 from app.follow.domain.repo import FollowersRepository
-from app.follow.infrastructure.followers_adapter import FollowersAdapter
+from app.follow.infrastructure.adapters.followers_adapter import FollowersAdapter
 from app.follow.infrastructure.followers_repository import FollowersRepositoryImpl
 from app.platform.streaming import StreamingPlatformPort
 from core.db import get_db_ro

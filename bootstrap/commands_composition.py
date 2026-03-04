@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
-from app.ai.gen.prompt.prompt_service import PromptService
+from collections.abc import Awaitable, Callable
+
+from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
@@ -35,27 +36,23 @@ from app.commands.transfer.application.handle_transfer_use_case import HandleTra
 from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandler
 from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
-from app.platform.bot.bot import Bot
-from app.platform.bot.bot_settings import BotSettings
+from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.streaming import StreamingPlatformPort
 from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
-from core.chat.outbound import ChatOutbound
+from core.chat.interfaces import ChatContext
 
 
 def build_command_registry(
-    *,
     providers: ProvidersBundle,
     uow_factories: UowFactories,
     settings: BotSettings,
-    bot: Bot,
+    bot_name: str,
     chat_response_use_case: ChatResponseUseCase,
-    prompt_service: PromptService,
     streaming_platform: StreamingPlatformPort,
-    outbound: ChatOutbound,
+    post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
 ) -> CommandRegistryProtocol:
     prefix = settings.prefix
-    post_message_fn = outbound.post_message
     moderation_service = ModerationService(
         moderation_port=streaming_platform,
         user_cache=providers.user_providers.user_cache,
@@ -73,9 +70,8 @@ def build_command_registry(
             ),
             chat_response_use_case=chat_response_use_case,
             unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
-            prompt_service=prompt_service,
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     ask_command_handler = AskCommandHandler(
@@ -88,7 +84,7 @@ def build_command_registry(
             chat_response_use_case=chat_response_use_case,
         ),
         post_message_fn=post_message_fn,
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
     )
     battle_command_handler = BattleCommandHandler(
         command_prefix=prefix,
@@ -99,7 +95,7 @@ def build_command_registry(
             calculate_timeout_use_case_provider=providers.equipment_providers.calculate_timeout_use_case_provider,
         ),
         chat_moderation=moderation_service,
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     roll_command_handler = RollCommandHandler(
@@ -111,7 +107,7 @@ def build_command_registry(
             calculate_timeout_use_case_provider=providers.equipment_providers.calculate_timeout_use_case_provider,
         ),
         chat_moderation=moderation_service,
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     balance_command_handler = BalanceCommandHandler(
@@ -120,7 +116,7 @@ def build_command_registry(
         handle_balance_use_case=HandleBalanceUseCase(
             unit_of_work_factory=uow_factories.build_balance_uow_factory(),
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     bonus_command_handler = BonusCommandHandler(
@@ -129,7 +125,7 @@ def build_command_registry(
         handle_bonus_use_case=HandleBonusUseCase(
             unit_of_work_factory=uow_factories.build_bonus_uow_factory(),
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     transfer_command_handler = TransferCommandHandler(
@@ -138,7 +134,7 @@ def build_command_registry(
         handle_transfer_use_case=HandleTransferUseCase(
             unit_of_work_factory=uow_factories.build_transfer_uow_factory(),
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     shop_command_handler = ShopCommandHandler(
@@ -148,7 +144,7 @@ def build_command_registry(
         handle_shop_use_case=HandleShopUseCase(
             unit_of_work_factory=uow_factories.build_shop_uow_factory(),
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     equipment_command_handler = EquipmentCommandHandler(
@@ -158,7 +154,7 @@ def build_command_registry(
         handle_equipment_use_case=HandleEquipmentUseCase(
             unit_of_work_factory=uow_factories.build_equipment_uow_factory(),
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     top_bottom_command_handler = TopBottomCommandHandler(
@@ -168,7 +164,7 @@ def build_command_registry(
         handle_top_bottom_use_case=HandleTopBottomUseCase(
             unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     stats_command_handler = StatsCommandHandler(
@@ -177,7 +173,7 @@ def build_command_registry(
         handle_stats_use_case=HandleStatsUseCase(
             unit_of_work_factory=uow_factories.build_stats_uow_factory(),
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     commands = {
@@ -200,7 +196,7 @@ def build_command_registry(
         command_name=settings.command_help,
         handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=uow_factories.build_help_uow_factory()),
         commands=commands,
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     guess_command_handler = GuessCommandHandler(
@@ -212,7 +208,7 @@ def build_command_registry(
             minigame_service=providers.minigame_providers.minigame_service,
             unit_of_work_factory=uow_factories.build_guess_uow_factory(),
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
     rps_command_handler = RpsCommandHandler(
@@ -222,7 +218,7 @@ def build_command_registry(
             minigame_service=providers.minigame_providers.minigame_service,
             unit_of_work_factory=uow_factories.build_rps_uow_factory(),
         ),
-        bot_nick=bot.nick,
+        bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
 

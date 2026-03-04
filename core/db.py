@@ -35,10 +35,6 @@ def get_engine():
     return _get_engine()
 
 
-def get_sessionmaker():
-    return _get_session_local()
-
-
 def get_db():
     db = _get_session_local()()
     try:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
-from app.chat.application.chat_use_case import ChatUseCase
+from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.joke.application.joke_uow import JokeUnitOfWork, JokeUnitOfWorkFactory
 from core.provider import Provider

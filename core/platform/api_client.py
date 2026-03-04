@@ -15,18 +15,22 @@ class StreamingApiResponse:
 class StreamingApiClient(ABC):
 
     @abstractmethod
-    async def get(
-        self, url: str, *, params: dict[str, Any] | None = None, headers: dict[str, str] | None = None
+    async def get(self, url: str, params: dict[str, Any]) -> StreamingApiResponse: ...
+
+    @abstractmethod
+    async def get_with_headers(
+        self, url: str,
+        params: dict[str, Any],
+        headers: dict[str, str]
     ) -> StreamingApiResponse: ...
 
     @abstractmethod
     async def post(
         self,
         url: str,
-        *,
-        params: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-        json: dict[str, Any] | None = None,
+        params: dict[str, Any],
+        headers: dict[str, str],
+        json: dict[str, Any],
     ) -> StreamingApiResponse: ...
 
     @abstractmethod

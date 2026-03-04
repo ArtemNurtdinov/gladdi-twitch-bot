@@ -1,7 +1,7 @@
 import logging
 
 from app.platform.auth import PlatformAuth
-from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings
+from app.platform.bot.model.bot_settings import BotSettings
 from app.twitch.infrastructure.chat.twitch_chat_client import TwitchChatClient
 from app.twitch.infrastructure.helix.auth import TwitchAuth
 from core.chat.outbound import ChatOutbound
@@ -39,7 +39,6 @@ def twitch_auth_factory(
 
 
 def twitch_chat_client_factory(
-    auth: PlatformAuth, settings: BotSettings = DEFAULT_SETTINGS, bot_id: str | None = None
+    auth: PlatformAuth, settings: BotSettings, bot_id: str
 ) -> ChatOutbound:
-    twitch_auth: TwitchAuth = auth  # type: ignore[assignment]
-    return TwitchChatClient(twitch_auth=twitch_auth, settings=settings, bot_id=bot_id)
+    return TwitchChatClient(auth=auth, settings=settings, bot_id=bot_id)

@@ -4,7 +4,7 @@ from pydantic import ValidationError
 
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.application.model import FollowageInfo
-from app.follow.application.model import ChannelFollowerDTO
+from app.follow.application.models.follower import ChannelFollowerDTO
 from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
 from app.twitch.infrastructure.common import handle_api_response
 from app.twitch.infrastructure.helix.models import FollowerData, FollowersResponse
@@ -17,7 +17,7 @@ class FollowageApiAdapter(FollowagePort):
         self._user_info = user_info
 
     async def _get_user_followage(self, broadcaster_id: str, user_id: str) -> FollowageInfo | None:
-        response = await self._client.get("/channels/followers", params={"broadcaster_id": broadcaster_id, "user_id": user_id})
+        response = await self._client.get(url="/channels/followers", params={"broadcaster_id": broadcaster_id, "user_id": user_id})
         try:
             data = await handle_api_response(response, f"get_user_followage({broadcaster_id}, {user_id})")
             parsed: FollowersResponse = FollowersResponse.model_validate(data)
@@ -54,7 +54,7 @@ class FollowageApiAdapter(FollowagePort):
             elif "after" in params:
                 params.pop("after")
 
-            response = await self._client.get("/channels/followers", params=params)
+            response = await self._client.get(url="/channels/followers", params=params)
             try:
                 data = await handle_api_response(response, f"get_channel_followers({broadcaster_id})")
                 parsed: FollowersResponse = FollowersResponse.model_validate(data)

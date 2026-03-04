@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.chat.application.chat_use_case import ChatUseCase
+from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.commands.equipment.application.equipment_uow import EquipmentUnitOfWork, EquipmentUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase

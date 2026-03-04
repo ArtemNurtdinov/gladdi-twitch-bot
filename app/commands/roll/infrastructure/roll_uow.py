@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.betting.application.betting_service import BettingService
-from app.chat.application.chat_use_case import ChatUseCase
+from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.commands.roll.application.roll_uow import RollUnitOfWork, RollUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy

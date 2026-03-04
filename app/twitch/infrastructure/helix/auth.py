@@ -2,8 +2,11 @@ from logging import Logger
 
 import httpx
 
+from app.platform.auth import PlatformAuth
 
-class TwitchAuth:
+
+class TwitchAuth(PlatformAuth):
+
     def __init__(self, access_token: str, refresh_token: str, client_id: str, client_secret: str, logger: Logger):
         self.access_token = access_token
         self.refresh_token = refresh_token

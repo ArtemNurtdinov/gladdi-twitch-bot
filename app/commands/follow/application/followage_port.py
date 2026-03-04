@@ -1,7 +1,7 @@
 from typing import Protocol
 
 from app.commands.follow.application.model import FollowageInfo
-from app.follow.application.model import ChannelFollowerDTO
+from app.follow.application.models.follower import ChannelFollowerDTO
 
 
 class FollowagePort(Protocol):

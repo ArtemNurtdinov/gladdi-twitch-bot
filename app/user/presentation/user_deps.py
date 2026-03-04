@@ -8,14 +8,14 @@ from app.user.application.usecase.get_user_detail_use_case import GetUserDetailU
 from app.user.infrastructure.economy_user_balance_adapter import EconomyUserBalanceAdapter
 from app.user.infrastructure.follow_user_detail_info_adapter import FollowUserDetailInfoAdapter
 from app.user.infrastructure.viewer_user_sessions_adapter import ViewerUserSessionsAdapter
-from app.viewer.application.viewer_query_service import ViewerQueryService
+from app.viewer.application.usecases.get_user_sessions_use_case import GetUserSessionsUseCase
 from app.viewer.bootstrap import get_viewer_service_ro
 
 
 def get_get_user_detail_use_case(
     followers_repo: FollowersRepositoryImpl = Depends(get_followers_repo_ro),
     economy_policy: EconomyPolicy = Depends(get_economy_policy_ro),
-    viewer_service: ViewerQueryService = Depends(get_viewer_service_ro),
+    viewer_service: GetUserSessionsUseCase = Depends(get_viewer_service_ro),
 ) -> GetUserDetailUseCase:
     info_adapter = FollowUserDetailInfoAdapter(followers_repo)
     balance_adapter = EconomyUserBalanceAdapter(economy_policy)
