@@ -24,7 +24,7 @@ class ChatSummarizerJob:
 
     async def run(self):
         while True:
-            try:
+            try
                 await asyncio.sleep(20 * 60)
 
                 summarizer_job_dto = SummarizerJobDTO(channel_name=self._channel_name, occurred_at=datetime.utcnow(), interval_minutes=20)
