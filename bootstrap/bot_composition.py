@@ -1,32 +1,25 @@
 from collections.abc import Callable
-from dataclasses import dataclass
 
 from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.prompt.prompt_service import PromptService
 from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.platform.auth import PlatformAuth
 from app.platform.bot.bot import Bot
 from app.platform.bot.bot_settings import BotSettings
+from app.platform.bot.model.bot_composition import BotComposition
 from app.platform.providers import PlatformProviders
 from bootstrap.chat_composition import build_chat_event_handler, build_minigame
 from bootstrap.commands_composition import build_command_registry
 from bootstrap.jobs_composition import build_background_tasks
-from bootstrap.providers_bundle import build_providers_bundle
+from bootstrap.providers_bundle import build_providers_bundle, ProvidersBundle
 from bootstrap.stream_composition import restore_stream_context
-from bootstrap.uow_composition import create_uow_factories
+from bootstrap.uow_composition import create_uow_factories, UowFactories
 from core.chat.interfaces import CommandRouter
 from core.chat.outbound import ChatOutbound
 from core.db import db_ro_session, db_rw_session
 
 
-@dataclass
-class BotComposition:
-    bot: Bot
-    chat_client: ChatOutbound
-    platform_providers: PlatformProviders
-
-
 async def build_bot_composition(
-    *,
     access_token: str,
     refresh_token: str,
     tg_bot_token: str,
@@ -63,15 +56,13 @@ async def build_bot_composition(
 
     prompt_service = providers_bundle.ai_providers.prompt_service
 
-    def build_chat_response_use_case() -> ChatResponseUseCase:
-        return ChatResponseUseCase(
-            unit_of_work_factory=uow_factories.build_chat_response_uow_factory(),
-            llm_client=providers_bundle.ai_providers.llm_client,
-            prompt_service=prompt_service,
-        )
+    bot = Bot(platform_providers, providers_bundle.user_providers.user_cache, settings)
 
-    bot = Bot(platform_providers, providers_bundle.user_providers, settings)
-    chat_response_use_case = build_chat_response_use_case()
+    chat_response_use_case = build_chat_response_use_case(
+        uow_factories=uow_factories,
+        providers_bundle=providers_bundle,
+        prompt_service=prompt_service,
+    )
 
     bot.set_minigame_orchestrator(
         build_minigame(
@@ -108,7 +99,6 @@ async def build_bot_composition(
         build_chat_event_handler(
             providers=providers_bundle,
             uow_factories=uow_factories,
-            prompt_service=prompt_service,
             chat_response_use_case=chat_response_use_case,
             outbound=chat_client,
         )
@@ -121,3 +111,15 @@ async def build_bot_composition(
     )
 
     return BotComposition(bot=bot, chat_client=chat_client, platform_providers=platform_providers)
+
+
+def build_chat_response_use_case(
+    uow_factories: UowFactories,
+    providers_bundle: ProvidersBundle,
+    prompt_service: PromptService,
+) -> ChatResponseUseCase:
+    return ChatResponseUseCase(
+        unit_of_work_factory=uow_factories.build_chat_response_uow_factory(),
+        llm_client=providers_bundle.ai_providers.llm_client,
+        prompt_service=prompt_service,
+    )

@@ -13,10 +13,8 @@ from core.chat.outbound import ChatOutbound
 
 
 def build_chat_event_handler(
-    *,
     providers: ProvidersBundle,
     uow_factories: UowFactories,
-    prompt_service: PromptService,
     chat_response_use_case: ChatResponseUseCase,
     outbound: ChatOutbound,
 ) -> DefaultChatEventsHandler:
@@ -33,7 +31,6 @@ def build_chat_event_handler(
 
 
 def build_minigame(
-    *,
     providers: ProvidersBundle,
     uow_factories: UowFactories,
     settings: BotSettings,
