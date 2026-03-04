@@ -5,11 +5,13 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.ai.gen.conversation.domain.models import AIMessage, Role
-from app.ai.gen.llm.domain.llm_client_port import LLMClientPort
-from app.ai.gen.prompt.prompt_service import PromptService
+from app.ai.gen.llm.domain.llm_repository import LLMRepository
+from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.economy.domain.models import TransactionType
 from app.minigame.application.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_service import MinigameService
+from core.provider import Provider
+from core.types import SessionFactory
 
 
 class MinigameOrchestrator:
@@ -19,8 +21,9 @@ class MinigameOrchestrator:
         self,
         minigame_service: MinigameService,
         unit_of_work_factory: MinigameUnitOfWorkFactory,
-        llm_client: LLMClientPort,
-        prompt_service: PromptService,
+        llm_repository: LLMRepository,
+        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        db_ro_session: SessionFactory,
         prefix: str,
         command_guess_letter: str,
         command_guess_word: str,
@@ -31,8 +34,9 @@ class MinigameOrchestrator:
     ):
         self.minigame_service = minigame_service
         self._unit_of_work_factory = unit_of_work_factory
-        self._llm_client = llm_client
-        self._prompt_service = prompt_service
+        self._llm_repository = llm_repository
+        self._system_prompt_repository_provider = system_prompt_repository_provider
+        self._db_ro_session = db_ro_session
         self._prefix = prefix
         self._command_guess_letter = command_guess_letter
         self._command_guess_word = command_guess_word
@@ -129,10 +133,11 @@ class MinigameOrchestrator:
             "\n\nВот сообщения чата (ник: текст):\n" + chat_text
         )
 
-        system_prompt = self._prompt_service.get_system_prompt_for_group(channel_name)
-        ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt), AIMessage(role=Role.USER, content=prompt)]
+        with self._db_ro_session() as session:
+            system_prompt = self._system_prompt_repository_provider.get(session).get_system_prompt(channel_name)
+        ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt), AIMessage(role=Role.USER, content=prompt)]
 
-        assistant_response = await self._llm_client.generate_ai_response(ai_messages)
+        assistant_response = await self._llm_repository.generate_ai_response(ai_messages)
         assistant_message = assistant_response.message
 
         with self._unit_of_work_factory.create() as uow:

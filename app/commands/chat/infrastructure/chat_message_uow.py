@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.domain.repo import ChatRepository
 from app.commands.chat.application.chat_message_uow import ChatMessageUnitOfWork, ChatMessageUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
@@ -22,6 +23,7 @@ class SqlAlchemyChatMessageUnitOfWork(SqlAlchemyUnitOfWorkBase, ChatMessageUnitO
         stream_repo: StreamRepository,
         viewer_repo: ViewerRepository,
         conversation_service: ConversationService,
+        system_prompt_repository: SystemPromptRepository,
         read_only: bool,
     ):
         super().__init__(session=session, read_only=read_only)
@@ -30,6 +32,7 @@ class SqlAlchemyChatMessageUnitOfWork(SqlAlchemyUnitOfWorkBase, ChatMessageUnitO
         self._stream_repo = stream_repo
         self._viewer_repo = viewer_repo
         self._conversation_service = conversation_service
+        self._system_prompt_repository = system_prompt_repository
 
     @property
     def chat_repo(self) -> ChatRepository:
@@ -51,6 +54,11 @@ class SqlAlchemyChatMessageUnitOfWork(SqlAlchemyUnitOfWorkBase, ChatMessageUnitO
     def conversation_service(self) -> ConversationService:
         return self._conversation_service
 
+    @property
+    def system_prompt_repository(self) -> SystemPromptRepository:
+        return self._system_prompt_repository
+
+
 class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMessageUnitOfWork], ChatMessageUnitOfWorkFactory):
     def __init__(
         self,
@@ -61,6 +69,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMes
         stream_repo_provider: Provider[StreamRepository],
         viewer_repo_provider: Provider[ViewerRepository],
         conversation_service_provider: Provider[ConversationService],
+        system_prompt_repository_provider: Provider[SystemPromptRepository],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -72,6 +81,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMes
         self._stream_repo_provider = stream_repo_provider
         self._viewer_repo_provider = viewer_repo_provider
         self._conversation_service_provider = conversation_service_provider
+        self._system_prompt_repository_provider = system_prompt_repository_provider
 
     def _build_uow(self, db: Session, read_only: bool) -> ChatMessageUnitOfWork:
         return SqlAlchemyChatMessageUnitOfWork(
@@ -81,5 +91,6 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMes
             stream_repo=self._stream_repo_provider.get(db),
             viewer_repo=self._viewer_repo_provider.get(db),
             conversation_service=self._conversation_service_provider.get(db),
+            system_prompt_repository=self._system_prompt_repository_provider.get(db),
             read_only=read_only,
         )

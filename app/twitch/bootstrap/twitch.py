@@ -6,13 +6,12 @@ from app.twitch.infrastructure.adapters.moderation_adapter import ModerationApiA
 from app.twitch.infrastructure.adapters.stream_adapter import StreamApiAdapter
 from app.twitch.infrastructure.adapters.twitch_platform_adapter import TwitchStreamingPlatformAdapter
 from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
-from app.twitch.infrastructure.helix.auth import TwitchAuth
 from app.twitch.infrastructure.helix.client import TwitchHelixClient
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
 
 
-def build_twitch_api_service(twitch_auth: TwitchAuth) -> TwitchApiService:
-    client = TwitchHelixClient(twitch_auth)
+def build_twitch_api_service(auth: PlatformAuth) -> TwitchApiService:
+    client = TwitchHelixClient(auth)
     user_info_adapter = UserInfoApiAdapter(client)
     followage_adapter = FollowageApiAdapter(client, user_info_adapter)
     stream_adapter = StreamApiAdapter(client, user_info_adapter)
@@ -30,8 +29,7 @@ def build_twitch_api_service(twitch_auth: TwitchAuth) -> TwitchApiService:
 
 
 def build_twitch_providers(platform_auth: PlatformAuth) -> PlatformProviders:
-    twitch_auth: TwitchAuth = platform_auth  # type: ignore[assignment]
-    twitch_api_service = build_twitch_api_service(twitch_auth)
+    twitch_api_service = build_twitch_api_service(platform_auth)
     streaming_platform = TwitchStreamingPlatformAdapter(twitch_api_service)
     return PlatformProviders(
         platform_auth=platform_auth,

@@ -2,8 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from app.follow.application.handle_followers_sync_use_case import HandleFollowersSyncUseCase
-from app.follow.application.model import FollowersSyncJobDTO
+from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from core.background.task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)
@@ -28,8 +27,7 @@ class FollowersSyncJob:
     async def run(self):
         while True:
             try:
-                dto = FollowersSyncJobDTO(channel_name=self._channel_name, occurred_at=datetime.utcnow())
-                await self._handle_followers_sync_use_case.handle(sync_job=dto)
+                await self._handle_followers_sync_use_case.handle(self._channel_name, datetime.utcnow())
             except asyncio.CancelledError:
                 logger.info("FollowersSyncJob cancelled")
                 break

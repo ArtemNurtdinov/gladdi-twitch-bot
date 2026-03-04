@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.battle.application.battle_use_case import BattleUseCase
-from app.chat.application.chat_use_case import ChatUseCase
+from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.commands.battle.application.battle_uow import BattleUnitOfWork, BattleUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy

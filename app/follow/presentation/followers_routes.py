@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
 
-from app.follow.application.followers_query_use_cases import (
+from app.follow.application.usecases.followers_query_use_cases import (
     ListActiveFollowersUseCase,
     ListUnfollowedFollowersUseCase,
 )

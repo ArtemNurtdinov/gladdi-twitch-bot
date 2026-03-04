@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from app.ai.gen.presentation import ai_routes
+from app.ai.gen.prompt.presentation import system_prompt_routes
 from app.auth.presentation import auth_routes
 from app.chat.presentation import chat_routes
 from app.follow.presentation import followers_routes

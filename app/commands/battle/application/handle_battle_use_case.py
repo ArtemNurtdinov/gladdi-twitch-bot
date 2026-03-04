@@ -1,6 +1,6 @@
 import random
 
-from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.commands.battle.application.battle_uow import BattleUnitOfWorkFactory
 from app.commands.battle.application.model import BattleDTO, BattleTimeoutAction, BattleUseCaseResult
 from app.economy.domain.economy_policy import EconomyPolicy

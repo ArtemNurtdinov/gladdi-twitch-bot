@@ -1,8 +1,8 @@
-from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.joke.application.joke_uow import JokeUnitOfWorkFactory
 from app.joke.application.model import PostJokeDTO
 from app.joke.domain.joke_service import JokeService
-from app.stream.application.stream_info_port import StreamInfoPort
+from app.stream.application.port.stream_info_port import StreamInfoPort
 from app.user.application.ports.user_cache_port import UserCachePort
 
 

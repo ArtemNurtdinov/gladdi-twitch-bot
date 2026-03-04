@@ -1,6 +1,7 @@
 from sqlalchemy import text
 
 from app.ai.gen.conversation.infrastructure.db.ai_message import AIMessage
+from app.ai.gen.prompt.infrastructure.db.system_prompt import SystemPromptRow
 from app.auth.application.auth_service import AuthService
 from app.auth.application.dto import UserCreateDto, UserRole
 from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
@@ -18,7 +19,6 @@ from app.follow.infrastructure.db.follower import ChannelFollowerRow
 from app.minigame.infrastructure.db.word_history import WordHistory
 from app.stream.infrastructure.db.stream import Stream
 from app.viewer.infrastructure.db.viewer_session import StreamViewerSession
-from app.ai.gen.infrastructure.db.system_prompt import SystemPromptRow
 from bootstrap.config_provider import get_config
 from core.db import db_ro_session, db_rw_session, get_engine
 
@@ -30,7 +30,8 @@ def test_connection():
             version = result.scalar()
             print(f"Подключение успешно! Версия PostgreSQL: {version}")
 
-            tables_result = connection.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
+            tables_result = connection.execute(
+                text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
             tables = [row[0] for row in tables_result]
 
             if tables:
@@ -62,7 +63,8 @@ def create_tables():
         print("Таблицы успешно созданы!")
 
         with get_engine().connect() as connection:
-            tables_result = connection.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
+            tables_result = connection.execute(
+                text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
             tables = [row[0] for row in tables_result]
             print(f"Таблицы после создания: {', '.join(tables)}")
 
@@ -93,7 +95,8 @@ def create_admin():
                 return
 
         user_data = UserCreateDto(
-            email="artem.nefrit@gmail.com", first_name="Артем", last_name="Нуртдинов", password="12345", role=UserRole.ADMIN, is_active=True
+            email="artem.nefrit@gmail.com", first_name="Артем", last_name="Нуртдинов", password="12345",
+            role=UserRole.ADMIN, is_active=True
         )
 
         with db_rw_session() as db:

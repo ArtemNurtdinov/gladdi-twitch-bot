@@ -8,11 +8,10 @@ from twitchio.eventsub import ChatMessageSubscription
 from twitchio.exceptions import HTTPException
 from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
-from app.platform.bot.bot_settings import BotSettings
-from app.twitch.infrastructure.helix.auth import TwitchAuth
+from app.platform.auth import PlatformAuth
+from app.platform.bot.model.bot_settings import BotSettings
 from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandRouter
 from core.chat.outbound import ChatEventsHandler, ChatOutbound
-from core.chat.prefix_command_router import PrefixCommandRouter
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +30,10 @@ class _EventChatContext(ChatContext):
 
 
 class TwitchChatClient(Client, ChatClient, ChatOutbound):
-    def __init__(self, twitch_auth: TwitchAuth, settings: BotSettings, bot_id: str | None = None):
-        self._twitch_auth = twitch_auth
+    def __init__(self, auth: PlatformAuth, settings: BotSettings, bot_id: str | None = None):
+        self._auth = auth
         self._settings = settings
-        self._command_router: PrefixCommandRouter | None = None
+        self._command_router: CommandRouter | None = None
         self._chat_event_handler: ChatEventsHandler | None = None
         self.bot_nick = settings.bot_name
         self._prefix = settings.prefix
@@ -47,8 +46,8 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
         self._eventsub_lock = asyncio.Lock()
 
         super().__init__(
-            client_id=twitch_auth.client_id,
-            client_secret=twitch_auth.client_secret,
+            client_id=auth.client_id,
+            client_secret=auth.client_secret,
             bot_id=bot_id,
             fetch_client_user=bool(bot_id),
         )
@@ -149,7 +148,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
         if self._token_user_id:
             return
         try:
-            validate = await self.add_token(self._twitch_auth.access_token, self._twitch_auth.refresh_token)
+            validate = await self.add_token(self._auth.access_token, self._auth.refresh_token)
             self._token_user_id = validate.user_id
             if not self._token_user_id:
                 logger.warning("Не удалось получить user_id из validate токена")
@@ -173,7 +172,8 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
     async def _subscribe_chat_message(self) -> None:
         if not self._broadcaster_id or not self._token_user_id:
-            raise RuntimeError(f"Нельзя подписаться на чат: broadcaster_id={self._broadcaster_id} token_user_id={self._token_user_id}")
+            raise RuntimeError(
+                f"Нельзя подписаться на чат: broadcaster_id={self._broadcaster_id} token_user_id={self._token_user_id}")
         payload = ChatMessageSubscription(
             broadcaster_user_id=self._broadcaster_id,
             user_id=self._token_user_id,
@@ -243,7 +243,8 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
     async def send_chat_message_internal(self, message: str) -> None:
         if not self._broadcaster_id or not self._token_user_id:
-            logger.warning("Нельзя отправить сообщение: broadcaster_id=%s token_user_id=%s", self._broadcaster_id, self._token_user_id)
+            logger.warning("Нельзя отправить сообщение: broadcaster_id=%s token_user_id=%s", self._broadcaster_id,
+                           self._token_user_id)
             return
         msg_preview = (message[:60] + "…") if len(message) > 60 else message
         logger.info("EventSub отправка в чат: subscribed_session=%s msg=%r", self._subscribed_session_id, msg_preview)

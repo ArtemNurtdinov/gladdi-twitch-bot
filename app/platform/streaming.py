@@ -1,8 +1,9 @@
 from typing import Protocol
 
 from app.commands.follow.application.model import FollowageInfo
-from app.follow.application.model import ChannelFollowerDTO
-from app.stream.application.model import StreamDataDTO, StreamStatusDTO
+from app.follow.application.models.follower import ChannelFollowerDTO
+from app.stream.application.models.stream_info import StreamInfoDTO
+from app.stream.application.models.stream_status import StreamStatusDTO
 from app.user.application.model.model import UserInfoDTO
 
 
@@ -15,7 +16,7 @@ class StreamingPlatformPort(Protocol):
 
     async def get_stream_status(self, broadcaster_id: str) -> StreamStatusDTO | None: ...
 
-    async def get_stream_info(self, channel_name: str) -> StreamDataDTO | None: ...
+    async def get_stream_info(self, channel_name: str) -> StreamInfoDTO | None: ...
 
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> list[str]: ...
 

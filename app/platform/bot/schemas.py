@@ -1,9 +1,9 @@
-from enum import Enum
+import enum
 
 from pydantic import BaseModel, Field
 
 
-class BotStatusEnum(str, Enum):
+class BotStatusEnum(enum.StrEnum):
     RUNNING = "running"
     STOPPED = "stopped"
 

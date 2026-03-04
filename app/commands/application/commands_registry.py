@@ -21,7 +21,7 @@ class BattleCommandHandler(Protocol):
         self,
         channel_name: str,
         display_name: str,
-        battle_waiting_user_ref: MutableMapping[str, str | None],
+        battle_waiting_user: MutableMapping[str, str | None],
         chat_ctx: ChatContext,
     ) -> Awaitable[None]: ...
 

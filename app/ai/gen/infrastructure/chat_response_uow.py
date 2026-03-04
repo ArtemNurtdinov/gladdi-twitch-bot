@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.ai.gen.application.chat_response_uow import ChatResponseUnitOfWork, ChatResponseUnitOfWorkFactory
+from app.ai.gen.application.uow.chat_response_uow import ChatResponseUnitOfWork, ChatResponseUnitOfWorkFactory
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from core.provider import Provider

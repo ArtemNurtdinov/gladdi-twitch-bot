@@ -5,9 +5,10 @@ import logging
 import httpx
 from pydantic import ValidationError
 
-from app.stream.application.model import StreamDataDTO, StreamStatusDTO
-from app.stream.application.stream_info_port import StreamInfoPort
-from app.stream.application.stream_status_port import StreamStatusPort
+from app.stream.application.models.stream_info import StreamInfoDTO
+from app.stream.application.models.stream_status import StreamStatusDTO
+from app.stream.application.port.stream_info_port import StreamInfoPort
+from app.stream.application.port.stream_status_port import StreamStatusPort
 from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
 from app.twitch.infrastructure.helix.models import StreamsResponse
 from core.platform.api_client import StreamingApiClient
@@ -22,7 +23,7 @@ class StreamApiAdapter(StreamInfoPort, StreamStatusPort):
 
     async def get_stream_status(self, broadcaster_id: str) -> StreamStatusDTO | None:
         try:
-            response = await self._client.get("/streams", params={"user_id": broadcaster_id})
+            response = await self._client.get(url="/streams", params={"user_id": broadcaster_id})
             if response.status_code == 401:
                 logger.error(f"Ошибка авторизации при получении статуса стрима {broadcaster_id}. Проверьте токен.")
                 return None
@@ -40,9 +41,8 @@ class StreamApiAdapter(StreamInfoPort, StreamStatusPort):
             if streams:
                 stream_raw = streams[0]
                 started_at = stream_raw.started_at.replace(tzinfo=None) if stream_raw.started_at else None
-                stream_data = StreamDataDTO(
+                stream_data = StreamInfoDTO(
                     id=stream_raw.id,
-                    user_id=stream_raw.user_id,
                     user_login=stream_raw.user_login,
                     user_name=stream_raw.user_name,
                     game_id=stream_raw.game_id,
@@ -70,7 +70,7 @@ class StreamApiAdapter(StreamInfoPort, StreamStatusPort):
             logger.error(f"Неожиданная ошибка при получении статуса стрима {broadcaster_id}: {e}")
             return None
 
-    async def get_stream_info(self, channel_name: str) -> StreamDataDTO | None:
+    async def get_stream_info(self, channel_name: str) -> StreamInfoDTO | None:
         user = await self._user_info.get_user_by_login(channel_name)
         broadcaster_id = None if user is None else user.id
         if not broadcaster_id:

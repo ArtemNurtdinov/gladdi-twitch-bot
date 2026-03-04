@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Protocol
 
-from app.chat.domain.models import ChatMessage
+from app.chat.domain.model.chat_message import ChatMessage
 
 
 class ChatRepository(Protocol):

@@ -3,15 +3,24 @@ import logging
 from collections.abc import Callable
 from datetime import datetime
 
+from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
+from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.application.commands_registry import CommandRegistryProtocol
+from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.platform.auth import PlatformAuth
-from app.platform.bot.bot import Bot
-from app.platform.bot.bot_settings import DEFAULT_SETTINGS, BotSettings
+from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.platform.providers import PlatformProviders
-from bootstrap.bot_composition import build_bot_composition
+from bootstrap.chat_composition import build_chat_event_handler
+from bootstrap.commands_composition import build_command_registry
+from bootstrap.jobs_composition import build_background_tasks
+from bootstrap.providers_bundle import build_providers_bundle
+from bootstrap.stream_composition import restore_stream_context
+from bootstrap.uow_composition import create_uow_factories
+from core.background.tasks import BackgroundTasks
 from core.chat.interfaces import CommandRouter
 from core.chat.outbound import ChatOutbound
+from core.db import db_ro_session, db_rw_session
 
 logger = logging.getLogger(__name__)
 
@@ -19,19 +28,20 @@ logger = logging.getLogger(__name__)
 class BotManager:
     def __init__(
         self,
+        settings: BotSettings,
         platform_auth_factory: Callable[[str, str, str, str], PlatformAuth],
         platform_providers_builder: Callable[[PlatformAuth], PlatformProviders],
         chat_client_factory: Callable[[PlatformAuth, BotSettings, str | None], ChatOutbound],
-        command_router_builder: Callable[[BotSettings, CommandRegistryProtocol, Bot], CommandRouter],
-        settings: BotSettings = DEFAULT_SETTINGS,
+        command_router_builder: Callable[[BotSettings, CommandRegistryProtocol, dict[str, str | None]], CommandRouter],
     ):
+        self._settings = settings
         self._platform_auth_factory = platform_auth_factory
         self._platform_providers_builder = platform_providers_builder
         self._chat_client_factory = chat_client_factory
         self._command_router_builder = command_router_builder
-        self._settings = settings
 
-        self._bot: Bot | None = None
+        self._background_tasks: BackgroundTasks | None = None
+
         self._chat_client: ChatOutbound | None = None
         self._task: asyncio.Task | None = None
         self._status: BotStatusEnum = BotStatusEnum.STOPPED
@@ -41,7 +51,7 @@ class BotManager:
         self._platform_providers: PlatformProviders | None = None
 
     def _reset_state(self):
-        self._bot = None
+        self._background_tasks = None
         self._chat_client = None
         self._task = None
         self._status = BotStatusEnum.STOPPED
@@ -79,25 +89,102 @@ class BotManager:
             if self._task and not self._task.done():
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            composition = await build_bot_composition(
-                access_token=access_token,
-                refresh_token=refresh_token,
+            auth = self._platform_auth_factory(access_token, refresh_token, client_id, client_secret)
+            self._platform_providers = self._platform_providers_builder(auth)
+
+            providers_bundle = build_providers_bundle(
+                streaming_platform=self._platform_providers.streaming_platform,
                 tg_bot_token=tg_bot_token,
                 llmbox_host=llmbox_host,
                 intent_detector_host=intent_detector_host,
-                client_id=client_id,
-                client_secret=client_secret,
-                settings=self._settings,
-                platform_auth_factory=self._platform_auth_factory,
-                platform_providers_builder=self._platform_providers_builder,
-                chat_client_factory=self._chat_client_factory,
-                command_router_builder=self._command_router_builder,
             )
-            self._platform_providers = composition.platform_providers
-            self._chat_client = composition.chat_client
-            self._bot = composition.bot
-            await self._bot.warmup()
-            await self._bot.start_background_tasks()
+
+            uow_factories = create_uow_factories(
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                providers=providers_bundle,
+            )
+
+            bot_user = await self._platform_providers.streaming_platform.get_user_by_login(self._settings.bot_name)
+            bot_user_id = bot_user.id if bot_user else None
+            chat_client = self._chat_client_factory(self._platform_providers.platform_auth, self._settings, bot_user_id)
+
+            battle_waiting_user = {"value": None}
+
+            chat_summary_state = ChatSummaryState()
+
+            minigame_orchestrator = MinigameOrchestrator(
+                minigame_service=providers_bundle.minigame_providers.minigame_service,
+                unit_of_work_factory=uow_factories.build_minigame_uow_factory(),
+                llm_repository=providers_bundle.ai_providers.llm_repository,
+                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
+                db_ro_session=db_ro_session,
+                prefix=self._settings.prefix,
+                command_guess_letter=self._settings.command_guess_letter,
+                command_guess_word=self._settings.command_guess_word,
+                command_guess=self._settings.command_guess,
+                command_rps=self._settings.command_rps,
+                bot_nick=self._settings.bot_name,
+                send_channel_message=chat_client.send_channel_message,
+            )
+
+            chat_response_use_case = ChatResponseUseCase(
+                unit_of_work_factory=uow_factories.build_chat_response_uow_factory(),
+                llm_repository=providers_bundle.ai_providers.llm_repository,
+                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
+                db_ro_session=db_ro_session,
+            )
+
+            self._background_tasks = build_background_tasks(
+                providers=providers_bundle,
+                uow_factories=uow_factories,
+                settings=self._settings,
+                bot_name=self._settings.bot_name,
+                chat_summary_state=chat_summary_state,
+                minigame_orchestrator=minigame_orchestrator,
+                chat_response_use_case=chat_response_use_case,
+                outbound=chat_client,
+                platform_auth=self._platform_providers.platform_auth,
+            )
+
+            chat_client = self._chat_client_factory(self._platform_providers.platform_auth, self._settings, bot_user_id)
+
+            command_registry = build_command_registry(
+                providers=providers_bundle,
+                uow_factories=uow_factories,
+                settings=self._settings,
+                bot_name=self._settings.bot_name,
+                chat_response_use_case=chat_response_use_case,
+                streaming_platform=self._platform_providers.streaming_platform,
+                post_message_fn=chat_client.post_message,
+            )
+
+            chat_events_handler = build_chat_event_handler(
+                providers=providers_bundle,
+                uow_factories=uow_factories,
+                chat_response_use_case=chat_response_use_case,
+                send_channel_message=chat_client.send_channel_message,
+            )
+            command_router = self._command_router_builder(self._settings, command_registry, battle_waiting_user)
+
+            chat_client.set_chat_event_handler(chat_events_handler)
+            chat_client.set_router(command_router)
+
+            restore_stream_context(
+                providers=providers_bundle,
+                uow_factories=uow_factories,
+                channel_name=self._settings.channel_name,
+            )
+
+            self._chat_client = chat_client
+
+            try:
+                await providers_bundle.user_providers.user_cache.warmup(self._settings.channel_name)
+            except Exception:
+                logger.error("Не удалось прогреть cache")
+
+            self._background_tasks.start_all()
+
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None
@@ -110,7 +197,6 @@ class BotManager:
     async def stop_bot(self) -> BotActionResult:
         async with self._lock:
             task = self._task
-            bot = self._bot
             platform_api_service = self._platform_providers.api_client if self._platform_providers else None
 
             if not isinstance(task, asyncio.Task):
@@ -121,8 +207,8 @@ class BotManager:
                     await self._chat_client.stop()
                 if platform_api_service:
                     await platform_api_service.aclose()
-                if bot:
-                    await bot.close()
+                if self._background_tasks:
+                    await self._background_tasks.stop_all()
                 if task and not task.done():
                     task.cancel()
                     try:

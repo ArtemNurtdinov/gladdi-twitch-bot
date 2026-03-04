@@ -3,7 +3,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.stream.application.stream_query_use_case import StreamQueryUseCase
+from app.stream.application.usecase.stream_query_use_case import StreamQueryUseCase
 from app.stream.presentation.stream_schemas import StreamDetailResponse, StreamListResponse, StreamResponse
 from bootstrap.stream_provider import get_stream_query_use_case_ro
 

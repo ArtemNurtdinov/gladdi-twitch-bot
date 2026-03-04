@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from core.provider import Provider
-from core.types import SessionFactory
-
 DEFAULT_SYSTEM_PROMPT_FOR_GROUP = (
     "Ты — GLaDDi, цифровой ассистент нового поколения."
     "\nТы обладаешь характером GLaDOS, но являешься искусственным интеллектом мужского пола."
@@ -26,22 +23,6 @@ DEFAULT_SYSTEM_PROMPT_FOR_GROUP = (
 
 
 class PromptService:
-    def __init__(
-        self,
-        system_prompt_repo_provider: Provider,
-        session_factory_ro: SessionFactory,
-    ):
-        self._system_prompt_repo_provider = system_prompt_repo_provider
-        self._session_factory_ro = session_factory_ro
-
-    def get_system_prompt_for_group(self, channel_name: str) -> str:
-        with self._session_factory_ro() as db:
-            repo = self._system_prompt_repo_provider.get(db)
-            value = repo.get(channel_name)
-            if value:
-                return value
-        return DEFAULT_SYSTEM_PROMPT_FOR_GROUP
-
     def get_jackbox_prompt(self, nickname: str, message: str) -> str:
         return (
             f"Сообщение от пользователя с никнеймом {nickname}: {message}."

@@ -25,7 +25,7 @@ class BattleCommandHandler:
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str, battle_waiting_user_ref, chat_ctx: ChatContext):
+    async def handle(self, channel_name: str, display_name: str, battle_waiting_user, chat_ctx: ChatContext):
         battle_dto = BattleDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_name,
@@ -35,14 +35,14 @@ class BattleCommandHandler:
             bot_nick=self._bot_nick.lower(),
             occurred_at=datetime.utcnow(),
             command_call=f"{self.command_prefix}{self.command_name}",
-            waiting_user=battle_waiting_user_ref["value"],
+            waiting_user=battle_waiting_user["value"],
         )
 
         result = await self._handle_battle_use_case.handle(
             command_battle=battle_dto,
         )
 
-        battle_waiting_user_ref["value"] = result.new_waiting_user
+        battle_waiting_user["value"] = result.new_waiting_user
 
         for message in result.messages:
             await self.post_message_fn(message, chat_ctx)

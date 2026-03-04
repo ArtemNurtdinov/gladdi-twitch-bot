@@ -1,10 +1,7 @@
-import logging
 from datetime import datetime, timedelta
 
 from app.user.application.ports.user_cache_port import UserCachePort
 from app.user.application.ports.user_info_port import UserInfoPort
-
-logger = logging.getLogger(__name__)
 
 
 class UserCacheService(UserCachePort):
@@ -28,7 +25,4 @@ class UserCacheService(UserCachePort):
         return user_id
 
     async def warmup(self, login: str):
-        try:
-            await self.get_user_id(login)
-        except Exception as e:
-            logger.error(f"Не удалось прогреть кеш ID для {login}: {e}")
+        await self.get_user_id(login)

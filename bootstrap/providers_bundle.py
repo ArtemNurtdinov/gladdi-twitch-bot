@@ -17,7 +17,6 @@ from app.user.bootstrap import UserProviders, build_user_providers
 from app.viewer.bootstrap import ViewerProviders, build_viewer_providers
 from bootstrap.telegram_provider import TelegramProviders, build_telegram_providers
 from core.bootstrap.background import BackgroundProviders, build_background_providers
-from core.types import SessionFactory
 
 
 @dataclass(frozen=True)
@@ -39,19 +38,13 @@ class ProvidersBundle:
 
 
 def build_providers_bundle(
-    *,
     streaming_platform: StreamingPlatformPort,
     tg_bot_token: str,
     llmbox_host: str,
     intent_detector_host: str,
-    session_factory_ro: SessionFactory,
 ) -> ProvidersBundle:
     stream_providers = build_stream_providers(streaming_platform)
-    ai_providers = build_ai_providers(
-        llmbox_host=llmbox_host,
-        intent_detector_host=intent_detector_host,
-        session_factory_ro=session_factory_ro,
-    )
+    ai_providers = build_ai_providers(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
     chat_providers = build_chat_providers()
     follow_providers = build_follow_providers(streaming_platform)
     joke_providers = build_joke_providers()

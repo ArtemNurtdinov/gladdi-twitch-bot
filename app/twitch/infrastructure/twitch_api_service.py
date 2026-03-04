@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.application.model import FollowageInfo
-from app.follow.application.model import ChannelFollowerDTO
+from app.follow.application.models.follower import ChannelFollowerDTO
 from app.moderation.application.moderation_port import ModerationPort
-from app.stream.application.model import StreamDataDTO, StreamStatusDTO
-from app.stream.application.stream_info_port import StreamInfoPort
-from app.stream.application.stream_status_port import StreamStatusPort
+from app.stream.application.models.stream_info import StreamInfoDTO
+from app.stream.application.models.stream_status import StreamStatusDTO
+from app.stream.application.port.stream_info_port import StreamInfoPort
+from app.stream.application.port.stream_status_port import StreamStatusPort
 from app.user.application.model.model import UserInfoDTO
 from app.user.application.ports.user_info_port import UserInfoPort
-from app.viewer.application.stream_chatters_port import StreamChattersPort
+from app.viewer.application.ports.stream_chatters_port import StreamChattersPort
 from core.platform.api_client import StreamingApiClient
 
 
@@ -55,7 +56,7 @@ class TwitchApiService(
     async def get_stream_status(self, broadcaster_id: str) -> StreamStatusDTO | None:
         return await self._stream_status_adapter.get_stream_status(broadcaster_id)
 
-    async def get_stream_info(self, channel_name: str) -> StreamDataDTO | None:
+    async def get_stream_info(self, channel_name: str) -> StreamInfoDTO | None:
         return await self._stream_info_adapter.get_stream_info(channel_name)
 
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> list[str]:

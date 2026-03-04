@@ -2,7 +2,6 @@ from typing import Protocol
 
 
 class PlatformAuth(Protocol):
-
     client_id: str | None
     client_secret: str | None
     access_token: str

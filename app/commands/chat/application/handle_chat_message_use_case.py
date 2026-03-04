@@ -1,8 +1,8 @@
-from app.ai.gen.application.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.ai.gen.prompt.prompt_service import PromptService
-from app.ai.intent.application.get_intent_use_case import GetIntentFromTextUseCase
+from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
-from app.chat.domain.models import ChatMessage
+from app.chat.domain.model.chat_message import ChatMessage
 from app.commands.chat.application.chat_message_uow import ChatMessageUnitOfWorkFactory
 from app.commands.chat.application.model import ChatMessageDTO
 
@@ -69,11 +69,11 @@ class HandleChatMessageUseCase:
         if prompt is None:
             return None
 
-        system_prompt = self._prompt_service.get_system_prompt_for_group(dto.channel_name)
         with self._unit_of_work_factory.create(read_only=True) as uow_ro:
+            system_prompt = uow_ro.system_prompt_repository.get_system_prompt(dto.channel_name)
             history = uow_ro.conversation_service.get_last_messages(
                 channel_name=dto.channel_name,
-                system_prompt=system_prompt,
+                system_prompt=system_prompt.prompt,
             )
 
         result = await self._chat_response_use_case.generate_response_from_history(history, prompt)

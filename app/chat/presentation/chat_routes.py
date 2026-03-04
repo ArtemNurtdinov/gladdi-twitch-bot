@@ -3,9 +3,9 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.chat.application.chat_use_case import ChatUseCase
+from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.bootstrap import get_chat_use_case_ro
-from app.chat.presentation.chat_schemas import TopChatUser, TopChatUsersResponse
+from app.chat.presentation.schemas.chat_user import TopChatUser, TopChatUsersResponse
 
 router = APIRouter()
 

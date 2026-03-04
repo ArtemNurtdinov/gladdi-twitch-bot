@@ -1,0 +1,235 @@
+import logging
+from collections import Counter
+from datetime import datetime
+
+from app.chat.application.model.chat_summary_state import ChatSummaryState
+from app.economy.domain.models import TransactionType
+from app.minigame.domain.minigame_service import MinigameService
+from app.stream.application.port.generate_stream_info_port import GenerateStreamInfoPort
+from app.stream.application.port.notification_port import NotificationPort
+from app.stream.application.port.stream_status_port import StreamStatusPort
+from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
+from app.stream.domain.models import StreamInfo, StreamStatistics
+from app.user.application.ports.user_cache_port import UserCachePort
+
+logger = logging.getLogger(__name__)
+
+
+class HandleStreamStatusUseCase:
+    def __init__(
+        self,
+        user_cache: UserCachePort,
+        stream_status_port: StreamStatusPort,
+        unit_of_work_factory: StreamStatusUnitOfWorkFactory,
+        minigame_service: MinigameService,
+        notifications_port: NotificationPort,
+        notification_group_id: int,
+        chat_response_port: GenerateStreamInfoPort,
+        state: ChatSummaryState,
+    ):
+        self._user_cache = user_cache
+        self._stream_status_port = stream_status_port
+        self._unit_of_work_factory = unit_of_work_factory
+        self._minigame_service = minigame_service
+        self._notifications_port = notifications_port
+        self._notification_group_id = notification_group_id
+        self._chat_response_port = chat_response_port
+        self._state = state
+
+    async def handle(
+        self,
+        channel_name: str,
+    ) -> None:
+        broadcaster_id = await self._user_cache.get_user_id(channel_name)
+
+        if not broadcaster_id:
+            logger.error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
+            return
+
+        stream_status = await self._stream_status_port.get_stream_status(broadcaster_id)
+        if stream_status is None:
+            logger.error(f"Не удалось получить статус стрима для канала {channel_name}")
+            return
+
+        game_name = stream_status.stream_data.game_name if stream_status.is_online and stream_status.stream_data else None
+        title = stream_status.stream_data.title if stream_status.is_online and stream_status.stream_data else None
+
+        logger.info(f"Статус стрима: {stream_status}")
+
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            active_stream = uow.stream_service.get_active_stream(channel_name)
+
+        if stream_status.is_online and active_stream is None:
+            logger.info(f"Стрим начался: {game_name} - {title}")
+            await self._handle_stream_start(channel_name, game_name, title)
+
+        elif not stream_status.is_online and active_stream is not None:
+            await self._handle_stream_end(
+                channel_name=channel_name,
+                active_stream=active_stream,
+            )
+
+        elif stream_status.is_online and active_stream:
+            if active_stream.game_name != game_name or active_stream.title != title:
+                with self._unit_of_work_factory.create() as uow:
+                    uow.stream_service.update_stream_metadata(active_stream.id, game_name, title)
+                logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
+
+    async def _handle_stream_start(
+        self,
+        channel_name: str,
+        game_name: str | None,
+        title: str | None,
+    ):
+        started_at = datetime.utcnow()
+        try:
+            with self._unit_of_work_factory.create() as uow:
+                uow.start_stream_use_case.execute(channel_name, started_at, game_name, title)
+            self._minigame_service.set_stream_start_time(channel_name, started_at)
+            await self._stream_announcement(channel_name, game_name, title)
+            self._state.current_stream_summaries = []
+        except Exception as e:
+            logger.error(f"Ошибка при создании стрима: {e}")
+
+    async def _handle_stream_end(
+        self,
+        channel_name: str,
+        active_stream: StreamInfo,
+    ):
+        finish_time = datetime.utcnow()
+        logger.info("Стрим завершён")
+        with self._unit_of_work_factory.create() as uow:
+            uow.stream_service.end_stream(active_stream.id, finish_time)
+
+            active_sessions = uow.viewer_repository.get_active_sessions(active_stream.id)
+
+            for session in active_sessions:
+                session_duration = finish_time - session.session_start
+                session_minutes = int(session_duration.total_seconds() / 60)
+                total_minutes = session.total_minutes + session_minutes
+                uow.viewer_repository.finish_session(active_stream.id, session.channel_name, session.user_name, total_minutes, finish_time)
+
+            total_viewers = uow.viewer_repository.get_unique_viewers_count(active_stream.id)
+            uow.stream_service.update_stream_total_viewers(active_stream.id, total_viewers)
+            logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
+
+        self._minigame_service.reset_stream_state(channel_name)
+
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            battles = uow.battle_use_case.get_battles(channel_name, active_stream.started_at)
+
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            chat_messages = uow.chat_use_case.get_chat_messages(
+                channel_name=channel_name,
+                from_time=active_stream.started_at,
+                to_time=finish_time,
+            )
+
+        stats = self._build_stream_statistics(chat_messages, battles)
+
+        try:
+            await self._stream_summarize(
+                stream_stat=stats,
+                channel_name=channel_name,
+                stream_start_dt=active_stream.started_at,
+                stream_end_dt=finish_time,
+            )
+        except Exception as e:
+            logger.error(f"Ошибка при вызове stream_summarize: {e}")
+
+    @staticmethod
+    def _build_stream_statistics(chat_messages, battles) -> StreamStatistics:
+        total_messages = len(chat_messages)
+        unique_users = len(set(msg.user_name for msg in chat_messages))
+        user_counts = Counter(msg.user_name for msg in chat_messages)
+        top_user = user_counts.most_common(1)[0][0] if user_counts else None
+
+        total_battles = len(battles)
+        winner_counts = Counter(b.winner for b in battles)
+        top_winner = winner_counts.most_common(1)[0][0] if battles else None
+
+        return StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
+
+    async def _stream_announcement(self, channel_name: str, game_name: str | None, title: str | None):
+        prompt = (
+            f"Начался стрим. Категория: {game_name}, название: {title}. "
+            f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
+        )
+        result = await self._chat_response_port.generate(prompt, channel_name)
+        try:
+            await self._notifications_port.send_notification(chat_id=self._notification_group_id, text=result)
+        except Exception as e:
+            logger.error(f"Ошибка отправки анонса в Telegram: {e}")
+
+    async def _stream_summarize(
+        self,
+        stream_stat: StreamStatistics,
+        channel_name: str,
+        stream_start_dt,
+        stream_end_dt,
+    ):
+        logger.info("Создание итогового отчёта о стриме")
+
+        if self._state.last_chat_summary_time is None:
+            self._state.last_chat_summary_time = stream_start_dt
+
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            last_messages = uow.chat_use_case.get_chat_messages(
+                channel_name=channel_name,
+                from_time=self._state.last_chat_summary_time,
+                to_time=stream_end_dt,
+            )
+            if last_messages:
+                chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
+                prompt = (
+                    f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
+                    f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
+                )
+                result = await self._chat_response_port.generate(prompt, channel_name)
+                self._state.current_stream_summaries.append(result)
+
+        duration = stream_end_dt - stream_start_dt
+        hours, remainder = divmod(int(duration.total_seconds()), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        duration_str = f"{hours:02}:{minutes:02}:{seconds:02}"
+        top_user = stream_stat.top_user if stream_stat.top_user else "нет"
+
+        stream_stat_message = (
+            f"Длительность: {duration_str}. Сообщений: {stream_stat.total_messages}. Самый активный пользователь: {top_user}."
+        )
+
+        if stream_stat.total_battles > 0:
+            stream_stat_message += f" Битв за стрим: {stream_stat.total_battles}. Главный победитель: {stream_stat.top_winner}"
+
+        if stream_stat.top_user and stream_stat.top_user != "нет":
+            reward_amount = 200
+            with self._unit_of_work_factory.create() as uow:
+                user_balance = uow.economy_policy.add_balance(
+                    channel_name=channel_name,
+                    user_name=stream_stat.top_user,
+                    amount=reward_amount,
+                    transaction_type=TransactionType.SPECIAL_EVENT,
+                    description="Награда за самую высокую активность в стриме",
+                )
+                stream_stat_message += (
+                    f"{stream_stat.top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
+                )
+
+        logger.info(f"Статистика стрима: {stream_stat_message}")
+
+        prompt = f"Трансляция была завершена. Статистика:\n{stream_stat_message}"
+
+        if self._state.current_stream_summaries:
+            summary_text = "\n".join(self._state.current_stream_summaries)
+            prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
+
+        prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции"
+        result = await self._chat_response_port.generate(prompt, channel_name)
+
+        with self._unit_of_work_factory.create() as uow:
+            uow.conversation_service.save_conversation_to_db(channel_name, prompt, result)
+
+        self._state.current_stream_summaries = []
+        self._state.last_chat_summary_time = None
+
+        await self._notifications_port.send_notification(chat_id=self._notification_group_id, text=result)
