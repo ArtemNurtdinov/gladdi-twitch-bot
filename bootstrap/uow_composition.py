@@ -91,6 +91,7 @@ def create_uow_factories(
             stream_repo_provider=stream_providers.stream_repo_provider,
             viewer_repo_provider=viewer_providers.viewer_repo_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
+            system_prompt_repository_provider=ai_providers.system_prompt_repo_provider,
         )
 
     def build_joke_uow_factory() -> SqlAlchemyJokeUnitOfWorkFactory:

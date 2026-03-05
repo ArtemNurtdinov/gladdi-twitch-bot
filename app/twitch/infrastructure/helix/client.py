@@ -24,7 +24,7 @@ class TwitchHelixClient(StreamingApiClient):
         return base
 
     async def get(self, url: str, params: dict[str, Any]) -> StreamingApiResponse:
-        response = await self._client.get(url, params=params)
+        response = await self._client.get(url, params=params, headers=self._headers())
         return StreamingApiResponse(
             status_code=response.status_code,
             text=response.text,
