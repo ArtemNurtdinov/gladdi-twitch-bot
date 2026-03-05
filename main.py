@@ -44,7 +44,7 @@ app.add_middleware(
 
 app.include_router(auth_routes.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(auth_routes.admin_router, prefix="/api/v1/admin", tags=["Administration"])
-app.include_router(ai_routes.admin_router, prefix="/api/v1/ai", tags=["AI"])
+app.include_router(system_prompt_routes.admin_router, prefix="/api/v1/ai", tags=["System Prompt"])
 app.include_router(chat_routes.router, prefix="/api/v1/messages", tags=["Chat"])
 app.include_router(twitch_routes.router, prefix="/api/v1/bot", tags=["Twitch Bot"])
 app.include_router(joke_routes.router, prefix="/api/v1/jokes", tags=["Jokes"])

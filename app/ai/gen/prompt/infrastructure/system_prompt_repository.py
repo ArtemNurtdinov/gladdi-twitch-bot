@@ -3,9 +3,9 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.ai.gen.prompt.infrastructure.db.system_prompt import SystemPromptRow
 from app.ai.gen.prompt.domain.models.system_prompt import SystemPrompt
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
+from app.ai.gen.prompt.infrastructure.db.system_prompt import SystemPromptRow
 
 
 class SystemPromptRepositoryImpl(SystemPromptRepository):
