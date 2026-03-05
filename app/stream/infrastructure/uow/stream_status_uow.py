@@ -7,8 +7,8 @@ from app.battle.application.battle_use_case import BattleUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.stream.application.usecase.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWork, StreamStatusUnitOfWorkFactory
+from app.stream.application.usecase.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.domain.stream_service import StreamService
 from app.viewer.domain.repo import ViewerRepository
 from core.provider import Provider
@@ -66,9 +66,7 @@ class SqlAlchemyStreamStatusUnitOfWork(SqlAlchemyUnitOfWorkBase, StreamStatusUni
         return self._conversation_service
 
 
-class SqlAlchemyStreamStatusUnitOfWorkFactory(
-    SqlAlchemyUnitOfWorkFactory[StreamStatusUnitOfWork], StreamStatusUnitOfWorkFactory
-):
+class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[StreamStatusUnitOfWork], StreamStatusUnitOfWorkFactory):
     def __init__(
         self,
         session_factory_rw: SessionFactory,

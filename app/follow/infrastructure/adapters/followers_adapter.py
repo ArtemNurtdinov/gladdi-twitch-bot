@@ -1,5 +1,5 @@
-from app.follow.application.ports.followers_port import FollowersPort
 from app.follow.application.models.follower import ChannelFollowerDTO
+from app.follow.application.ports.followers_port import FollowersPort
 from app.platform.streaming import StreamingPlatformPort
 
 

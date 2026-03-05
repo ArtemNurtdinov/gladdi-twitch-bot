@@ -2,8 +2,8 @@ import asyncio
 import logging
 from datetime import datetime
 
-from app.viewer.application.usecases.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from app.viewer.application.models.viewer_time import ViewerTimeDTO
+from app.viewer.application.usecases.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from core.background.task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)

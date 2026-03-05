@@ -1,8 +1,8 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
 from app.chat.infrastructure.adapter.stream_chat_stats_adapter import StreamChatStatsAdapter
+from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
 from app.stream.application.port.stream_chat_stats_port import StreamChatStatsPort
 from app.stream.application.usecase.stream_query_use_case import StreamQueryUseCase
 from app.stream.domain.repo import StreamRepository
