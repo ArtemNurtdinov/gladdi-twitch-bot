@@ -1,5 +1,4 @@
-from collections import Counter
-
+from app.betting.application.rarity_identifier import RarityIdentifier
 from app.betting.domain.model.bet import Bet
 from app.betting.domain.model.rarity import RarityLevel
 from app.betting.domain.models import EmojiConfig
@@ -23,37 +22,13 @@ class BettingService:
         RarityLevel.MYTHICAL: 100,
     }
 
-    def __init__(self, repo: BettingRepository):
+    def __init__(self, repo: BettingRepository, rarity_identifier: RarityIdentifier):
         self._repo = repo
+        self._rarity_identifier = rarity_identifier
 
     def determine_correct_rarity(self, slot_result: str, result_type: str) -> RarityLevel:
         emojis = EmojiConfig.parse_slot_result(slot_result)
-
-        if result_type == "jackpot":
-            return EmojiConfig.get_emoji_rarity(emojis[0])
-
-        rarity_priority = {
-            RarityLevel.COMMON: 1,
-            RarityLevel.UNCOMMON: 2,
-            RarityLevel.RARE: 3,
-            RarityLevel.EPIC: 4,
-            RarityLevel.LEGENDARY: 5,
-            RarityLevel.MYTHICAL: 6,
-        }
-
-        if result_type == "partial":
-            counts = Counter(emojis)
-            repeated_emoji = next((emoji for emoji, count in counts.items() if count == 2), None)
-            unique_emoji = next((emoji for emoji, count in counts.items() if count == 1), None)
-
-            repeated_rarity = EmojiConfig.get_emoji_rarity(repeated_emoji)
-            unique_rarity = EmojiConfig.get_emoji_rarity(unique_emoji) if unique_emoji else RarityLevel.COMMON
-
-            return repeated_rarity if rarity_priority[repeated_rarity] >= rarity_priority[unique_rarity] else unique_rarity
-        else:
-            rarities = [EmojiConfig.get_emoji_rarity(emoji) for emoji in emojis]
-            max_rarity = max(rarities, key=lambda r: rarity_priority[r])
-            return max_rarity
+        return self._rarity_identifier.get_slot_result_rarity(result_type, emojis)
 
     def save_bet(self, channel_name: str, user_name: str, slot_result: str, result_type: str, rarity_level: RarityLevel):
         self._repo.save_bet_history(channel_name, user_name, slot_result, result_type, rarity_level)
