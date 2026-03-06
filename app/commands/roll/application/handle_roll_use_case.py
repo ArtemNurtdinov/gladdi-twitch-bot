@@ -2,7 +2,8 @@ import random
 from datetime import datetime
 
 from app.betting.application.betting_service import BettingService
-from app.betting.domain.models import EmojiConfig, RarityLevel
+from app.betting.domain.model.rarity import RarityLevel
+from app.betting.domain.models import EmojiConfig
 from app.commands.roll.application.model import RollDTO, RollTimeoutAction, RollUseCaseResult
 from app.commands.roll.application.roll_uow import RollUnitOfWorkFactory
 from app.economy.domain.models import TransactionType
@@ -223,9 +224,9 @@ class HandleRollUseCase:
                 rarity_level=rarity_level,
             )
 
-        result_emoji = self._get_result_emoji(result_type, payout)
+        result_emoji = self._get_result_emoji(result_type)
         profit = payout - bet_amount
-        profit_display = self._get_profit_display(result_type, payout, profit)
+        profit_display = self._get_profit_display(profit)
         final_result = f"{slot_result_string} {result_emoji} Баланс: {user_balance.balance} монет ({profit_display})"
 
         with self._unit_of_work_factory.create() as uow:
@@ -296,7 +297,7 @@ class HandleRollUseCase:
     def _is_partial_match(result_type: str) -> bool:
         return result_type == "partial"
 
-    def _get_result_emoji(self, result_type: str, payout: int) -> str:
+    def _get_result_emoji(self, result_type: str) -> str:
         if self._is_jackpot(result_type):
             return "🎰"
         if self._is_partial_match(result_type):
@@ -305,7 +306,7 @@ class HandleRollUseCase:
             return "💥"
         return "💰"
 
-    def _get_profit_display(self, result_type: str, payout: int, profit: int) -> str:
+    def _get_profit_display(self, profit: int) -> str:
         if profit > 0:
             return f"+{profit}"
         if profit < 0:

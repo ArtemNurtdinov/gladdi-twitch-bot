@@ -1,6 +1,7 @@
 from typing import Protocol
 
-from app.betting.domain.models import BetRecord, RarityLevel
+from app.betting.domain.model.bet import Bet
+from app.betting.domain.model.rarity import RarityLevel
 
 
 class BettingRepository(Protocol):
@@ -13,4 +14,4 @@ class BettingRepository(Protocol):
         rarity_level: RarityLevel,
     ): ...
 
-    def get_user_bets(self, channel_name: str, user_name: str) -> list[BetRecord]: ...
+    def get_user_bets(self, channel_name: str, user_name: str) -> list[Bet]: ...
