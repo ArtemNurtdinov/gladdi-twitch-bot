@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
-from app.battle.application.battle_use_case import BattleUseCase
+from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.commands.battle.application.battle_uow import BattleUnitOfWork, BattleUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
@@ -52,9 +52,7 @@ class SqlAlchemyBattleUnitOfWork(SqlAlchemyUnitOfWorkBase, BattleUnitOfWork):
         return self._get_user_equipment_use_case
 
 
-class SqlAlchemyBattleUnitOfWorkFactory(
-    SqlAlchemyUnitOfWorkFactory[BattleUnitOfWork], BattleUnitOfWorkFactory
-):
+class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOfWork], BattleUnitOfWorkFactory):
     def __init__(
         self,
         session_factory_rw: SessionFactory,

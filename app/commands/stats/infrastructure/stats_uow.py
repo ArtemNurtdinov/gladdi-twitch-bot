@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.battle.application.battle_use_case import BattleUseCase
+from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.commands.stats.application.stats_uow import StatsUnitOfWork, StatsUnitOfWorkFactory

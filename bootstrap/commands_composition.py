@@ -171,9 +171,9 @@ def build_command_registry(
         command_prefix=prefix,
         command_name=settings.command_stats,
         handle_stats_use_case=HandleStatsUseCase(
-            unit_of_work_factory=uow_factories.build_stats_uow_factory(),
+            stats_uow=uow_factories.build_stats_uow_factory(),
         ),
-        bot_nick=bot_name,
+        bot_name=bot_name,
         post_message_fn=post_message_fn,
     )
     commands = {

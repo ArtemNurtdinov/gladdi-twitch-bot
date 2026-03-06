@@ -1,22 +1,16 @@
-from app.battle.domain.models import UserBattleStats
-from app.commands.stats.application.model import StatsDTO, UserBetStats
+from app.battle.domain.model.stats import UserBattleStats
+from app.commands.stats.application.model import CommandStatsDTO, UserBetStats
 from app.commands.stats.application.stats_uow import StatsUnitOfWorkFactory
 
 
 class HandleStatsUseCase:
-    def __init__(
-        self,
-        unit_of_work_factory: StatsUnitOfWorkFactory,
-    ):
-        self._unit_of_work_factory = unit_of_work_factory
+    def __init__(self, stats_uow: StatsUnitOfWorkFactory):
+        self._stats_uow = stats_uow
 
-    async def handle(
-        self,
-        command_stats: StatsDTO,
-    ) -> str:
+    async def handle(self, command_stats: CommandStatsDTO) -> str:
         user_message = command_stats.command_prefix + command_stats.command_name
 
-        with self._unit_of_work_factory.create(read_only=True) as uow:
+        with self._stats_uow.create(read_only=True) as uow:
             balance = uow.economy_policy.get_user_balance(command_stats.channel_name, command_stats.user_name)
             bets = uow.betting_service.get_user_bets(command_stats.channel_name, command_stats.user_name)
 
@@ -28,10 +22,8 @@ class HandleStatsUseCase:
             jackpot_rate = (jackpots / total_bets) * 100 if total_bets > 0 else 0
             bet_stats = UserBetStats(total_bets=total_bets, jackpots=jackpots, jackpot_rate=jackpot_rate)
 
-        with self._unit_of_work_factory.create(read_only=True) as uow:
-            battles = uow.battle_use_case.get_user_battles(
-                channel_name=command_stats.channel_name, user_name=command_stats.display_name
-            )
+        with self._stats_uow.create(read_only=True) as uow:
+            battles = uow.battle_use_case.get_user_battles(channel_name=command_stats.channel_name, user_name=command_stats.display_name)
 
         if not battles:
             battle_stats = UserBattleStats(total_battles=0, wins=0, losses=0, win_rate=0.0)
@@ -50,7 +42,7 @@ class HandleStatsUseCase:
         if battle_stats.total_battles > 0:
             result += f" ⚔️ Битвы: {battle_stats.total_battles} | Побед: {battle_stats.wins} ({battle_stats.win_rate:.1f}%)."
 
-        with self._unit_of_work_factory.create() as uow:
+        with self._stats_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_stats.channel_name,
                 user_name=command_stats.user_name,
@@ -59,7 +51,7 @@ class HandleStatsUseCase:
             )
             uow.chat_use_case.save_chat_message(
                 channel_name=command_stats.channel_name,
-                user_name=command_stats.bot_nick,
+                user_name=command_stats.bot_name,
                 content=result,
                 current_time=command_stats.occurred_at,
             )

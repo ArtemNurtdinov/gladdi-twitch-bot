@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
-from app.battle.application.battle_use_case import BattleUseCase
+from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
