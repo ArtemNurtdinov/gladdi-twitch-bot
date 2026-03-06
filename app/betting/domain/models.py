@@ -1,26 +1,4 @@
-from dataclasses import dataclass
-from datetime import datetime
-from enum import Enum
-
-
-@dataclass
-class BetRecord:
-    id: int
-    channel_name: str
-    user_name: str
-    slot_result: str
-    result_type: str
-    rarity_level: "RarityLevel"
-    created_at: datetime
-
-
-class RarityLevel(Enum):
-    COMMON = "COMMON"
-    UNCOMMON = "UNCOMMON"
-    RARE = "RARE"
-    EPIC = "EPIC"
-    LEGENDARY = "LEGENDARY"
-    MYTHICAL = "MYTHICAL"
+from app.betting.domain.model.rarity import RarityLevel
 
 
 class EmojiConfig:

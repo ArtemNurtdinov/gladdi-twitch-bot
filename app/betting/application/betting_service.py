@@ -1,6 +1,8 @@
 from collections import Counter
 
-from app.betting.domain.models import BetRecord, EmojiConfig, RarityLevel
+from app.betting.domain.model.bet import Bet
+from app.betting.domain.model.rarity import RarityLevel
+from app.betting.domain.models import EmojiConfig
 from app.betting.domain.repo import BettingRepository
 
 
@@ -56,5 +58,5 @@ class BettingService:
     def save_bet(self, channel_name: str, user_name: str, slot_result: str, result_type: str, rarity_level: RarityLevel):
         self._repo.save_bet_history(channel_name, user_name, slot_result, result_type, rarity_level)
 
-    def get_user_bets(self, channel_name: str, user_name: str) -> list[BetRecord]:
+    def get_user_bets(self, channel_name: str, user_name: str) -> list[Bet]:
         return self._repo.get_user_bets(channel_name, user_name)

@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.betting.domain.models import RarityLevel
+from app.betting.domain.model.rarity import RarityLevel
 from core.db import Base
 
 

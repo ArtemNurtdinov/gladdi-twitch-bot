@@ -1,12 +1,9 @@
-from app.betting.domain.models import BetRecord
+from app.betting.domain.model.bet import Bet
 from app.betting.infrastructure.db.bet_history import BetHistory
 
 
-def map_bet_history(row: BetHistory | None) -> BetRecord | None:
-    if row is None:
-        return None
-
-    return BetRecord(
+def map_bet_history(row: BetHistory) -> Bet:
+    return Bet(
         id=row.id,
         channel_name=row.channel_name,
         user_name=row.user_name,

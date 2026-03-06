@@ -1,13 +1,9 @@
-"""
-Скрипт симуляции команды ставки (рулетка): прогоняет N спинов без БД и выводит метрики.
-Запуск из корня проекта: python -m scripts.roll_simulation
-"""
 import random
 import time
 from dataclasses import dataclass
 
 from app.betting.application.betting_service import BettingService
-from app.betting.domain.models import EmojiConfig, RarityLevel
+from app.betting.domain.model.rarity import RarityLevel
 
 
 @dataclass
