@@ -3,13 +3,13 @@ from datetime import datetime
 
 
 @dataclass(frozen=True)
-class StatsDTO:
+class CommandStatsDTO:
     command_prefix: str
     command_name: str
     channel_name: str
     display_name: str
     user_name: str
-    bot_nick: str
+    bot_name: str
     occurred_at: datetime
 
 

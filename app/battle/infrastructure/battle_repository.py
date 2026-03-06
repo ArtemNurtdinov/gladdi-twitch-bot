@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.battle.domain.models import BattleRecord
+from app.battle.domain.model.battle import Battle
 from app.battle.domain.repo import BattleRepository
 from app.battle.infrastructure.db.battle_history import BattleHistory
 from app.battle.infrastructure.mappers.battle_mapper import map_battle_history
@@ -30,7 +30,7 @@ class BattleRepositoryImpl(BattleRepository):
         )
         self._db.add(battle)
 
-    def get_user_battles(self, channel_name: str, user_name: str) -> list[BattleRecord]:
+    def get_user_battles(self, channel_name: str, user_name: str) -> list[Battle]:
         stmt = (
             select(BattleHistory)
             .where(BattleHistory.channel_name == channel_name)
@@ -44,7 +44,7 @@ class BattleRepositoryImpl(BattleRepository):
         rows = self._db.execute(stmt).scalars().all()
         return [map_battle_history(row) for row in rows]
 
-    def get_battles(self, channel_name: str, from_time: datetime) -> list[BattleRecord]:
+    def get_battles(self, channel_name: str, from_time: datetime) -> list[Battle]:
         stmt = select(BattleHistory).where(BattleHistory.channel_name == channel_name).where(BattleHistory.created_at >= from_time)
         rows = self._db.execute(stmt).scalars().all()
         return [map_battle_history(row) for row in rows]

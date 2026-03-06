@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Protocol
 
-from app.battle.domain.models import BattleRecord
+from app.battle.domain.model.battle import Battle
 
 
 class BattleRepository(Protocol):
@@ -14,6 +14,6 @@ class BattleRepository(Protocol):
         result_text: str,
     ): ...
 
-    def get_user_battles(self, channel_name: str, user_name: str) -> list[BattleRecord]: ...
+    def get_user_battles(self, channel_name: str, user_name: str) -> list[Battle]: ...
 
-    def get_battles(self, channel_name: str, from_time: datetime) -> list[BattleRecord]: ...
+    def get_battles(self, channel_name: str, from_time: datetime) -> list[Battle]: ...

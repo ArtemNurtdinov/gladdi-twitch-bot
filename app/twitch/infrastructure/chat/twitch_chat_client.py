@@ -35,7 +35,6 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
         self._settings = settings
         self._command_router: CommandRouter | None = None
         self._chat_event_handler: ChatEventsHandler | None = None
-        self.bot_nick = settings.bot_name
         self._prefix = settings.prefix
         self._channel_login = settings.channel_name
 
@@ -114,7 +113,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
                     channel_name=self._channel_login,
                     display_name=chat_message.author,
                     message=payload.text,
-                    bot_nick=self.bot_nick,
+                    bot_nick=self._settings.bot_name,
                 )
             except Exception:
                 logger.exception("Ошибка в ChatEventHandler для сообщения: %s", payload.text)
@@ -172,8 +171,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
     async def _subscribe_chat_message(self) -> None:
         if not self._broadcaster_id or not self._token_user_id:
-            raise RuntimeError(
-                f"Нельзя подписаться на чат: broadcaster_id={self._broadcaster_id} token_user_id={self._token_user_id}")
+            raise RuntimeError(f"Нельзя подписаться на чат: broadcaster_id={self._broadcaster_id} token_user_id={self._token_user_id}")
         payload = ChatMessageSubscription(
             broadcaster_user_id=self._broadcaster_id,
             user_id=self._token_user_id,
@@ -243,11 +241,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
     async def send_chat_message_internal(self, message: str) -> None:
         if not self._broadcaster_id or not self._token_user_id:
-            logger.warning("Нельзя отправить сообщение: broadcaster_id=%s token_user_id=%s", self._broadcaster_id,
-                           self._token_user_id)
             return
-        msg_preview = (message[:60] + "…") if len(message) > 60 else message
-        logger.info("EventSub отправка в чат: subscribed_session=%s msg=%r", self._subscribed_session_id, msg_preview)
         for msg in self._split_text(message):
             try:
                 await self._http.post_chat_message(

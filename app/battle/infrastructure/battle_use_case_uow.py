@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.battle.application.battle_use_case_uow import BattleUseCaseUnitOfWork, BattleUseCaseUnitOfWorkFactory
+from app.battle.application.uow.battle_use_case_uow import BattleUseCaseUnitOfWork, BattleUseCaseUnitOfWorkFactory
 from app.battle.domain.repo import BattleRepository
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from core.provider import Provider
@@ -19,9 +19,7 @@ class SqlAlchemyBattleUseCaseUnitOfWork(SqlAlchemyUnitOfWorkBase, BattleUseCaseU
         return self._battle_repo
 
 
-class SqlAlchemyBattleUseCaseUnitOfWorkFactory(
-    SqlAlchemyUnitOfWorkFactory[BattleUseCaseUnitOfWork], BattleUseCaseUnitOfWorkFactory
-):
+class SqlAlchemyBattleUseCaseUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUseCaseUnitOfWork], BattleUseCaseUnitOfWorkFactory):
     def __init__(
         self,
         session_factory_rw: SessionFactory,

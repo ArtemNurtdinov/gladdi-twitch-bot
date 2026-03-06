@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from app.betting.application.betting_service import BettingService
 from app.betting.domain.model.rarity import RarityLevel
+from app.betting.domain.models import EmojiConfig
 
 
 @dataclass
