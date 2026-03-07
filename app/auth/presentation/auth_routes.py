@@ -5,8 +5,23 @@ from fastapi.security import HTTPBearer
 
 from app.auth.application.auth_service import AuthService
 from app.auth.application.contracts import LoginResponse, TokenResponse, UserCreate, UserLogin, UserResponse, UserUpdate
-from app.auth.application.dto import UserCreateDto, UserDto, UserUpdateDto
-from bootstrap.auth_provider import get_admin_user, get_auth_service, get_current_user
+from app.auth.application.dto import UserCreateDto, UserUpdateDto
+from app.auth.application.model.user import UserDTO
+from app.auth.application.usecase.create_user_from_admin_use_case import CreateUserFromAdminUseCase
+from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
+from app.auth.application.usecase.get_user_by_id_use_case import GetUserByIdUseCase
+from app.auth.application.usecase.get_users_use_case import GetUsersUseCase
+from app.auth.application.usecase.login_use_case import LoginUseCase
+from bootstrap.auth_provider import (
+    get_admin_user,
+    get_auth_service,
+    get_create_user_from_admin_use_case,
+    get_current_user,
+    get_login_use_case,
+    get_user_by_email_use_case,
+    get_user_by_id_use_case,
+    get_users_use_case,
+)
 
 router = APIRouter()
 admin_router = APIRouter()
@@ -16,10 +31,11 @@ security = HTTPBearer()
 @admin_router.post("/users", response_model=UserResponse)
 async def create_user(
     user_data: UserCreate,
-    current_user: UserDto = Depends(get_admin_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: UserDTO = Depends(get_admin_user),
+    user_by_email_use_case: GetUserByEmailUseCase = Depends(get_user_by_email_use_case),
+    create_user_from_admin_use_case: CreateUserFromAdminUseCase = Depends(get_create_user_from_admin_use_case),
 ):
-    existing_user = auth_service.get_user_by_email(user_data.email)
+    existing_user = user_by_email_use_case.get_user_by_email(user_data.email)
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь с таким email уже существует")
 
@@ -34,12 +50,12 @@ async def create_user(
         role=user_data.role,
         is_active=user_data.is_active,
     )
-    user = auth_service.create_user_from_admin(app_input)
+    user = create_user_from_admin_use_case.create_user(app_input)
     return UserResponse.model_validate(user)
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: UserDto = Depends(get_current_user)):
+async def get_me(current_user: UserDTO = Depends(get_current_user)):
     return UserResponse.model_validate(current_user).model_dump()
 
 
@@ -47,20 +63,20 @@ async def get_me(current_user: UserDto = Depends(get_current_user)):
 async def get_users(
     skip: int = 0,
     limit: int = 100,
-    current_user: UserDto = Depends(get_admin_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: UserDTO = Depends(get_admin_user),
+    users_use_case: GetUsersUseCase = Depends(get_users_use_case),
 ):
-    users = auth_service.get_users(skip, limit)
+    users = users_use_case.get_users(skip, limit)
     return [UserResponse.model_validate(user) for user in users]
 
 
 @admin_router.get("/users/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: UserDTO = Depends(get_admin_user),
+    user_by_id_use_case: GetUserByIdUseCase = Depends(get_user_by_id_use_case),
 ):
-    user = auth_service.get_user_by_id(user_id)
+    user = user_by_id_use_case.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     return UserResponse.model_validate(user)
@@ -70,11 +86,12 @@ async def get_user(
 async def update_user(
     user_id: UUID,
     user_data: UserUpdate,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
+    user_by_email_use_case: GetUserByEmailUseCase = Depends(get_user_by_email_use_case),
 ):
     if user_data.email:
-        existing_user = auth_service.get_user_by_email(user_data.email)
+        existing_user = user_by_email_use_case.get_user_by_email(user_data.email)
         if existing_user and existing_user.id != user_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь с таким email уже существует")
 
@@ -95,7 +112,7 @@ async def update_user(
 @admin_router.delete("/users/{user_id}")
 async def delete_user(
     user_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     if user_id == current_user.id:
@@ -112,7 +129,7 @@ async def delete_user(
 async def get_tokens(
     skip: int = 0,
     limit: int = 100,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     tokens = auth_service.get_tokens(skip, limit)
@@ -122,7 +139,7 @@ async def get_tokens(
 @admin_router.get("/tokens/{token_id}", response_model=TokenResponse)
 async def get_token(
     token_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     token = auth_service.get_token_by_id(token_id)
@@ -134,7 +151,7 @@ async def get_token(
 @admin_router.patch("/tokens/{token_id}/deactivate")
 async def deactivate_token(
     token_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     success = auth_service.deactivate_token(token_id)
@@ -146,7 +163,7 @@ async def deactivate_token(
 @admin_router.delete("/tokens/{token_id}")
 async def delete_token(
     token_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     success = auth_service.delete_token(token_id)
@@ -156,11 +173,8 @@ async def delete_token(
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(
-    user_data: UserLogin,
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    result = auth_service.login(user_data.email, user_data.password)
+async def login(user_data: UserLogin, login_use_case: LoginUseCase = Depends(get_login_use_case)):
+    result = login_use_case.login(user_data.email, user_data.password)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль", headers={"WWW-Authenticate": "Bearer"}

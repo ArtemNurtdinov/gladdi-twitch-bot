@@ -9,10 +9,10 @@ logger = logging.getLogger(__name__)
 
 class TokenCheckerJob:
     name = "check_token"
+    CHECK_INTERVAL_SECONDS = 1000
 
     def __init__(self, handle_token_checker_use_case: HandleTokenCheckerUseCase):
         self._handle_token_checker_use_case = handle_token_checker_use_case
-        self._interval_seconds = handle_token_checker_use_case.interval_seconds
 
     def register(self, runner: BackgroundTaskRunner):
         runner.register(self.name, self.run)
@@ -20,7 +20,7 @@ class TokenCheckerJob:
     async def run(self):
         while True:
             try:
-                await asyncio.sleep(self._interval_seconds)
+                await asyncio.sleep(self.CHECK_INTERVAL_SECONDS)
                 await self._handle_token_checker_use_case.handle()
             except asyncio.CancelledError:
                 logger.info("TokenCheckerJob cancelled")

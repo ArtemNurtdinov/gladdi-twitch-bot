@@ -2,17 +2,6 @@ from dataclasses import dataclass
 
 
 @dataclass
-class BotSettings:
-    jokes_enabled: bool = False
-    jokes_interval_min: int = 30
-    jokes_interval_max: int = 60
-    last_joke_time: str | None = None
-    next_joke_time: str | None = None
-    last_updated: str | None = None
-    version: str = "1.1"
-
-
-@dataclass
 class NextJokeInfo:
     next_joke_time: str | None
     minutes_until_next: int | None

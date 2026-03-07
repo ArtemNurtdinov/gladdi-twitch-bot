@@ -35,7 +35,10 @@ class FollowersRepositoryImpl(FollowersRepository):
 
     def list_active(self, channel_name: str) -> list[ChannelFollower]:
         stmt = (
-            select(ChannelFollowerRow).where(ChannelFollowerRow.channel_name == channel_name).where(ChannelFollowerRow.is_active.is_(True))
+            select(ChannelFollowerRow)
+            .where(ChannelFollowerRow.channel_name == channel_name)
+            .where(ChannelFollowerRow.is_active.is_(True))
+            .order_by(ChannelFollowerRow.followed_at.desc())
         )
         rows = self._db.execute(stmt).scalars().all()
         return [self._to_domain(row) for row in rows]

@@ -9,9 +9,6 @@ class BotSettings:
     channel_name: str
     bot_name: str
     prefix: str
-    check_viewers_interval_seconds: int
-    check_stream_status_interval_seconds: int
-    sync_followers_interval_seconds: int
     command_roll: str
     command_followage: str
     command_gladdi: str
@@ -38,9 +35,6 @@ class DefaultBotSettings(BotSettings):
     channel_name: str = "artemnefrit"
     bot_name: str = "gladdi_bot"
     prefix: str = "!"
-    check_viewers_interval_seconds: int = 10
-    check_stream_status_interval_seconds: int = 60
-    sync_followers_interval_seconds: int = 24 * 60 * 60
     command_roll: str = "ставка"
     command_followage: str = "followage"
     command_gladdi: str = "gladdi"

@@ -21,8 +21,8 @@ from app.commands.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopB
 from app.commands.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
 from app.joke.infrastructure.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
-from app.minigame.infrastructure.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
-from app.minigame.infrastructure.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
+from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
+from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
 from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
 from app.viewer.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory

@@ -1,0 +1,30 @@
+from dataclasses import dataclass
+from datetime import datetime
+from uuid import UUID
+
+from app.auth.domain.model.role import UserRole
+
+
+@dataclass(frozen=True)
+class TokenPayload:
+    user_id: UUID
+    email: str
+    role: UserRole
+    issued_at: datetime
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
+class TokenData:
+    token: str
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
+class TokenDTO:
+    id: UUID
+    user_id: UUID
+    token: str
+    expires_at: datetime
+    is_active: bool
+    created_at: datetime

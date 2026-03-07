@@ -6,7 +6,7 @@ import time
 from dataclasses import asdict
 from typing import Any
 
-from app.joke.domain.models import BotSettings
+from app.joke.domain.model.joke_settings import JokesSettings
 from app.joke.domain.repo import JokeSettingsRepository
 
 
@@ -18,7 +18,7 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
 
         self._file_lock = threading.Lock()
         self._cache_lock = threading.Lock()
-        self._cached_settings: BotSettings | None = None
+        self._cached_settings: JokesSettings | None = None
         self._cache_timestamp: float | None = None
         self._cache_ttl = cache_ttl
 
@@ -31,7 +31,7 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
             self.logger.info("Создана директория для настроек: %s", config_dir)
 
         if not os.path.exists(self.settings_file):
-            default_settings = BotSettings()
+            default_settings = JokesSettings()
             self._write_settings_to_file(asdict(default_settings))
             self.logger.info("Создан файл настроек: %s", self.settings_file)
 
@@ -46,7 +46,7 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
                 settings_dict = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             self.logger.error("Ошибка чтения настроек: %s", e)
-            return asdict(BotSettings())
+            return asdict(JokesSettings())
 
         if "jokes_interval_min" not in settings_dict:
             settings_dict["jokes_interval_min"] = 30
@@ -74,19 +74,19 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
             self._cached_settings = None
             self._cache_timestamp = None
 
-    def load(self) -> BotSettings:
+    def load(self) -> JokesSettings:
         with self._cache_lock:
             if self._is_cache_valid():
                 return self._cached_settings
 
         settings_dict = self._read_settings_from_file()
-        loaded = BotSettings(**settings_dict)
+        loaded = JokesSettings(**settings_dict)
         with self._cache_lock:
             self._cached_settings = loaded
             self._cache_timestamp = time.time()
         return loaded
 
-    def save(self, settings: BotSettings) -> BotSettings:
+    def save(self, settings: JokesSettings) -> JokesSettings:
         settings_dict = asdict(settings)
         settings_dict["last_updated"] = settings.last_updated or settings_dict.get("last_updated")
         self._write_settings_to_file(settings_dict)
@@ -95,6 +95,6 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
             self._cache_timestamp = time.time()
         return settings
 
-    def reload(self) -> BotSettings:
+    def reload(self) -> JokesSettings:
         self._invalidate_cache()
         return self.load()

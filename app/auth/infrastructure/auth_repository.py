@@ -4,18 +4,18 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.domain.models import (
+from app.auth.domain.auth_repository import AuthRepository
+from app.auth.domain.model.access_token import (
     AccessToken as DomainAccessToken,
 )
-from app.auth.domain.models import (
+from app.auth.domain.model.role import UserRole
+from app.auth.domain.model.user import (
     User as DomainUser,
 )
 from app.auth.domain.models import (
     UserCreateData,
-    UserRole,
     UserUpdateData,
 )
-from app.auth.domain.repo import AuthRepository
 from app.auth.infrastructure.db.access_token import AccessToken as OrmAccessToken
 from app.auth.infrastructure.db.user import User as OrmUser
 
@@ -80,7 +80,7 @@ class AuthRepositoryImpl(AuthRepository):
         users = self._db.execute(stmt).scalars().all()
         return [_to_domain_user(u) for u in users]
 
-    def create_user(self, data: UserCreateData, hashed_password: str | None) -> DomainUser:
+    def create_user(self, data: UserCreateData, hashed_password: str) -> DomainUser:
         orm_user = OrmUser(
             email=data.email,
             first_name=data.first_name,

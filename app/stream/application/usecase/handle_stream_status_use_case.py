@@ -4,7 +4,7 @@ from datetime import datetime
 
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.economy.domain.models import TransactionType
-from app.minigame.domain.minigame_service import MinigameService
+from app.minigame.domain.minigame_repository import MinigameRepository
 from app.stream.application.port.generate_stream_info_port import GenerateStreamInfoPort
 from app.stream.application.port.notification_port import NotificationPort
 from app.stream.application.port.stream_status_port import StreamStatusPort
@@ -21,7 +21,7 @@ class HandleStreamStatusUseCase:
         user_cache: UserCachePort,
         stream_status_port: StreamStatusPort,
         unit_of_work_factory: StreamStatusUnitOfWorkFactory,
-        minigame_service: MinigameService,
+        minigame_repository: MinigameRepository,
         notifications_port: NotificationPort,
         notification_group_id: int,
         chat_response_port: GenerateStreamInfoPort,
@@ -30,16 +30,13 @@ class HandleStreamStatusUseCase:
         self._user_cache = user_cache
         self._stream_status_port = stream_status_port
         self._unit_of_work_factory = unit_of_work_factory
-        self._minigame_service = minigame_service
+        self._minigame_repository = minigame_repository
         self._notifications_port = notifications_port
         self._notification_group_id = notification_group_id
         self._chat_response_port = chat_response_port
         self._state = state
 
-    async def handle(
-        self,
-        channel_name: str,
-    ) -> None:
+    async def handle(self, channel_name: str):
         broadcaster_id = await self._user_cache.get_user_id(channel_name)
 
         if not broadcaster_id:
@@ -85,7 +82,8 @@ class HandleStreamStatusUseCase:
         try:
             with self._unit_of_work_factory.create() as uow:
                 uow.start_stream_use_case.execute(channel_name, started_at, game_name, title)
-            self._minigame_service.set_stream_start_time(channel_name, started_at)
+            self._minigame_repository.set_stream_start_time(channel_name, started_at)
+            logger.info("handle stream start for %s: %s", channel_name, started_at)
             await self._stream_announcement(channel_name, game_name, title)
             self._state.current_stream_summaries = []
         except Exception as e:
@@ -113,7 +111,7 @@ class HandleStreamStatusUseCase:
             uow.stream_service.update_stream_total_viewers(active_stream.id, total_viewers)
             logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
 
-        self._minigame_service.reset_stream_state(channel_name)
+        self._minigame_repository.reset_stream_state(channel_name)
 
         with self._unit_of_work_factory.create(read_only=True) as uow:
             battles = uow.battle_use_case.get_battles(channel_name, active_stream.started_at)

@@ -5,7 +5,7 @@ from sqlalchemy import Boolean, DateTime, Enum, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.auth.domain.models import UserRole
+from app.auth.domain.model.role import UserRole
 from core.db import Base
 
 

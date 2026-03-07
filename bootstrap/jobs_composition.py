@@ -6,15 +6,19 @@ from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
+from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
-from app.joke.application.post_joke_job import PostJokeJob
-from app.minigame.application.handle_minigame_tick_use_case import HandleMinigameTickUseCase
-from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
-from app.minigame.application.minigame_tick_job import MinigameTickJob
+from app.minigame.application.job.minigame_tick_job import MinigameTickJob
+from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
+from app.minigame.application.use_case.finish_rps_use_case import FinishRpsUseCase
+from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
+from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
+from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
+from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.application.token_checker_job import TokenCheckerJob
-from app.platform.auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
+from app.platform.providers import PlatformProviders
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.infrastructure.adapters.generate_stream_info_adapter import GenerateStreamInfoAdapter
@@ -25,6 +29,7 @@ from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
 from core.background.tasks import BackgroundTasks
 from core.chat.outbound import ChatOutbound
+from core.db import db_ro_session
 
 
 def build_background_tasks(
@@ -33,10 +38,9 @@ def build_background_tasks(
     settings: BotSettings,
     bot_name: str,
     chat_summary_state: ChatSummaryState,
-    minigame_orchestrator: MinigameOrchestrator,
     chat_response_use_case: ChatResponseUseCase,
     outbound: ChatOutbound,
-    platform_auth: PlatformAuth,
+    platform_provider: PlatformProviders,
 ) -> BackgroundTasks:
     send_channel_message = outbound.send_channel_message
     notifications_port = TelegramNotificationAdapter(providers.telegram_providers.telegram_bot)
@@ -57,7 +61,7 @@ def build_background_tasks(
                 bot_nick=bot_name,
             ),
             TokenCheckerJob(
-                handle_token_checker_use_case=HandleTokenCheckerUseCase(platform_auth=platform_auth, interval_seconds=1000),
+                handle_token_checker_use_case=HandleTokenCheckerUseCase(platform_auth=platform_provider.platform_auth),
             ),
             StreamStatusJob(
                 channel_name=settings.channel_name,
@@ -65,13 +69,12 @@ def build_background_tasks(
                     user_cache=providers.user_providers.user_cache,
                     stream_status_port=providers.stream_providers.stream_status_port,
                     unit_of_work_factory=uow_factories.build_stream_status_uow_factory(),
-                    minigame_service=providers.minigame_providers.minigame_service,
+                    minigame_repository=providers.minigame_providers.minigame_repository,
                     notifications_port=notifications_port,
                     notification_group_id=settings.group_id,
                     chat_response_port=chat_response_port,
                     state=chat_summary_state,
                 ),
-                stream_status_interval_seconds=settings.check_stream_status_interval_seconds,
             ),
             ChatSummarizerJob(
                 channel_name=settings.channel_name,
@@ -84,7 +87,48 @@ def build_background_tasks(
             MinigameTickJob(
                 channel_name=settings.channel_name,
                 handle_minigame_tick_use_case=HandleMinigameTickUseCase(
-                    minigame_orchestrator=minigame_orchestrator,
+                    minigame_repository=providers.minigame_providers.minigame_repository,
+                    minigame_ouw=uow_factories.build_minigame_uow_factory(),
+                    start_number_guess_game_use_case=StartNumberGuessGameUseCase(
+                        minigame_repository=providers.minigame_providers.minigame_repository,
+                        prefix=settings.prefix,
+                        command_name=settings.command_guess,
+                        send_channel_message=send_channel_message,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=settings.bot_name.lower(),
+                    ),
+                    start_word_game_use_case=StartWordGameUseCase(
+                        minigame_repository=providers.minigame_providers.minigame_repository,
+                        prefix=settings.prefix,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        db_ro_session=db_ro_session,
+                        system_prompt_repository_provider=providers.ai_providers.system_prompt_repo_provider,
+                        llm_repository=providers.ai_providers.llm_repository,
+                        command_guess_word=settings.command_guess_word,
+                        command_guess_letter=settings.command_guess_letter,
+                        send_channel_message=send_channel_message,
+                        bot_name=settings.bot_name.lower(),
+                    ),
+                    start_rps_game_use_case=StartRpsGameUseCase(
+                        minigame_repository=providers.minigame_providers.minigame_repository,
+                        prefix=settings.prefix,
+                        command_name=settings.command_rps,
+                        send_channel_message=send_channel_message,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=settings.bot_name.lower(),
+                    ),
+                    finish_rps_game_use_case=FinishRpsUseCase(
+                        minigame_repository=providers.minigame_providers.minigame_repository,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=settings.bot_name.lower(),
+                        send_channel_message=send_channel_message,
+                    ),
+                    finish_expired_games_use_case=FinishExpiredGamesUseCase(
+                        minigame_repository=providers.minigame_providers.minigame_repository,
+                        send_channel_message=send_channel_message,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=settings.bot_name.lower(),
+                    ),
                 ),
             ),
             ViewerTimeJob(
@@ -95,15 +139,13 @@ def build_background_tasks(
                     stream_chatters_port=providers.stream_providers.stream_chatters_port,
                 ),
                 bot_nick=bot_name,
-                check_interval_seconds=settings.check_viewers_interval_seconds,
             ),
             FollowersSyncJob(
                 channel_name=settings.channel_name,
                 handle_followers_sync_use_case=HandleFollowersSyncUseCase(
-                    followers_port=providers.follow_providers.followers_port,
-                    unit_of_work_factory=uow_factories.build_followers_sync_uow_factory(),
+                    platform_port=platform_provider.streaming_platform,
+                    sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
                 ),
-                interval_seconds=settings.sync_followers_interval_seconds,
             ),
         ],
     )

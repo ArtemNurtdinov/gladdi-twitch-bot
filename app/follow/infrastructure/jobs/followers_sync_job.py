@@ -9,17 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 class FollowersSyncJob:
+    SYNC_FOLLOWERS_INTERVAL_SECONDS = 24 * 60 * 60
     name = "sync_followers"
 
-    def __init__(
-        self,
-        channel_name: str,
-        handle_followers_sync_use_case: HandleFollowersSyncUseCase,
-        interval_seconds: int = 24 * 60 * 60,
-    ):
+    def __init__(self, channel_name: str, handle_followers_sync_use_case: HandleFollowersSyncUseCase):
         self._channel_name = channel_name
         self._handle_followers_sync_use_case = handle_followers_sync_use_case
-        self._interval_seconds = interval_seconds
 
     def register(self, runner: BackgroundTaskRunner):
         runner.register(self.name, self.run)
@@ -34,4 +29,4 @@ class FollowersSyncJob:
             except Exception as e:
                 logger.error(f"Ошибка в FollowersSyncJob: {e}")
 
-            await asyncio.sleep(self._interval_seconds)
+            await asyncio.sleep(self.SYNC_FOLLOWERS_INTERVAL_SECONDS)

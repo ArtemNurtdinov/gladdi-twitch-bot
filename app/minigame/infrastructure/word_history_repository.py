@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.minigame.domain.repo import WordHistoryRepository
+from app.minigame.domain.word_history_repository import WordHistoryRepository
 from app.minigame.infrastructure.db.word_history import WordHistory as OrmWordHistory
 
 

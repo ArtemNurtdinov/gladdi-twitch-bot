@@ -34,7 +34,7 @@ from app.commands.top_bottom.application.handle_top_bottom_use_case import Handl
 from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandler
-from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
+from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.streaming import StreamingPlatformPort
@@ -205,8 +205,8 @@ def build_command_registry(
         command_guess_letter=settings.command_guess_letter,
         command_guess_word=settings.command_guess_word,
         handle_guess_use_case=HandleGuessUseCase(
-            minigame_service=providers.minigame_providers.minigame_service,
-            unit_of_work_factory=uow_factories.build_guess_uow_factory(),
+            minigame_repository=providers.minigame_providers.minigame_repository,
+            guess_uow=uow_factories.build_guess_uow_factory(),
         ),
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
@@ -215,8 +215,8 @@ def build_command_registry(
         command_prefix=prefix,
         command_name=settings.command_rps,
         handle_rps_use_case=HandleRpsUseCase(
-            minigame_service=providers.minigame_providers.minigame_service,
-            unit_of_work_factory=uow_factories.build_rps_uow_factory(),
+            minigame_repository=providers.minigame_providers.minigame_repository,
+            rps_uow=uow_factories.build_rps_uow_factory(),
         ),
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
