@@ -2,8 +2,8 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.joke.application.handle_post_joke_use_case import HandlePostJokeUseCase
-from app.joke.application.model import PostJokeDTO
+from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
+from app.joke.application.model.post_joke import PostJokeDTO
 from core.background.task_runner import BackgroundTaskRunner
 
 
