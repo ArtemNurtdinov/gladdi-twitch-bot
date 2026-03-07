@@ -7,7 +7,7 @@ from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleC
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
-from app.joke.application.post_joke_job import PostJokeJob
+from app.joke.application.job.post_joke_job import PostJokeJob
 from app.minigame.application.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.minigame.application.minigame_tick_job import MinigameTickJob

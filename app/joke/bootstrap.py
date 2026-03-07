@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from app.joke.application.joke_use_case import JokeUseCase
+from app.joke.application.usecase.joke_use_case import JokeUseCase
 from app.joke.domain.joke_service import JokeService
 from app.joke.infrastructure.settings_repository import FileJokeSettingsRepository
 

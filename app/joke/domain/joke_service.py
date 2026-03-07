@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime
 
+from app.joke.domain.model.joke_settings import JokesSettings
 from app.joke.domain.models import (
-    BotSettings,
     JokeIntervalInfo,
     JokesIntervalDto,
     JokesResponseDto,
@@ -19,11 +19,11 @@ class JokeService:
     def __init__(self, settings_repo: JokeSettingsRepository):
         self.settings_repo = settings_repo
 
-    def _touch_updated(self, settings: BotSettings) -> BotSettings:
+    def _touch_updated(self, settings: JokesSettings) -> JokesSettings:
         settings.last_updated = datetime.now().isoformat()
         return settings
 
-    def _build_next_joke(self, settings: BotSettings) -> NextJokeInfo | None:
+    def _build_next_joke(self, settings: JokesSettings) -> NextJokeInfo | None:
         if not settings.jokes_enabled:
             return None
 

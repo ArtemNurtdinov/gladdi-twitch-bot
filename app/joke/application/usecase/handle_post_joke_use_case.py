@@ -1,5 +1,5 @@
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
-from app.joke.application.joke_uow import JokeUnitOfWorkFactory
+from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.domain.joke_service import JokeService
 from app.stream.application.port.stream_info_port import StreamInfoPort
