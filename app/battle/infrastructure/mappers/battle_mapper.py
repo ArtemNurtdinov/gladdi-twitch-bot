@@ -1,12 +1,9 @@
-from app.battle.domain.models import BattleRecord
+from app.battle.domain.model.battle import Battle
 from app.battle.infrastructure.db.battle_history import BattleHistory
 
 
-def map_battle_history(row: BattleHistory | None) -> BattleRecord | None:
-    if row is None:
-        return None
-
-    return BattleRecord(
+def map_battle_history(row: BattleHistory) -> Battle:
+    return Battle(
         id=row.id,
         channel_name=row.channel_name,
         opponent_1=row.opponent_1,

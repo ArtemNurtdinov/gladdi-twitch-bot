@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from app.battle.application.battle_use_case import BattleUseCase
+from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.battle.infrastructure.battle_repository import BattleRepositoryImpl
 from app.battle.infrastructure.battle_use_case_uow import SqlAlchemyBattleUseCaseUnitOfWorkFactory
 from core.db import db_ro_session, db_rw_session
@@ -18,7 +18,7 @@ def build_battle_providers() -> BattleProviders:
 
     def battle_use_case(db):
         return BattleUseCase(
-            unit_of_work_factory=SqlAlchemyBattleUseCaseUnitOfWorkFactory(
+            battle_uow=SqlAlchemyBattleUseCaseUnitOfWorkFactory(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
                 battle_repo_provider=Provider(battle_repo),
