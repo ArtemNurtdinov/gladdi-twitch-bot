@@ -1,6 +1,6 @@
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.joke.application.joke_uow import JokeUnitOfWorkFactory
-from app.joke.application.model import PostJokeDTO
+from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.domain.joke_service import JokeService
 from app.stream.application.port.stream_info_port import StreamInfoPort
 from app.user.application.ports.user_cache_port import UserCachePort
@@ -21,10 +21,7 @@ class HandlePostJokeUseCase:
         self._chat_response_use_case = chat_response_use_case
         self._unit_of_work_factory = unit_of_work_factory
 
-    async def handle(
-        self,
-        post_joke: PostJokeDTO,
-    ) -> str | None:
+    async def handle(self, post_joke: PostJokeDTO) -> str | None:
         if not self._joke_service.should_generate_jokes():
             return None
 
