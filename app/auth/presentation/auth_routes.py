@@ -8,6 +8,7 @@ from app.auth.application.contracts import LoginResponse, TokenResponse, UserCre
 from app.auth.application.dto import UserCreateDto, UserDto, UserUpdateDto
 from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
 from app.auth.application.usecase.get_user_by_id_use_case import GetUserByIdUseCase
+from app.auth.application.usecase.get_users_use_case import GetUsersUseCase
 from app.auth.application.usecase.login_use_case import LoginUseCase
 from bootstrap.auth_provider import (
     get_admin_user,
@@ -16,6 +17,7 @@ from bootstrap.auth_provider import (
     get_login_use_case,
     get_user_by_email_use_case,
     get_user_by_id_use_case,
+    get_users_use_case,
 )
 
 router = APIRouter()
@@ -59,9 +61,9 @@ async def get_users(
     skip: int = 0,
     limit: int = 100,
     current_user: UserDto = Depends(get_admin_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    users_use_case: GetUsersUseCase = Depends(get_users_use_case),
 ):
-    users = auth_service.get_users(skip, limit)
+    users = users_use_case.get_users(skip, limit)
     return [UserResponse.model_validate(user) for user in users]
 
 
