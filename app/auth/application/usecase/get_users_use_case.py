@@ -8,6 +8,6 @@ class GetUsersUseCase:
         self._auth_repo = auth_repo
         self._user_mapper = user_mapper
 
-    def get_users(self, skip: int = 0, limit: int = 100) -> list[UserDto]:
+    def get_users(self, skip: int, limit: int) -> list[UserDto]:
         users = self._auth_repo.list_users(skip, limit)
         return [self._user_mapper.map_user_to_dto(user) for user in users]
