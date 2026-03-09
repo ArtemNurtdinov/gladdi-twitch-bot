@@ -5,7 +5,7 @@ from jose import jwt
 
 from app.auth.application.dto import TokenDto
 from app.auth.application.mapper.token_mapper import TokenMapper
-from app.auth.application.model import TokenData
+from app.auth.application.model.token import TokenData
 from app.auth.domain.auth_repository import AuthRepository
 from app.auth.domain.model.user import User
 

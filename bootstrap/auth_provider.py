@@ -3,9 +3,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.auth.application.auth_service import AuthService
-from app.auth.application.dto import UserDto, UserRole
+from app.auth.application.dto import UserRole
 from app.auth.application.mapper.token_mapper import TokenMapper
 from app.auth.application.mapper.user_mapper import UserMapper
+from app.auth.application.model.user import UserDTO
 from app.auth.application.usecase.create_access_token_use_case import CreateAccessTokenUseCase
 from app.auth.application.usecase.create_user_from_admin_use_case import CreateUserFromAdminUseCase
 from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
@@ -114,14 +115,14 @@ def get_create_user_from_admin_use_case(
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(get_validate_access_token_use_case),
-) -> UserDto:
+) -> UserDTO:
     user = validate_access_token_use_case.validate_access_token(credentials.credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
     return user
 
 
-def get_admin_user(current_user: UserDto = Depends(get_current_user)) -> UserDto:
+def get_admin_user(current_user: UserDTO = Depends(get_current_user)) -> UserDTO:
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недостаточно прав доступа")
     return current_user
@@ -130,7 +131,7 @@ def get_admin_user(current_user: UserDto = Depends(get_current_user)) -> UserDto
 def get_optional_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
     validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(get_validate_access_token_use_case),
-) -> UserDto | None:
+) -> UserDTO | None:
     if credentials is None:
         return None
     user = validate_access_token_use_case.validate_access_token(credentials.credentials)

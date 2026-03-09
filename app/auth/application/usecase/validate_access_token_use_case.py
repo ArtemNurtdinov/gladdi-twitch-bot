@@ -4,9 +4,9 @@ from uuid import UUID
 from jose import JWTError, jwt
 from jose import exceptions as jose_exceptions
 
-from app.auth.application.dto import UserDto
 from app.auth.application.mapper.user_mapper import UserMapper
-from app.auth.application.model import TokenPayload
+from app.auth.application.model.token import TokenPayload
+from app.auth.application.model.user import UserDTO
 from app.auth.domain.auth_repository import AuthRepository
 from app.auth.domain.model.role import UserRole
 
@@ -18,7 +18,7 @@ class ValidateAccessTokenUseCase:
         self._auth_repo = auth_repo
         self._user_mapper = user_mapper
 
-    def validate_access_token(self, token: str) -> UserDto | None:
+    def validate_access_token(self, token: str) -> UserDTO | None:
         try:
             payload = jwt.decode(token, self._secret, algorithms=[self._algorithm])
 

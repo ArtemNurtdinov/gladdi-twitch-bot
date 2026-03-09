@@ -1,5 +1,6 @@
-from app.auth.application.dto import UserCreateDto, UserDto
+from app.auth.application.dto import UserCreateDto
 from app.auth.application.mapper.user_mapper import UserMapper
+from app.auth.application.model.user import UserDTO
 from app.auth.application.ports.password_hasher import PasswordHasher
 from app.auth.domain.auth_repository import AuthRepository
 from app.auth.domain.models import UserCreateData
@@ -11,7 +12,7 @@ class CreateUserFromAdminUseCase:
         self._auth_repo = auth_repo
         self._user_mapper = user_mapper
 
-    def create_user(self, user_data: UserCreateDto) -> UserDto:
+    def create_user(self, user_data: UserCreateDto) -> UserDTO:
         user_create = self._map_user_create_to_domain(user_data)
         hashed_password = self._password_hasher.hash_password(user_data.password)
         user = self._auth_repo.create_user(user_create, hashed_password)

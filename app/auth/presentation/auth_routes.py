@@ -5,7 +5,8 @@ from fastapi.security import HTTPBearer
 
 from app.auth.application.auth_service import AuthService
 from app.auth.application.contracts import LoginResponse, TokenResponse, UserCreate, UserLogin, UserResponse, UserUpdate
-from app.auth.application.dto import UserCreateDto, UserDto, UserUpdateDto
+from app.auth.application.dto import UserCreateDto, UserUpdateDto
+from app.auth.application.model.user import UserDTO
 from app.auth.application.usecase.create_user_from_admin_use_case import CreateUserFromAdminUseCase
 from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
 from app.auth.application.usecase.get_user_by_id_use_case import GetUserByIdUseCase
@@ -30,7 +31,7 @@ security = HTTPBearer()
 @admin_router.post("/users", response_model=UserResponse)
 async def create_user(
     user_data: UserCreate,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     user_by_email_use_case: GetUserByEmailUseCase = Depends(get_user_by_email_use_case),
     create_user_from_admin_use_case: CreateUserFromAdminUseCase = Depends(get_create_user_from_admin_use_case),
 ):
@@ -54,7 +55,7 @@ async def create_user(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: UserDto = Depends(get_current_user)):
+async def get_me(current_user: UserDTO = Depends(get_current_user)):
     return UserResponse.model_validate(current_user).model_dump()
 
 
@@ -62,7 +63,7 @@ async def get_me(current_user: UserDto = Depends(get_current_user)):
 async def get_users(
     skip: int = 0,
     limit: int = 100,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     users_use_case: GetUsersUseCase = Depends(get_users_use_case),
 ):
     users = users_use_case.get_users(skip, limit)
@@ -72,7 +73,7 @@ async def get_users(
 @admin_router.get("/users/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     user_by_id_use_case: GetUserByIdUseCase = Depends(get_user_by_id_use_case),
 ):
     user = user_by_id_use_case.get_user_by_id(user_id)
@@ -85,7 +86,7 @@ async def get_user(
 async def update_user(
     user_id: UUID,
     user_data: UserUpdate,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
     user_by_email_use_case: GetUserByEmailUseCase = Depends(get_user_by_email_use_case),
 ):
@@ -111,7 +112,7 @@ async def update_user(
 @admin_router.delete("/users/{user_id}")
 async def delete_user(
     user_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     if user_id == current_user.id:
@@ -128,7 +129,7 @@ async def delete_user(
 async def get_tokens(
     skip: int = 0,
     limit: int = 100,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     tokens = auth_service.get_tokens(skip, limit)
@@ -138,7 +139,7 @@ async def get_tokens(
 @admin_router.get("/tokens/{token_id}", response_model=TokenResponse)
 async def get_token(
     token_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     token = auth_service.get_token_by_id(token_id)
@@ -150,7 +151,7 @@ async def get_token(
 @admin_router.patch("/tokens/{token_id}/deactivate")
 async def deactivate_token(
     token_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     success = auth_service.deactivate_token(token_id)
@@ -162,7 +163,7 @@ async def deactivate_token(
 @admin_router.delete("/tokens/{token_id}")
 async def delete_token(
     token_id: UUID,
-    current_user: UserDto = Depends(get_admin_user),
+    current_user: UserDTO = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     success = auth_service.delete_token(token_id)

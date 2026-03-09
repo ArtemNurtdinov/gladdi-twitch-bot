@@ -2,11 +2,11 @@ from uuid import UUID
 
 from app.auth.application.dto import (
     TokenDto,
-    UserDto,
     UserUpdateDto,
 )
 from app.auth.application.mapper.token_mapper import TokenMapper
 from app.auth.application.mapper.user_mapper import UserMapper
+from app.auth.application.model.user import UserDTO
 from app.auth.application.ports.password_hasher import PasswordHasher
 from app.auth.domain.auth_repository import AuthRepository
 from app.auth.domain.models import UserUpdateData
@@ -35,7 +35,7 @@ class AuthService:
             is_active=user_data.is_active,
         )
 
-    def update_user(self, user_id: UUID, user_data: UserUpdateDto) -> UserDto | None:
+    def update_user(self, user_id: UUID, user_data: UserUpdateDto) -> UserDTO | None:
         updates = self._to_domain_update(user_data)
         updates.password = self._password_hasher.hash_password(user_data.password) if user_data.password else None
         user = self._repo.update_user(user_id, updates)

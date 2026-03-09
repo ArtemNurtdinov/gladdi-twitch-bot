@@ -1,10 +1,10 @@
-from app.auth.application.dto import UserDto
+from app.auth.application.model.user import UserDTO
 from app.auth.domain.model.user import User
 
 
 class UserMapper:
-    def map_user_to_dto(self, user: User) -> UserDto:
-        return UserDto(
+    def map_user_to_dto(self, user: User) -> UserDTO:
+        return UserDTO(
             id=user.id,
             email=user.email,
             first_name=user.first_name,
