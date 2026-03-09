@@ -59,10 +59,6 @@ class AuthService:
         user = self._repo.create_user(domain_input, hashed_password)
         return self._user_mapper.map_user_to_dto(user)
 
-    def get_user_by_id(self, user_id: UUID) -> UserDto | None:
-        user = self._repo.get_user_by_id(user_id)
-        return self._user_mapper.map_user_to_dto(user) if user else None
-
     def get_users(self, skip: int = 0, limit: int = 100) -> list[UserDto]:
         users = self._repo.list_users(skip, limit)
         return [self._user_mapper.map_user_to_dto(user) for user in users]

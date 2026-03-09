@@ -7,8 +7,16 @@ from app.auth.application.auth_service import AuthService
 from app.auth.application.contracts import LoginResponse, TokenResponse, UserCreate, UserLogin, UserResponse, UserUpdate
 from app.auth.application.dto import UserCreateDto, UserDto, UserUpdateDto
 from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
+from app.auth.application.usecase.get_user_by_id_use_case import GetUserByIdUseCase
 from app.auth.application.usecase.login_use_case import LoginUseCase
-from bootstrap.auth_provider import get_admin_user, get_auth_service, get_current_user, get_login_use_case, get_user_by_email_use_case
+from bootstrap.auth_provider import (
+    get_admin_user,
+    get_auth_service,
+    get_current_user,
+    get_login_use_case,
+    get_user_by_email_use_case,
+    get_user_by_id_use_case,
+)
 
 router = APIRouter()
 admin_router = APIRouter()
@@ -61,9 +69,9 @@ async def get_users(
 async def get_user(
     user_id: UUID,
     current_user: UserDto = Depends(get_admin_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    user_by_id_use_case: GetUserByIdUseCase = Depends(get_user_by_id_use_case),
 ):
-    user = auth_service.get_user_by_id(user_id)
+    user = user_by_id_use_case.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     return UserResponse.model_validate(user)

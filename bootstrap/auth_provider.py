@@ -8,6 +8,7 @@ from app.auth.application.mapper.token_mapper import TokenMapper
 from app.auth.application.mapper.user_mapper import UserMapper
 from app.auth.application.usecase.create_access_token_use_case import CreateAccessTokenUseCase
 from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
+from app.auth.application.usecase.get_user_by_id_use_case import GetUserByIdUseCase
 from app.auth.application.usecase.login_use_case import LoginUseCase
 from app.auth.application.usecase.validate_access_token_use_case import ValidateAccessTokenUseCase
 from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
@@ -72,6 +73,13 @@ def get_login_use_case(
         create_access_token_use_case=create_access_token_use_case,
         user_mapper=UserMapper(),
     )
+
+
+def get_user_by_id_use_case(
+    session: Session = Depends(get_db),
+) -> GetUserByIdUseCase:
+    auth_repo = AuthRepositoryImpl(session)
+    return GetUserByIdUseCase(auth_repo)
 
 
 def get_user_by_email_use_case(
