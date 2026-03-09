@@ -7,6 +7,7 @@ from app.auth.application.dto import UserDto, UserRole
 from app.auth.application.mapper.token_mapper import TokenMapper
 from app.auth.application.mapper.user_mapper import UserMapper
 from app.auth.application.usecase.create_access_token_use_case import CreateAccessTokenUseCase
+from app.auth.application.usecase.create_user_from_admin_use_case import CreateUserFromAdminUseCase
 from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
 from app.auth.application.usecase.get_user_by_id_use_case import GetUserByIdUseCase
 from app.auth.application.usecase.get_users_use_case import GetUsersUseCase
@@ -80,7 +81,7 @@ def get_user_by_id_use_case(
     session: Session = Depends(get_db),
 ) -> GetUserByIdUseCase:
     auth_repo = AuthRepositoryImpl(session)
-    return GetUserByIdUseCase(auth_repo)
+    return GetUserByIdUseCase(auth_repository=auth_repo, user_mapper=UserMapper())
 
 
 def get_user_by_email_use_case(
@@ -97,6 +98,17 @@ def get_users_use_case(
     auth_repo = AuthRepositoryImpl(session)
     user_mapper = UserMapper()
     return GetUsersUseCase(auth_repo, user_mapper)
+
+
+def get_create_user_from_admin_use_case(
+    session: Session = Depends(get_db),
+) -> CreateUserFromAdminUseCase:
+    auth_repo = AuthRepositoryImpl(session)
+    return CreateUserFromAdminUseCase(
+        password_hasher=BcryptPasswordHasher(),
+        auth_repo=auth_repo,
+        user_mapper=UserMapper(),
+    )
 
 
 def get_current_user(

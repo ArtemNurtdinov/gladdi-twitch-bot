@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer
 from app.auth.application.auth_service import AuthService
 from app.auth.application.contracts import LoginResponse, TokenResponse, UserCreate, UserLogin, UserResponse, UserUpdate
 from app.auth.application.dto import UserCreateDto, UserDto, UserUpdateDto
+from app.auth.application.usecase.create_user_from_admin_use_case import CreateUserFromAdminUseCase
 from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
 from app.auth.application.usecase.get_user_by_id_use_case import GetUserByIdUseCase
 from app.auth.application.usecase.get_users_use_case import GetUsersUseCase
@@ -13,6 +14,7 @@ from app.auth.application.usecase.login_use_case import LoginUseCase
 from bootstrap.auth_provider import (
     get_admin_user,
     get_auth_service,
+    get_create_user_from_admin_use_case,
     get_current_user,
     get_login_use_case,
     get_user_by_email_use_case,
@@ -29,8 +31,8 @@ security = HTTPBearer()
 async def create_user(
     user_data: UserCreate,
     current_user: UserDto = Depends(get_admin_user),
-    auth_service: AuthService = Depends(get_auth_service),
     user_by_email_use_case: GetUserByEmailUseCase = Depends(get_user_by_email_use_case),
+    create_user_from_admin_use_case: CreateUserFromAdminUseCase = Depends(get_create_user_from_admin_use_case),
 ):
     existing_user = user_by_email_use_case.get_user_by_email(user_data.email)
     if existing_user:
@@ -47,7 +49,7 @@ async def create_user(
         role=user_data.role,
         is_active=user_data.is_active,
     )
-    user = auth_service.create_user_from_admin(app_input)
+    user = create_user_from_admin_use_case.create_user(app_input)
     return UserResponse.model_validate(user)
 
 

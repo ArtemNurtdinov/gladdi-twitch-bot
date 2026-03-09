@@ -2,10 +2,9 @@ from sqlalchemy import text
 
 from app.ai.gen.conversation.infrastructure.db.ai_message import AIMessage
 from app.ai.gen.prompt.infrastructure.db.system_prompt import SystemPromptRow
-from app.auth.application.auth_service import AuthService
 from app.auth.application.dto import UserCreateDto, UserRole
-from app.auth.application.mapper.token_mapper import TokenMapper
 from app.auth.application.mapper.user_mapper import UserMapper
+from app.auth.application.usecase.create_user_from_admin_use_case import CreateUserFromAdminUseCase
 from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
 from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
 from app.auth.infrastructure.db.access_token import AccessToken
@@ -87,10 +86,12 @@ def create_admin():
         )
 
         with db_rw_session() as db:
-            auth_service = AuthService(
-                repo=AuthRepositoryImpl(db), password_hasher=password_hasher, user_mapper=user_mapper, token_mapper=TokenMapper()
+            create_user_use_case = CreateUserFromAdminUseCase(
+                password_hasher=password_hasher,
+                auth_repo=AuthRepositoryImpl(db),
+                user_mapper=UserMapper(),
             )
-            user = auth_service.create_user_from_admin(user_data)
+            user = create_user_use_case.create_user(user_data)
             print("    Администратор успешно создан!")
             print(f"   ID: {user.id}")
             print(f"   Email: {user.email}")
