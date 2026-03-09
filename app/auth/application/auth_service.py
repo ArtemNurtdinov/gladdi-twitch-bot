@@ -29,9 +29,6 @@ class AuthService:
     def hash_password(self, password: str) -> str:
         return self._password_hasher.hash_password(password)
 
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        return self._password_hasher.verify_password(plain_password, hashed_password)
-
     def _to_domain_create(self, user_data: UserCreateDto) -> UserCreateData:
         return UserCreateData(
             email=user_data.email,
