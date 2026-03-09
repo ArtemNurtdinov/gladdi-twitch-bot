@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth.domain.auth_repository import AuthRepository
 from app.auth.domain.model.access_token import (
     AccessToken as DomainAccessToken,
 )
@@ -15,7 +16,6 @@ from app.auth.domain.models import (
     UserCreateData,
     UserUpdateData,
 )
-from app.auth.domain.repo import AuthRepository
 from app.auth.infrastructure.db.access_token import AccessToken as OrmAccessToken
 from app.auth.infrastructure.db.user import User as OrmUser
 

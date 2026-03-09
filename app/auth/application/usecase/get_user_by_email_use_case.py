@@ -1,6 +1,6 @@
 from app.auth.application.dto import UserDto
 from app.auth.application.mapper.user_mapper import UserMapper
-from app.auth.domain.repo import AuthRepository
+from app.auth.domain.auth_repository import AuthRepository
 
 
 class GetUserByEmailUseCase:

@@ -9,8 +9,8 @@ from app.auth.application.dto import (
 from app.auth.application.mapper.token_mapper import TokenMapper
 from app.auth.application.mapper.user_mapper import UserMapper
 from app.auth.application.ports.password_hasher import PasswordHasher
+from app.auth.domain.auth_repository import AuthRepository
 from app.auth.domain.models import UserCreateData, UserUpdateData
-from app.auth.domain.repo import AuthRepository
 
 
 class AuthService:
@@ -25,9 +25,6 @@ class AuthService:
         self._password_hasher = password_hasher
         self._user_mapper = user_mapper
         self._token_mapper = token_mapper
-
-    def hash_password(self, password: str) -> str:
-        return self._password_hasher.hash_password(password)
 
     def _to_domain_create(self, user_data: UserCreateDto) -> UserCreateData:
         return UserCreateData(
@@ -51,14 +48,14 @@ class AuthService:
 
     def create_user_from_admin(self, user_data: UserCreateDto) -> UserDto:
         domain_input = self._to_domain_create(user_data)
-        hashed_password = self.hash_password(user_data.password)
+        hashed_password = self._password_hasher.hash_password(user_data.password)
 
         user = self._repo.create_user(domain_input, hashed_password)
         return self._user_mapper.map_user_to_dto(user)
 
     def update_user(self, user_id: UUID, user_data: UserUpdateDto) -> UserDto | None:
         updates = self._to_domain_update(user_data)
-        updates.password = self.hash_password(user_data.password) if user_data.password else None
+        updates.password = self._password_hasher.hash_password(user_data.password) if user_data.password else None
         user = self._repo.update_user(user_id, updates)
         return self._user_mapper.map_user_to_dto(user) if user else None
 

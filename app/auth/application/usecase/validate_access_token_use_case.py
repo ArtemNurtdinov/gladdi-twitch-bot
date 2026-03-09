@@ -7,8 +7,8 @@ from jose import exceptions as jose_exceptions
 from app.auth.application.dto import UserDto
 from app.auth.application.mapper.user_mapper import UserMapper
 from app.auth.application.model import TokenPayload
+from app.auth.domain.auth_repository import AuthRepository
 from app.auth.domain.model.role import UserRole
-from app.auth.domain.repo import AuthRepository
 
 
 class ValidateAccessTokenUseCase:

@@ -2,7 +2,7 @@ from app.auth.application.dto import LoginResultDto
 from app.auth.application.mapper.user_mapper import UserMapper
 from app.auth.application.ports.password_hasher import PasswordHasher
 from app.auth.application.usecase.create_access_token_use_case import CreateAccessTokenUseCase
-from app.auth.domain.repo import AuthRepository
+from app.auth.domain.auth_repository import AuthRepository
 
 
 class LoginUseCase:
