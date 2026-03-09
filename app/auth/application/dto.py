@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from app.auth.domain.models import UserRole
+from app.auth.domain.model.role import UserRole
 
 
 @dataclass(frozen=True)

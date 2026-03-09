@@ -4,6 +4,8 @@ from app.ai.gen.conversation.infrastructure.db.ai_message import AIMessage
 from app.ai.gen.prompt.infrastructure.db.system_prompt import SystemPromptRow
 from app.auth.application.auth_service import AuthService
 from app.auth.application.dto import UserCreateDto, UserRole
+from app.auth.application.mapper.user_mapper import UserMapper
+from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
 from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
 from app.auth.infrastructure.db.access_token import AccessToken
 from app.auth.infrastructure.db.user import User
@@ -30,8 +32,7 @@ def test_connection():
             version = result.scalar()
             print(f"Подключение успешно! Версия PostgreSQL: {version}")
 
-            tables_result = connection.execute(
-                text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
+            tables_result = connection.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
             tables = [row[0] for row in tables_result]
 
             if tables:
@@ -63,8 +64,7 @@ def create_tables():
         print("Таблицы успешно созданы!")
 
         with get_engine().connect() as connection:
-            tables_result = connection.execute(
-                text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
+            tables_result = connection.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
             tables = [row[0] for row in tables_result]
             print(f"Таблицы после создания: {', '.join(tables)}")
 
@@ -81,22 +81,16 @@ def create_admin():
             access_token_expires_minutes=config.application.access_token_expire_minutes,
         )
         password_hasher = BcryptPasswordHasher()
+        user_mapper = UserMapper()
         with db_ro_session() as db:
-            auth_service = AuthService(
-                repo=AuthRepositoryImpl(db),
-                password_hasher=password_hasher,
-                token_service=token_service,
-            )
-            existing_user = auth_service.get_user_by_email("artem.nefrit@gmail.com")
+            get_user_by_email_use_case = GetUserByEmailUseCase(auth_repository=AuthRepositoryImpl(db), user_mapper=UserMapper())
+            existing_user = get_user_by_email_use_case.get_user_by_email("artem.nefrit@gmail.com")
             if existing_user:
                 print("   Пользователь с email 'artem.nefrit@gmail.com' уже существует!")
-                print(f"   ID: {existing_user.id}")
-                print(f"   Роль: {existing_user.role.value}")
                 return
 
         user_data = UserCreateDto(
-            email="artem.nefrit@gmail.com", first_name="Артем", last_name="Нуртдинов", password="12345",
-            role=UserRole.ADMIN, is_active=True
+            email="artem.nefrit@gmail.com", first_name="Артем", last_name="Нуртдинов", password="12345", role=UserRole.ADMIN, is_active=True
         )
 
         with db_rw_session() as db:
@@ -104,6 +98,7 @@ def create_admin():
                 repo=AuthRepositoryImpl(db),
                 password_hasher=password_hasher,
                 token_service=token_service,
+                user_mapper=user_mapper,
             )
             user = auth_service.create_user_from_admin(user_data)
             print("    Администратор успешно создан!")

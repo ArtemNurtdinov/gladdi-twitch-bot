@@ -4,6 +4,12 @@ from sqlalchemy.orm import Session
 
 from app.auth.application.auth_service import AuthService
 from app.auth.application.dto import UserDto, UserRole
+from app.auth.application.mapper.token_mapper import TokenMapper
+from app.auth.application.mapper.user_mapper import UserMapper
+from app.auth.application.usecase.create_access_token_use_case import CreateAccessTokenUseCase
+from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
+from app.auth.application.usecase.login_use_case import LoginUseCase
+from app.auth.application.usecase.validate_access_token_use_case import ValidateAccessTokenUseCase
 from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
 from app.auth.infrastructure.jwt_token_service import JwtTokenService
 from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
@@ -15,8 +21,12 @@ security = HTTPBearer()
 security_optional = HTTPBearer(auto_error=False)
 
 
-def get_auth_service(db: Session = Depends(get_db), config: Config = Depends(get_config)) -> AuthService:
-    auth_repo = AuthRepositoryImpl(db)
+def get_auth_service(
+    session: Session = Depends(get_db),
+    config: Config = Depends(get_config),
+) -> AuthService:
+    user_mapper = UserMapper()
+    auth_repo = AuthRepositoryImpl(session)
     return AuthService(
         repo=auth_repo,
         password_hasher=BcryptPasswordHasher(),
@@ -25,7 +35,52 @@ def get_auth_service(db: Session = Depends(get_db), config: Config = Depends(get
             algorithm=config.application.auth_secret_algorithm,
             access_token_expires_minutes=config.application.access_token_expire_minutes,
         ),
+        user_mapper=user_mapper,
     )
+
+
+def get_create_access_token_use_case(
+    session: Session = Depends(get_db),
+    config: Config = Depends(get_config),
+) -> CreateAccessTokenUseCase:
+    token_mapper = TokenMapper()
+    return CreateAccessTokenUseCase(
+        secret=config.application.auth_secret,
+        algorithm=config.application.auth_secret_algorithm,
+        access_token_expires_minutes=config.application.access_token_expire_minutes,
+        auth_repo=AuthRepositoryImpl(session),
+        token_mapper=token_mapper,
+    )
+
+
+def get_validate_access_token_use_case(
+    config: Config = Depends(get_config),
+) -> ValidateAccessTokenUseCase:
+    return ValidateAccessTokenUseCase(
+        secret=config.application.auth_secret,
+        algorithm=config.application.auth_secret_algorithm,
+    )
+
+
+def get_login_use_case(
+    session: Session = Depends(get_db),
+    create_access_token_use_case: CreateAccessTokenUseCase = Depends(get_create_access_token_use_case),
+) -> LoginUseCase:
+    auth_repo = AuthRepositoryImpl(session)
+    return LoginUseCase(
+        auth_repo=auth_repo,
+        password_hasher=BcryptPasswordHasher(),
+        create_access_token_use_case=create_access_token_use_case,
+        user_mapper=UserMapper(),
+    )
+
+
+def get_user_by_email_use_case(
+    session: Session = Depends(get_db),
+) -> GetUserByEmailUseCase:
+    auth_repo = AuthRepositoryImpl(session)
+    user_mapper = UserMapper()
+    return GetUserByEmailUseCase(auth_repo, user_mapper)
 
 
 def get_current_user(

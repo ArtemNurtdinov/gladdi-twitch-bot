@@ -5,15 +5,13 @@ from jose import JWTError, jwt
 from jose import exceptions as jose_exceptions
 
 from app.auth.application.model import TokenPayload
-from app.auth.application.ports.token_service import TokenService
 from app.auth.domain.model.role import UserRole
 
 
-class JwtTokenService(TokenService):
-    def __init__(self, secret: str, algorithm: str, access_token_expires_minutes: int):
+class ValidateAccessTokenUseCase:
+    def __init__(self, secret: str, algorithm: str):
         self._secret = secret
         self._algorithm = algorithm
-        self._access_token_expires_minutes = access_token_expires_minutes
 
     def validate_access_token(self, token: str) -> TokenPayload | None:
         try:

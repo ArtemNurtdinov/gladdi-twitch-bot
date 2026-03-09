@@ -6,7 +6,9 @@ from fastapi.security import HTTPBearer
 from app.auth.application.auth_service import AuthService
 from app.auth.application.contracts import LoginResponse, TokenResponse, UserCreate, UserLogin, UserResponse, UserUpdate
 from app.auth.application.dto import UserCreateDto, UserDto, UserUpdateDto
-from bootstrap.auth_provider import get_admin_user, get_auth_service, get_current_user
+from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEmailUseCase
+from app.auth.application.usecase.login_use_case import LoginUseCase
+from bootstrap.auth_provider import get_admin_user, get_auth_service, get_current_user, get_login_use_case, get_user_by_email_use_case
 
 router = APIRouter()
 admin_router = APIRouter()
@@ -18,8 +20,9 @@ async def create_user(
     user_data: UserCreate,
     current_user: UserDto = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
+    user_by_email_use_case: GetUserByEmailUseCase = Depends(get_user_by_email_use_case),
 ):
-    existing_user = auth_service.get_user_by_email(user_data.email)
+    existing_user = user_by_email_use_case.get_user_by_email(user_data.email)
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь с таким email уже существует")
 
@@ -72,9 +75,10 @@ async def update_user(
     user_data: UserUpdate,
     current_user: UserDto = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service),
+    user_by_email_use_case: GetUserByEmailUseCase = Depends(get_user_by_email_use_case),
 ):
     if user_data.email:
-        existing_user = auth_service.get_user_by_email(user_data.email)
+        existing_user = user_by_email_use_case.get_user_by_email(user_data.email)
         if existing_user and existing_user.id != user_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь с таким email уже существует")
 
@@ -156,11 +160,8 @@ async def delete_token(
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(
-    user_data: UserLogin,
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    result = auth_service.login(user_data.email, user_data.password)
+async def login(user_data: UserLogin, login_use_case: LoginUseCase = Depends(get_login_use_case)):
+    result = login_use_case.login(user_data.email, user_data.password)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль", headers={"WWW-Authenticate": "Bearer"}

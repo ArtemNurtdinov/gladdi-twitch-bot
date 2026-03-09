@@ -2,7 +2,9 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-from app.auth.domain.models import AccessToken, User, UserCreateData, UserUpdateData
+from app.auth.domain.model.access_token import AccessToken
+from app.auth.domain.model.user import User
+from app.auth.domain.models import UserCreateData, UserUpdateData
 
 
 class AuthRepository(Protocol):
@@ -12,7 +14,7 @@ class AuthRepository(Protocol):
 
     def list_users(self, skip: int, limit: int) -> list[User]: ...
 
-    def create_user(self, data: UserCreateData, hashed_password: str | None) -> User: ...
+    def create_user(self, data: UserCreateData, hashed_password: str) -> User: ...
 
     def update_user(self, user_id: UUID, updates: UserUpdateData) -> User | None: ...
 
