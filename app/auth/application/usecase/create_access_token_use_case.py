@@ -3,9 +3,8 @@ from datetime import datetime, timedelta
 
 from jose import jwt
 
-from app.auth.application.dto import TokenDto
 from app.auth.application.mapper.token_mapper import TokenMapper
-from app.auth.application.model.token import TokenData
+from app.auth.application.model.token import TokenData, TokenDTO
 from app.auth.domain.auth_repository import AuthRepository
 from app.auth.domain.model.user import User
 
@@ -20,7 +19,7 @@ class CreateAccessTokenUseCase:
         self._auth_repo = auth_repo
         self._token_mapper = token_mapper
 
-    def create_access_token(self, user: User) -> TokenDto:
+    def create_access_token(self, user: User) -> TokenDTO:
         issued_at_utc = datetime.utcnow()
         expires_at_utc = issued_at_utc + timedelta(minutes=self._access_token_expires_minutes)
 

@@ -1,10 +1,10 @@
-from app.auth.application.dto import TokenDto
+from app.auth.application.model.token import TokenDTO
 from app.auth.domain.model.access_token import AccessToken
 
 
 class TokenMapper:
-    def map_token_to_dto(self, token: AccessToken) -> TokenDto:
-        return TokenDto(
+    def map_token_to_dto(self, token: AccessToken) -> TokenDTO:
+        return TokenDTO(
             id=token.id,
             user_id=token.user_id,
             token=token.token,

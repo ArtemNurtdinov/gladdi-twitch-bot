@@ -1,5 +1,5 @@
-from app.auth.application.dto import LoginResultDto
 from app.auth.application.mapper.user_mapper import UserMapper
+from app.auth.application.model.login_result import LoginResultDTO
 from app.auth.application.ports.password_hasher import PasswordHasher
 from app.auth.application.usecase.create_access_token_use_case import CreateAccessTokenUseCase
 from app.auth.domain.auth_repository import AuthRepository
@@ -18,7 +18,7 @@ class LoginUseCase:
         self._create_access_token_use_case = create_access_token_use_case
         self._user_mapper = user_mapper
 
-    def login(self, email: str, password: str) -> LoginResultDto | None:
+    def login(self, email: str, password: str) -> LoginResultDTO | None:
         user = self._repo.get_user_by_email(email)
         if not user:
             return None
@@ -27,7 +27,7 @@ class LoginUseCase:
         if not user.is_active:
             return None
         token = self._create_access_token_use_case.create_access_token(user)
-        return LoginResultDto(
+        return LoginResultDTO(
             access_token=token.token,
             created_at=token.created_at,
             expires_at=token.expires_at,

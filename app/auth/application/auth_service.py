@@ -1,11 +1,11 @@
 from uuid import UUID
 
 from app.auth.application.dto import (
-    TokenDto,
     UserUpdateDto,
 )
 from app.auth.application.mapper.token_mapper import TokenMapper
 from app.auth.application.mapper.user_mapper import UserMapper
+from app.auth.application.model.token import TokenDTO
 from app.auth.application.model.user import UserDTO
 from app.auth.application.ports.password_hasher import PasswordHasher
 from app.auth.domain.auth_repository import AuthRepository
@@ -44,11 +44,11 @@ class AuthService:
     def delete_user(self, user_id: UUID) -> bool:
         return self._repo.delete_user(user_id)
 
-    def get_tokens(self, skip: int = 0, limit: int = 100) -> list[TokenDto]:
+    def get_tokens(self, skip: int = 0, limit: int = 100) -> list[TokenDTO]:
         tokens = self._repo.list_tokens(skip, limit)
         return [self._token_mapper.map_token_to_dto(token) for token in tokens]
 
-    def get_token_by_id(self, token_id: UUID) -> TokenDto | None:
+    def get_token_by_id(self, token_id: UUID) -> TokenDTO | None:
         token = self._repo.get_token_by_id(token_id)
         return self._token_mapper.map_token_to_dto(token) if token else None
 
