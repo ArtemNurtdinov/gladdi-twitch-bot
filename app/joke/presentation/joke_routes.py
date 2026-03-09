@@ -2,6 +2,9 @@ from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.joke.application.dto import JokeIntervalDto, JokesIntervalResultDto, JokesResponseDto, JokesStatusDto, NextJokeDto
+from app.joke.application.usecase.joke_use_case import JokeUseCase
+from app.joke.bootstrap import JokeProviders, build_joke_providers
 from app.joke.presentation.joke_schemas import (
     JokeInterval,
     JokesIntervalRequest,
@@ -10,9 +13,6 @@ from app.joke.presentation.joke_schemas import (
     JokesStatus,
     NextJoke,
 )
-from app.joke.application.dto import JokeIntervalDto, JokesIntervalResultDto, JokesResponseDto, JokesStatusDto, NextJokeDto
-from app.joke.application.usecase.joke_use_case import JokeUseCase
-from app.joke.bootstrap import JokeProviders, build_joke_providers
 
 router = APIRouter()
 

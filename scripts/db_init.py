@@ -73,7 +73,6 @@ def create_tables():
 def create_admin():
     try:
         password_hasher = BcryptPasswordHasher()
-        user_mapper = UserMapper()
         with db_ro_session() as db:
             get_user_by_email_use_case = GetUserByEmailUseCase(auth_repository=AuthRepositoryImpl(db), user_mapper=UserMapper())
             existing_user = get_user_by_email_use_case.get_user_by_email("artem.nefrit@gmail.com")
