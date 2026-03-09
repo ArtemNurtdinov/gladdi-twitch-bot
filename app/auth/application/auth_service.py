@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 
 from app.auth.application.dto import (
@@ -10,7 +9,6 @@ from app.auth.application.dto import (
 from app.auth.application.mapper.token_mapper import TokenMapper
 from app.auth.application.mapper.user_mapper import UserMapper
 from app.auth.application.ports.password_hasher import PasswordHasher
-from app.auth.application.ports.token_service import TokenService
 from app.auth.domain.models import UserCreateData, UserUpdateData
 from app.auth.domain.repo import AuthRepository
 
@@ -20,13 +18,11 @@ class AuthService:
         self,
         repo: AuthRepository,
         password_hasher: PasswordHasher,
-        token_service: TokenService,
         user_mapper: UserMapper,
         token_mapper: TokenMapper,
     ):
         self._repo = repo
         self._password_hasher = password_hasher
-        self._token_service = token_service
         self._user_mapper = user_mapper
         self._token_mapper = token_mapper
 
@@ -79,23 +75,6 @@ class AuthService:
 
     def delete_user(self, user_id: UUID) -> bool:
         return self._repo.delete_user(user_id)
-
-    def validate_access_token(self, token: str) -> UserDto | None:
-        payload = self._token_service.validate_access_token(token)
-        if not payload:
-            return None
-
-        current_time = datetime.utcnow()
-        access_token = self._repo.find_active_token(token, current_time)
-
-        if not access_token:
-            return None
-
-        user = self._repo.get_user_by_id(payload.user_id)
-        if user and user.is_active:
-            return self._user_mapper.map_user_to_dto(user)
-
-        return None
 
     def get_tokens(self, skip: int = 0, limit: int = 100) -> list[TokenDto]:
         tokens = self._repo.list_tokens(skip, limit)

@@ -11,7 +11,6 @@ from app.auth.application.usecase.get_user_by_email_use_case import GetUserByEma
 from app.auth.application.usecase.login_use_case import LoginUseCase
 from app.auth.application.usecase.validate_access_token_use_case import ValidateAccessTokenUseCase
 from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
-from app.auth.infrastructure.jwt_token_service import JwtTokenService
 from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from bootstrap.config_provider import get_config
 from core.config import Config
@@ -23,19 +22,15 @@ security_optional = HTTPBearer(auto_error=False)
 
 def get_auth_service(
     session: Session = Depends(get_db),
-    config: Config = Depends(get_config),
 ) -> AuthService:
     user_mapper = UserMapper()
+    token_mapper = TokenMapper()
     auth_repo = AuthRepositoryImpl(session)
     return AuthService(
         repo=auth_repo,
         password_hasher=BcryptPasswordHasher(),
-        token_service=JwtTokenService(
-            secret=config.application.auth_secret,
-            algorithm=config.application.auth_secret_algorithm,
-            access_token_expires_minutes=config.application.access_token_expire_minutes,
-        ),
         user_mapper=user_mapper,
+        token_mapper=token_mapper,
     )
 
 
@@ -54,11 +49,15 @@ def get_create_access_token_use_case(
 
 
 def get_validate_access_token_use_case(
+    session: Session = Depends(get_db),
     config: Config = Depends(get_config),
 ) -> ValidateAccessTokenUseCase:
+    auth_repo = AuthRepositoryImpl(session)
     return ValidateAccessTokenUseCase(
         secret=config.application.auth_secret,
         algorithm=config.application.auth_secret_algorithm,
+        auth_repo=auth_repo,
+        user_mapper=UserMapper(),
     )
 
 
@@ -85,9 +84,9 @@ def get_user_by_email_use_case(
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    auth_service: AuthService = Depends(get_auth_service),
+    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(get_validate_access_token_use_case),
 ) -> UserDto:
-    user = auth_service.validate_access_token(credentials.credentials)
+    user = validate_access_token_use_case.validate_access_token(credentials.credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
     return user
@@ -101,11 +100,11 @@ def get_admin_user(current_user: UserDto = Depends(get_current_user)) -> UserDto
 
 def get_optional_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
-    auth_service: AuthService = Depends(get_auth_service),
+    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(get_validate_access_token_use_case),
 ) -> UserDto | None:
     if credentials is None:
         return None
-    user = auth_service.validate_access_token(credentials.credentials)
+    user = validate_access_token_use_case.validate_access_token(credentials.credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
     return user
