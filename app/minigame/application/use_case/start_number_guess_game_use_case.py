@@ -6,9 +6,6 @@ from app.minigame.domain.minigame_service import MinigameService
 
 
 class StartNumberGuessGameUseCase:
-    _GUESS_GAME_PRIZE = 3000
-    _GUESS_GAME_DURATION_MINUTES = 5
-
     def __init__(
         self,
         minigame_service: MinigameService,
@@ -29,9 +26,9 @@ class StartNumberGuessGameUseCase:
         game = self._minigame_service.start_guess_number_game(channel_name)
         game_message = (
             f"🎯 НОВАЯ МИНИ-ИГРА! Угадай число от {game.min_number} до {game.max_number}! "
-            f"Первый, кто угадает, получит приз до {self._GUESS_GAME_PRIZE} монет! "
+            f"Первый, кто угадает, получит приз до {self._minigame_service.GUESS_GAME_PRIZE} монет! "
             f"Используй: {self._prefix}{self._command_name} [число]. "
-            f"Время на игру: {self._GUESS_GAME_DURATION_MINUTES} минут ⏰"
+            f"Время на игру: {self._minigame_service.GUESS_GAME_DURATION_MINUTES} минут ⏰"
         )
         await self._send_channel_message(channel_name, game_message)
         with self._minigame_uow.create() as uow:
