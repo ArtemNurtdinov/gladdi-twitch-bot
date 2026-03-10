@@ -157,7 +157,18 @@ class MinigameService:
 
         start_time = datetime.utcnow()
         end_time = start_time + timedelta(minutes=self.WORD_GAME_DURATION_MINUTES)
-        game = WordGuessGame(channel_name, word, hint, start_time, end_time, prize_amount=self.WORD_GAME_MAX_PRIZE)
+        game = WordGuessGame(
+            channel_name,
+            word,
+            hint,
+            start_time,
+            end_time,
+            prize_amount=self.WORD_GAME_MAX_PRIZE,
+            is_active=True,
+            winner=None,
+            winning_time=None,
+            guessed_letters=set(),
+        )
         self.active_word_games[channel_name] = game
         self.last_game_time[channel_name] = start_time
         return game
