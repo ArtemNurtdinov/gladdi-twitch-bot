@@ -1,8 +1,8 @@
 from datetime import datetime
 
 from app.economy.domain.models import TransactionType
-from app.minigame.application.model import RpsDTO
-from app.minigame.application.rps_uow import RpsUnitOfWorkFactory
+from app.minigame.application.model.rps import RpsDTO
+from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
 from app.minigame.domain.minigame_service import MinigameService
 from app.minigame.domain.models import RPS_CHOICES
 

@@ -6,8 +6,8 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.application.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
+from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.stream.domain.stream_service import StreamService
 
 

@@ -8,9 +8,9 @@ from app.follow.application.usecases.handle_followers_sync_use_case import Handl
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
-from app.minigame.application.handle_minigame_tick_use_case import HandleMinigameTickUseCase
+from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
-from app.minigame.application.minigame_tick_job import MinigameTickJob
+from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.application.token_checker_job import TokenCheckerJob
 from app.platform.auth import PlatformAuth

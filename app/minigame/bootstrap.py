@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
+from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.minigame_service import MinigameService
 from app.minigame.infrastructure.word_history_repository import WordHistoryRepositoryImpl
 from app.minigame.infrastructure.word_history_uow import SqlAlchemyWordHistoryUnitOfWorkFactory

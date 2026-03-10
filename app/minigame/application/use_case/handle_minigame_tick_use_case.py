@@ -1,5 +1,5 @@
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
-from app.minigame.application.model import MinigameTickDTO
+from app.minigame.application.model.minigame_tick import MinigameTickDTO
 
 
 class HandleMinigameTickUseCase:

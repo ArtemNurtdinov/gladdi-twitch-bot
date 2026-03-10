@@ -34,7 +34,7 @@ from app.commands.top_bottom.application.handle_top_bottom_use_case import Handl
 from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandler
-from app.minigame.application.handle_rps_use_case import HandleRpsUseCase
+from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.streaming import StreamingPlatformPort

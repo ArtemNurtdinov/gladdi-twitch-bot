@@ -6,9 +6,9 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.minigame.application.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.application.get_used_words_use_case import GetUsedWordsUseCase
-from app.minigame.application.minigame_uow import MinigameUnitOfWork, MinigameUnitOfWorkFactory
+from app.minigame.application.uow.minigame_uow import MinigameUnitOfWork, MinigameUnitOfWorkFactory
+from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.stream.domain.stream_service import StreamService
 from core.provider import Provider
 from core.types import SessionFactory
@@ -59,9 +59,7 @@ class SqlAlchemyMinigameUnitOfWork(SqlAlchemyUnitOfWorkBase, MinigameUnitOfWork)
         return self._conversation_service
 
 
-class SqlAlchemyMinigameUnitOfWorkFactory(
-    SqlAlchemyUnitOfWorkFactory[MinigameUnitOfWork], MinigameUnitOfWorkFactory
-):
+class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUnitOfWork], MinigameUnitOfWorkFactory):
     def __init__(
         self,
         session_factory_rw: SessionFactory,

@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.minigame.application.word_history_uow import WordHistoryUnitOfWork, WordHistoryUnitOfWorkFactory
+from app.minigame.application.uow.word_history_uow import WordHistoryUnitOfWork, WordHistoryUnitOfWorkFactory
 from app.minigame.domain.repo import WordHistoryRepository
 from core.provider import Provider
 from core.types import SessionFactory
@@ -19,9 +19,7 @@ class SqlAlchemyWordHistoryUnitOfWork(SqlAlchemyUnitOfWorkBase, WordHistoryUnitO
         return self._word_history_repo
 
 
-class SqlAlchemyWordHistoryUnitOfWorkFactory(
-    SqlAlchemyUnitOfWorkFactory[WordHistoryUnitOfWork], WordHistoryUnitOfWorkFactory
-):
+class SqlAlchemyWordHistoryUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[WordHistoryUnitOfWork], WordHistoryUnitOfWorkFactory):
     def __init__(
         self,
         session_factory_rw: SessionFactory,

@@ -1,4 +1,4 @@
-from app.minigame.application.word_history_uow import WordHistoryUnitOfWorkFactory
+from app.minigame.application.uow.word_history_uow import WordHistoryUnitOfWorkFactory
 
 
 class GetUsedWordsUseCase:

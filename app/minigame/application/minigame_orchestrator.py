@@ -8,7 +8,7 @@ from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.economy.domain.models import TransactionType
-from app.minigame.application.minigame_uow import MinigameUnitOfWorkFactory
+from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_service import MinigameService
 from core.provider import Provider
 from core.types import SessionFactory
