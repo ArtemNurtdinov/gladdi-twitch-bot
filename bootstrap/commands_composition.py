@@ -216,7 +216,7 @@ def build_command_registry(
         command_name=settings.command_rps,
         handle_rps_use_case=HandleRpsUseCase(
             minigame_service=providers.minigame_providers.minigame_service,
-            unit_of_work_factory=uow_factories.build_rps_uow_factory(),
+            rps_uow=uow_factories.build_rps_uow_factory(),
         ),
         bot_nick=bot_name,
         post_message_fn=post_message_fn,

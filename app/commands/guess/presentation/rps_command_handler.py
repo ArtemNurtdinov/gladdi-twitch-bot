@@ -33,6 +33,6 @@ class RpsCommandHandler:
             choice_input=choice,
         )
 
-        result = await self._handle_rps_use_case.handle(dto=dto)
+        result = await self._handle_rps_use_case.handle(rps=dto)
 
         await self.post_message_fn(result, chat_ctx)

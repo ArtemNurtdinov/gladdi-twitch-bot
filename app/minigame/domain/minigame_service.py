@@ -1,7 +1,11 @@
 import random
 from datetime import datetime, timedelta
 
-from app.minigame.domain.models import RPS_CHOICES, GuessNumberGame, RPSGame, WordGuessGame
+from app.minigame.domain.model.guess_number import GuessNumberGame
+from app.minigame.domain.model.rps import RPSGame
+from app.minigame.domain.model.word_guess import WordGuessGame
+
+RPS_CHOICES = ("камень", "ножницы", "бумага")
 
 
 class MinigameService:
