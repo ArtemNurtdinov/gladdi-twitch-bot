@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
 
@@ -7,7 +7,7 @@ class RPSGame:
     channel_name: str
     start_time: datetime
     end_time: datetime
-    bank: int = 500
-    is_active: bool = True
-    winner_choice: str | None = None
-    user_choices: dict[str, str] = field(default_factory=dict)
+    bank: int
+    is_active: bool
+    winner_choice: str | None
+    user_choices: dict[str, str]

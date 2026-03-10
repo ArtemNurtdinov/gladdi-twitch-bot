@@ -203,7 +203,15 @@ class MinigameService:
             raise ValueError(f"Игра 'камень-ножницы-бумага' уже активна в канале {channel_name}")
         start_time = datetime.utcnow()
         end_time = start_time + timedelta(minutes=self.RPS_GAME_DURATION_MINUTES)
-        game = RPSGame(channel_name=channel_name, start_time=start_time, end_time=end_time, bank=self.RPS_BASE_BANK)
+        game = RPSGame(
+            channel_name=channel_name,
+            start_time=start_time,
+            end_time=end_time,
+            bank=self.RPS_BASE_BANK,
+            is_active=True,
+            winner_choice=None,
+            user_choices={},
+        )
         self.active_rps_games[channel_name] = game
         self.last_game_time[channel_name] = start_time
         return game
