@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.minigame.application.uow.word_history_uow import WordHistoryUnitOfWork, WordHistoryUnitOfWorkFactory
-from app.minigame.domain.repo import WordHistoryRepository
+from app.minigame.domain.word_history_repository import WordHistoryRepository
 from core.provider import Provider
 from core.types import SessionFactory
 

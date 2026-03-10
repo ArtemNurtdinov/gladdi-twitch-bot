@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from app.common.application.unit_of_work import UnitOfWork, UnitOfWorkFactory
-from app.minigame.domain.repo import WordHistoryRepository
+from app.minigame.domain.word_history_repository import WordHistoryRepository
 
 
 class WordHistoryUnitOfWork(UnitOfWork, Protocol):
