@@ -9,6 +9,7 @@ from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.economy.domain.models import TransactionType
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
+from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
 from app.minigame.domain.minigame_service import MinigameService
 from core.provider import Provider
 from core.types import SessionFactory
@@ -31,6 +32,7 @@ class MinigameOrchestrator:
         command_rps: str,
         bot_nick: str,
         send_channel_message: Callable[[str, str], Awaitable[None]],
+        start_number_guess_game_use_case: StartNumberGuessGameUseCase,
     ):
         self.minigame_service = minigame_service
         self._unit_of_work_factory = unit_of_work_factory
@@ -44,6 +46,7 @@ class MinigameOrchestrator:
         self._command_rps = command_rps
         self._bot_nick = bot_nick
         self._send_channel_message = send_channel_message
+        self._start_number_guess_game_use_case = start_number_guess_game_use_case
 
     def _bot_name_lower(self) -> str:
         return self._bot_nick.lower()
@@ -70,7 +73,7 @@ class MinigameOrchestrator:
         if choice == "word":
             await self._start_word_game(channel_name)
         elif choice == "number":
-            await self._start_number_game(channel_name)
+            await self._start_number_guess_game_use_case.start(channel_name)
         else:
             await self._start_rps_game(channel_name)
 
@@ -163,21 +166,6 @@ class MinigameOrchestrator:
 
         await self._send_channel_message(channel_name, game_message)
 
-        with self._unit_of_work_factory.create() as uow:
-            uow.chat_use_case.save_chat_message(
-                channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
-            )
-
-    async def _start_number_game(self, channel_name: str):
-        game = self.minigame_service.start_guess_number_game(channel_name)
-        game_message = (
-            f"🎯 НОВАЯ МИНИ-ИГРА! Угадай число от {game.min_number} до {game.max_number}! "
-            f"Первый, кто угадает, получит приз до {self.minigame_service.GUESS_GAME_PRIZE} монет! "
-            f"Используй: {self._prefix}{self._command_guess} [число]. "
-            f"Время на игру: {self.minigame_service.GUESS_GAME_DURATION_MINUTES} минут ⏰"
-        )
-
-        await self._send_channel_message(channel_name, game_message)
         with self._unit_of_work_factory.create() as uow:
             uow.chat_use_case.save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()

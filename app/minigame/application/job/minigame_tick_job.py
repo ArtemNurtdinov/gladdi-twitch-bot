@@ -7,12 +7,12 @@ from core.background.task_runner import BackgroundTaskRunner
 
 
 class MinigameTickJob:
+    _MINIGAME_TICK_DELAY = 60
     name = "check_minigames"
 
-    def __init__(self, channel_name: str, handle_minigame_tick_use_case: HandleMinigameTickUseCase, default_delay: int = 60):
+    def __init__(self, channel_name: str, handle_minigame_tick_use_case: HandleMinigameTickUseCase):
         self._channel_name = channel_name
         self._handle_minigame_tick_use_case = handle_minigame_tick_use_case
-        self._default_delay = default_delay
 
     def register(self, runner: BackgroundTaskRunner):
         runner.register(self.name, self.run)
@@ -29,4 +29,4 @@ class MinigameTickJob:
             except asyncio.CancelledError:
                 break
             except Exception:
-                await asyncio.sleep(self._default_delay)
+                await asyncio.sleep(self._MINIGAME_TICK_DELAY)

@@ -7,6 +7,7 @@ from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponse
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
+from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
 from app.platform.auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
@@ -126,6 +127,14 @@ class BotManager:
                 command_rps=self._settings.command_rps,
                 bot_nick=self._settings.bot_name,
                 send_channel_message=chat_client.send_channel_message,
+                start_number_guess_game_use_case=StartNumberGuessGameUseCase(
+                    minigame_service=providers_bundle.minigame_providers.minigame_service,
+                    prefix=self._settings.prefix,
+                    command_name=self._settings.command_guess,
+                    send_channel_message=chat_client.send_channel_message,
+                    minigame_uow=uow_factories.build_minigame_uow_factory(),
+                    bot_name=self._settings.bot_name.lower(),
+                ),
             )
 
             chat_response_use_case = ChatResponseUseCase(
