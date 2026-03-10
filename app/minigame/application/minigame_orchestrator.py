@@ -6,6 +6,7 @@ from datetime import datetime
 from app.economy.domain.models import TransactionType
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
+from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.minigame.domain.minigame_service import MinigameService
 
@@ -17,21 +18,19 @@ class MinigameOrchestrator:
         self,
         minigame_service: MinigameService,
         unit_of_work_factory: MinigameUnitOfWorkFactory,
-        prefix: str,
-        command_rps: str,
         bot_nick: str,
         send_channel_message: Callable[[str, str], Awaitable[None]],
         start_number_guess_game_use_case: StartNumberGuessGameUseCase,
         start_word_game_use_case: StartWordGameUseCase,
+        start_rps_game_use_case: StartRpsGameUseCase,
     ):
         self.minigame_service = minigame_service
         self._unit_of_work_factory = unit_of_work_factory
-        self._prefix = prefix
-        self._command_rps = command_rps
         self._bot_nick = bot_nick
         self._send_channel_message = send_channel_message
         self._start_number_guess_game_use_case = start_number_guess_game_use_case
         self._start_word_game_use_case = start_word_game_use_case
+        self._start_rps_game_use_case = start_rps_game_use_case
 
     def _bot_name_lower(self) -> str:
         return self._bot_nick.lower()
@@ -60,7 +59,7 @@ class MinigameOrchestrator:
         elif choice == "number":
             await self._start_number_guess_game_use_case.start(channel_name)
         else:
-            await self._start_rps_game(channel_name)
+            await self._start_rps_game_use_case.start(channel_name)
 
         return self.DEFAULT_SLEEP_SECONDS
 
@@ -103,19 +102,3 @@ class MinigameOrchestrator:
                 uow.chat_use_case.save_chat_message(
                     channel_name=channel, user_name=self._bot_name_lower(), content=timeout_message, current_time=datetime.utcnow()
                 )
-
-    async def _start_rps_game(self, channel_name: str):
-        self.minigame_service.start_rps_game(channel_name)
-        game_message = (
-            f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {MinigameService.RPS_BASE_BANK} монет + {MinigameService.RPS_ENTRY_FEE_PER_USER}"
-            f" за каждого участника. "
-            f"Участвовать: {self._prefix}{self._command_rps} <камень/ножницы/бумага> — "
-            f"взнос {MinigameService.RPS_ENTRY_FEE_PER_USER} монет. "
-            f"Время на голосование: {MinigameService.RPS_GAME_DURATION_MINUTES} минуты ⏰"
-        )
-
-        await self._send_channel_message(channel_name, game_message)
-        with self._unit_of_work_factory.create() as uow:
-            uow.chat_use_case.save_chat_message(
-                channel_name=channel_name, user_name=self._bot_name_lower(), content=game_message, current_time=datetime.utcnow()
-            )
