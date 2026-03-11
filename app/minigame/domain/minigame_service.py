@@ -130,22 +130,11 @@ class MinigameService:
     def get_active_rps_game(self, channel_name: str) -> RPSGame | None:
         return self.active_rps_games.get(channel_name)
 
-    def check_expired_games(self) -> dict[str, str]:
-        expired_messages: dict[str, str] = {}
+    def get_active_guess_game(self, channel_name: str) -> GuessNumberGame | None:
+        return self.active_guess_games.get(channel_name)
 
-        for channel_name in list(self.active_guess_games.keys()):
-            game = self.active_guess_games.get(channel_name)
-            if game and datetime.utcnow() > game.end_time and game.is_active:
-                timeout_message = self.finish_guess_game_timeout(channel_name)
-                expired_messages[channel_name] = timeout_message
-
-        for channel_name in list(self.active_word_games.keys()):
-            game = self.active_word_games.get(channel_name)
-            if game and datetime.utcnow() > game.end_time and game.is_active:
-                timeout_message = self.finish_word_game_timeout(channel_name)
-                expired_messages[channel_name] = timeout_message
-
-        return expired_messages
+    def get_active_word_game(self, channel_name: str) -> WordGuessGame | None:
+        return self.active_word_games.get(channel_name)
 
     def start_word_guess_game(self, channel_name: str, word: str, hint: str) -> WordGuessGame:
         if channel_name in self.active_word_games:

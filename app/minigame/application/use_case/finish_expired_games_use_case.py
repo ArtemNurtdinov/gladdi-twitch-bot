@@ -18,8 +18,21 @@ class FinishExpiredGamesUseCase:
         self._minigame_uow = minigame_uow
         self._bot_name = bot_name
 
-    async def finish(self):
-        expired_games = self._minigame_service.check_expired_games()
+    async def finish(self, channel_name: str) -> None:
+        expired_games: dict[str, str] = {}
+
+        active_guess_game = self._minigame_service.get_active_guess_game(channel_name)
+
+        if active_guess_game and datetime.utcnow() > active_guess_game.end_time and active_guess_game.is_active:
+            timeout_message = self._minigame_service.finish_guess_game_timeout(channel_name)
+            expired_games[channel_name] = timeout_message
+
+        active_word_game = self._minigame_service.get_active_word_game(channel_name)
+
+        if active_word_game and datetime.utcnow() > active_word_game.end_time and active_word_game.is_active:
+            timeout_message = self._minigame_service.finish_word_game_timeout(channel_name)
+            expired_games[channel_name] = timeout_message
+
         for channel, timeout_message in expired_games.items():
             await self._send_channel_message(channel, timeout_message)
             with self._minigame_uow.create() as uow:

@@ -37,7 +37,7 @@ class HandleMinigameTickUseCase:
             await self._finish_rps_game_use_case.finish(channel_name)
             return
 
-        await self._finish_expired_games_use_case.finish()
+        await self._finish_expired_games_use_case.finish(channel_name)
 
         with self._minigame_ouw.create(read_only=True) as uow:
             active_stream = uow.stream_service.get_active_stream(channel_name)
