@@ -303,7 +303,11 @@ class HandleGuessUseCase:
                         content=message,
                         current_time=guess_letter.occurred_at,
                     )
-                self._minigame_service.finish_word_game_with_winner(game, guess_letter.channel_name, guess_letter.display_name)
+                game.is_active = False
+                game.winner = guess_letter.display_name
+                game.winning_time = datetime.utcnow()
+
+                self._minigame_service.delete_word_guess_game(guess_letter.channel_name)
             else:
                 message = f"Буква есть! Слово: {masked}."
             with self._guess_uow.create() as uow:
@@ -407,7 +411,11 @@ class HandleGuessUseCase:
             return message
 
         if guess_word.word_input.strip().lower() == game.target_word:
-            self._minigame_service.finish_word_game_with_winner(game, guess_word.channel_name, guess_word.display_name)
+            game.is_active = False
+            game.winner = guess_word.display_name
+            game.winning_time = datetime.utcnow()
+
+            self._minigame_service.delete_word_guess_game(guess_word.channel_name)
 
             message = f"ПОЗДРАВЛЯЕМ! @{guess_word.display_name} угадал слово '{game.target_word}' и выиграл {game.prize_amount} монет!"
 

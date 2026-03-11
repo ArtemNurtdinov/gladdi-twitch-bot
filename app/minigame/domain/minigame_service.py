@@ -124,10 +124,7 @@ class MinigameService:
         self.active_word_games[channel_name] = game
         self.last_game_time[channel_name] = game.start_time
 
-    def finish_word_game_with_winner(self, game: WordGuessGame, channel_name: str, winner_name: str):
-        game.is_active = False
-        game.winner = winner_name
-        game.winning_time = datetime.utcnow()
+    def delete_word_guess_game(self, channel_name: str):
         del self.active_word_games[channel_name]
 
     def finish_word_game_timeout(self, channel_name: str) -> str:
