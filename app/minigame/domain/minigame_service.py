@@ -104,9 +104,6 @@ class MinigameService:
 
         return game
 
-    def get_active_game(self, channel_name: str) -> GuessNumberGame:
-        return self.active_guess_games[channel_name]
-
     def delete_guess_number_game(self, channel_name: str):
         del self.active_guess_games[channel_name]
 

@@ -52,7 +52,7 @@ class HandleGuessUseCase:
                 )
             return result
 
-        game = self._minigame_service.get_active_game(guess_number.channel_name)
+        game = self._minigame_service.get_active_guess_game(guess_number.channel_name)
 
         if not game:
             result = "Сейчас нет активной игры 'угадай число'"
