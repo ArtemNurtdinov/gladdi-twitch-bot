@@ -1,11 +1,15 @@
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_service import MinigameService
+from app.minigame.domain.model.rps import RPSGame
 
 
 class StartRpsGameUseCase:
+    RPS_GAME_DURATION_MINUTES = 2
+    RPS_BASE_BANK = 1500
+
     def __init__(
         self,
         minigame_service: MinigameService,
@@ -23,7 +27,19 @@ class StartRpsGameUseCase:
         self._bot_name = bot_name
 
     async def start(self, channel_name: str):
-        self._minigame_service.start_rps_game(channel_name)
+        start_time = datetime.utcnow()
+        end_time = start_time + timedelta(minutes=self.RPS_GAME_DURATION_MINUTES)
+        game = RPSGame(
+            channel_name=channel_name,
+            start_time=start_time,
+            end_time=end_time,
+            bank=self.RPS_BASE_BANK,
+            is_active=True,
+            winner_choice=None,
+            user_choices={},
+        )
+        self._minigame_service.save_active_rps_game(channel_name, game)
+
         game_message = (
             f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {MinigameService.RPS_BASE_BANK} монет + {MinigameService.RPS_ENTRY_FEE_PER_USER}"
             f" за каждого участника. "

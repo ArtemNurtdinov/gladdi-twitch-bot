@@ -136,26 +136,9 @@ class MinigameService:
         del self.active_word_games[channel_name]
         return timeout_message
 
-    def start_rps_game(self, channel_name: str) -> RPSGame:
-        if channel_name in self.active_rps_games:
-            raise ValueError(f"Игра 'камень-ножницы-бумага' уже активна в канале {channel_name}")
-        start_time = datetime.utcnow()
-        end_time = start_time + timedelta(minutes=self.RPS_GAME_DURATION_MINUTES)
-        game = RPSGame(
-            channel_name=channel_name,
-            start_time=start_time,
-            end_time=end_time,
-            bank=self.RPS_BASE_BANK,
-            is_active=True,
-            winner_choice=None,
-            user_choices={},
-        )
+    def save_active_rps_game(self, channel_name: str, game: RPSGame):
         self.active_rps_games[channel_name] = game
-        self.last_game_time[channel_name] = start_time
-        return game
-
-    def rps_game_is_active(self, channel_name: str) -> bool:
-        return True if channel_name in self.active_rps_games else False
+        self.last_game_time[channel_name] = game.start_time
 
     def finish_rps(self, game: RPSGame, channel_name: str) -> tuple[str, str, list[str]]:
         bot_choice = random.choice(RPS_CHOICES)
