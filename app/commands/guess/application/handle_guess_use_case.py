@@ -204,7 +204,9 @@ class HandleGuessUseCase:
 
         if not guess_letter.letter_input:
             if datetime.utcnow() > game.end_time:
-                message = self._minigame_repository.finish_word_game_timeout(guess_letter.channel_name)
+                game.is_active = False
+                message = f"Время игры 'поле чудес' истекло! Слово было '{game.target_word}'. Никто не выиграл."
+                self._minigame_repository.delete_word_guess_game(guess_letter.channel_name)
             else:
                 if game.winner:
                     message = f"Слово '{game.target_word}' угадал @{game.winner}! Выигрыш: {game.prize_amount} монет"
@@ -231,7 +233,8 @@ class HandleGuessUseCase:
             return message
 
         if datetime.utcnow() > game.end_time:
-            self._minigame_repository.finish_word_game_timeout(guess_letter.channel_name)
+            game.is_active = False
+            self._minigame_repository.delete_word_guess_game(guess_letter.channel_name)
             message = f"Время игры истекло! Слово было '{game.target_word}'"
             with self._guess_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
@@ -371,7 +374,9 @@ class HandleGuessUseCase:
 
         if not guess_word.word_input:
             if datetime.utcnow() > game.end_time:
-                message = self._minigame_repository.finish_word_game_timeout(guess_word.channel_name)
+                message = f"Время игры 'поле чудес' истекло! Слово было '{game.target_word}'. Никто не выиграл."
+                game.is_active = False
+                self._minigame_repository.delete_word_guess_game(guess_word.channel_name)
             else:
                 if game.winner:
                     message = f"Слово '{game.target_word}' угадал @{game.winner}! Выигрыш: {game.prize_amount} монет"
@@ -397,7 +402,8 @@ class HandleGuessUseCase:
             return message
 
         if datetime.utcnow() > game.end_time:
-            self._minigame_repository.finish_word_game_timeout(guess_word.channel_name)
+            game.is_active = False
+            self._minigame_repository.delete_word_guess_game(guess_word.channel_name)
             message = f"Время игры истекло! Слово было '{game.target_word}'"
             with self._guess_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(

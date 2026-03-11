@@ -34,8 +34,8 @@ class FinishExpiredGamesUseCase:
         active_word_game = self._minigame_repository.get_active_word_game(channel_name)
 
         if active_word_game and datetime.utcnow() > active_word_game.end_time and active_word_game.is_active:
-            timeout_message = self._minigame_repository.finish_word_game_timeout(channel_name)
-            expired_games[channel_name] = timeout_message
+            active_word_game.is_active = False
+            expired_games[channel_name] = f"Время игры 'поле чудес' истекло! Слово было '{active_word_game.target_word}'. Никто не выиграл."
 
         for channel, timeout_message in expired_games.items():
             await self._send_channel_message(channel, timeout_message)
