@@ -9,19 +9,6 @@ RPS_CHOICES = ("камень", "ножницы", "бумага")
 
 
 class MinigameService:
-    GUESS_GAME_DURATION_MINUTES = 5
-    GUESS_GAME_PRIZE = 3000
-    GUESS_MIN_NUMBER = 1
-    GUESS_MAX_NUMBER = 100
-    GUESS_PRIZE_DECREASE_PER_ATTEMPT = 100
-
-    WORD_GAME_DURATION_MINUTES = 5
-    WORD_GAME_MIN_PRIZE = 300
-    WORD_GAME_MAX_PRIZE = 2000
-    WORD_GAME_LETTER_REWARD_DECREASE = 200
-
-    RPS_GAME_DURATION_MINUTES = 2
-    RPS_BASE_BANK = 1500
     RPS_ENTRY_FEE_PER_USER = 100
 
     FIRST_GAME_START_MIN = 15
@@ -83,29 +70,9 @@ class MinigameService:
 
         return time_since_last >= required_interval
 
-    def start_guess_number_game(self, channel_name: str) -> GuessNumberGame:
-        if channel_name in self.active_guess_games:
-            raise ValueError(f"Игра уже активна в канале {channel_name}")
-
-        target_number = random.randint(self.GUESS_MIN_NUMBER, self.GUESS_MAX_NUMBER)
-
-        start_time = datetime.utcnow()
-        end_time = start_time + timedelta(minutes=self.GUESS_GAME_DURATION_MINUTES)
-
-        game = GuessNumberGame(
-            channel_name=channel_name,
-            target_number=target_number,
-            start_time=start_time,
-            end_time=end_time,
-            min_number=self.GUESS_MIN_NUMBER,
-            max_number=self.GUESS_MAX_NUMBER,
-            prize_amount=self.GUESS_GAME_PRIZE,
-        )
-
+    def save_active_guess_number_game(self, channel_name: str, game: GuessNumberGame):
         self.active_guess_games[channel_name] = game
-        self.last_game_time[channel_name] = start_time
-
-        return game
+        self.last_game_time[channel_name] = game.start_time
 
     def delete_guess_number_game(self, channel_name: str):
         del self.active_guess_games[channel_name]

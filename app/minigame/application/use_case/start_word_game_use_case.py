@@ -95,10 +95,10 @@ class StartWordGameUseCase:
         masked = game.get_masked_word()
         game_message = (
             f"НОВАЯ ИГРА 'поле чудес'! Слово из {len(game.target_word)} букв. Подсказка: {hint}. "
-            f"Слово: {masked}. Приз: до {self._minigame_service.WORD_GAME_MAX_PRIZE} монет. "
+            f"Слово: {masked}. Приз: до {self.WORD_GAME_MAX_PRIZE} монет. "
             f"Угадывайте буквы: {self._prefix}{self._command_guess_letter} <буква> "
             f"или слово: {self._prefix}{self._command_guess_word} <слово>. "
-            f"Время на игру: {self._minigame_service.WORD_GAME_DURATION_MINUTES} минут"
+            f"Время на игру: {self.WORD_GAME_DURATION_MINUTES} минут"
         )
 
         await self._send_channel_message(channel_name, game_message)

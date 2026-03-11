@@ -7,6 +7,10 @@ from app.minigame.domain.minigame_service import MinigameService
 
 
 class HandleGuessUseCase:
+    WORD_GAME_MIN_PRIZE = 300
+    WORD_GAME_LETTER_REWARD_DECREASE = 200
+    GUESS_PRIZE_DECREASE_PER_ATTEMPT = 100
+
     def __init__(self, minigame_service: MinigameService, guess_uow: GuessUnitOfWorkFactory):
         self._minigame_service = minigame_service
         self._guess_uow = guess_uow
@@ -155,7 +159,7 @@ class HandleGuessUseCase:
             return message
         else:
             if game.prize_amount > 300:
-                game.prize_amount = max(300, game.prize_amount - MinigameService.GUESS_PRIZE_DECREASE_PER_ATTEMPT)
+                game.prize_amount = max(300, game.prize_amount - self.GUESS_PRIZE_DECREASE_PER_ATTEMPT)
             hint = "больше" if guess < game.target_number else "меньше"
             message = f"@{guess_number.display_name}, не угадал! Загаданное число {hint} {guess}."
             with self._guess_uow.create() as uow:
@@ -274,9 +278,9 @@ class HandleGuessUseCase:
         masked = game.get_masked_word()
 
         if letter_revealed:
-            if game.prize_amount > MinigameService.WORD_GAME_MIN_PRIZE:
-                current_prize = game.prize_amount - MinigameService.WORD_GAME_LETTER_REWARD_DECREASE
-                game.prize_amount = max(MinigameService.WORD_GAME_MIN_PRIZE, current_prize)
+            if game.prize_amount > self.WORD_GAME_MIN_PRIZE:
+                current_prize = game.prize_amount - self.WORD_GAME_LETTER_REWARD_DECREASE
+                game.prize_amount = max(self.WORD_GAME_MIN_PRIZE, current_prize)
             letters_in_word = {ch for ch in game.target_word if ch.isalpha()}
             all_letters_revealed = letters_in_word.issubset(game.guessed_letters)
             if all_letters_revealed:

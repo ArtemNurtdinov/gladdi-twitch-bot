@@ -41,11 +41,11 @@ class StartRpsGameUseCase:
         self._minigame_service.save_active_rps_game(channel_name, game)
 
         game_message = (
-            f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {MinigameService.RPS_BASE_BANK} монет + {MinigameService.RPS_ENTRY_FEE_PER_USER}"
+            f"✊✌️🖐 НОВАЯ ИГРА КНБ! Банк старт: {self.RPS_BASE_BANK} монет + {MinigameService.RPS_ENTRY_FEE_PER_USER}"
             f" за каждого участника. "
             f"Участвовать: {self._prefix}{self._command_name} <камень/ножницы/бумага> — "
             f"взнос {MinigameService.RPS_ENTRY_FEE_PER_USER} монет. "
-            f"Время на голосование: {MinigameService.RPS_GAME_DURATION_MINUTES} минуты ⏰"
+            f"Время на голосование: {self.RPS_GAME_DURATION_MINUTES} минуты ⏰"
         )
 
         await self._send_channel_message(channel_name, game_message)
