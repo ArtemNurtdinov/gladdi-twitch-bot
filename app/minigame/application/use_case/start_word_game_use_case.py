@@ -1,17 +1,21 @@
 import json
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_service import MinigameService
+from app.minigame.domain.model.word_guess import WordGuessGame
 from core.provider import Provider
 from core.types import SessionFactory
 
 
 class StartWordGameUseCase:
+    WORD_GAME_DURATION_MINUTES = 5
+    WORD_GAME_MAX_PRIZE = 2000
+
     def __init__(
         self,
         minigame_service: MinigameService,
@@ -68,7 +72,23 @@ class StartWordGameUseCase:
         hint = str(data.get("hint", "")).strip()
         final_word = word.strip().lower()
 
-        game = self._minigame_service.start_word_guess_game(channel_name, final_word, hint)
+        start_time = datetime.utcnow()
+        end_time = start_time + timedelta(minutes=self.WORD_GAME_DURATION_MINUTES)
+        game = WordGuessGame(
+            channel_name,
+            word,
+            hint,
+            start_time,
+            end_time,
+            prize_amount=self.WORD_GAME_MAX_PRIZE,
+            is_active=True,
+            winner=None,
+            winning_time=None,
+            guessed_letters=set(),
+        )
+
+        self._minigame_service.save_word_gues_game(channel_name, game)
+
         with self._minigame_uow.create() as uow:
             uow.add_used_words_use_case.add_used_words(channel_name, final_word)
 

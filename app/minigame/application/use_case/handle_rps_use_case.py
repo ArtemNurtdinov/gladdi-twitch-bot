@@ -20,8 +20,9 @@ class HandleRpsUseCase:
 
         user_message = rps.command_prefix + rps.command_name + " " + rps.choice_input
 
-        rps_game_is_active = self._minigame_service.rps_game_is_active(rps.channel_name)
-        if not rps_game_is_active:
+        game = self._minigame_service.get_active_rps_game(rps.channel_name)
+
+        if not game:
             message = "Сейчас нет активной игры 'камень-ножницы-бумага'"
             with self._rps_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
@@ -31,8 +32,6 @@ class HandleRpsUseCase:
                     channel_name=rps.channel_name, user_name=bot_nick, content=message, current_time=rps.occurred_at
                 )
             return message
-
-        game = self._minigame_service.get_active_rps_game(rps.channel_name)
 
         if datetime.utcnow() > game.end_time:
             bot_choice, winning_choice, winners = self._minigame_service.finish_rps(game, rps.channel_name)

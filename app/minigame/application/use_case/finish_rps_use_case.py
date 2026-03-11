@@ -21,6 +21,10 @@ class FinishRpsUseCase:
 
     async def finish(self, channel_name: str):
         game = self._minigame_service.get_active_rps_game(channel_name)
+
+        if not game:
+            return
+
         bot_choice, winning_choice, winners = self._minigame_service.finish_rps(game, channel_name)
         if winners:
             share = max(1, game.bank // len(winners))

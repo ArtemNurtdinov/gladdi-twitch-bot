@@ -51,9 +51,10 @@ class MinigameService:
             del self.active_guess_games[channel_name]
         if channel_name in self.active_word_games:
             self.finish_word_game_timeout(channel_name)
-        if channel_name in self.active_rps_games:
-            game = self.get_active_rps_game(channel_name)
-            self.finish_rps(game, channel_name)
+
+        rps_game = self.get_active_rps_game(channel_name)
+        if rps_game:
+            self.finish_rps(rps_game, channel_name)
 
     def should_start_new_game(self, channel_name: str) -> bool:
         if channel_name in self.active_guess_games or channel_name in self.active_word_games or channel_name in self.active_rps_games:
@@ -119,45 +120,9 @@ class MinigameService:
     def get_active_word_game(self, channel_name: str) -> WordGuessGame | None:
         return self.active_word_games.get(channel_name)
 
-    def start_word_guess_game(self, channel_name: str, word: str, hint: str) -> WordGuessGame:
-        if channel_name in self.active_word_games:
-            raise ValueError(f"Словесная игра уже активна в канале {channel_name}")
-
-        start_time = datetime.utcnow()
-        end_time = start_time + timedelta(minutes=self.WORD_GAME_DURATION_MINUTES)
-        game = WordGuessGame(
-            channel_name,
-            word,
-            hint,
-            start_time,
-            end_time,
-            prize_amount=self.WORD_GAME_MAX_PRIZE,
-            is_active=True,
-            winner=None,
-            winning_time=None,
-            guessed_letters=set(),
-        )
+    def save_word_gues_game(self, channel_name: str, game: WordGuessGame):
         self.active_word_games[channel_name] = game
-        self.last_game_time[channel_name] = start_time
-        return game
-
-    def is_word_game_active(self, channel_name) -> bool:
-        return True if channel_name in self.active_word_games else False
-
-    def get_word_game_status(self, channel_name: str) -> str | None:
-        if channel_name not in self.active_word_games:
-            return None
-        game = self.active_word_games[channel_name]
-        if datetime.utcnow() > game.end_time:
-            return self.finish_word_game_timeout(channel_name)
-
-        if game.winner:
-            return f"Слово '{game.target_word}' угадал @{game.winner}! Выигрыш: {game.prize_amount} монет"
-        elif not game.is_active:
-            return f"Время истекло! Слово было '{game.target_word}'"
-        else:
-            letters_count = sum(1 for ch in game.target_word if ch.isalpha())
-            return f"Угадайте слово из {letters_count} букв! Слово: {game.get_masked_word()}"
+        self.last_game_time[channel_name] = game.start_time
 
     def finish_word_game_with_winner(self, game: WordGuessGame, channel_name: str, winner_name: str):
         game.is_active = False
@@ -194,9 +159,6 @@ class MinigameService:
 
     def rps_game_is_active(self, channel_name: str) -> bool:
         return True if channel_name in self.active_rps_games else False
-
-    def get_active_rps_game(self, channel_name: str) -> RPSGame:
-        return self.active_rps_games[channel_name]
 
     def finish_rps(self, game: RPSGame, channel_name: str) -> tuple[str, str, list[str]]:
         bot_choice = random.choice(RPS_CHOICES)
