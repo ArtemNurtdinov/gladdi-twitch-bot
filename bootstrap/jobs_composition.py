@@ -69,7 +69,7 @@ def build_background_tasks(
                     user_cache=providers.user_providers.user_cache,
                     stream_status_port=providers.stream_providers.stream_status_port,
                     unit_of_work_factory=uow_factories.build_stream_status_uow_factory(),
-                    minigame_service=providers.minigame_providers.minigame_service,
+                    minigame_repository=providers.minigame_providers.minigame_repository,
                     notifications_port=notifications_port,
                     notification_group_id=settings.group_id,
                     chat_response_port=chat_response_port,
@@ -88,10 +88,10 @@ def build_background_tasks(
             MinigameTickJob(
                 channel_name=settings.channel_name,
                 handle_minigame_tick_use_case=HandleMinigameTickUseCase(
-                    minigame_service=providers.minigame_providers.minigame_service,
+                    minigame_repository=providers.minigame_providers.minigame_repository,
                     minigame_ouw=uow_factories.build_minigame_uow_factory(),
                     start_number_guess_game_use_case=StartNumberGuessGameUseCase(
-                        minigame_service=providers.minigame_providers.minigame_service,
+                        minigame_repository=providers.minigame_providers.minigame_repository,
                         prefix=settings.prefix,
                         command_name=settings.command_guess,
                         send_channel_message=send_channel_message,
@@ -99,7 +99,7 @@ def build_background_tasks(
                         bot_name=settings.bot_name.lower(),
                     ),
                     start_word_game_use_case=StartWordGameUseCase(
-                        minigame_service=providers.minigame_providers.minigame_service,
+                        minigame_repository=providers.minigame_providers.minigame_repository,
                         prefix=settings.prefix,
                         minigame_uow=uow_factories.build_minigame_uow_factory(),
                         db_ro_session=db_ro_session,
@@ -111,7 +111,7 @@ def build_background_tasks(
                         bot_name=settings.bot_name.lower(),
                     ),
                     start_rps_game_use_case=StartRpsGameUseCase(
-                        minigame_service=providers.minigame_providers.minigame_service,
+                        minigame_repository=providers.minigame_providers.minigame_repository,
                         prefix=settings.prefix,
                         command_name=settings.command_rps,
                         send_channel_message=send_channel_message,
@@ -119,13 +119,13 @@ def build_background_tasks(
                         bot_name=settings.bot_name.lower(),
                     ),
                     finish_rps_game_use_case=FinishRpsUseCase(
-                        minigame_service=providers.minigame_providers.minigame_service,
+                        minigame_repository=providers.minigame_providers.minigame_repository,
                         minigame_uow=uow_factories.build_minigame_uow_factory(),
                         bot_name=settings.bot_name.lower(),
                         send_channel_message=send_channel_message,
                     ),
                     finish_expired_games_use_case=FinishExpiredGamesUseCase(
-                        minigame_service=providers.minigame_providers.minigame_service,
+                        minigame_repository=providers.minigame_providers.minigame_repository,
                         send_channel_message=send_channel_message,
                         minigame_uow=uow_factories.build_minigame_uow_factory(),
                         bot_name=settings.bot_name.lower(),

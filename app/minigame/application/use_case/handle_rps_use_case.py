@@ -3,12 +3,13 @@ from datetime import datetime
 from app.economy.domain.models import TransactionType
 from app.minigame.application.model.rps import RpsDTO
 from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
-from app.minigame.domain.minigame_service import RPS_CHOICES, MinigameService
+from app.minigame.domain.minigame_repository import MinigameRepository
+from app.minigame.infrastructure.minigame_repository import RPS_CHOICES, MinigameRepositoryImpl
 
 
 class HandleRpsUseCase:
-    def __init__(self, minigame_service: MinigameService, rps_uow: RpsUnitOfWorkFactory):
-        self._minigame_service = minigame_service
+    def __init__(self, minigame_repository: MinigameRepository, rps_uow: RpsUnitOfWorkFactory):
+        self._minigame_repository = minigame_repository
         self._rps_uow = rps_uow
 
     async def handle(self, rps: RpsDTO) -> str:
@@ -20,7 +21,7 @@ class HandleRpsUseCase:
 
         user_message = rps.command_prefix + rps.command_name + " " + rps.choice_input
 
-        game = self._minigame_service.get_active_rps_game(rps.channel_name)
+        game = self._minigame_repository.get_active_rps_game(rps.channel_name)
 
         if not game:
             message = "Сейчас нет активной игры 'камень-ножницы-бумага'"
@@ -34,7 +35,7 @@ class HandleRpsUseCase:
             return message
 
         if datetime.utcnow() > game.end_time:
-            bot_choice, winning_choice, winners = self._minigame_service.finish_rps(game, rps.channel_name)
+            bot_choice, winning_choice, winners = self._minigame_repository.finish_rps(game, rps.channel_name)
             if winners:
                 share = max(1, game.bank // len(winners))
                 with self._rps_uow.create() as uow:
@@ -97,7 +98,7 @@ class HandleRpsUseCase:
                 )
             return message
 
-        fee = MinigameService.RPS_ENTRY_FEE_PER_USER
+        fee = MinigameRepositoryImpl.RPS_ENTRY_FEE_PER_USER
 
         with self._rps_uow.create() as uow:
             user_balance = uow.economy_policy.subtract_balance(

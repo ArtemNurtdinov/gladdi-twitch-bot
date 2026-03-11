@@ -3,29 +3,29 @@ from datetime import datetime
 
 from app.economy.domain.models import TransactionType
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
-from app.minigame.domain.minigame_service import MinigameService
+from app.minigame.domain.minigame_repository import MinigameRepository
 
 
 class FinishRpsUseCase:
     def __init__(
         self,
-        minigame_service: MinigameService,
+        minigame_repository: MinigameRepository,
         minigame_uow: MinigameUnitOfWorkFactory,
         bot_name: str,
         send_channel_message: Callable[[str, str], Awaitable[None]],
     ):
-        self._minigame_service = minigame_service
+        self._minigame_repository = minigame_repository
         self._minigame_uow = minigame_uow
         self._bot_name = bot_name
         self._send_channel_message = send_channel_message
 
     async def finish(self, channel_name: str):
-        game = self._minigame_service.get_active_rps_game(channel_name)
+        game = self._minigame_repository.get_active_rps_game(channel_name)
 
         if not game:
             return
 
-        bot_choice, winning_choice, winners = self._minigame_service.finish_rps(game, channel_name)
+        bot_choice, winning_choice, winners = self._minigame_repository.finish_rps(game, channel_name)
         if winners:
             share = max(1, game.bank // len(winners))
             with self._minigame_uow.create() as uow:

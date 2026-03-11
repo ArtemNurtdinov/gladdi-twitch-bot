@@ -205,8 +205,8 @@ def build_command_registry(
         command_guess_letter=settings.command_guess_letter,
         command_guess_word=settings.command_guess_word,
         handle_guess_use_case=HandleGuessUseCase(
-            minigame_service=providers.minigame_providers.minigame_service,
-            unit_of_work_factory=uow_factories.build_guess_uow_factory(),
+            minigame_repository=providers.minigame_providers.minigame_repository,
+            guess_uow=uow_factories.build_guess_uow_factory(),
         ),
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
@@ -215,7 +215,7 @@ def build_command_registry(
         command_prefix=prefix,
         command_name=settings.command_rps,
         handle_rps_use_case=HandleRpsUseCase(
-            minigame_service=providers.minigame_providers.minigame_service,
+            minigame_repository=providers.minigame_providers.minigame_repository,
             rps_uow=uow_factories.build_rps_uow_factory(),
         ),
         bot_nick=bot_name,

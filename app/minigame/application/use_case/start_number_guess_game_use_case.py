@@ -3,7 +3,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
-from app.minigame.domain.minigame_service import MinigameService
+from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.domain.model.guess_number import GuessNumberGame
 
 
@@ -15,14 +15,14 @@ class StartNumberGuessGameUseCase:
 
     def __init__(
         self,
-        minigame_service: MinigameService,
+        minigame_repository: MinigameRepository,
         prefix: str,
         command_name: str,
         send_channel_message: Callable[[str, str], Awaitable[None]],
         minigame_uow: MinigameUnitOfWorkFactory,
         bot_name: str,
     ):
-        self._minigame_service = minigame_service
+        self._minigame_repository = minigame_repository
         self._prefix = prefix
         self._command_name = command_name
         self._send_channel_message = send_channel_message
@@ -45,7 +45,7 @@ class StartNumberGuessGameUseCase:
             prize_amount=self.GUESS_GAME_PRIZE,
         )
 
-        self._minigame_service.save_active_guess_number_game(channel_name, game)
+        self._minigame_repository.save_active_guess_number_game(channel_name, game)
 
         game_message = (
             f"🎯 НОВАЯ МИНИ-ИГРА! Угадай число от {game.min_number} до {game.max_number}! "

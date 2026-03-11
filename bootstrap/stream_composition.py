@@ -12,5 +12,5 @@ def restore_stream_context(
 ) -> None:
     HandleRestoreStreamContextUseCase(
         restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
-        minigame_service=providers.minigame_providers.minigame_service,
+        minigame_repository=providers.minigame_providers.minigame_repository,
     ).handle(channel_name)

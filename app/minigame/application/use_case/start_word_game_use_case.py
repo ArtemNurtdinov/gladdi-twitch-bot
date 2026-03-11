@@ -6,7 +6,7 @@ from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
-from app.minigame.domain.minigame_service import MinigameService
+from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.domain.model.word_guess import WordGuessGame
 from core.provider import Provider
 from core.types import SessionFactory
@@ -18,7 +18,7 @@ class StartWordGameUseCase:
 
     def __init__(
         self,
-        minigame_service: MinigameService,
+        minigame_repository: MinigameRepository,
         prefix: str,
         minigame_uow: MinigameUnitOfWorkFactory,
         db_ro_session: SessionFactory,
@@ -29,7 +29,7 @@ class StartWordGameUseCase:
         send_channel_message: Callable[[str, str], Awaitable[None]],
         bot_name: str,
     ):
-        self._minigame_service = minigame_service
+        self._minigame_repository = minigame_repository
         self._minigame_uow = minigame_uow
         self._db_ro_session = db_ro_session
         self._system_prompt_repository_provider = system_prompt_repository_provider
@@ -87,7 +87,7 @@ class StartWordGameUseCase:
             guessed_letters=set(),
         )
 
-        self._minigame_service.save_word_gues_game(channel_name, game)
+        self._minigame_repository.save_word_gues_game(channel_name, game)
 
         with self._minigame_uow.create() as uow:
             uow.add_used_words_use_case.add_used_words(channel_name, final_word)

@@ -1,6 +1,7 @@
 import random
 from datetime import datetime
 
+from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.domain.model.guess_number import GuessNumberGame
 from app.minigame.domain.model.rps import RPSGame
 from app.minigame.domain.model.word_guess import WordGuessGame
@@ -8,7 +9,7 @@ from app.minigame.domain.model.word_guess import WordGuessGame
 RPS_CHOICES = ("камень", "ножницы", "бумага")
 
 
-class MinigameService:
+class MinigameRepositoryImpl(MinigameRepository):
     RPS_ENTRY_FEE_PER_USER = 100
 
     def __init__(self):

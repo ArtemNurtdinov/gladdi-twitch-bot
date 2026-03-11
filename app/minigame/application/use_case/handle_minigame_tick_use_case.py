@@ -7,7 +7,7 @@ from app.minigame.application.use_case.finish_rps_use_case import FinishRpsUseCa
 from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
 from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
-from app.minigame.domain.minigame_service import MinigameService
+from app.minigame.domain.minigame_repository import MinigameRepository
 
 
 class HandleMinigameTickUseCase:
@@ -18,7 +18,7 @@ class HandleMinigameTickUseCase:
 
     def __init__(
         self,
-        minigame_service: MinigameService,
+        minigame_repository: MinigameRepository,
         minigame_ouw: MinigameUnitOfWorkFactory,
         start_number_guess_game_use_case: StartNumberGuessGameUseCase,
         start_word_game_use_case: StartWordGameUseCase,
@@ -26,7 +26,7 @@ class HandleMinigameTickUseCase:
         finish_rps_game_use_case: FinishRpsUseCase,
         finish_expired_games_use_case: FinishExpiredGamesUseCase,
     ):
-        self._minigame_service = minigame_service
+        self._minigame_repository = minigame_repository
         self._minigame_ouw = minigame_ouw
         self._start_number_guess_game_use_case = start_number_guess_game_use_case
         self._start_word_game_use_case = start_word_game_use_case
@@ -36,7 +36,7 @@ class HandleMinigameTickUseCase:
 
     async def handle(self, channel_name: str):
         current_time = datetime.utcnow()
-        active_rps_game = self._minigame_service.get_active_rps_game(channel_name)
+        active_rps_game = self._minigame_repository.get_active_rps_game(channel_name)
 
         if active_rps_game and active_rps_game.is_active and current_time > active_rps_game.end_time:
             await self._finish_rps_game_use_case.finish(channel_name)
@@ -50,15 +50,15 @@ class HandleMinigameTickUseCase:
         if not active_stream:
             return
 
-        guess_game = self._minigame_service.get_active_guess_game(channel_name)
-        word_game = self._minigame_service.get_active_word_game(channel_name)
-        rps_game = self._minigame_service.get_active_rps_game(channel_name)
+        guess_game = self._minigame_repository.get_active_guess_game(channel_name)
+        word_game = self._minigame_repository.get_active_word_game(channel_name)
+        rps_game = self._minigame_repository.get_active_rps_game(channel_name)
 
         if guess_game or word_game or rps_game:
             return
 
         current_time = datetime.utcnow()
-        last_game_time = self._minigame_service.get_last_game_time(channel_name)
+        last_game_time = self._minigame_repository.get_last_game_time(channel_name)
 
         if last_game_time:
             time_since_last = current_time - last_game_time
@@ -67,9 +67,9 @@ class HandleMinigameTickUseCase:
             required_interval = timedelta(minutes=random_minutes)
             should_start_new_game = time_since_last >= required_interval
         else:
-            stream_start_time = self._minigame_service.get_stream_start_time(channel_name)
-            print(f"stream_start_time = {stream_start_time}, current_time = {current_time}")
+            stream_start_time = self._minigame_repository.get_stream_start_time(channel_name)
             time_since_stream_start = current_time - stream_start_time
+            print(f"stream_start = {stream_start_time}, current_time = {current_time}, since_stream_start = {time_since_stream_start}")
             first_game_delay_minutes = random.randint(self.FIRST_GAME_START_MIN, self.FIRST_GAME_START_MAX)
             required_delay = timedelta(minutes=first_game_delay_minutes)
             should_start_new_game = time_since_stream_start >= required_delay

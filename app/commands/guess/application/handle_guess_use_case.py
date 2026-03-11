@@ -3,7 +3,7 @@ from datetime import datetime
 from app.commands.guess.application.guess_uow import GuessUnitOfWorkFactory
 from app.commands.guess.application.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
 from app.economy.domain.models import TransactionType
-from app.minigame.domain.minigame_service import MinigameService
+from app.minigame.domain.minigame_repository import MinigameRepository
 
 
 class HandleGuessUseCase:
@@ -11,8 +11,8 @@ class HandleGuessUseCase:
     WORD_GAME_LETTER_REWARD_DECREASE = 200
     GUESS_PRIZE_DECREASE_PER_ATTEMPT = 100
 
-    def __init__(self, minigame_service: MinigameService, guess_uow: GuessUnitOfWorkFactory):
-        self._minigame_service = minigame_service
+    def __init__(self, minigame_repository: MinigameRepository, guess_uow: GuessUnitOfWorkFactory):
+        self._minigame_repository = minigame_repository
         self._guess_uow = guess_uow
 
     async def handle_number(self, guess_number: GuessNumberDTO) -> str:
@@ -56,7 +56,7 @@ class HandleGuessUseCase:
                 )
             return result
 
-        game = self._minigame_service.get_active_guess_game(guess_number.channel_name)
+        game = self._minigame_repository.get_active_guess_game(guess_number.channel_name)
 
         if not game:
             result = "Сейчас нет активной игры 'угадай число'"
@@ -77,7 +77,7 @@ class HandleGuessUseCase:
 
         if datetime.utcnow() > game.end_time:
             game.is_active = False
-            self._minigame_service.delete_guess_game(guess_number.channel_name)
+            self._minigame_repository.delete_guess_game(guess_number.channel_name)
             result = f"Время игры истекло! Загаданное число было {game.target_number}"
             with self._guess_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
@@ -132,7 +132,7 @@ class HandleGuessUseCase:
             game.is_active = False
             game.winner = guess_number.display_name
             game.winning_time = datetime.utcnow()
-            self._minigame_service.delete_guess_number_game(guess_number.channel_name)
+            self._minigame_repository.delete_guess_number_game(guess_number.channel_name)
 
             message = f"ПОЗДРАВЛЯЕМ! @{guess_number.display_name} угадал число {guess} и выиграл {game.prize_amount} монет!"
 
@@ -183,7 +183,7 @@ class HandleGuessUseCase:
         if guess_letter.letter_input:
             user_message += guess_letter.letter_input
 
-        game = self._minigame_service.get_active_word_game(guess_letter.channel_name)
+        game = self._minigame_repository.get_active_word_game(guess_letter.channel_name)
 
         if not game:
             message = "Сейчас нет активной игры 'поле чудес'"
@@ -204,7 +204,7 @@ class HandleGuessUseCase:
 
         if not guess_letter.letter_input:
             if datetime.utcnow() > game.end_time:
-                message = self._minigame_service.finish_word_game_timeout(guess_letter.channel_name)
+                message = self._minigame_repository.finish_word_game_timeout(guess_letter.channel_name)
             else:
                 if game.winner:
                     message = f"Слово '{game.target_word}' угадал @{game.winner}! Выигрыш: {game.prize_amount} монет"
@@ -231,7 +231,7 @@ class HandleGuessUseCase:
             return message
 
         if datetime.utcnow() > game.end_time:
-            self._minigame_service.finish_word_game_timeout(guess_letter.channel_name)
+            self._minigame_repository.finish_word_game_timeout(guess_letter.channel_name)
             message = f"Время игры истекло! Слово было '{game.target_word}'"
             with self._guess_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
@@ -311,7 +311,7 @@ class HandleGuessUseCase:
                 game.winner = guess_letter.display_name
                 game.winning_time = datetime.utcnow()
 
-                self._minigame_service.delete_word_guess_game(guess_letter.channel_name)
+                self._minigame_repository.delete_word_guess_game(guess_letter.channel_name)
             else:
                 message = f"Буква есть! Слово: {masked}."
             with self._guess_uow.create() as uow:
@@ -350,7 +350,7 @@ class HandleGuessUseCase:
         if guess_word.word_input:
             user_message += guess_word.word_input
 
-        game = self._minigame_service.get_active_word_game(guess_word.channel_name)
+        game = self._minigame_repository.get_active_word_game(guess_word.channel_name)
 
         if not game:
             message = "Сейчас нет активной игры 'поле чудес'"
@@ -371,7 +371,7 @@ class HandleGuessUseCase:
 
         if not guess_word.word_input:
             if datetime.utcnow() > game.end_time:
-                message = self._minigame_service.finish_word_game_timeout(guess_word.channel_name)
+                message = self._minigame_repository.finish_word_game_timeout(guess_word.channel_name)
             else:
                 if game.winner:
                     message = f"Слово '{game.target_word}' угадал @{game.winner}! Выигрыш: {game.prize_amount} монет"
@@ -397,7 +397,7 @@ class HandleGuessUseCase:
             return message
 
         if datetime.utcnow() > game.end_time:
-            self._minigame_service.finish_word_game_timeout(guess_word.channel_name)
+            self._minigame_repository.finish_word_game_timeout(guess_word.channel_name)
             message = f"Время игры истекло! Слово было '{game.target_word}'"
             with self._guess_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
@@ -419,7 +419,7 @@ class HandleGuessUseCase:
             game.winner = guess_word.display_name
             game.winning_time = datetime.utcnow()
 
-            self._minigame_service.delete_word_guess_game(guess_word.channel_name)
+            self._minigame_repository.delete_word_guess_game(guess_word.channel_name)
 
             message = f"ПОЗДРАВЛЯЕМ! @{guess_word.display_name} угадал слово '{game.target_word}' и выиграл {game.prize_amount} монет!"
 
