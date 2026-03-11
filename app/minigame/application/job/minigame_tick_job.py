@@ -20,12 +20,12 @@ class MinigameTickJob:
     async def run(self):
         while True:
             try:
-                dto = MinigameTickDTO(
+                minigame_tick = MinigameTickDTO(
                     channel_name=self._channel_name,
                     occurred_at=datetime.utcnow(),
                 )
-                delay = await self._handle_minigame_tick_use_case.handle(dto)
-                await asyncio.sleep(delay)
+                await self._handle_minigame_tick_use_case.handle(minigame_tick)
+                await asyncio.sleep(self._MINIGAME_TICK_DELAY)
             except asyncio.CancelledError:
                 break
             except Exception:

@@ -8,8 +8,6 @@ from app.minigame.domain.minigame_service import MinigameService
 
 
 class MinigameOrchestrator:
-    DEFAULT_SLEEP_SECONDS = 60
-
     def __init__(
         self,
         minigame_service: MinigameService,

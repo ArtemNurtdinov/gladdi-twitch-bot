@@ -11,8 +11,6 @@ from app.minigame.domain.minigame_service import MinigameService
 
 
 class HandleMinigameTickUseCase:
-    DEFAULT_SLEEP_SECONDS = 60
-
     def __init__(
         self,
         minigame_service: MinigameService,
@@ -29,11 +27,11 @@ class HandleMinigameTickUseCase:
         self._start_word_game_use_case = start_word_game_use_case
         self._start_rps_game_use_case = start_rps_game_use_case
 
-    async def handle(self, minigame_tick: MinigameTickDTO) -> int:
+    async def handle(self, minigame_tick: MinigameTickDTO):
         rps_game_complete_time = self._minigame_service.check_rps_game_complete_time(minigame_tick.channel_name, datetime.utcnow())
         if rps_game_complete_time:
             await self._minigame_orchestrator.finish_rps(minigame_tick.channel_name)
-            return self.DEFAULT_SLEEP_SECONDS
+            return
 
         await self._minigame_orchestrator.finish_expired_games()
 
@@ -41,10 +39,10 @@ class HandleMinigameTickUseCase:
             active_stream = uow.stream_service.get_active_stream(minigame_tick.channel_name)
 
         if not active_stream:
-            return self.DEFAULT_SLEEP_SECONDS
+            return
 
         if not self._minigame_service.should_start_new_game(minigame_tick.channel_name):
-            return self.DEFAULT_SLEEP_SECONDS
+            return
 
         choice = random.choice(["number", "word", "rps"])
 
@@ -54,5 +52,3 @@ class HandleMinigameTickUseCase:
             await self._start_number_guess_game_use_case.start(minigame_tick.channel_name)
         else:
             await self._start_rps_game_use_case.start(minigame_tick.channel_name)
-
-        return self.DEFAULT_SLEEP_SECONDS
