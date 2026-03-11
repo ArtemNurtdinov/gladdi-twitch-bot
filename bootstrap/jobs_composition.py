@@ -11,6 +11,9 @@ from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJok
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
+from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
+from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
+from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.application.token_checker_job import TokenCheckerJob
 from app.platform.auth import PlatformAuth
@@ -25,6 +28,7 @@ from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
 from core.background.tasks import BackgroundTasks
 from core.chat.outbound import ChatOutbound
+from core.db import db_ro_session
 
 
 def build_background_tasks(
@@ -84,7 +88,37 @@ def build_background_tasks(
             MinigameTickJob(
                 channel_name=settings.channel_name,
                 handle_minigame_tick_use_case=HandleMinigameTickUseCase(
+                    minigame_service=providers.minigame_providers.minigame_service,
                     minigame_orchestrator=minigame_orchestrator,
+                    minigame_ouw=uow_factories.build_minigame_uow_factory(),
+                    start_number_guess_game_use_case=StartNumberGuessGameUseCase(
+                        minigame_service=providers.minigame_providers.minigame_service,
+                        prefix=settings.prefix,
+                        command_name=settings.command_guess,
+                        send_channel_message=send_channel_message,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=settings.bot_name.lower(),
+                    ),
+                    start_word_game_use_case=StartWordGameUseCase(
+                        minigame_service=providers.minigame_providers.minigame_service,
+                        prefix=settings.prefix,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        db_ro_session=db_ro_session,
+                        system_prompt_repository_provider=providers.ai_providers.system_prompt_repo_provider,
+                        llm_repository=providers.ai_providers.llm_repository,
+                        command_guess_word=settings.command_guess_word,
+                        command_guess_letter=settings.command_guess_letter,
+                        send_channel_message=send_channel_message,
+                        bot_name=settings.bot_name.lower(),
+                    ),
+                    start_rps_game_use_case=StartRpsGameUseCase(
+                        minigame_service=providers.minigame_providers.minigame_service,
+                        prefix=settings.prefix,
+                        command_name=settings.command_rps,
+                        send_channel_message=send_channel_message,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=settings.bot_name.lower(),
+                    ),
                 ),
             ),
             ViewerTimeJob(

@@ -7,9 +7,6 @@ from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponse
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
-from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
-from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
-from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.platform.auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
@@ -121,34 +118,6 @@ class BotManager:
                 unit_of_work_factory=uow_factories.build_minigame_uow_factory(),
                 bot_nick=self._settings.bot_name,
                 send_channel_message=chat_client.send_channel_message,
-                start_number_guess_game_use_case=StartNumberGuessGameUseCase(
-                    minigame_service=providers_bundle.minigame_providers.minigame_service,
-                    prefix=self._settings.prefix,
-                    command_name=self._settings.command_guess,
-                    send_channel_message=chat_client.send_channel_message,
-                    minigame_uow=uow_factories.build_minigame_uow_factory(),
-                    bot_name=self._settings.bot_name.lower(),
-                ),
-                start_word_game_use_case=StartWordGameUseCase(
-                    minigame_service=providers_bundle.minigame_providers.minigame_service,
-                    prefix=self._settings.prefix,
-                    minigame_uow=uow_factories.build_minigame_uow_factory(),
-                    db_ro_session=db_ro_session,
-                    system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
-                    llm_repository=providers_bundle.ai_providers.llm_repository,
-                    command_guess_word=self._settings.command_guess_word,
-                    command_guess_letter=self._settings.command_guess_letter,
-                    send_channel_message=chat_client.send_channel_message,
-                    bot_name=self._settings.bot_name.lower(),
-                ),
-                start_rps_game_use_case=StartRpsGameUseCase(
-                    minigame_service=providers_bundle.minigame_providers.minigame_service,
-                    prefix=self._settings.prefix,
-                    command_name=self._settings.command_rps,
-                    send_channel_message=chat_client.send_channel_message,
-                    minigame_uow=uow_factories.build_minigame_uow_factory(),
-                    bot_name=self._settings.bot_name.lower(),
-                ),
             )
 
             chat_response_use_case = ChatResponseUseCase(
