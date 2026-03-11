@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from app.minigame.domain.model.guess_number import GuessNumberGame
 from app.minigame.domain.model.rps import RPSGame
@@ -10,12 +10,6 @@ RPS_CHOICES = ("камень", "ножницы", "бумага")
 
 class MinigameService:
     RPS_ENTRY_FEE_PER_USER = 100
-
-    FIRST_GAME_START_MIN = 15
-    FIRST_GAME_START_MAX = 30
-
-    GAME_START_INTERVAL_MIN = 30
-    GAME_START_INTERVAL_MAX = 60
 
     def __init__(self):
         self.active_guess_games: dict[str, GuessNumberGame] = {}
@@ -45,30 +39,11 @@ class MinigameService:
         if rps_game:
             self.finish_rps(rps_game, channel_name)
 
-    def should_start_new_game(self, channel_name: str) -> bool:
-        if channel_name in self.active_guess_games or channel_name in self.active_word_games or channel_name in self.active_rps_games:
-            return False
+    def get_last_game_time(self, channel_name: str) -> datetime | None:
+        return self.last_game_time[channel_name]
 
-        current_time = datetime.utcnow()
-
-        if channel_name not in self.last_game_time:
-            stream_start = self.stream_start_time[channel_name]
-            time_since_stream_start = current_time - stream_start
-
-            first_game_delay_minutes = random.randint(self.FIRST_GAME_START_MIN, self.FIRST_GAME_START_MAX)
-            required_delay = timedelta(minutes=first_game_delay_minutes)
-
-            return time_since_stream_start >= required_delay
-
-        last_game_time = self.last_game_time[channel_name]
-        time_since_last = current_time - last_game_time
-
-        print(f"last_game_time = {last_game_time}, current_time = {current_time}, time_since_last = {time_since_last}")
-
-        random_minutes = random.randint(self.GAME_START_INTERVAL_MIN, self.GAME_START_INTERVAL_MAX)
-        required_interval = timedelta(minutes=random_minutes)
-
-        return time_since_last >= required_interval
+    def get_stream_start_time(self, channel_name: str) -> datetime | None:
+        return self.stream_start_time[channel_name]
 
     def save_active_guess_number_game(self, channel_name: str, game: GuessNumberGame):
         self.active_guess_games[channel_name] = game

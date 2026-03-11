@@ -1,5 +1,5 @@
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
@@ -11,6 +11,11 @@ from app.minigame.domain.minigame_service import MinigameService
 
 
 class HandleMinigameTickUseCase:
+    FIRST_GAME_START_MIN = 15
+    FIRST_GAME_START_MAX = 30
+    GAME_START_INTERVAL_MIN = 30
+    GAME_START_INTERVAL_MAX = 60
+
     def __init__(
         self,
         minigame_service: MinigameService,
@@ -45,7 +50,31 @@ class HandleMinigameTickUseCase:
         if not active_stream:
             return
 
-        if not self._minigame_service.should_start_new_game(channel_name):
+        guess_game = self._minigame_service.get_active_guess_game(channel_name)
+        word_game = self._minigame_service.get_active_word_game(channel_name)
+        rps_game = self._minigame_service.get_active_rps_game(channel_name)
+
+        if guess_game or word_game or rps_game:
+            return
+
+        current_time = datetime.utcnow()
+        last_game_time = self._minigame_service.get_last_game_time(channel_name)
+
+        if last_game_time:
+            time_since_last = current_time - last_game_time
+            print(f"last_game_time = {last_game_time}, current_time = {current_time}, time_since_last = {time_since_last}")
+            random_minutes = random.randint(self.GAME_START_INTERVAL_MIN, self.GAME_START_INTERVAL_MAX)
+            required_interval = timedelta(minutes=random_minutes)
+            should_start_new_game = time_since_last >= required_interval
+        else:
+            stream_start_time = self._minigame_service.get_stream_start_time(channel_name)
+            print(f"stream_start_time = {stream_start_time}, current_time = {current_time}")
+            time_since_stream_start = current_time - stream_start_time
+            first_game_delay_minutes = random.randint(self.FIRST_GAME_START_MIN, self.FIRST_GAME_START_MAX)
+            required_delay = timedelta(minutes=first_game_delay_minutes)
+            should_start_new_game = time_since_stream_start >= required_delay
+
+        if not should_start_new_game:
             return
 
         choice = random.choice(["number", "word", "rps"])
