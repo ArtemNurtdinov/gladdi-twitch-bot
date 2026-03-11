@@ -45,14 +45,16 @@ class MinigameService:
         if channel_name in self.stream_start_time:
             del self.stream_start_time[channel_name]
 
-        if channel_name in self.active_guess_games:
-            game = self.active_guess_games[channel_name]
-            game.is_active = False
+        guess_game = self.active_guess_games[channel_name]
+        if guess_game:
+            guess_game.is_active = False
             del self.active_guess_games[channel_name]
+
         if channel_name in self.active_word_games:
             self.finish_word_game_timeout(channel_name)
 
         rps_game = self.get_active_rps_game(channel_name)
+
         if rps_game:
             self.finish_rps(rps_game, channel_name)
 
