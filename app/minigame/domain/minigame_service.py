@@ -46,7 +46,9 @@ class MinigameService:
             del self.stream_start_time[channel_name]
 
         if channel_name in self.active_guess_games:
-            self.finish_guess_game_timeout(channel_name)
+            game = self.active_guess_games[channel_name]
+            game.is_active = False
+            del self.active_guess_games[channel_name]
         if channel_name in self.active_word_games:
             self.finish_word_game_timeout(channel_name)
         if channel_name in self.active_rps_games:
@@ -108,18 +110,8 @@ class MinigameService:
     def delete_guess_number_game(self, channel_name: str):
         del self.active_guess_games[channel_name]
 
-    def finish_guess_game_timeout(self, channel_name: str) -> str:
-        if channel_name not in self.active_guess_games:
-            return "Игра не найдена"
-
-        game = self.active_guess_games[channel_name]
-        game.is_active = False
-
-        timeout_message = f"Время игры 'угадай число' истекло! Загаданное число было {game.target_number}. Никто не выиграл на этот раз."
-
+    def delete_guess_game(self, channel_name: str):
         del self.active_guess_games[channel_name]
-
-        return timeout_message
 
     def get_active_rps_game(self, channel_name: str) -> RPSGame | None:
         return self.active_rps_games.get(channel_name)

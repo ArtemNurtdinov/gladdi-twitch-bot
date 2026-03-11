@@ -72,7 +72,8 @@ class HandleGuessUseCase:
             return result
 
         if datetime.utcnow() > game.end_time:
-            self._minigame_service.finish_guess_game_timeout(guess_number.channel_name)
+            game.is_active = False
+            self._minigame_service.delete_guess_game(guess_number.channel_name)
             result = f"Время игры истекло! Загаданное число было {game.target_number}"
             with self._guess_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
