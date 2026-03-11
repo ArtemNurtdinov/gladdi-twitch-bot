@@ -102,16 +102,10 @@ class MinigameService:
 
         return game
 
-    def is_game_active(self, channel_name: str) -> bool:
-        return True if channel_name in self.active_guess_games else False
-
     def get_active_game(self, channel_name: str) -> GuessNumberGame:
         return self.active_guess_games[channel_name]
 
-    def finish_game_with_winner(self, game: GuessNumberGame, channel_name: str, winner_name: str):
-        game.is_active = False
-        game.winner = winner_name
-        game.winning_time = datetime.utcnow()
+    def delete_guess_number_game(self, channel_name: str):
         del self.active_guess_games[channel_name]
 
     def finish_guess_game_timeout(self, channel_name: str) -> str:
