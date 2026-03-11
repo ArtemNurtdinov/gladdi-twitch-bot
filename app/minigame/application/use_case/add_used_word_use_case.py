@@ -10,4 +10,4 @@ class AddUsedWordsUseCase:
         if not normalized:
             return
         with self._unit_of_work_factory.create() as uow:
-            return uow.word_history_repo.add_word(channel_name, normalized)
+            uow.word_history_repo.add_word(channel_name, normalized)
