@@ -5,26 +5,18 @@ from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWor
 
 
 class HandleFollowersSyncUseCase:
-    def __init__(
-        self,
-        followers_port: FollowersPort,
-        unit_of_work_factory: FollowersSyncUnitOfWorkFactory,
-    ):
+    def __init__(self, followers_port: FollowersPort, sync_followers_uow: FollowersSyncUnitOfWorkFactory):
         self._followers_port = followers_port
-        self._unit_of_work_factory = unit_of_work_factory
+        self._sync_followers_uow = sync_followers_uow
 
     async def handle(self, channel_name: str, seen_at: datetime):
         followers = await self._followers_port.get_channel_followers(channel_name)
 
-        with self._unit_of_work_factory.create() as uow:
+        with self._sync_followers_uow.create() as uow:
             existing = uow.followers_repo.list_by_channel(channel_name)
             existing_map = {f.user_id: f for f in existing}
 
-            new_count = 0
             for follower in followers:
-                prev = existing_map.pop(follower.user_id, None)
-                if prev is None or not prev.is_active or prev.unfollowed_at:
-                    new_count += 1
                 uow.followers_repo.upsert_active(
                     channel_name=channel_name,
                     user_id=follower.user_id,
