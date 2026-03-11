@@ -6,7 +6,6 @@ from datetime import datetime
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.application.commands_registry import CommandRegistryProtocol
-from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
 from app.platform.auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
@@ -113,13 +112,6 @@ class BotManager:
 
             chat_summary_state = ChatSummaryState()
 
-            minigame_orchestrator = MinigameOrchestrator(
-                minigame_service=providers_bundle.minigame_providers.minigame_service,
-                unit_of_work_factory=uow_factories.build_minigame_uow_factory(),
-                bot_nick=self._settings.bot_name,
-                send_channel_message=chat_client.send_channel_message,
-            )
-
             chat_response_use_case = ChatResponseUseCase(
                 unit_of_work_factory=uow_factories.build_chat_response_uow_factory(),
                 llm_repository=providers_bundle.ai_providers.llm_repository,
@@ -133,7 +125,6 @@ class BotManager:
                 settings=self._settings,
                 bot_name=self._settings.bot_name,
                 chat_summary_state=chat_summary_state,
-                minigame_orchestrator=minigame_orchestrator,
                 chat_response_use_case=chat_response_use_case,
                 outbound=chat_client,
                 platform_auth=self._platform_providers.platform_auth,

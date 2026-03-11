@@ -1,7 +1,5 @@
 import asyncio
-from datetime import datetime
 
-from app.minigame.application.model.minigame_tick import MinigameTickDTO
 from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from core.background.task_runner import BackgroundTaskRunner
 
@@ -20,11 +18,7 @@ class MinigameTickJob:
     async def run(self):
         while True:
             try:
-                minigame_tick = MinigameTickDTO(
-                    channel_name=self._channel_name,
-                    occurred_at=datetime.utcnow(),
-                )
-                await self._handle_minigame_tick_use_case.handle(minigame_tick)
+                await self._handle_minigame_tick_use_case.handle(self._channel_name)
                 await asyncio.sleep(self._MINIGAME_TICK_DELAY)
             except asyncio.CancelledError:
                 break

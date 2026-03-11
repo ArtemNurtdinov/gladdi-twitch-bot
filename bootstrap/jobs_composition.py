@@ -9,7 +9,8 @@ from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
-from app.minigame.application.minigame_orchestrator import MinigameOrchestrator
+from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
+from app.minigame.application.use_case.finish_rps_use_case import FinishRpsUseCase
 from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
 from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
@@ -37,7 +38,6 @@ def build_background_tasks(
     settings: BotSettings,
     bot_name: str,
     chat_summary_state: ChatSummaryState,
-    minigame_orchestrator: MinigameOrchestrator,
     chat_response_use_case: ChatResponseUseCase,
     outbound: ChatOutbound,
     platform_auth: PlatformAuth,
@@ -89,7 +89,6 @@ def build_background_tasks(
                 channel_name=settings.channel_name,
                 handle_minigame_tick_use_case=HandleMinigameTickUseCase(
                     minigame_service=providers.minigame_providers.minigame_service,
-                    minigame_orchestrator=minigame_orchestrator,
                     minigame_ouw=uow_factories.build_minigame_uow_factory(),
                     start_number_guess_game_use_case=StartNumberGuessGameUseCase(
                         minigame_service=providers.minigame_providers.minigame_service,
@@ -115,6 +114,18 @@ def build_background_tasks(
                         minigame_service=providers.minigame_providers.minigame_service,
                         prefix=settings.prefix,
                         command_name=settings.command_rps,
+                        send_channel_message=send_channel_message,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=settings.bot_name.lower(),
+                    ),
+                    finish_rps_game_use_case=FinishRpsUseCase(
+                        minigame_service=providers.minigame_providers.minigame_service,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=settings.bot_name.lower(),
+                        send_channel_message=send_channel_message,
+                    ),
+                    finish_expired_games_use_case=FinishExpiredGamesUseCase(
+                        minigame_service=providers.minigame_providers.minigame_service,
                         send_channel_message=send_channel_message,
                         minigame_uow=uow_factories.build_minigame_uow_factory(),
                         bot_name=settings.bot_name.lower(),
