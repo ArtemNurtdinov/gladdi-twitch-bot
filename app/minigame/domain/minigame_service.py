@@ -127,15 +127,8 @@ class MinigameService:
 
         return timeout_message
 
-    def check_rps_game_complete_time(self, channel_name: str, current_time: datetime) -> bool:
-        if channel_name not in self.active_rps_games:
-            return False
-
-        game = self.active_rps_games.get(channel_name)
-        if current_time > game.end_time and game.is_active:
-            return True
-
-        return False
+    def get_active_rps_game(self, channel_name: str) -> RPSGame | None:
+        return self.active_rps_games.get(channel_name)
 
     def check_expired_games(self) -> dict[str, str]:
         expired_messages: dict[str, str] = {}

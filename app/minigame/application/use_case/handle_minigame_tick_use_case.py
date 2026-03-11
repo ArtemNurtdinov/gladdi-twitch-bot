@@ -30,8 +30,10 @@ class HandleMinigameTickUseCase:
         self._finish_expired_games_use_case = finish_expired_games_use_case
 
     async def handle(self, channel_name: str):
-        rps_game_complete_time = self._minigame_service.check_rps_game_complete_time(channel_name, datetime.utcnow())
-        if rps_game_complete_time:
+        current_time = datetime.utcnow()
+        active_rps_game = self._minigame_service.get_active_rps_game(channel_name)
+
+        if active_rps_game and active_rps_game.is_active and current_time > active_rps_game.end_time:
             await self._finish_rps_game_use_case.finish(channel_name)
             return
 
