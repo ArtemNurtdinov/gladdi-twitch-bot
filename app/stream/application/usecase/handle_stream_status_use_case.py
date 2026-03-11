@@ -86,6 +86,7 @@ class HandleStreamStatusUseCase:
             with self._unit_of_work_factory.create() as uow:
                 uow.start_stream_use_case.execute(channel_name, started_at, game_name, title)
             self._minigame_service.set_stream_start_time(channel_name, started_at)
+            print(f"handle stream start for {channel_name}: {started_at}")
             await self._stream_announcement(channel_name, game_name, title)
             self._state.current_stream_summaries = []
         except Exception as e:

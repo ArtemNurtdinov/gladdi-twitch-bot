@@ -39,6 +39,7 @@ class MinigameService:
 
     def set_stream_start_time(self, channel_name: str, start_time: datetime):
         self.stream_start_time[channel_name] = start_time
+        print(f"set_stream_start_time for {channel_name}: {start_time}")
 
     def reset_stream_state(self, channel_name: str):
         if channel_name in self.stream_start_time:
@@ -69,6 +70,8 @@ class MinigameService:
 
         last_game_time = self.last_game_time[channel_name]
         time_since_last = current_time - last_game_time
+
+        print(f"last_game_time = {last_game_time}, current_time = {current_time}, time_since_last = {time_since_last}")
 
         random_minutes = random.randint(self.GAME_START_INTERVAL_MIN, self.GAME_START_INTERVAL_MAX)
         required_interval = timedelta(minutes=random_minutes)

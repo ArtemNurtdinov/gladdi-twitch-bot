@@ -17,3 +17,4 @@ class HandleRestoreStreamContextUseCase:
 
         if active_stream:
             self._minigame_service.set_stream_start_time(channel_name, active_stream.started_at)
+            print(f"handle stream restore for {channel_name}: {active_stream.started_at}")
