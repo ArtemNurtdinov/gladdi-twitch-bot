@@ -161,9 +161,6 @@ class MinigameService:
     def is_word_game_active(self, channel_name) -> bool:
         return True if channel_name in self.active_word_games else False
 
-    def get_active_word_game(self, channel_name: str) -> WordGuessGame:
-        return self.active_word_games[channel_name]
-
     def get_word_game_status(self, channel_name: str) -> str | None:
         if channel_name not in self.active_word_games:
             return None
