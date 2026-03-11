@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from app.economy.domain.models import TransactionType
 from app.minigame.application.model.rps import RpsDTO
 from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
@@ -25,35 +23,6 @@ class HandleRpsUseCase:
 
         if not game:
             message = "Сейчас нет активной игры 'камень-ножницы-бумага'"
-            with self._rps_uow.create() as uow:
-                uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=rps.user_name, content=user_message, current_time=rps.occurred_at
-                )
-                uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=bot_nick, content=message, current_time=rps.occurred_at
-                )
-            return message
-
-        if datetime.utcnow() > game.end_time:
-            bot_choice, winning_choice, winners = self._minigame_repository.finish_rps(game, rps.channel_name)
-            if winners:
-                share = max(1, game.bank // len(winners))
-                with self._rps_uow.create() as uow:
-                    for winner in winners:
-                        uow.economy_policy.add_balance(
-                            rps.channel_name,
-                            winner,
-                            share,
-                            TransactionType.MINIGAME_WIN,
-                            f"Победа в КНБ ({winning_choice})",
-                        )
-                winners_display = ", ".join(f"@{winner}" for winner in winners)
-                message = (
-                    f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. "
-                    f"Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
-                )
-            else:
-                message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
             with self._rps_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=rps.channel_name, user_name=rps.user_name, content=user_message, current_time=rps.occurred_at

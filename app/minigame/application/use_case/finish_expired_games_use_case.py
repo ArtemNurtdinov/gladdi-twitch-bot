@@ -19,27 +19,25 @@ class FinishExpiredGamesUseCase:
         self._bot_name = bot_name
 
     async def finish(self, channel_name: str) -> None:
-        expired_games: dict[str, str] = {}
+        timeout_message: str | None = None
 
         active_guess_game = self._minigame_repository.get_active_guess_game(channel_name)
 
         if active_guess_game and datetime.utcnow() > active_guess_game.end_time and active_guess_game.is_active:
             active_guess_game.is_active = False
             self._minigame_repository.delete_guess_game(channel_name)
-            timeout_message = (
-                f"Время игры 'угадай число' истекло! Загаданное число было {active_guess_game.target_number}. Никто не выиграл."
-            )
-            expired_games[channel_name] = timeout_message
+            timeout_message = f"Время игры 'угадай число' истекло! Загаданное число {active_guess_game.target_number}. Никто не выиграл."
 
         active_word_game = self._minigame_repository.get_active_word_game(channel_name)
 
         if active_word_game and datetime.utcnow() > active_word_game.end_time and active_word_game.is_active:
             active_word_game.is_active = False
-            expired_games[channel_name] = f"Время игры 'поле чудес' истекло! Слово было '{active_word_game.target_word}'. Никто не выиграл."
+            self._minigame_repository.delete_word_guess_game(channel_name)
+            timeout_message = f"Время игры 'поле чудес' истекло! Слово '{active_word_game.target_word}'. Никто не выиграл."
 
-        for channel, timeout_message in expired_games.items():
-            await self._send_channel_message(channel, timeout_message)
+        if timeout_message:
+            await self._send_channel_message(channel_name, timeout_message)
             with self._minigame_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
-                    channel_name=channel, user_name=self._bot_name, content=timeout_message, current_time=datetime.utcnow()
+                    channel_name=channel_name, user_name=self._bot_name, content=timeout_message, current_time=datetime.utcnow()
                 )

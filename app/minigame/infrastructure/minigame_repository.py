@@ -1,4 +1,3 @@
-import random
 from datetime import datetime
 
 from app.minigame.domain.minigame_repository import MinigameRepository
@@ -39,7 +38,8 @@ class MinigameRepositoryImpl(MinigameRepository):
 
         rps_game = self.get_active_rps_game(channel_name)
         if rps_game:
-            self.finish_rps(rps_game, channel_name)
+            rps_game.is_active = False
+            del self.active_rps_games[channel_name]
 
     def get_last_game_time(self, channel_name: str) -> datetime | None:
         return self.last_game_time[channel_name]
@@ -73,28 +73,9 @@ class MinigameRepositoryImpl(MinigameRepository):
     def delete_word_guess_game(self, channel_name: str):
         del self.active_word_games[channel_name]
 
-    def finish_word_game_timeout(self, channel_name: str) -> str:
-        if channel_name not in self.active_word_games:
-            return "Игра не найдена"
-        game = self.active_word_games[channel_name]
-        game.is_active = False
-        timeout_message = f"Время игры 'поле чудес' истекло! Слово было '{game.target_word}'. Никто не выиграл."
-        del self.active_word_games[channel_name]
-        return timeout_message
-
     def save_active_rps_game(self, channel_name: str, game: RPSGame):
         self.active_rps_games[channel_name] = game
         self.last_game_time[channel_name] = game.start_time
 
-    def finish_rps(self, game: RPSGame, channel_name: str) -> tuple[str, str, list[str]]:
-        bot_choice = random.choice(RPS_CHOICES)
-        counter_map = {
-            "камень": "бумага",
-            "бумага": "ножницы",
-            "ножницы": "камень",
-        }
-        winning_choice = counter_map[bot_choice]
-        game.winner_choice = winning_choice
-        winners = [user for user, choice in game.user_choices.items() if choice == game.winner_choice]
+    def delete_active_rps_game(self, channel_name: str):
         del self.active_rps_games[channel_name]
-        return bot_choice, winning_choice, winners
