@@ -146,7 +146,7 @@ def build_background_tasks(
                 channel_name=settings.channel_name,
                 handle_followers_sync_use_case=HandleFollowersSyncUseCase(
                     followers_port=providers.follow_providers.followers_port,
-                    unit_of_work_factory=uow_factories.build_followers_sync_uow_factory(),
+                    sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
                 ),
                 interval_seconds=settings.sync_followers_interval_seconds,
             ),
