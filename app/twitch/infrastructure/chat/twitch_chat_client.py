@@ -275,6 +275,6 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
             return False
         if self._token_user_id and chatter.id == self._token_user_id:
             return True
-        if chatter.name and chatter.name.lower() == (self.bot_nick or "").lower():
+        if chatter.name and chatter.name.lower() == (self._settings.bot_name or "").lower():
             return True
         return False
