@@ -113,7 +113,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
                     channel_name=self._channel_login,
                     display_name=chat_message.author,
                     message=payload.text,
-                    bot_nick=self._settings.bot_name,
+                    bot_name=self._settings.bot_name,
                 )
             except Exception:
                 logger.exception("Ошибка в ChatEventHandler для сообщения: %s", payload.text)
