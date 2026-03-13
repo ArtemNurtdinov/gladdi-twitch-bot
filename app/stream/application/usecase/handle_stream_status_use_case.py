@@ -36,10 +36,7 @@ class HandleStreamStatusUseCase:
         self._chat_response_port = chat_response_port
         self._state = state
 
-    async def handle(
-        self,
-        channel_name: str,
-    ) -> None:
+    async def handle(self, channel_name: str):
         broadcaster_id = await self._user_cache.get_user_id(channel_name)
 
         if not broadcaster_id:

@@ -17,8 +17,8 @@ from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGa
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.application.token_checker_job import TokenCheckerJob
-from app.platform.auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
+from app.platform.providers import PlatformProviders
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.infrastructure.adapters.generate_stream_info_adapter import GenerateStreamInfoAdapter
@@ -40,7 +40,7 @@ def build_background_tasks(
     chat_summary_state: ChatSummaryState,
     chat_response_use_case: ChatResponseUseCase,
     outbound: ChatOutbound,
-    platform_auth: PlatformAuth,
+    platform_provider: PlatformProviders,
 ) -> BackgroundTasks:
     send_channel_message = outbound.send_channel_message
     notifications_port = TelegramNotificationAdapter(providers.telegram_providers.telegram_bot)
@@ -61,7 +61,7 @@ def build_background_tasks(
                 bot_nick=bot_name,
             ),
             TokenCheckerJob(
-                handle_token_checker_use_case=HandleTokenCheckerUseCase(platform_auth=platform_auth, interval_seconds=1000),
+                handle_token_checker_use_case=HandleTokenCheckerUseCase(platform_auth=platform_provider.platform_auth),
             ),
             StreamStatusJob(
                 channel_name=settings.channel_name,
@@ -145,7 +145,7 @@ def build_background_tasks(
             FollowersSyncJob(
                 channel_name=settings.channel_name,
                 handle_followers_sync_use_case=HandleFollowersSyncUseCase(
-                    followers_port=providers.follow_providers.followers_port,
+                    platform_port=platform_provider.streaming_platform,
                     sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
                 ),
                 interval_seconds=settings.sync_followers_interval_seconds,

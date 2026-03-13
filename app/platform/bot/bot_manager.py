@@ -127,7 +127,7 @@ class BotManager:
                 chat_summary_state=chat_summary_state,
                 chat_response_use_case=chat_response_use_case,
                 outbound=chat_client,
-                platform_auth=self._platform_providers.platform_auth,
+                platform_provider=self._platform_providers,
             )
 
             chat_client = self._chat_client_factory(self._platform_providers.platform_auth, self._settings, bot_user_id)
