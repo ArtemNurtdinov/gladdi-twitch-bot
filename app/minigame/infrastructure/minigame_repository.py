@@ -26,12 +26,12 @@ class MinigameRepositoryImpl(MinigameRepository):
         if channel_name in self.stream_start_time:
             del self.stream_start_time[channel_name]
 
-        guess_game = self.active_guess_games[channel_name]
+        guess_game = self.active_guess_games.get(channel_name)
         if guess_game:
             guess_game.is_active = False
             del self.active_guess_games[channel_name]
 
-        word_game = self.active_word_games[channel_name]
+        word_game = self.active_word_games.get(channel_name)
         if word_game:
             word_game.is_active = False
             del self.active_word_games[channel_name]
@@ -42,10 +42,10 @@ class MinigameRepositoryImpl(MinigameRepository):
             del self.active_rps_games[channel_name]
 
     def get_last_game_time(self, channel_name: str) -> datetime | None:
-        return self.last_game_time[channel_name]
+        return self.last_game_time.get(channel_name)
 
     def get_stream_start_time(self, channel_name: str) -> datetime | None:
-        return self.stream_start_time[channel_name]
+        return self.stream_start_time.get(channel_name)
 
     def save_active_guess_number_game(self, channel_name: str, game: GuessNumberGame):
         self.active_guess_games[channel_name] = game

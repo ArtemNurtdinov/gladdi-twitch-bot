@@ -68,6 +68,8 @@ class HandleMinigameTickUseCase:
             should_start_new_game = time_since_last >= required_interval
         else:
             stream_start_time = self._minigame_repository.get_stream_start_time(channel_name)
+            if stream_start_time is None:
+                stream_start_time = active_stream.started_at
             time_since_stream_start = current_time - stream_start_time
             print(f"stream_start = {stream_start_time}, current_time = {current_time}, since_stream_start = {time_since_stream_start}")
             first_game_delay_minutes = random.randint(self.FIRST_GAME_START_MIN, self.FIRST_GAME_START_MAX)
