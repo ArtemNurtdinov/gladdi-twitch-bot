@@ -1,3 +1,4 @@
+import logging
 import random
 from datetime import datetime, timedelta
 
@@ -8,6 +9,8 @@ from app.minigame.application.use_case.start_number_guess_game_use_case import S
 from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
+
+logger = logging.getLogger(__name__)
 
 
 class HandleMinigameTickUseCase:
@@ -62,7 +65,7 @@ class HandleMinigameTickUseCase:
 
         if last_game_time:
             time_since_last = current_time - last_game_time
-            print(f"last_game_time = {last_game_time}, current_time = {current_time}, time_since_last = {time_since_last}")
+            logger.info("last_game_time = %s, current_time = %s, time_since_last = %s", last_game_time, current_time, time_since_last)
             random_minutes = random.randint(self.GAME_START_INTERVAL_MIN, self.GAME_START_INTERVAL_MAX)
             required_interval = timedelta(minutes=random_minutes)
             should_start_new_game = time_since_last >= required_interval
@@ -71,7 +74,9 @@ class HandleMinigameTickUseCase:
             if stream_start_time is None:
                 stream_start_time = active_stream.started_at
             time_since_stream_start = current_time - stream_start_time
-            print(f"stream_start = {stream_start_time}, current_time = {current_time}, since_stream_start = {time_since_stream_start}")
+            logger.info(
+                "stream_start = %s, current_time = %s, since_stream_start = %s", stream_start_time, current_time, time_since_stream_start
+            )
             first_game_delay_minutes = random.randint(self.FIRST_GAME_START_MIN, self.FIRST_GAME_START_MAX)
             required_delay = timedelta(minutes=first_game_delay_minutes)
             should_start_new_game = time_since_stream_start >= required_delay
@@ -80,6 +85,7 @@ class HandleMinigameTickUseCase:
             return
 
         choice = random.choice(["number", "word", "rps"])
+        logger.info("Запуск минигры '%s' для канала %s", choice, channel_name)
 
         if choice == "word":
             await self._start_word_game_use_case.start(channel_name)

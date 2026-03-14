@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime
 
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.domain.model.guess_number import GuessNumberGame
 from app.minigame.domain.model.rps import RPSGame
 from app.minigame.domain.model.word_guess import WordGuessGame
+
+logger = logging.getLogger(__name__)
 
 RPS_CHOICES = ("камень", "ножницы", "бумага")
 
@@ -20,7 +23,7 @@ class MinigameRepositoryImpl(MinigameRepository):
 
     def set_stream_start_time(self, channel_name: str, start_time: datetime):
         self.stream_start_time[channel_name] = start_time
-        print(f"set_stream_start_time for {channel_name}: {start_time}")
+        logger.info("set_stream_start_time for %s: %s", channel_name, start_time)
 
     def reset_stream_state(self, channel_name: str):
         if channel_name in self.stream_start_time:

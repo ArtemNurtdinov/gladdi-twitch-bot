@@ -1,7 +1,10 @@
 import asyncio
+import logging
 
 from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from core.background.task_runner import BackgroundTaskRunner
+
+logger = logging.getLogger(__name__)
 
 
 class MinigameTickJob:
@@ -22,5 +25,6 @@ class MinigameTickJob:
                 await asyncio.sleep(self._MINIGAME_TICK_DELAY)
             except asyncio.CancelledError:
                 break
-            except Exception:
+            except Exception as e:
+                logger.exception("Ошибка при проверке минигр: %s", e)
                 await asyncio.sleep(self._MINIGAME_TICK_DELAY)

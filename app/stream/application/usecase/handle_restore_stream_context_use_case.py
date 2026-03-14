@@ -1,5 +1,9 @@
+import logging
+
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
+
+logger = logging.getLogger(__name__)
 
 
 class HandleRestoreStreamContextUseCase:
@@ -17,4 +21,4 @@ class HandleRestoreStreamContextUseCase:
 
         if active_stream:
             self._minigame_repository.set_stream_start_time(channel_name, active_stream.started_at)
-            print(f"handle stream restore for {channel_name}: {active_stream.started_at}")
+            logger.info("handle stream restore for %s: %s", channel_name, active_stream.started_at)
