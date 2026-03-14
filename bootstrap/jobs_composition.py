@@ -146,7 +146,6 @@ def build_background_tasks(
                     platform_port=platform_provider.streaming_platform,
                     sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
                 ),
-                interval_seconds=settings.sync_followers_interval_seconds,
             ),
         ],
     )
