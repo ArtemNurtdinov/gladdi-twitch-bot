@@ -3,6 +3,7 @@ import time
 from dataclasses import dataclass
 
 from app.betting.application.betting_service import BettingService
+from app.betting.application.rarity_identifier import RarityIdentifier
 from app.betting.domain.model.rarity import RarityLevel
 from app.betting.domain.models import EmojiConfig
 
@@ -49,7 +50,7 @@ def main() -> None:
     total_rolls = 1_000_000
     bet_amount = BettingService.BET_COST  # 50
 
-    betting_service = BettingService(repo=MockBettingRepo())
+    betting_service = BettingService(repo=MockBettingRepo(), rarity_identifier=RarityIdentifier())
 
     total_wagered = 0
     total_payout = 0
