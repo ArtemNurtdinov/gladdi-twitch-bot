@@ -75,7 +75,6 @@ def build_background_tasks(
                     chat_response_port=chat_response_port,
                     state=chat_summary_state,
                 ),
-                stream_status_interval_seconds=settings.check_stream_status_interval_seconds,
             ),
             ChatSummarizerJob(
                 channel_name=settings.channel_name,
@@ -140,7 +139,6 @@ def build_background_tasks(
                     stream_chatters_port=providers.stream_providers.stream_chatters_port,
                 ),
                 bot_nick=bot_name,
-                check_interval_seconds=settings.check_viewers_interval_seconds,
             ),
             FollowersSyncJob(
                 channel_name=settings.channel_name,

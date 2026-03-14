@@ -32,17 +32,6 @@ class HandleRpsUseCase:
                 )
             return message
 
-        if not game.is_active:
-            message = "Игра уже завершена"
-            with self._rps_uow.create() as uow:
-                uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=rps.user_name, content=user_message, current_time=rps.occurred_at
-                )
-                uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=bot_nick, content=message, current_time=rps.occurred_at
-                )
-            return message
-
         normalized_choice = rps.choice_input.strip().lower()
         if normalized_choice not in RPS_CHOICES:
             message = "Выберите: камень, ножницы или бумага"

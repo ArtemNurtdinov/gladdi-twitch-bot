@@ -20,40 +20,50 @@ class RewardViewerTimeUseCase:
         self._user_cache = user_cache
         self._stream_chatters_port = stream_chatters_port
 
-    async def handle(self, viewer_time_dto: ViewerTimeDTO):
+    async def handle(self, viewer_time: ViewerTimeDTO):
         with self._reward_viewer_time_uow.create(read_only=True) as uow:
-            active_stream = uow.stream_service.get_active_stream(viewer_time_dto.channel_name)
+            active_stream = uow.stream_service.get_active_stream(viewer_time.channel_name)
 
         if not active_stream:
             return
 
         with self._reward_viewer_time_uow.create() as uow:
             inactive_users = []
-            inactive_sessions = uow.viewer_repository.get_inactive_sessions(active_stream.id, viewer_time_dto.occurred_at)
+            inactive_sessions = uow.viewer_repository.get_inactive_sessions(active_stream.id, viewer_time.occurred_at)
             for session in inactive_sessions:
                 inactive_users.append(session.user_name)
                 session_duration = datetime.utcnow() - session.session_start
                 session_minutes = int(session_duration.total_seconds() / 60)
                 total_minutes = session.total_minutes + session_minutes
                 uow.viewer_repository.finish_session(
-                    active_stream.id, session.channel_name, session.user_name, total_minutes, viewer_time_dto.occurred_at
+                    stream_id=active_stream.id,
+                    channel_name=session.channel_name,
+                    user_name=session.user_name,
+                    total_minutes=total_minutes,
+                    current_time=viewer_time.occurred_at,
                 )
 
-        broadcaster_id = await self._user_cache.get_user_id(viewer_time_dto.channel_name)
-        moderator_id = await self._user_cache.get_user_id(viewer_time_dto.bot_nick or viewer_time_dto.channel_name)
+        broadcaster_id = await self._user_cache.get_user_id(viewer_time.channel_name)
+        moderator_id = await self._user_cache.get_user_id(viewer_time.bot_nick or viewer_time.channel_name)
         chatters = await self._stream_chatters_port.get_stream_chatters(broadcaster_id, moderator_id)
         if chatters:
             with self._reward_viewer_time_uow.create() as uow:
                 for user_name in chatters:
                     normalized_user_name = user_name.lower()
-                    session = uow.viewer_repository.get_viewer_session(active_stream.id, viewer_time_dto.channel_name, normalized_user_name)
+                    session = uow.viewer_repository.get_viewer_session(active_stream.id, viewer_time.channel_name, normalized_user_name)
                     if session:
                         uow.viewer_repository.update_last_activity(
-                            active_stream.id, viewer_time_dto.channel_name, user_name, viewer_time_dto.occurred_at
+                            stream_id=active_stream.id,
+                            channel_name=viewer_time.channel_name,
+                            user_name=user_name,
+                            current_time=viewer_time.occurred_at,
                         )
                     else:
                         uow.viewer_repository.create_view_session(
-                            active_stream.id, viewer_time_dto.channel_name, user_name, viewer_time_dto.occurred_at
+                            stream_id=active_stream.id,
+                            channel_name=viewer_time.channel_name,
+                            user_name=user_name,
+                            current_time=viewer_time.occurred_at,
                         )
 
         with self._reward_viewer_time_uow.create(read_only=True) as uow:
@@ -87,10 +97,10 @@ class RewardViewerTimeUseCase:
                     claimed_list.append(minutes_threshold)
                     rewards = ",".join(map(str, sorted(claimed_list)))
                     uow.viewer_repository.update_session_rewards(
-                        session_id=session.id, rewards=rewards, current_time=viewer_time_dto.occurred_at
+                        session_id=session.id, rewards=rewards, current_time=viewer_time.occurred_at
                     )
                     uow.economy_policy.add_balance(
-                        channel_name=viewer_time_dto.channel_name,
+                        channel_name=viewer_time.channel_name,
                         user_name=session.user_name,
                         amount=reward_amount,
                         transaction_type=TransactionType.VIEWER_TIME_REWARD,
