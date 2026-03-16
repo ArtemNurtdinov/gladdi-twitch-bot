@@ -1,0 +1,21 @@
+from dataclasses import dataclass
+from datetime import datetime
+
+
+@dataclass(frozen=True)
+class CommandStatsDTO:
+    command_prefix: str
+    command_name: str
+    channel_name: str
+    display_name: str
+    user_name: str
+    bot_name: str
+    occurred_at: datetime
+    message: str
+
+
+@dataclass(frozen=True)
+class UserBetStats:
+    total_bets: int
+    jackpots: int
+    jackpot_rate: float | int

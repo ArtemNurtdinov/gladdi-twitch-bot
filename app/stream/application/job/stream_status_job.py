@@ -2,17 +2,14 @@ import asyncio
 
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
 from core.background.task_runner import BackgroundTaskRunner
+from core.background.tasks import BackgroundJob
 
 
-class StreamStatusJob:
+class StreamStatusJob(BackgroundJob):
     name = "check_stream_status"
-    STREAM_STATUS_INTERVAL = 60
+    STREAM_STATUS_INTERVAL = 300
 
-    def __init__(
-        self,
-        channel_name: str,
-        handle_stream_status_use_case: HandleStreamStatusUseCase,
-    ):
+    def __init__(self, channel_name: str, handle_stream_status_use_case: HandleStreamStatusUseCase):
         self._channel_name = channel_name
         self._handle_stream_status_use_case = handle_stream_status_use_case
 

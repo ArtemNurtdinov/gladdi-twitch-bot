@@ -1,5 +1,3 @@
-import logging
-
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
@@ -7,28 +5,18 @@ from starlette.middleware.cors import CORSMiddleware
 from app.ai.gen.prompt.presentation import system_prompt_routes
 from app.auth.presentation import auth_routes
 from app.chat.presentation import chat_routes
+from app.core.config.di.composition import load_config
+from app.core.logger.di.composition import get_logger
 from app.follow.presentation import followers_routes
 from app.joke.presentation import joke_routes
 from app.stream.presentation import stream_routes
 from app.twitch.presentation import twitch_routes
 from app.user.presentation import user_routes
-from bootstrap.config_provider import get_config
-from core.db import configure_db
-
-cfg = get_config()
-configure_db(cfg.database.url)
-
-logging.basicConfig(
-    level=getattr(logging, cfg.logging.level.upper(), logging.INFO),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(cfg.logging.file, encoding="utf-8"), logging.StreamHandler()],
-)
-
-logger = logging.getLogger(__name__)
+from core.db import init_db
 
 app = FastAPI(
-    title="GLaDDi Twitch Bot API",
-    description="REST API для аналитики активности Twitch и Telegram бота",
+    title="GLaDDi Bot API",
+    description="API для управления GLaDDi",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -64,5 +52,14 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    logger.info("Запуск сервера...")
-    uvicorn.run("main:app", host=cfg.dashboard.host, port=cfg.dashboard.port, log_level=cfg.dashboard.log_level)
+    config = load_config()
+    host = config.application.host
+    port = config.application.port
+
+    init_db(config.db)
+
+    logger = get_logger()
+
+    logger.log_info(f"Запуск на http://{host}:{port}")
+
+    uvicorn.run("main:app", host=host, port=port, log_level="info")

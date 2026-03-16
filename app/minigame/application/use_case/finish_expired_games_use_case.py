@@ -9,7 +9,7 @@ class FinishExpiredGamesUseCase:
     def __init__(
         self,
         minigame_repository: MinigameRepository,
-        send_channel_message: Callable[[str, str], Awaitable[None]],
+        send_channel_message: Callable[[str], Awaitable[None]],
         minigame_uow: MinigameUnitOfWorkFactory,
         bot_name: str,
     ):
@@ -36,7 +36,7 @@ class FinishExpiredGamesUseCase:
             timeout_message = f"Время игры 'поле чудес' истекло! Слово '{active_word_game.target_word}'. Никто не выиграл."
 
         if timeout_message:
-            await self._send_channel_message(channel_name, timeout_message)
+            await self._send_channel_message(timeout_message)
             with self._minigame_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=channel_name, user_name=self._bot_name, content=timeout_message, current_time=datetime.utcnow()

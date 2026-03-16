@@ -5,24 +5,24 @@ from dataclasses import dataclass
 
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
-from app.commands.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
-from app.commands.balance.infrastructure.balance_uow import SqlAlchemyBalanceUnitOfWorkFactory
-from app.commands.battle.infrastructure.battle_uow import SqlAlchemyBattleUnitOfWorkFactory
-from app.commands.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
-from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
-from app.commands.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
-from app.commands.follow.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
-from app.commands.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
-from app.commands.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
-from app.commands.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
-from app.commands.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
-from app.commands.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
-from app.commands.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
-from app.commands.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
-from app.joke.infrastructure.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
+from app.platform.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
+from app.platform.command.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
+from app.platform.command.balance.infrastructure.balance_uow import SqlAlchemyBalanceUnitOfWorkFactory
+from app.platform.command.battle.infrastructure.battle_uow import SqlAlchemyBattleUnitOfWorkFactory
+from app.platform.command.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
+from app.platform.command.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
+from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
+from app.platform.command.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
+from app.platform.command.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
+from app.platform.command.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
+from app.platform.command.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
+from app.platform.command.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
+from app.platform.command.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
+from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
+from app.platform.domain.repository import PlatformRepository
 from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
 from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
 from app.viewer.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
@@ -34,7 +34,6 @@ from core.types import SessionFactory
 class UowFactories:
     build_ask_uow_factory: Callable[[], SqlAlchemyAskUnitOfWorkFactory]
     build_chat_message_uow_factory: Callable[[], SqlAlchemyChatMessageUnitOfWorkFactory]
-    build_joke_uow_factory: Callable[[], SqlAlchemyJokeUnitOfWorkFactory]
     build_chat_response_uow_factory: Callable[[], SqlAlchemyChatResponseUnitOfWorkFactory]
     build_chat_summarizer_uow_factory: Callable[[], SqlAlchemyChatSummarizerUnitOfWorkFactory]
     build_balance_uow_factory: Callable[[], SqlAlchemyBalanceUnitOfWorkFactory]
@@ -61,6 +60,7 @@ def create_uow_factories(
     session_factory_rw: SessionFactory,
     session_factory_ro: SessionFactory,
     providers: ProvidersBundle,
+    platform_repository: PlatformRepository,
 ) -> UowFactories:
     ai_providers = providers.ai_providers
     chat_providers = providers.chat_providers
@@ -92,14 +92,6 @@ def create_uow_factories(
             viewer_repo_provider=viewer_providers.viewer_repo_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
             system_prompt_repository_provider=ai_providers.system_prompt_repo_provider,
-        )
-
-    def build_joke_uow_factory() -> SqlAlchemyJokeUnitOfWorkFactory:
-        return SqlAlchemyJokeUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            conversation_service_provider=ai_providers.conversation_service_provider,
-            chat_use_case_provider=chat_providers.chat_use_case_provider,
         )
 
     def build_chat_response_uow_factory() -> SqlAlchemyChatResponseUnitOfWorkFactory:
@@ -242,6 +234,7 @@ def create_uow_factories(
             chat_repo_provider=chat_providers.chat_repo_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
             system_prompt_repository_provider=ai_providers.system_prompt_repo_provider,
+            platform_repository=platform_repository,
         )
 
     def build_followers_sync_uow_factory() -> SqlAlchemyFollowersSyncUnitOfWorkFactory:
@@ -263,7 +256,7 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             stream_service_provider=stream_providers.stream_service_provider,
-            start_stream_use_case_provider=stream_providers.start_stream_use_case_provider,
+            stream_repository_provider=stream_providers.stream_repo_provider,
             viewer_repository_provider=viewer_providers.viewer_repo_provider,
             battle_use_case_provider=battle_providers.battle_use_case_provider,
             economy_policy_provider=economy_providers.economy_policy_provider,
@@ -283,7 +276,6 @@ def create_uow_factories(
     return UowFactories(
         build_ask_uow_factory=build_ask_uow_factory,
         build_chat_message_uow_factory=build_chat_message_uow_factory,
-        build_joke_uow_factory=build_joke_uow_factory,
         build_chat_response_uow_factory=build_chat_response_uow_factory,
         build_chat_summarizer_uow_factory=build_chat_summarizer_uow_factory,
         build_balance_uow_factory=build_balance_uow_factory,

@@ -1,16 +1,16 @@
 from datetime import datetime
 
 from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWorkFactory
-from app.platform.streaming import StreamingPlatformPort
+from app.platform.domain.repository import PlatformRepository
 
 
 class HandleFollowersSyncUseCase:
-    def __init__(self, platform_port: StreamingPlatformPort, sync_followers_uow: FollowersSyncUnitOfWorkFactory):
-        self._platform_port = platform_port
+    def __init__(self, platform_repository: PlatformRepository, sync_followers_uow: FollowersSyncUnitOfWorkFactory):
+        self._platform_repository = platform_repository
         self._sync_followers_uow = sync_followers_uow
 
     async def handle(self, channel_name: str, seen_at: datetime):
-        followers = await self._platform_port.get_channel_followers(channel_name)
+        followers = await self._platform_repository.get_channel_followers(channel_name)
 
         with self._sync_followers_uow.create() as uow:
             existing = uow.followers_repo.list_by_channel(channel_name)

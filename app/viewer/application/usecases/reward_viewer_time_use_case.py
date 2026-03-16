@@ -1,9 +1,9 @@
 from datetime import datetime
 
 from app.economy.domain.models import TransactionType
+from app.platform.domain.repository import PlatformRepository
 from app.user.application.ports.user_cache_port import UserCachePort
 from app.viewer.application.models.viewer_time import ViewerTimeDTO
-from app.viewer.application.ports.stream_chatters_port import StreamChattersPort
 from app.viewer.application.uow.viewer_time_uow import ViewerTimeUnitOfWorkFactory
 
 
@@ -11,14 +11,11 @@ class RewardViewerTimeUseCase:
     STREAM_TIME_REWARDS = {30: 25, 60: 50, 90: 100, 120: 150, 150: 250, 180: 350}
 
     def __init__(
-        self,
-        reward_viewer_time_uow: ViewerTimeUnitOfWorkFactory,
-        user_cache: UserCachePort,
-        stream_chatters_port: StreamChattersPort,
+        self, reward_viewer_time_uow: ViewerTimeUnitOfWorkFactory, user_cache: UserCachePort, platform_repository: PlatformRepository
     ):
         self._reward_viewer_time_uow = reward_viewer_time_uow
         self._user_cache = user_cache
-        self._stream_chatters_port = stream_chatters_port
+        self._platform_repository = platform_repository
 
     async def handle(self, viewer_time: ViewerTimeDTO):
         with self._reward_viewer_time_uow.create(read_only=True) as uow:
@@ -45,7 +42,7 @@ class RewardViewerTimeUseCase:
 
         broadcaster_id = await self._user_cache.get_user_id(viewer_time.channel_name)
         moderator_id = await self._user_cache.get_user_id(viewer_time.bot_nick or viewer_time.channel_name)
-        chatters = await self._stream_chatters_port.get_stream_chatters(broadcaster_id, moderator_id)
+        chatters = await self._platform_repository.get_stream_chatters(broadcaster_id, moderator_id)
         if chatters:
             with self._reward_viewer_time_uow.create() as uow:
                 for user_name in chatters:

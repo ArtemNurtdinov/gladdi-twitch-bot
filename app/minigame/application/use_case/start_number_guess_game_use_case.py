@@ -18,7 +18,7 @@ class StartNumberGuessGameUseCase:
         minigame_repository: MinigameRepository,
         prefix: str,
         command_name: str,
-        send_channel_message: Callable[[str, str], Awaitable[None]],
+        send_channel_message: Callable[[str], Awaitable[None]],
         minigame_uow: MinigameUnitOfWorkFactory,
         bot_name: str,
     ):
@@ -53,7 +53,7 @@ class StartNumberGuessGameUseCase:
             f"Используй: {self._prefix}{self._command_name} [число]. "
             f"Время на игру: {self.GUESS_GAME_DURATION_MINUTES} минут ⏰"
         )
-        await self._send_channel_message(channel_name, game_message)
+        await self._send_channel_message(game_message)
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name, content=game_message, current_time=datetime.utcnow()

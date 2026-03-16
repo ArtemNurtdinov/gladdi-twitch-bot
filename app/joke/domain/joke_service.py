@@ -1,6 +1,6 @@
-import logging
 from datetime import datetime
 
+from app.core.logger.domain.logger import Logger
 from app.joke.domain.model.joke_settings import JokesSettings
 from app.joke.domain.models import (
     JokeIntervalInfo,
@@ -12,12 +12,11 @@ from app.joke.domain.models import (
 from app.joke.domain.policies import plan_next_joke_time, should_generate_now, validate_interval
 from app.joke.domain.repo import JokeSettingsRepository
 
-logger = logging.getLogger(__name__)
-
 
 class JokeService:
-    def __init__(self, settings_repo: JokeSettingsRepository):
+    def __init__(self, settings_repo: JokeSettingsRepository, logger: Logger):
         self.settings_repo = settings_repo
+        self._logger = logger.create_child(__name__)
 
     def _touch_updated(self, settings: JokesSettings) -> JokesSettings:
         settings.last_updated = datetime.now().isoformat()
@@ -61,10 +60,10 @@ class JokeService:
             settings.next_joke_time = plan_next_joke_time(settings)
             self._touch_updated(settings)
             self.settings_repo.save(settings)
-            logger.info("Анекдоты включены")
+            self._logger.log_info("Анекдоты включены")
             return JokesResponseDto(success=True, message="Анекдоты включены")
         except Exception as e:
-            logger.error("Ошибка включения анекдотов: %s", e)
+            self._logger.log_exception("Ошибка включения анекдотов: %s", e)
             return JokesResponseDto(success=False, message=f"Ошибка включения анекдотов: {str(e)}")
 
     def disable_jokes(self) -> JokesResponseDto:
@@ -74,10 +73,10 @@ class JokeService:
             settings.next_joke_time = None
             self._touch_updated(settings)
             self.settings_repo.save(settings)
-            logger.info("Анекдоты отключены")
+            self._logger.log_info("Анекдоты отключены")
             return JokesResponseDto(success=True, message="Анекдоты отключены")
         except Exception as e:
-            logger.error("Ошибка отключения анекдотов: %s", e)
+            self._logger.log_exception("Ошибка отключения анекдотов: %s", e)
             return JokesResponseDto(success=False, message=f"Ошибка отключения анекдотов: {str(e)}")
 
     def set_jokes_interval(self, interval_min: int, interval_max: int) -> JokesIntervalDto:
@@ -88,7 +87,7 @@ class JokeService:
 
         if settings.jokes_enabled:
             settings.next_joke_time = plan_next_joke_time(settings)
-            logger.info("Пересчитано время следующего анекдота: %s", settings.next_joke_time)
+            self._logger.log_info(f"Пересчитано время следующего анекдота: {settings.next_joke_time}")
 
         self._touch_updated(settings)
         self.settings_repo.save(settings)
@@ -96,7 +95,7 @@ class JokeService:
         description = f"Интервал обновлен: {settings.jokes_interval_min}-{settings.jokes_interval_max} минут"
         next_joke_info = self._build_next_joke(settings)
 
-        logger.info("Интервал анекдотов обновлен: %s-%s минут", interval_min, interval_max)
+        self._logger.log_info(f"Интервал анекдотов обновлен: {interval_min}-{interval_max} минут")
         return JokesIntervalDto(
             success=True,
             min_minutes=settings.jokes_interval_min,
@@ -118,7 +117,7 @@ class JokeService:
         settings.next_joke_time = plan_next_joke_time(settings)
         self._touch_updated(settings)
         self.settings_repo.save(settings)
-        logger.info("Анекдот сгенерирован, следующий запланирован на %s", settings.next_joke_time)
+        self._logger.log_info(f"Анекдот сгенерирован, следующий запланирован на {settings.next_joke_time}")
         return True
 
     def get_next_joke_info(self) -> NextJokeInfo | None:

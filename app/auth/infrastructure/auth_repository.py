@@ -133,12 +133,7 @@ class AuthRepositoryImpl(AuthRepository):
         return _to_domain_token(token) if token else None
 
     def find_active_token(self, token: str, current_time: datetime) -> DomainAccessToken | None:
-        stmt = (
-            select(OrmAccessToken)
-            .where(OrmAccessToken.token == token)
-            .where(OrmAccessToken.is_active)
-            .where(OrmAccessToken.expires_at > current_time)
-        )
+        stmt = select(OrmAccessToken).where(OrmAccessToken.token == token).where(OrmAccessToken.is_active)
         record = self._db.execute(stmt).scalars().first()
         return _to_domain_token(record) if record else None
 

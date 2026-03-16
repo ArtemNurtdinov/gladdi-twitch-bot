@@ -1,20 +1,20 @@
 import json
-import logging
 import os
 import threading
 import time
 from dataclasses import asdict
 from typing import Any
 
+from app.core.logger.domain.logger import Logger
 from app.joke.domain.model.joke_settings import JokesSettings
 from app.joke.domain.repo import JokeSettingsRepository
 
 
 class FileJokeSettingsRepository(JokeSettingsRepository):
-    def __init__(self, config_path: str | None = None, cache_ttl: int = 30):
-        self.logger = logging.getLogger(__name__)
-        default_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "bot_settings.json")
-        self.settings_file = os.path.abspath(config_path or default_path)
+    def __init__(self, logger: Logger, cache_ttl: int = 30):
+        self._logger = logger.create_child(__name__)
+        default_path = os.path.join("config", "bot_settings.json")
+        self.settings_file = os.path.abspath(default_path)
 
         self._file_lock = threading.Lock()
         self._cache_lock = threading.Lock()
@@ -28,12 +28,12 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
         config_dir = os.path.dirname(self.settings_file)
         if not os.path.exists(config_dir):
             os.makedirs(config_dir)
-            self.logger.info("Создана директория для настроек: %s", config_dir)
+            self._logger.log_info(f"Создана директория для настроек: {config_dir}")
 
         if not os.path.exists(self.settings_file):
             default_settings = JokesSettings()
             self._write_settings_to_file(asdict(default_settings))
-            self.logger.info("Создан файл настроек: %s", self.settings_file)
+            self._logger.log_info(f"Создан файл настроек: {self.settings_file}")
 
     def _is_cache_valid(self) -> bool:
         if self._cached_settings is None or self._cache_timestamp is None:
@@ -45,7 +45,7 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
             with open(self.settings_file, encoding="utf-8") as f:
                 settings_dict = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
-            self.logger.error("Ошибка чтения настроек: %s", e)
+            self._logger.log_exception("Ошибка чтения настроек:", e)
             return asdict(JokesSettings())
 
         if "jokes_interval_min" not in settings_dict:
@@ -59,7 +59,7 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
         if "version" not in settings_dict or settings_dict["version"] != "1.1":
             settings_dict["version"] = "1.1"
             self._write_settings_to_file(settings_dict)
-            self.logger.info("Настройки обновлены до версии 1.1")
+            self._logger.log_info("Настройки обновлены до версии 1.1")
 
         return settings_dict
 
@@ -67,7 +67,7 @@ class FileJokeSettingsRepository(JokeSettingsRepository):
         with self._file_lock:
             with open(self.settings_file, "w", encoding="utf-8") as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)
-        self.logger.debug("Настройки сохранены в файл: %s", self.settings_file)
+        self._logger.log_debug(f"Настройки сохранены в файл: {self.settings_file}")
 
     def _invalidate_cache(self) -> None:
         with self._cache_lock:
