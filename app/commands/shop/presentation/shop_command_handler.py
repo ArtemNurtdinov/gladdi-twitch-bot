@@ -27,7 +27,7 @@ class ShopCommandHandlerImpl(ShopCommandHandler):
     async def handle_shop(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
         bot_nick = self._bot_nick.lower()
 
-        dto = CommandShopDTO(
+        command_shop = CommandShopDTO(
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
@@ -38,28 +38,24 @@ class ShopCommandHandlerImpl(ShopCommandHandler):
             command_buy_name=self.command_buy_name,
         )
 
-        result = await self._handle_shop_use_case.handle_shop(
-            command_shop=dto,
-        )
+        result = await self._handle_shop_use_case.handle_shop(command_shop=command_shop)
 
         await self.post_message_fn(result, chat_ctx)
 
     async def handle_buy(self, channel_name: str, display_name: str, chat_ctx: ChatContext, item_name: str | None):
-        bot_nick = self._bot_nick.lower()
+        bot_name = self._bot_nick.lower()
 
-        dto = CommandBuyDTO(
+        command_buy = CommandBuyDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_buy_name,
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
-            bot_nick=bot_nick,
+            bot_nick=bot_name,
             occurred_at=datetime.utcnow(),
             item_name_input=item_name,
         )
 
-        result = await self._handle_shop_use_case.handle_buy(
-            command_buy=dto,
-        )
+        result = await self._handle_shop_use_case.handle_buy(command_buy=command_buy)
 
         await self.post_message_fn(result, chat_ctx)
