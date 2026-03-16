@@ -20,7 +20,7 @@ from app.commands.follow.infrastructure.followage_uow import SimpleFollowageUnit
 from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandlerImpl
-from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler, RpsCommandHandlerImpl
+from app.commands.guess.presentation.rps_command_handler import RpsCommandHandlerImpl
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
 from app.commands.presentation.commands_registry import CommandRegistry
@@ -123,7 +123,7 @@ def build_command_registry(
         command_prefix=prefix,
         command_name=settings.command_bonus,
         handle_bonus_use_case=HandleBonusUseCase(
-            unit_of_work_factory=uow_factories.build_bonus_uow_factory(),
+            bonus_uow=uow_factories.build_bonus_uow_factory(),
         ),
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
