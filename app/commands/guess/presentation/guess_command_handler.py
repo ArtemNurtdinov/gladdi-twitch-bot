@@ -26,7 +26,7 @@ class GuessCommandHandler:
         self.post_message_fn = post_message_fn
 
     async def handle_guess_number(self, channel_name: str, display_name: str, chat_ctx: ChatContext, number: str | None):
-        dto = GuessNumberDTO(
+        guess_number = GuessNumberDTO(
             command_prefix=self.command_prefix,
             command_guess=self.command_guess,
             channel_name=channel_name,
@@ -37,13 +37,11 @@ class GuessCommandHandler:
             guess_input=number,
         )
 
-        message = await self._handle_guess_use_case.handle_number(
-            guess_number=dto,
-        )
+        message = await self._handle_guess_use_case.handle_number(guess_number=guess_number)
         await self.post_message_fn(message, chat_ctx)
 
     async def handle_guess_letter(self, channel_name: str, display_name: str, chat_ctx: ChatContext, letter: str | None):
-        dto = GuessLetterDTO(
+        guess_letter = GuessLetterDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_guess_letter,
             channel_name=channel_name,
@@ -54,13 +52,11 @@ class GuessCommandHandler:
             letter_input=letter,
         )
 
-        message = await self._handle_guess_use_case.handle_letter(
-            guess_letter_dto=dto,
-        )
+        message = await self._handle_guess_use_case.handle_letter(guess_letter=guess_letter)
         await self.post_message_fn(message, chat_ctx)
 
     async def handle_guess_word(self, channel_name: str, display_name: str, chat_ctx: ChatContext, word: str | None):
-        dto = GuessWordDTO(
+        guess_word = GuessWordDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_guess_word,
             channel_name=channel_name,
@@ -71,5 +67,5 @@ class GuessCommandHandler:
             word_input=word,
         )
 
-        message = await self._handle_guess_use_case.handle_word(guess_word_dto=dto)
+        message = await self._handle_guess_use_case.handle_word(guess_word=guess_word)
         await self.post_message_fn(message, chat_ctx)

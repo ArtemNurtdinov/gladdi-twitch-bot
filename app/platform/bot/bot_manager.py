@@ -130,8 +130,6 @@ class BotManager:
                 platform_provider=self._platform_providers,
             )
 
-            chat_client = self._chat_client_factory(self._platform_providers.platform_auth, self._settings, bot_user_id)
-
             command_registry = build_command_registry(
                 providers=providers_bundle,
                 uow_factories=uow_factories,
