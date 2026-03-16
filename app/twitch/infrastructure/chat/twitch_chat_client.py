@@ -16,19 +16,6 @@ from core.chat.outbound import ChatEventsHandler, ChatOutbound
 logger = logging.getLogger(__name__)
 
 
-class _EventChatContext(ChatContext):
-    def __init__(self, client: TwitchChatClient, channel_login: str):
-        self._client = client
-        self._channel_login = channel_login
-
-    @property
-    def channel(self) -> str:
-        return self._channel_login
-
-    async def send_channel(self, text: str) -> None:
-        await self._client.send_chat_message_internal(text)
-
-
 class TwitchChatClient(Client, ChatClient, ChatOutbound):
     def __init__(self, auth: PlatformAuth, settings: BotSettings, bot_id: str | None = None):
         self._auth = auth
@@ -90,7 +77,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
         author_name = chatter.display_name or chatter.name or ""
         chat_message = ChatMessage(author=author_name, text=payload.text, author_id=chatter.id)
-        chat_ctx = _EventChatContext(self, channel_login=self._channel_login)
+        chat_ctx = ChatContext(channel=self._channel_login)
 
         handled = False
         try:
@@ -266,7 +253,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
     async def post_message(self, message: str, chat_ctx: ChatContext) -> None:
         for msg in self._split_text(message):
-            await chat_ctx.send_channel(msg)
+            await self.send_chat_message_internal(msg)
             await asyncio.sleep(0.3)
 
     def _is_self_message(self, payload: EventSubChatMessage) -> bool:

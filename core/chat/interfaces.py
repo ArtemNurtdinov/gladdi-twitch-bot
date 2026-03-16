@@ -10,11 +10,9 @@ class ChatMessage:
     author_id: str
 
 
-class ChatContext(Protocol):
-    @property
-    def channel(self) -> str: ...
-
-    async def send_channel(self, text: str) -> None: ...
+class ChatContext:
+    def __init__(self, channel: str):
+        self.channel = channel
 
 
 CommandHandler = Callable[[ChatContext, ChatMessage], Awaitable[None]]
