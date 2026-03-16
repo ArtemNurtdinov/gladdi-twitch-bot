@@ -2,13 +2,14 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
+from app.commands.application.commands_registry import BattleCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.application.model import BattleDTO
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from core.chat.interfaces import ChatContext
 
 
-class BattleCommandHandler:
+class BattleCommandHandlerImpl(BattleCommandHandler):
     def __init__(
         self,
         command_prefix: str,

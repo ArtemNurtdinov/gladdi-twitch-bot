@@ -5,11 +5,11 @@ from collections.abc import Awaitable, Callable
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
-from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
+from app.commands.ask.presentation.ask_command_handler import AskCommandHandlerImpl
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
-from app.commands.battle.presentation.battle_command_handler import BattleCommandHandler
+from app.commands.battle.presentation.battle_command_handler import BattleCommandHandlerImpl
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHandler
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
@@ -17,23 +17,23 @@ from app.commands.equipment.presentation.equipment_command_handler import Equipm
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_uow import SimpleFollowageUnitOfWorkFactory
-from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandler
+from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
-from app.commands.guess.presentation.guess_command_handler import GuessCommandHandler
-from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
+from app.commands.guess.presentation.guess_command_handler import GuessCommandHandlerImpl
+from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler, RpsCommandHandlerImpl
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
 from app.commands.presentation.commands_registry import CommandRegistry
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
-from app.commands.roll.presentation.roll_command_handler import RollCommandHandler
+from app.commands.roll.presentation.roll_command_handler import RollCommandHandlerImpl
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
-from app.commands.shop.presentation.shop_command_handler import ShopCommandHandler
+from app.commands.shop.presentation.shop_command_handler import ShopCommandHandlerImpl
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
-from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
+from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandlerImpl
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
-from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandler
+from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandlerImpl
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.bot.model.bot_settings import BotSettings
@@ -59,7 +59,7 @@ def build_command_registry(
     )
     ask_uow_factory = uow_factories.build_ask_uow_factory()
 
-    followage_command_handler = FollowageCommandHandler(
+    followage_command_handler = FollowageCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_followage,
         handle_follow_age_use_case=HandleFollowAgeUseCase(
@@ -74,7 +74,7 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    ask_command_handler = AskCommandHandler(
+    ask_command_handler = AskCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_gladdi,
         handle_ask_use_case=HandleAskUseCase(
@@ -86,7 +86,7 @@ def build_command_registry(
         post_message_fn=post_message_fn,
         bot_nick=bot_name,
     )
-    battle_command_handler = BattleCommandHandler(
+    battle_command_handler = BattleCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_fight,
         handle_battle_use_case=HandleBattleUseCase(
@@ -98,7 +98,7 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    roll_command_handler = RollCommandHandler(
+    roll_command_handler = RollCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_roll,
         handle_roll_use_case=HandleRollUseCase(
@@ -128,7 +128,7 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    transfer_command_handler = TransferCommandHandler(
+    transfer_command_handler = TransferCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_transfer,
         handle_transfer_use_case=HandleTransferUseCase(
@@ -137,7 +137,7 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    shop_command_handler = ShopCommandHandler(
+    shop_command_handler = ShopCommandHandlerImpl(
         command_prefix=prefix,
         command_shop_name=settings.command_shop,
         command_buy_name=settings.command_buy,
@@ -157,7 +157,7 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    top_bottom_command_handler = TopBottomCommandHandler(
+    top_bottom_command_handler = TopBottomCommandHandlerImpl(
         command_prefix=prefix,
         command_top=settings.command_top,
         command_bottom=settings.command_bottom,
@@ -199,7 +199,7 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    guess_command_handler = GuessCommandHandler(
+    guess_command_handler = GuessCommandHandlerImpl(
         command_prefix=prefix,
         command_guess=settings.command_guess,
         command_guess_letter=settings.command_guess_letter,
@@ -211,7 +211,7 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    rps_command_handler = RpsCommandHandler(
+    rps_command_handler = RpsCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_rps,
         handle_rps_use_case=HandleRpsUseCase(

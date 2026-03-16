@@ -1,12 +1,13 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
+from app.commands.application.commands_registry import TopBottomCommandHandler
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.application.model import BottomDTO, TopDTO
 from core.chat.interfaces import ChatContext
 
 
-class TopBottomCommandHandler:
+class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
     _TOP_LIMIT = 7
     _BOTTOM_LIMIT = 10
 
@@ -41,9 +42,7 @@ class TopBottomCommandHandler:
             limit=self.top_limit,
         )
 
-        result = await self._handle_top_bottom_use_case.handle_top(
-            command_top=dto
-        )
+        result = await self._handle_top_bottom_use_case.handle_top(command_top=dto)
 
         await self.post_message_fn(result, chat_ctx)
 

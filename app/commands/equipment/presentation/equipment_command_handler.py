@@ -1,12 +1,13 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
+from app.commands.application.commands_registry import SimpleCommandHandler
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.application.model import EquipmentDTO
 from core.chat.interfaces import ChatContext
 
 
-class EquipmentCommandHandler:
+class EquipmentCommandHandler(SimpleCommandHandler):
     def __init__(
         self,
         command_prefix: str,

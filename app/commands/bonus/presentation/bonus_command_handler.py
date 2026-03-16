@@ -1,12 +1,13 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
+from app.commands.application.commands_registry import SimpleCommandHandler
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.bonus.application.model import BonusDTO
 from core.chat.interfaces import ChatContext
 
 
-class BonusCommandHandler:
+class BonusCommandHandler(SimpleCommandHandler):
     def __init__(
         self,
         command_prefix: str,

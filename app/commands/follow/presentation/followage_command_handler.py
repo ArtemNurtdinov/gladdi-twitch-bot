@@ -1,12 +1,13 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
+from app.commands.application.commands_registry import FollowageCommandHandler
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.application.model import FollowageDTO
 from core.chat.interfaces import ChatContext
 
 
-class FollowageCommandHandler:
+class FollowageCommandHandlerImpl(FollowageCommandHandler):
     def __init__(
         self,
         command_prefix: str,

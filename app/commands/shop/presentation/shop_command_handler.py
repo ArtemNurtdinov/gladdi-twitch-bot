@@ -1,12 +1,13 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
+from app.commands.application.commands_registry import ShopCommandHandler
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.application.model import CommandBuyDTO, CommandShopDTO
 from core.chat.interfaces import ChatContext
 
 
-class ShopCommandHandler:
+class ShopCommandHandlerImpl(ShopCommandHandler):
     def __init__(
         self,
         command_prefix: str,
