@@ -35,6 +35,6 @@ class BonusCommandHandler(SimpleCommandHandler):
             occurred_at=datetime.utcnow(),
         )
 
-        result = await self._handle_bonus_use_case.handle(chat_context_dto=bonus)
+        result = await self._handle_bonus_use_case.handle(bonus=bonus)
 
         await self.post_message_fn(result, chat_ctx)
