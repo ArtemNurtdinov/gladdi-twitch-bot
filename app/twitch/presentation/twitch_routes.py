@@ -33,10 +33,7 @@ def get_bot_settings(cfg: Config = Depends(get_config)) -> BotSettings:
 
 @lru_cache
 def get_bot_manager(settings: BotSettings = Depends(get_bot_settings)) -> BotManager:
-    return BotManager(
-        settings=settings,
-        command_router_builder=build_twitch_command_router,
-    )
+    return BotManager(settings=settings, command_router_builder=build_twitch_command_router)
 
 
 @router.get("/status", summary="Получить состояние бота", response_model=BotStatus)
