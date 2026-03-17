@@ -1,11 +1,9 @@
 import asyncio
 import logging
-from collections.abc import Callable
 from datetime import datetime
 
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
-from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
@@ -15,6 +13,7 @@ from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.platform.providers import PlatformApiClient
+from app.twitch.bootstrap.router_factory import build_twitch_command_router
 from bootstrap.chat_composition import build_chat_event_handler
 from bootstrap.commands_composition import build_command_registry
 from bootstrap.jobs_composition import build_background_tasks
@@ -22,20 +21,14 @@ from bootstrap.providers_bundle import build_providers_bundle
 from bootstrap.stream_composition import restore_stream_context
 from bootstrap.uow_composition import create_uow_factories
 from core.background.tasks import BackgroundTasks
-from core.chat.interfaces import CommandRouter
 from core.db import db_ro_session, db_rw_session
 
 logger = logging.getLogger(__name__)
 
 
 class BotManager:
-    def __init__(
-        self,
-        settings: BotSettings,
-        command_router_builder: Callable[[BotSettings, CommandRegistryProtocol, dict[str, str | None]], CommandRouter],
-    ):
+    def __init__(self, settings: BotSettings):
         self._settings = settings
-        self._command_router_builder = command_router_builder
 
         self._background_tasks: BackgroundTasks | None = None
 
@@ -172,7 +165,7 @@ class BotManager:
                 chat_response_use_case=chat_response_use_case,
                 send_channel_message=chat_client.send_channel_message,
             )
-            command_router = self._command_router_builder(self._settings, command_registry, battle_waiting_user)
+            command_router = build_twitch_command_router(self._settings, command_registry, battle_waiting_user)
 
             chat_client.set_chat_event_handler(chat_events_handler)
             chat_client.set_router(command_router)
