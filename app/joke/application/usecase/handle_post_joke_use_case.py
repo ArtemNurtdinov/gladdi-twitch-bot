@@ -2,7 +2,7 @@ from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponse
 from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.domain.joke_service import JokeService
-from app.stream.application.port.stream_info_port import StreamInfoPort
+from app.platform.domain.repository import PlatformRepository
 from app.user.application.ports.user_cache_port import UserCachePort
 
 
@@ -11,13 +11,13 @@ class HandlePostJokeUseCase:
         self,
         joke_service: JokeService,
         user_cache: UserCachePort,
-        stream_info: StreamInfoPort,
+        platform_repository: PlatformRepository,
         chat_response_use_case: ChatResponseUseCase,
         unit_of_work_factory: JokeUnitOfWorkFactory,
     ):
         self._joke_service = joke_service
         self._user_cache = user_cache
-        self._stream_info = stream_info
+        self._platform_repository = platform_repository
         self._chat_response_use_case = chat_response_use_case
         self._unit_of_work_factory = unit_of_work_factory
 
@@ -30,7 +30,7 @@ class HandlePostJokeUseCase:
         if not broadcaster_id:
             return None
 
-        stream_info = await self._stream_info.get_stream_info(post_joke.channel_name)
+        stream_info = await self._platform_repository.get_stream_info(post_joke.channel_name)
 
         if not stream_info or not stream_info.game_name:
             return None

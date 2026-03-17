@@ -8,4 +8,4 @@ class GetFollowageUseCase:
 
     async def get_followage(self, channel_name: str, user_id: str) -> FollowageInfo | None:
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            return await uow.followage_port.get_followage(channel_name=channel_name, user_id=user_id)
+            return await uow.platform_repository.get_followage(channel_name=channel_name, user_id=user_id)

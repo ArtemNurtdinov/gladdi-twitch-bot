@@ -1,29 +1,22 @@
 from dataclasses import dataclass
 
-from app.platform.streaming import StreamingPlatformPort
-from app.stream.application.port.stream_info_port import StreamInfoPort
 from app.stream.application.usecase.start_new_stream_use_case import StartNewStreamUseCase
 from app.stream.domain.repo import StreamRepository
 from app.stream.domain.stream_service import StreamService
-from app.stream.infrastructure.adapters.stream_chatters_adapter import StreamChattersAdapter
-from app.stream.infrastructure.adapters.stream_info_adapter import StreamInfoAdapter
 from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
 from app.stream.infrastructure.uow.start_new_stream_uow import SqlAlchemyStartNewStreamUnitOfWorkFactory
-from app.viewer.application.ports.stream_chatters_port import StreamChattersPort
 from core.db import db_ro_session, db_rw_session
 from core.provider import Provider
 
 
 @dataclass
 class StreamProviders:
-    stream_info_port: StreamInfoPort
-    stream_chatters_port: StreamChattersPort
     stream_service_provider: Provider[StreamService]
     start_stream_use_case_provider: Provider[StartNewStreamUseCase]
     stream_repo_provider: Provider[StreamRepository]
 
 
-def build_stream_providers(platform: StreamingPlatformPort) -> StreamProviders:
+def build_stream_providers() -> StreamProviders:
     def stream_repo(db):
         return StreamRepositoryImpl(db)
 
@@ -40,8 +33,6 @@ def build_stream_providers(platform: StreamingPlatformPort) -> StreamProviders:
         )
 
     return StreamProviders(
-        stream_info_port=StreamInfoAdapter(platform),
-        stream_chatters_port=StreamChattersAdapter(platform),
         stream_service_provider=Provider(stream_service),
         start_stream_use_case_provider=Provider(start_stream_use_case),
         stream_repo_provider=Provider(stream_repo),

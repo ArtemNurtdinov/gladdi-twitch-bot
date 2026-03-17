@@ -6,22 +6,12 @@ from datetime import datetime
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.application.commands_registry import CommandRegistryProtocol
-from app.commands.follow.application.followage_port import FollowagePort
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
+from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.platform.providers import PlatformApiClient
-from app.stream.application.port.stream_info_port import StreamInfoPort
-from app.twitch.infrastructure.adapters.chatters_adapter import ChattersApiAdapter
-from app.twitch.infrastructure.adapters.followage_adapter import FollowageApiAdapter
-from app.twitch.infrastructure.adapters.moderation_adapter import ModerationApiAdapter
-from app.twitch.infrastructure.adapters.stream_adapter import StreamApiAdapter
-from app.twitch.infrastructure.adapters.twitch_platform_adapter import TwitchStreamingPlatformAdapter
-from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
 from app.twitch.infrastructure.helix.client import TwitchHelixClient
-from app.twitch.infrastructure.twitch_api_service import TwitchApiService
-from app.user.application.ports.user_info_port import UserInfoPort
-from app.viewer.application.ports.stream_chatters_port import StreamChattersPort
 from bootstrap.chat_composition import build_chat_event_handler
 from bootstrap.commands_composition import build_command_registry
 from bootstrap.jobs_composition import build_background_tasks
@@ -101,27 +91,12 @@ class BotManager:
             platform_auth = self._platform_auth_factory(access_token, refresh_token, client_id, client_secret)
 
             streaming_client = TwitchHelixClient(platform_auth)
-            user_info_port: UserInfoPort = UserInfoApiAdapter(streaming_client)
-            followage_port: FollowagePort = FollowageApiAdapter(streaming_client, user_info_port)
-            stream_info_port: StreamInfoPort = StreamApiAdapter(streaming_client, user_info_port)
-            stream_chatters_port: StreamChattersPort = ChattersApiAdapter(streaming_client)
-            moderation_port = ModerationApiAdapter(streaming_client)
-
-            streaming_api_client = TwitchApiService(
-                streaming_client=streaming_client,
-                user_info_port=user_info_port,
-                followage_port=followage_port,
-                stream_info_port=stream_info_port,
-                stream_chatters_port=stream_chatters_port,
-                moderation_port=moderation_port,
-            )
-
-            streaming_platform = TwitchStreamingPlatformAdapter(streaming_api_client)
+            platform_repository = PlatformRepositoryImpl(streaming_client)
 
             self._streaming_client = streaming_client
 
             providers_bundle = build_providers_bundle(
-                streaming_platform=streaming_platform,
+                platform_repository=platform_repository,
                 tg_bot_token=tg_bot_token,
                 llmbox_host=llmbox_host,
                 intent_detector_host=intent_detector_host,
@@ -133,7 +108,7 @@ class BotManager:
                 providers=providers_bundle,
             )
 
-            bot_user = await streaming_platform.get_user_by_login(self._settings.bot_name)
+            bot_user = await platform_repository.get_user_by_login(self._settings.bot_name)
             bot_user_id = bot_user.id if bot_user else None
             chat_client = self._chat_client_factory(platform_auth, self._settings, bot_user_id)
 
@@ -157,7 +132,7 @@ class BotManager:
                 chat_response_use_case=chat_response_use_case,
                 outbound=chat_client,
                 platform_auth=platform_auth,
-                streaming_platform=streaming_platform,
+                platform_repository=platform_repository,
             )
 
             command_registry = build_command_registry(
@@ -166,7 +141,7 @@ class BotManager:
                 settings=self._settings,
                 bot_name=self._settings.bot_name,
                 chat_response_use_case=chat_response_use_case,
-                streaming_platform=streaming_platform,
+                platform_repository=platform_repository,
                 post_message_fn=chat_client.post_message,
             )
 

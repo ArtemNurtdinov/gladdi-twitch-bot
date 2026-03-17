@@ -1,9 +1,9 @@
 import telegram
 
-from app.stream.application.port.notification_port import NotificationPort
+from app.notification.application.repository import NotificationRepository
 
 
-class TelegramNotificationAdapter(NotificationPort):
+class NotificationRepositoryImpl(NotificationRepository):
     def __init__(self, bot: telegram.Bot):
         self._bot = bot
 

@@ -37,7 +37,7 @@ from app.commands.transfer.presentation.transfer_command_handler import Transfer
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.bot.model.bot_settings import BotSettings
-from app.platform.streaming import StreamingPlatformPort
+from app.platform.domain.repository import PlatformRepository
 from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
 
@@ -48,12 +48,12 @@ def build_command_registry(
     settings: BotSettings,
     bot_name: str,
     chat_response_use_case: ChatResponseUseCase,
-    streaming_platform: StreamingPlatformPort,
+    platform_repository: PlatformRepository,
     post_message_fn: Callable[[str], Awaitable[None]],
 ) -> CommandRegistryProtocol:
     prefix = settings.prefix
     moderation_service = ModerationService(
-        moderation_port=streaming_platform,
+        platform_repository=platform_repository,
         user_cache=providers.user_providers.user_cache,
     )
     ask_uow_factory = uow_factories.build_ask_uow_factory()
@@ -65,7 +65,7 @@ def build_command_registry(
             chat_repo_provider=providers.chat_providers.chat_repo_provider,
             conversation_repo_provider=providers.ai_providers.conversation_repo_provider,
             get_followage_use_case=GetFollowageUseCase(
-                unit_of_work_factory=SimpleFollowageUnitOfWorkFactory(providers.follow_providers.followage_port),
+                unit_of_work_factory=SimpleFollowageUnitOfWorkFactory(platform_repository),
             ),
             chat_response_use_case=chat_response_use_case,
             unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),

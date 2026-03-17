@@ -15,15 +15,15 @@ from app.minigame.application.use_case.handle_minigame_tick_use_case import Hand
 from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
 from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
+from app.notification.infrastructure.repository import NotificationRepositoryImpl
 from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.application.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
-from app.platform.streaming import StreamingPlatformPort
+from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.infrastructure.adapters.generate_stream_info_adapter import GenerateStreamInfoAdapter
-from app.stream.infrastructure.adapters.telegram_notification_adapter import TelegramNotificationAdapter
 from app.viewer.application.jobs.viewer_time_job import ViewerTimeJob
 from app.viewer.application.usecases.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from bootstrap.providers_bundle import ProvidersBundle
@@ -42,10 +42,10 @@ def build_background_tasks(
     chat_response_use_case: ChatResponseUseCase,
     outbound: ChatOutbound,
     platform_auth: PlatformAuth,
-    streaming_platform: StreamingPlatformPort,
+    platform_repository: PlatformRepository,
 ) -> BackgroundTasks:
     send_channel_message = outbound.send_channel_message
-    notifications_port = TelegramNotificationAdapter(providers.telegram_providers.telegram_bot)
+    notifications_port = NotificationRepositoryImpl(providers.telegram_providers.telegram_bot)
     chat_response_port = GenerateStreamInfoAdapter(chat_response_use_case)
     return BackgroundTasks(
         runner=providers.background_providers.runner,
@@ -55,7 +55,7 @@ def build_background_tasks(
                 handle_post_joke_use_case=HandlePostJokeUseCase(
                     joke_service=providers.joke_providers.joke_service,
                     user_cache=providers.user_providers.user_cache,
-                    stream_info=providers.stream_providers.stream_info_port,
+                    platform_repository=platform_repository,
                     chat_response_use_case=chat_response_use_case,
                     unit_of_work_factory=uow_factories.build_joke_uow_factory(),
                 ),
@@ -69,10 +69,10 @@ def build_background_tasks(
                 channel_name=settings.channel_name,
                 handle_stream_status_use_case=HandleStreamStatusUseCase(
                     user_cache=providers.user_providers.user_cache,
-                    stream_info_port=providers.stream_providers.stream_info_port,
+                    platform_repository=platform_repository,
                     unit_of_work_factory=uow_factories.build_stream_status_uow_factory(),
                     minigame_repository=providers.minigame_providers.minigame_repository,
-                    notifications_port=notifications_port,
+                    notification_repository=notifications_port,
                     notification_group_id=settings.group_id,
                     chat_response_port=chat_response_port,
                     state=chat_summary_state,
@@ -138,14 +138,14 @@ def build_background_tasks(
                 handle_viewer_time_use_case=RewardViewerTimeUseCase(
                     reward_viewer_time_uow=uow_factories.build_viewer_time_uow_factory(),
                     user_cache=providers.user_providers.user_cache,
-                    stream_chatters_port=providers.stream_providers.stream_chatters_port,
+                    platform_repository=platform_repository,
                 ),
                 bot_nick=bot_name,
             ),
             FollowersSyncJob(
                 channel_name=settings.channel_name,
                 handle_followers_sync_use_case=HandleFollowersSyncUseCase(
-                    platform_port=streaming_platform,
+                    platform_repository=platform_repository,
                     sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
                 ),
             ),

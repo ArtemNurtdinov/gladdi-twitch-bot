@@ -11,7 +11,7 @@ from app.equipment.bootstrap import EquipmentProviders, build_equipment_provider
 from app.follow.bootstrap import FollowProviders, build_follow_providers
 from app.joke.bootstrap import JokeProviders, build_joke_providers
 from app.minigame.bootstrap import MinigameProviders, build_minigame_providers
-from app.platform.streaming import StreamingPlatformPort
+from app.platform.domain.repository import PlatformRepository
 from app.stream.bootstrap import StreamProviders, build_stream_providers
 from app.user.bootstrap import UserProviders, build_user_providers
 from app.viewer.bootstrap import ViewerProviders, build_viewer_providers
@@ -38,17 +38,17 @@ class ProvidersBundle:
 
 
 def build_providers_bundle(
-    streaming_platform: StreamingPlatformPort,
+    platform_repository: PlatformRepository,
     tg_bot_token: str,
     llmbox_host: str,
     intent_detector_host: str,
 ) -> ProvidersBundle:
-    stream_providers = build_stream_providers(streaming_platform)
+    stream_providers = build_stream_providers()
     ai_providers = build_ai_providers(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
     chat_providers = build_chat_providers()
-    follow_providers = build_follow_providers(streaming_platform)
+    follow_providers = build_follow_providers()
     joke_providers = build_joke_providers()
-    user_providers = build_user_providers(streaming_platform)
+    user_providers = build_user_providers(platform_repository)
     viewer_providers = build_viewer_providers()
     economy_providers = build_economy_providers()
     equipment_providers = build_equipment_providers()

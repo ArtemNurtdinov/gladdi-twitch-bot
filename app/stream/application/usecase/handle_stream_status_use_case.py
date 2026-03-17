@@ -5,9 +5,9 @@ from datetime import datetime
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_repository import MinigameRepository
+from app.notification.application.repository import NotificationRepository
+from app.platform.domain.repository import PlatformRepository
 from app.stream.application.port.generate_stream_info_port import GenerateStreamInfoPort
-from app.stream.application.port.notification_port import NotificationPort
-from app.stream.application.port.stream_info_port import StreamInfoPort
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.models import StreamInfo, StreamStatistics
 from app.user.application.ports.user_cache_port import UserCachePort
@@ -19,19 +19,19 @@ class HandleStreamStatusUseCase:
     def __init__(
         self,
         user_cache: UserCachePort,
-        stream_info_port: StreamInfoPort,
+        platform_repository: PlatformRepository,
         unit_of_work_factory: StreamStatusUnitOfWorkFactory,
         minigame_repository: MinigameRepository,
-        notifications_port: NotificationPort,
+        notification_repository: NotificationRepository,
         notification_group_id: int,
         chat_response_port: GenerateStreamInfoPort,
         state: ChatSummaryState,
     ):
         self._user_cache = user_cache
-        self._stream_info_port = stream_info_port
+        self._platform_repository = platform_repository
         self._unit_of_work_factory = unit_of_work_factory
         self._minigame_repository = minigame_repository
-        self._notifications_port = notifications_port
+        self._notification_repository = notification_repository
         self._notification_group_id = notification_group_id
         self._chat_response_port = chat_response_port
         self._state = state
@@ -43,7 +43,7 @@ class HandleStreamStatusUseCase:
             logger.error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
             return
 
-        stream_status = await self._stream_info_port.get_stream_status(broadcaster_id)
+        stream_status = await self._platform_repository.get_stream_status(broadcaster_id)
         if stream_status is None:
             logger.error(f"Не удалось получить статус стрима для канала {channel_name}")
             return
@@ -89,11 +89,7 @@ class HandleStreamStatusUseCase:
         except Exception as e:
             logger.error(f"Ошибка при создании стрима: {e}")
 
-    async def _handle_stream_end(
-        self,
-        channel_name: str,
-        active_stream: StreamInfo,
-    ):
+    async def _handle_stream_end(self, channel_name: str, active_stream: StreamInfo):
         finish_time = datetime.utcnow()
         logger.info("Стрим завершён")
         with self._unit_of_work_factory.create() as uow:
@@ -155,7 +151,7 @@ class HandleStreamStatusUseCase:
         )
         result = await self._chat_response_port.generate(prompt, channel_name)
         try:
-            await self._notifications_port.send_notification(chat_id=self._notification_group_id, text=result)
+            await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
         except Exception as e:
             logger.error(f"Ошибка отправки анонса в Telegram: {e}")
 
@@ -230,4 +226,4 @@ class HandleStreamStatusUseCase:
         self._state.current_stream_summaries = []
         self._state.last_chat_summary_time = None
 
-        await self._notifications_port.send_notification(chat_id=self._notification_group_id, text=result)
+        await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
