@@ -107,7 +107,7 @@ class BotManager:
             stream_chatters_port: StreamChattersPort = ChattersApiAdapter(streaming_client)
             moderation_port = ModerationApiAdapter(streaming_client)
 
-            streaming_client = TwitchApiService(
+            streaming_api_client = TwitchApiService(
                 streaming_client=streaming_client,
                 user_info_port=user_info_port,
                 followage_port=followage_port,
@@ -116,7 +116,7 @@ class BotManager:
                 moderation_port=moderation_port,
             )
 
-            streaming_platform = TwitchStreamingPlatformAdapter(streaming_client)
+            streaming_platform = TwitchStreamingPlatformAdapter(streaming_api_client)
 
             self._streaming_client = streaming_client
 
