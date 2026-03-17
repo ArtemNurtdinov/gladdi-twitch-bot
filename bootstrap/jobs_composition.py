@@ -20,6 +20,7 @@ from app.platform.application.handle_token_checker_use_case import HandleTokenCh
 from app.platform.application.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
+from app.platform.chat.domain.twitch_client import ChatClient
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
@@ -29,7 +30,6 @@ from app.viewer.application.usecases.reward_viewer_time_use_case import RewardVi
 from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
 from core.background.tasks import BackgroundTasks
-from core.chat.outbound import ChatOutbound
 from core.db import db_ro_session
 
 
@@ -40,7 +40,7 @@ def build_background_tasks(
     bot_name: str,
     chat_summary_state: ChatSummaryState,
     chat_response_use_case: ChatResponseUseCase,
-    outbound: ChatOutbound,
+    outbound: ChatClient,
     platform_auth: PlatformAuth,
     platform_repository: PlatformRepository,
 ) -> BackgroundTasks:

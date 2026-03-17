@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.platform.bot.bot_manager import BotManager
 from app.platform.bot.model.bot_settings import BotSettings, build_bot_settings
 from app.platform.bot.schemas import BotActionResult, BotStatus
-from app.twitch.bootstrap.factories import twitch_auth_factory, twitch_chat_client_factory
 from app.twitch.bootstrap.router_factory import build_twitch_command_router
 from app.twitch.presentation.twitch_schemas import AuthStartResponse
 from bootstrap.config_provider import get_config
@@ -36,8 +35,6 @@ def get_bot_settings(cfg: Config = Depends(get_config)) -> BotSettings:
 def get_bot_manager(settings: BotSettings = Depends(get_bot_settings)) -> BotManager:
     return BotManager(
         settings=settings,
-        platform_auth_factory=twitch_auth_factory,
-        chat_client_factory=twitch_chat_client_factory,
         command_router_builder=build_twitch_command_router,
     )
 

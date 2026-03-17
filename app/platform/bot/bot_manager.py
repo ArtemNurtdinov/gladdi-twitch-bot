@@ -6,9 +6,12 @@ from datetime import datetime
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.application.commands_registry import CommandRegistryProtocol
+from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
+from app.platform.chat.domain.twitch_client import ChatClient
+from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.platform.providers import PlatformApiClient
@@ -20,7 +23,6 @@ from bootstrap.stream_composition import restore_stream_context
 from bootstrap.uow_composition import create_uow_factories
 from core.background.tasks import BackgroundTasks
 from core.chat.interfaces import CommandRouter
-from core.chat.outbound import ChatOutbound
 from core.db import db_ro_session, db_rw_session
 
 logger = logging.getLogger(__name__)
@@ -30,18 +32,14 @@ class BotManager:
     def __init__(
         self,
         settings: BotSettings,
-        platform_auth_factory: Callable[[str, str, str, str], PlatformAuth],
-        chat_client_factory: Callable[[PlatformAuth, BotSettings, str], ChatOutbound],
         command_router_builder: Callable[[BotSettings, CommandRegistryProtocol, dict[str, str | None]], CommandRouter],
     ):
         self._settings = settings
-        self._platform_auth_factory = platform_auth_factory
-        self._chat_client_factory = chat_client_factory
         self._command_router_builder = command_router_builder
 
         self._background_tasks: BackgroundTasks | None = None
 
-        self._chat_client: ChatOutbound | None = None
+        self._chat_client: ChatClient | None = None
         self._task: asyncio.Task | None = None
         self._status: BotStatusEnum = BotStatusEnum.STOPPED
         self._started_at: datetime | None = None
@@ -74,6 +72,20 @@ class BotManager:
         started_at = self._started_at.isoformat() if self._started_at else None
         return BotStatus(status=self._status, started_at=started_at, last_error=self._last_error)
 
+    def validate_credentials(self, access_token: str, refresh_token: str, client_id: str, client_secret: str) -> None:
+        missing = []
+        if not client_id:
+            missing.append("client_id")
+        if not client_secret:
+            missing.append("client_secret")
+        if not refresh_token:
+            missing.append("refresh_token")
+        if not access_token:
+            missing.append("access_token")
+
+        if missing:
+            raise ValueError(f"Недостаточно данных для авторизации платформы: {', '.join(missing)}")
+
     async def start_bot(
         self,
         access_token: str,
@@ -88,7 +100,15 @@ class BotManager:
             if self._task and not self._task.done():
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            platform_auth = self._platform_auth_factory(access_token, refresh_token, client_id, client_secret)
+            self.validate_credentials(access_token, refresh_token, client_id, client_secret)
+
+            platform_auth: PlatformAuth = TwitchAuth(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                client_id=client_id,
+                client_secret=client_secret,
+                logger=logger,
+            )
 
             streaming_client = TwitchHelixClient(platform_auth)
             platform_repository = PlatformRepositoryImpl(streaming_client)
@@ -110,7 +130,8 @@ class BotManager:
 
             bot_user = await platform_repository.get_user_by_login(self._settings.bot_name)
             bot_user_id = bot_user.id if bot_user else None
-            chat_client = self._chat_client_factory(platform_auth, self._settings, bot_user_id)
+
+            chat_client: ChatClient = TwitchChatClient(auth=platform_auth, settings=self._settings, bot_id=bot_user_id)
 
             battle_waiting_user = {"value": None}
 
