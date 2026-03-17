@@ -10,13 +10,13 @@ from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
-from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandRouter
+from core.chat.interfaces import ChatContext, ChatMessage, CommandRouter
 from core.chat.outbound import ChatEventsHandler, ChatOutbound
 
 logger = logging.getLogger(__name__)
 
 
-class TwitchChatClient(Client, ChatClient, ChatOutbound):
+class TwitchChatClient(Client, ChatOutbound):
     TWITCH_MESSAGE_LENGTH_MAX = 500
 
     def __init__(self, auth: PlatformAuth, settings: BotSettings, bot_id: str):
