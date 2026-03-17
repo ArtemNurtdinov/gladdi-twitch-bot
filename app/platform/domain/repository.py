@@ -1,7 +1,23 @@
 from typing import Protocol
 
+from app.commands.follow.application.model import FollowageInfo
+from app.follow.application.models.follower import ChannelFollowerDTO
+from app.stream.application.models.stream_info import StreamInfoDTO
+from app.stream.application.models.stream_status import StreamStatusDTO
+from app.user.application.model.model import UserInfoDTO
+
 
 class PlatformRepository(Protocol):
     async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool: ...
 
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> list[str]: ...
+
+    async def get_user_by_login(self, login: str) -> UserInfoDTO | None: ...
+
+    async def get_stream_info(self, channel_name: str) -> StreamInfoDTO | None: ...
+
+    async def get_stream_status(self, broadcaster_id: str) -> StreamStatusDTO | None: ...
+
+    async def get_followage(self, channel_name: str, user_id: str) -> FollowageInfo | None: ...
+
+    async def get_channel_followers(self, channel_name: str) -> list[ChannelFollowerDTO]: ...
