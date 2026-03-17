@@ -1,6 +1,6 @@
 import logging
 
-from app.platform.auth import PlatformAuth
+from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.twitch.infrastructure.chat.twitch_chat_client import TwitchChatClient
 from app.twitch.infrastructure.helix.auth import TwitchAuth

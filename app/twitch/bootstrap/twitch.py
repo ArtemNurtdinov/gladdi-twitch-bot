@@ -1,10 +1,8 @@
-from app.platform.auth import PlatformAuth
-from app.platform.providers import PlatformProviders
+from app.platform.auth.platform_auth import PlatformAuth
 from app.twitch.infrastructure.adapters.chatters_adapter import ChattersApiAdapter
 from app.twitch.infrastructure.adapters.followage_adapter import FollowageApiAdapter
 from app.twitch.infrastructure.adapters.moderation_adapter import ModerationApiAdapter
 from app.twitch.infrastructure.adapters.stream_adapter import StreamApiAdapter
-from app.twitch.infrastructure.adapters.twitch_platform_adapter import TwitchStreamingPlatformAdapter
 from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
 from app.twitch.infrastructure.helix.client import TwitchHelixClient
 from app.twitch.infrastructure.twitch_api_service import TwitchApiService
@@ -25,14 +23,4 @@ def build_twitch_api_service(auth: PlatformAuth) -> TwitchApiService:
         stream_status_adapter=stream_adapter,
         chatters_adapter=chatters_adapter,
         moderation_adapter=moderation_adapter,
-    )
-
-
-def build_twitch_providers(platform_auth: PlatformAuth) -> PlatformProviders:
-    twitch_api_service = build_twitch_api_service(platform_auth)
-    streaming_platform = TwitchStreamingPlatformAdapter(twitch_api_service)
-    return PlatformProviders(
-        platform_auth=platform_auth,
-        streaming_platform=streaming_platform,
-        api_client=twitch_api_service,
     )

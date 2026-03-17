@@ -4,7 +4,7 @@ from typing import Any
 
 import httpx
 
-from app.platform.auth import PlatformAuth
+from app.platform.auth.platform_auth import PlatformAuth
 from core.platform.api_client import StreamingApiClient, StreamingApiResponse
 
 
@@ -31,12 +31,7 @@ class TwitchHelixClient(StreamingApiClient):
             json_data=response.json(),
         )
 
-    async def get_with_headers(
-        self,
-        url: str,
-        params: dict[str, Any],
-        headers: dict[str, str]
-    ) -> StreamingApiResponse:
+    async def get_with_headers(self, url: str, params: dict[str, Any], headers: dict[str, str]) -> StreamingApiResponse:
         response = await self._client.get(url, params=params, headers=self._headers(headers))
         return StreamingApiResponse(
             status_code=response.status_code,

@@ -1,6 +1,6 @@
 import logging
 
-from app.platform.auth import PlatformAuth
+from app.platform.auth.platform_auth import PlatformAuth
 
 logger = logging.getLogger(__name__)
 

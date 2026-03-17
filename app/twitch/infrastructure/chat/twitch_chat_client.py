@@ -8,7 +8,7 @@ from twitchio.eventsub import ChatMessageSubscription
 from twitchio.exceptions import HTTPException
 from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
-from app.platform.auth import PlatformAuth
+from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from core.chat.interfaces import ChatClient, ChatContext, ChatMessage, CommandRouter
 from core.chat.outbound import ChatEventsHandler, ChatOutbound

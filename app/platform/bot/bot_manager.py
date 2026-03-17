@@ -6,10 +6,12 @@ from datetime import datetime
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.application.commands_registry import CommandRegistryProtocol
-from app.platform.auth import PlatformAuth
+from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
-from app.platform.providers import PlatformProviders
+from app.platform.providers import PlatformApiClient
+from app.twitch.bootstrap.twitch import build_twitch_api_service
+from app.twitch.infrastructure.adapters.twitch_platform_adapter import TwitchStreamingPlatformAdapter
 from bootstrap.chat_composition import build_chat_event_handler
 from bootstrap.commands_composition import build_command_registry
 from bootstrap.jobs_composition import build_background_tasks
@@ -29,13 +31,11 @@ class BotManager:
         self,
         settings: BotSettings,
         platform_auth_factory: Callable[[str, str, str, str], PlatformAuth],
-        platform_providers_builder: Callable[[PlatformAuth], PlatformProviders],
         chat_client_factory: Callable[[PlatformAuth, BotSettings, str], ChatOutbound],
         command_router_builder: Callable[[BotSettings, CommandRegistryProtocol, dict[str, str | None]], CommandRouter],
     ):
         self._settings = settings
         self._platform_auth_factory = platform_auth_factory
-        self._platform_providers_builder = platform_providers_builder
         self._chat_client_factory = chat_client_factory
         self._command_router_builder = command_router_builder
 
@@ -47,7 +47,8 @@ class BotManager:
         self._started_at: datetime | None = None
         self._last_error: str | None = None
         self._lock = asyncio.Lock()
-        self._platform_providers: PlatformProviders | None = None
+
+        self._streaming_client: PlatformApiClient | None = None
 
     def _reset_state(self):
         self._background_tasks = None
@@ -55,7 +56,6 @@ class BotManager:
         self._task = None
         self._status = BotStatusEnum.STOPPED
         self._started_at = None
-        self._platform_providers = None
 
     def _on_bot_done(self, task: asyncio.Task) -> None:
         try:
@@ -88,11 +88,14 @@ class BotManager:
             if self._task and not self._task.done():
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            auth = self._platform_auth_factory(access_token, refresh_token, client_id, client_secret)
-            self._platform_providers = self._platform_providers_builder(auth)
+            platform_auth = self._platform_auth_factory(access_token, refresh_token, client_id, client_secret)
+            streaming_client = build_twitch_api_service(platform_auth)
+            streaming_platform = TwitchStreamingPlatformAdapter(streaming_client)
+
+            self._streaming_client = streaming_client
 
             providers_bundle = build_providers_bundle(
-                streaming_platform=self._platform_providers.streaming_platform,
+                streaming_platform=streaming_platform,
                 tg_bot_token=tg_bot_token,
                 llmbox_host=llmbox_host,
                 intent_detector_host=intent_detector_host,
@@ -104,9 +107,9 @@ class BotManager:
                 providers=providers_bundle,
             )
 
-            bot_user = await self._platform_providers.streaming_platform.get_user_by_login(self._settings.bot_name)
+            bot_user = await streaming_platform.get_user_by_login(self._settings.bot_name)
             bot_user_id = bot_user.id if bot_user else None
-            chat_client = self._chat_client_factory(self._platform_providers.platform_auth, self._settings, bot_user_id)
+            chat_client = self._chat_client_factory(platform_auth, self._settings, bot_user_id)
 
             battle_waiting_user = {"value": None}
 
@@ -127,7 +130,8 @@ class BotManager:
                 chat_summary_state=chat_summary_state,
                 chat_response_use_case=chat_response_use_case,
                 outbound=chat_client,
-                platform_provider=self._platform_providers,
+                platform_auth=platform_auth,
+                streaming_platform=streaming_platform,
             )
 
             command_registry = build_command_registry(
@@ -136,7 +140,7 @@ class BotManager:
                 settings=self._settings,
                 bot_name=self._settings.bot_name,
                 chat_response_use_case=chat_response_use_case,
-                streaming_platform=self._platform_providers.streaming_platform,
+                streaming_platform=streaming_platform,
                 post_message_fn=chat_client.post_message,
             )
 
@@ -178,7 +182,7 @@ class BotManager:
     async def stop_bot(self) -> BotActionResult:
         async with self._lock:
             task = self._task
-            platform_api_service = self._platform_providers.api_client if self._platform_providers else None
+            platform_api_service = self._streaming_client if self._streaming_client else None
 
             if not isinstance(task, asyncio.Task):
                 logger.info("Попытка остановки, но бот не запущен")

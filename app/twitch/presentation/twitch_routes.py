@@ -10,7 +10,6 @@ from app.platform.bot.model.bot_settings import BotSettings, build_bot_settings
 from app.platform.bot.schemas import BotActionResult, BotStatus
 from app.twitch.bootstrap.factories import twitch_auth_factory, twitch_chat_client_factory
 from app.twitch.bootstrap.router_factory import build_twitch_command_router
-from app.twitch.bootstrap.twitch import build_twitch_providers
 from app.twitch.presentation.twitch_schemas import AuthStartResponse
 from bootstrap.config_provider import get_config
 from core.config import Config
@@ -38,7 +37,6 @@ def get_bot_manager(settings: BotSettings = Depends(get_bot_settings)) -> BotMan
     return BotManager(
         settings=settings,
         platform_auth_factory=twitch_auth_factory,
-        platform_providers_builder=build_twitch_providers,
         chat_client_factory=twitch_chat_client_factory,
         command_router_builder=build_twitch_command_router,
     )
@@ -59,8 +57,7 @@ async def start_authorization(cfg=Depends(get_config)) -> AuthStartResponse:
     }
     auth_url = f"{AUTH_URL}?{urlencode(params)}"
     return AuthStartResponse(
-        auth_url=auth_url,
-        message="Откройте ссылку, авторизуйтесь — Twitch вернёт вас на redirect_uri, где бот заберёт code"
+        auth_url=auth_url, message="Откройте ссылку, авторизуйтесь — Twitch вернёт вас на redirect_uri, где бот заберёт code"
     )
 
 
