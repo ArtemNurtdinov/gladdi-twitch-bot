@@ -10,7 +10,7 @@ class DefaultChatEventsHandler(ChatEventsHandler):
     def __init__(
         self,
         handle_chat_message_use_case: HandleChatMessageUseCase,
-        send_channel_message: Callable[[str, str], Awaitable[None]],
+        send_channel_message: Callable[[str], Awaitable[None]],
     ):
         self._handle_chat_message_use_case = handle_chat_message_use_case
         self._send_channel_message = send_channel_message
@@ -27,4 +27,4 @@ class DefaultChatEventsHandler(ChatEventsHandler):
         result = await self._handle_chat_message_use_case.handle(chat_message)
 
         if result:
-            await self._send_channel_message(channel_name, result)
+            await self._send_channel_message(result)

@@ -14,7 +14,7 @@ class BonusCommandHandler(SimpleCommandHandler):
         command_name: str,
         handle_bonus_use_case: HandleBonusUseCase,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
@@ -37,4 +37,4 @@ class BonusCommandHandler(SimpleCommandHandler):
 
         result = await self._handle_bonus_use_case.handle(bonus=bonus)
 
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)

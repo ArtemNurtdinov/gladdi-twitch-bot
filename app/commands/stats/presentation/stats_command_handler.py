@@ -14,7 +14,7 @@ class StatsCommandHandler(SimpleCommandHandler):
         command_name: str,
         handle_stats_use_case: HandleStatsUseCase,
         bot_name: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
@@ -35,4 +35,4 @@ class StatsCommandHandler(SimpleCommandHandler):
 
         result = await self._handle_stats_use_case.handle(command_stats=command_stats)
 
-        await self._post_message_fn(result, chat_ctx)
+        await self._post_message_fn(result)

@@ -14,7 +14,7 @@ class TransferCommandHandlerImpl(TransferCommandHandler):
         handle_transfer_use_case: HandleTransferUseCase,
         command_name: str,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self._handle_transfer_use_case = handle_transfer_use_case
@@ -39,4 +39,4 @@ class TransferCommandHandlerImpl(TransferCommandHandler):
 
         result = await self._handle_transfer_use_case.handle(command_transfer=dto)
 
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)

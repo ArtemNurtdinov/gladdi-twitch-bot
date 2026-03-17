@@ -38,7 +38,5 @@ def twitch_auth_factory(
     )
 
 
-def twitch_chat_client_factory(
-    auth: PlatformAuth, settings: BotSettings, bot_id: str
-) -> ChatOutbound:
+def twitch_chat_client_factory(auth: PlatformAuth, settings: BotSettings, bot_id: str) -> ChatOutbound:
     return TwitchChatClient(auth=auth, settings=settings, bot_id=bot_id)

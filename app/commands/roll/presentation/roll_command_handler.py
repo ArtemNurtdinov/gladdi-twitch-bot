@@ -19,7 +19,7 @@ class RollCommandHandlerImpl(RollCommandHandler):
         handle_roll_use_case: HandleRollUseCase,
         chat_moderation: ChatModerationPort,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
@@ -63,10 +63,10 @@ class RollCommandHandlerImpl(RollCommandHandler):
             self.roll_cooldowns[display_name] = result.new_last_roll_time
 
         for message in result.messages:
-            await self.post_message_fn(message, chat_ctx)
+            await self.post_message_fn(message)
 
         if result.timeout_action:
-            await self.post_message_fn(result.timeout_action.reason, chat_ctx)
+            await self.post_message_fn(result.timeout_action.reason)
             await self._chat_moderation.timeout_user(
                 channel_name=channel_name,
                 moderator_name=self._bot_nick,

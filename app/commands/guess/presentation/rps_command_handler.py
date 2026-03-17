@@ -14,7 +14,7 @@ class RpsCommandHandlerImpl(RpsCommandHandler):
         command_name: str,
         handle_rps_use_case: HandleRpsUseCase,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self._command_prefix = command_prefix
         self._command_name = command_name
@@ -36,4 +36,4 @@ class RpsCommandHandlerImpl(RpsCommandHandler):
 
         result = await self._handle_rps_use_case.handle(rps=dto)
 
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)

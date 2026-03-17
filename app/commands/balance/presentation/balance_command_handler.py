@@ -14,7 +14,7 @@ class BalanceCommandHandler(SimpleCommandHandler):
         command_name: str,
         handle_balance_use_case: HandleBalanceUseCase,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self._command_prefix = command_prefix
         self._command_name = command_name
@@ -37,4 +37,4 @@ class BalanceCommandHandler(SimpleCommandHandler):
         )
 
         result = await self._handle_balance_use_case.handle(dto)
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)

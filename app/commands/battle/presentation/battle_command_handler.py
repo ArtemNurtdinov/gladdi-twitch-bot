@@ -17,7 +17,7 @@ class BattleCommandHandlerImpl(BattleCommandHandler):
         handle_battle_use_case: HandleBattleUseCase,
         chat_moderation: ChatModerationPort,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
@@ -46,7 +46,7 @@ class BattleCommandHandlerImpl(BattleCommandHandler):
         battle_waiting_user["value"] = result.new_waiting_user
 
         for message in result.messages:
-            await self.post_message_fn(message, chat_ctx)
+            await self.post_message_fn(message)
 
         if result.delay_before_timeout:
             await asyncio.sleep(result.delay_before_timeout)

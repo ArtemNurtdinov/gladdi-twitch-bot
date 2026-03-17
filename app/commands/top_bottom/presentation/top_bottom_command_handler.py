@@ -18,7 +18,7 @@ class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
         command_bottom: str,
         handle_top_bottom_use_case: HandleTopBottomUseCase,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_top = command_top
@@ -44,7 +44,7 @@ class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
 
         result = await self._handle_top_bottom_use_case.handle_top(command_top=dto)
 
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)
 
     async def handle_bottom(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
         bot_nick = self._bot_nick.lower()
@@ -63,4 +63,4 @@ class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
             command_bottom=dto,
         )
 
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)

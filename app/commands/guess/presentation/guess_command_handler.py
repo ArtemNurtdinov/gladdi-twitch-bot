@@ -16,7 +16,7 @@ class GuessCommandHandlerImpl(GuessCommandHandler):
         command_guess_word: str,
         handle_guess_use_case: HandleGuessUseCase,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_guess = command_guess
@@ -39,7 +39,7 @@ class GuessCommandHandlerImpl(GuessCommandHandler):
         )
 
         message = await self._handle_guess_use_case.handle_number(guess_number=guess_number)
-        await self.post_message_fn(message, chat_ctx)
+        await self.post_message_fn(message)
 
     async def handle_guess_letter(self, channel_name: str, display_name: str, chat_ctx: ChatContext, letter: str | None):
         guess_letter = GuessLetterDTO(
@@ -54,7 +54,7 @@ class GuessCommandHandlerImpl(GuessCommandHandler):
         )
 
         message = await self._handle_guess_use_case.handle_letter(guess_letter=guess_letter)
-        await self.post_message_fn(message, chat_ctx)
+        await self.post_message_fn(message)
 
     async def handle_guess_word(self, channel_name: str, display_name: str, chat_ctx: ChatContext, word: str | None):
         guess_word = GuessWordDTO(
@@ -69,4 +69,4 @@ class GuessCommandHandlerImpl(GuessCommandHandler):
         )
 
         message = await self._handle_guess_use_case.handle_word(guess_word=guess_word)
-        await self.post_message_fn(message, chat_ctx)
+        await self.post_message_fn(message)

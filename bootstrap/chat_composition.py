@@ -13,7 +13,7 @@ def build_chat_event_handler(
     providers: ProvidersBundle,
     uow_factories: UowFactories,
     chat_response_use_case: ChatResponseUseCase,
-    send_channel_message: Callable[[str, str], Awaitable[None]],
+    send_channel_message: Callable[[str], Awaitable[None]],
 ) -> DefaultChatEventsHandler:
     handle_chat_message = HandleChatMessageUseCase(
         unit_of_work_factory=uow_factories.build_chat_message_uow_factory(),

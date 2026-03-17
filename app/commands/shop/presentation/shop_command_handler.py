@@ -15,7 +15,7 @@ class ShopCommandHandlerImpl(ShopCommandHandler):
         command_buy_name: str,
         handle_shop_use_case: HandleShopUseCase,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_shop_name = command_shop_name
@@ -40,7 +40,7 @@ class ShopCommandHandlerImpl(ShopCommandHandler):
 
         result = await self._handle_shop_use_case.handle_shop(command_shop=command_shop)
 
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)
 
     async def handle_buy(self, channel_name: str, display_name: str, chat_ctx: ChatContext, item_name: str | None):
         bot_name = self._bot_nick.lower()
@@ -58,4 +58,4 @@ class ShopCommandHandlerImpl(ShopCommandHandler):
 
         result = await self._handle_shop_use_case.handle_buy(command_buy=command_buy)
 
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)

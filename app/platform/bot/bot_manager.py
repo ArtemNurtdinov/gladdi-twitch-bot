@@ -30,7 +30,7 @@ class BotManager:
         settings: BotSettings,
         platform_auth_factory: Callable[[str, str, str, str], PlatformAuth],
         platform_providers_builder: Callable[[PlatformAuth], PlatformProviders],
-        chat_client_factory: Callable[[PlatformAuth, BotSettings, str | None], ChatOutbound],
+        chat_client_factory: Callable[[PlatformAuth, BotSettings, str], ChatOutbound],
         command_router_builder: Callable[[BotSettings, CommandRegistryProtocol, dict[str, str | None]], CommandRouter],
     ):
         self._settings = settings

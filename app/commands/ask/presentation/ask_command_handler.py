@@ -13,7 +13,7 @@ class AskCommandHandlerImpl(AskCommandHandler):
         command_prefix: str,
         command_name: str,
         handle_ask_use_case: HandleAskUseCase,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
         bot_nick: str,
     ):
         self.command_prefix = command_prefix
@@ -35,4 +35,4 @@ class AskCommandHandlerImpl(AskCommandHandler):
         )
 
         result = await self._handle_ask_use_case.handle(dto)
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)

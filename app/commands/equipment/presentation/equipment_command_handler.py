@@ -15,7 +15,7 @@ class EquipmentCommandHandler(SimpleCommandHandler):
         command_shop: str,
         handle_equipment_use_case: HandleEquipmentUseCase,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self._handle_equipment_use_case = handle_equipment_use_case
         self.command_name = command_name
@@ -38,4 +38,4 @@ class EquipmentCommandHandler(SimpleCommandHandler):
 
         result = await self._handle_equipment_use_case.handle(dto=dto)
 
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)

@@ -15,7 +15,7 @@ class HelpCommandHandler(SimpleCommandHandler):
         handle_help_use_case: HandleHelpUseCase,
         commands: set[str],
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
@@ -39,4 +39,4 @@ class HelpCommandHandler(SimpleCommandHandler):
 
         result = await self._handle_help_use_case.handle(dto)
 
-        await self.post_message_fn(result, chat_ctx)
+        await self.post_message_fn(result)

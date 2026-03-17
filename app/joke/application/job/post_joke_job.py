@@ -14,7 +14,7 @@ class PostJokeJob:
         self,
         channel_name: str,
         handle_post_joke_use_case: HandlePostJokeUseCase,
-        send_channel_message: Callable[[str, str], Awaitable[None]],
+        send_channel_message: Callable[[str], Awaitable[None]],
         bot_nick: str,
     ):
         self._channel_name = channel_name
@@ -40,7 +40,7 @@ class PostJokeJob:
                 if result is None:
                     continue
 
-                await self._send_channel_message(self._channel_name, result)
+                await self._send_channel_message(result)
             except asyncio.CancelledError:
                 break
             except Exception:

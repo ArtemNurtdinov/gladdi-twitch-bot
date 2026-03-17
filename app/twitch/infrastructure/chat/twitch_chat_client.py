@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 class TwitchChatClient(Client, ChatClient, ChatOutbound):
-    def __init__(self, auth: PlatformAuth, settings: BotSettings, bot_id: str | None = None):
+    TWITCH_MESSAGE_LENGTH_MAX = 500
+
+    def __init__(self, auth: PlatformAuth, settings: BotSettings, bot_id: str):
         self._auth = auth
         self._settings = settings
         self._command_router: CommandRouter | None = None
@@ -35,7 +37,7 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
             client_id=auth.client_id,
             client_secret=auth.client_secret,
             bot_id=bot_id,
-            fetch_client_user=bool(bot_id),
+            fetch_client_user=True,
         )
 
     def set_router(self, router: CommandRouter) -> None:
@@ -207,19 +209,18 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
 
             logger.error("Не удалось восстановить подписку EventSub (%s)", reason)
 
-    @staticmethod
-    def _split_text(text: str, max_length: int = 500) -> list[str]:
-        if len(text) <= max_length:
+    def _split_text(self, text: str) -> list[str]:
+        if len(text) <= self.TWITCH_MESSAGE_LENGTH_MAX:
             return [text]
 
         messages: list[str] = []
         while text:
-            if len(text) <= max_length:
+            if len(text) <= self.TWITCH_MESSAGE_LENGTH_MAX:
                 messages.append(text)
                 break
-            split_pos = text.rfind(" ", 0, max_length)
+            split_pos = text.rfind(" ", 0, self.TWITCH_MESSAGE_LENGTH_MAX)
             if split_pos == -1:
-                split_pos = max_length
+                split_pos = self.TWITCH_MESSAGE_LENGTH_MAX
             part = text[:split_pos].strip()
             if part:
                 messages.append(part)
@@ -248,10 +249,10 @@ class TwitchChatClient(Client, ChatClient, ChatOutbound):
             except Exception:
                 logger.exception("Ошибка отправки сообщения в чат: %s", msg)
 
-    async def send_channel_message(self, channel_name: str, message: str) -> None:
+    async def send_channel_message(self, message: str) -> None:
         await self.send_chat_message_internal(message)
 
-    async def post_message(self, message: str, chat_ctx: ChatContext) -> None:
+    async def post_message(self, message: str) -> None:
         for msg in self._split_text(message):
             await self.send_chat_message_internal(msg)
             await asyncio.sleep(0.3)

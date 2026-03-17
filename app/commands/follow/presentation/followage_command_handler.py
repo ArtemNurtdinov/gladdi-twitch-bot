@@ -14,7 +14,7 @@ class FollowageCommandHandlerImpl(FollowageCommandHandler):
         command_name: str,
         handle_follow_age_use_case: HandleFollowAgeUseCase,
         bot_nick: str,
-        post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self._command_prefix = command_prefix
         self._command_name = command_name
@@ -36,4 +36,4 @@ class FollowageCommandHandlerImpl(FollowageCommandHandler):
 
         result = await self._handle_follow_age_use_case.handle(dto)
         if result:
-            await self.post_message_fn(result, chat_ctx)
+            await self.post_message_fn(result)

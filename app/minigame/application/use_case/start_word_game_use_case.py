@@ -26,7 +26,7 @@ class StartWordGameUseCase:
         llm_repository: LLMRepository,
         command_guess_word: str,
         command_guess_letter: str,
-        send_channel_message: Callable[[str, str], Awaitable[None]],
+        send_channel_message: Callable[[str], Awaitable[None]],
         bot_name: str,
     ):
         self._minigame_repository = minigame_repository
@@ -101,7 +101,7 @@ class StartWordGameUseCase:
             f"Время на игру: {self.WORD_GAME_DURATION_MINUTES} минут"
         )
 
-        await self._send_channel_message(channel_name, game_message)
+        await self._send_channel_message(game_message)
 
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(

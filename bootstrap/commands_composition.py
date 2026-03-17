@@ -40,7 +40,6 @@ from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.streaming import StreamingPlatformPort
 from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
-from core.chat.interfaces import ChatContext
 
 
 def build_command_registry(
@@ -50,7 +49,7 @@ def build_command_registry(
     bot_name: str,
     chat_response_use_case: ChatResponseUseCase,
     streaming_platform: StreamingPlatformPort,
-    post_message_fn: Callable[[str, ChatContext], Awaitable[None]],
+    post_message_fn: Callable[[str], Awaitable[None]],
 ) -> CommandRegistryProtocol:
     prefix = settings.prefix
     moderation_service = ModerationService(
