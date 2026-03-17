@@ -4,13 +4,13 @@ from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.models.follower import ChannelFollowerDTO
 from app.moderation.application.moderation_port import ModerationPort
+from app.platform.infrastructure.api_client import StreamingApiClient
 from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
 from app.stream.application.port.stream_info_port import StreamInfoPort
 from app.user.application.model.model import UserInfoDTO
 from app.user.application.ports.user_info_port import UserInfoPort
 from app.viewer.application.ports.stream_chatters_port import StreamChattersPort
-from core.platform.api_client import StreamingApiClient
 
 
 class TwitchApiService(

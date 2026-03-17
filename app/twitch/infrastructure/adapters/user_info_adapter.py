@@ -5,10 +5,10 @@ import logging
 import httpx
 from pydantic import ValidationError
 
+from app.platform.infrastructure.api_client import StreamingApiClient
 from app.twitch.infrastructure.helix.models import UsersResponse
 from app.user.application.model.model import UserInfoDTO
 from app.user.application.ports.user_info_port import UserInfoPort
-from core.platform.api_client import StreamingApiClient
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +20,7 @@ class UserInfoApiAdapter(UserInfoPort):
     async def get_user_by_login(self, login: str) -> UserInfoDTO | None:
         logger.debug(f"Получение информации о пользователе для логина: {login}")
         try:
-            response = await self._client.get(
-                url="/users",
-                params={"login": login}
-            )
+            response = await self._client.get(url="/users", params={"login": login})
             if response.status_code == 401:
                 logger.error(f"Ошибка авторизации при получении пользователя {login}. Проверьте токен.")
                 return None

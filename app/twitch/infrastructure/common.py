@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from core.platform.api_client import StreamingApiResponse
+from app.platform.infrastructure.api_client import StreamingApiResponse
 
 logger = logging.getLogger(__name__)
 

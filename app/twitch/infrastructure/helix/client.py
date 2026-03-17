@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 
 from app.platform.auth.platform_auth import PlatformAuth
-from core.platform.api_client import StreamingApiClient, StreamingApiResponse
+from app.platform.infrastructure.api_client import StreamingApiClient, StreamingApiResponse
 
 
 class TwitchHelixClient(StreamingApiClient):

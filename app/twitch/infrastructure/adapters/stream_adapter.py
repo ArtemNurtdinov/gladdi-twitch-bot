@@ -5,12 +5,12 @@ import logging
 import httpx
 from pydantic import ValidationError
 
+from app.platform.infrastructure.api_client import StreamingApiClient
 from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
 from app.stream.application.port.stream_info_port import StreamInfoPort
 from app.twitch.infrastructure.helix.models import StreamsResponse
 from app.user.application.ports.user_info_port import UserInfoPort
-from core.platform.api_client import StreamingApiClient
 
 logger = logging.getLogger(__name__)
 

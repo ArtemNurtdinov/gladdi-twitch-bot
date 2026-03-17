@@ -4,10 +4,10 @@ import logging
 
 from pydantic import ValidationError
 
+from app.platform.infrastructure.api_client import StreamingApiClient
 from app.twitch.infrastructure.common import handle_api_response
 from app.twitch.infrastructure.helix.models import ChattersResponse
 from app.viewer.application.ports.stream_chatters_port import StreamChattersPort
-from core.platform.api_client import StreamingApiClient
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +18,7 @@ class ChattersApiAdapter(StreamChattersPort):
 
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> list[str]:
         try:
-            response = await self._client.get(
-                url="/chat/chatters",
-                params={"broadcaster_id": broadcaster_id, "moderator_id": moderator_id}
-            )
+            response = await self._client.get(url="/chat/chatters", params={"broadcaster_id": broadcaster_id, "moderator_id": moderator_id})
             data = await handle_api_response(response, f"get_stream_chatters({broadcaster_id})")
             try:
                 parsed: ChattersResponse = ChattersResponse.model_validate(data)
