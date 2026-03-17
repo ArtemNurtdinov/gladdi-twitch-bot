@@ -7,9 +7,9 @@ from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.models.follower import ChannelFollowerDTO
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api_client import StreamingApiClient
+from app.platform.infrastructure.common import handle_api_response
 from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
-from app.twitch.infrastructure.common import handle_api_response
 from app.twitch.infrastructure.helix.models import ChattersResponse, FollowerData, FollowersResponse, StreamsResponse, UsersResponse
 from app.user.application.model.model import UserInfoDTO
 

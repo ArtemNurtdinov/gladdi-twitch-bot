@@ -9,9 +9,9 @@ from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
+from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.platform.providers import PlatformApiClient
-from app.twitch.infrastructure.helix.client import TwitchHelixClient
 from bootstrap.chat_composition import build_chat_event_handler
 from bootstrap.commands_composition import build_command_registry
 from bootstrap.jobs_composition import build_background_tasks
