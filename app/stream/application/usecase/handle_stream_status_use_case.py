@@ -7,7 +7,7 @@ from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.stream.application.port.generate_stream_info_port import GenerateStreamInfoPort
 from app.stream.application.port.notification_port import NotificationPort
-from app.stream.application.port.stream_status_port import StreamStatusPort
+from app.stream.application.port.stream_info_port import StreamInfoPort
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.models import StreamInfo, StreamStatistics
 from app.user.application.ports.user_cache_port import UserCachePort
@@ -19,7 +19,7 @@ class HandleStreamStatusUseCase:
     def __init__(
         self,
         user_cache: UserCachePort,
-        stream_status_port: StreamStatusPort,
+        stream_info_port: StreamInfoPort,
         unit_of_work_factory: StreamStatusUnitOfWorkFactory,
         minigame_repository: MinigameRepository,
         notifications_port: NotificationPort,
@@ -28,7 +28,7 @@ class HandleStreamStatusUseCase:
         state: ChatSummaryState,
     ):
         self._user_cache = user_cache
-        self._stream_status_port = stream_status_port
+        self._stream_info_port = stream_info_port
         self._unit_of_work_factory = unit_of_work_factory
         self._minigame_repository = minigame_repository
         self._notifications_port = notifications_port
@@ -43,7 +43,7 @@ class HandleStreamStatusUseCase:
             logger.error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
             return
 
-        stream_status = await self._stream_status_port.get_stream_status(broadcaster_id)
+        stream_status = await self._stream_info_port.get_stream_status(broadcaster_id)
         if stream_status is None:
             logger.error(f"Не удалось получить статус стрима для канала {channel_name}")
             return

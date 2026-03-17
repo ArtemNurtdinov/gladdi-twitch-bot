@@ -5,14 +5,14 @@ from pydantic import ValidationError
 from app.commands.follow.application.followage_port import FollowagePort
 from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.models.follower import ChannelFollowerDTO
-from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
 from app.twitch.infrastructure.common import handle_api_response
 from app.twitch.infrastructure.helix.models import FollowerData, FollowersResponse
+from app.user.application.ports.user_info_port import UserInfoPort
 from core.platform.api_client import StreamingApiClient
 
 
 class FollowageApiAdapter(FollowagePort):
-    def __init__(self, client: StreamingApiClient, user_info: UserInfoApiAdapter):
+    def __init__(self, client: StreamingApiClient, user_info: UserInfoPort):
         self._client = client
         self._user_info = user_info
 

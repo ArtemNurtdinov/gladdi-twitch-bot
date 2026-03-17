@@ -69,7 +69,7 @@ def build_background_tasks(
                 channel_name=settings.channel_name,
                 handle_stream_status_use_case=HandleStreamStatusUseCase(
                     user_cache=providers.user_providers.user_cache,
-                    stream_status_port=providers.stream_providers.stream_status_port,
+                    stream_info_port=providers.stream_providers.stream_info_port,
                     unit_of_work_factory=uow_factories.build_stream_status_uow_factory(),
                     minigame_repository=providers.minigame_providers.minigame_repository,
                     notifications_port=notifications_port,

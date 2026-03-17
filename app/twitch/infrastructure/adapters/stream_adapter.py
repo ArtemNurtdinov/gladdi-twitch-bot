@@ -8,16 +8,15 @@ from pydantic import ValidationError
 from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
 from app.stream.application.port.stream_info_port import StreamInfoPort
-from app.stream.application.port.stream_status_port import StreamStatusPort
-from app.twitch.infrastructure.adapters.user_info_adapter import UserInfoApiAdapter
 from app.twitch.infrastructure.helix.models import StreamsResponse
+from app.user.application.ports.user_info_port import UserInfoPort
 from core.platform.api_client import StreamingApiClient
 
 logger = logging.getLogger(__name__)
 
 
-class StreamApiAdapter(StreamInfoPort, StreamStatusPort):
-    def __init__(self, client: StreamingApiClient, user_info: UserInfoApiAdapter):
+class StreamApiAdapter(StreamInfoPort):
+    def __init__(self, client: StreamingApiClient, user_info: UserInfoPort):
         self._client = client
         self._user_info = user_info
 
