@@ -6,7 +6,7 @@ from core.background.task_runner import BackgroundTaskRunner
 
 class StreamStatusJob:
     name = "check_stream_status"
-    STREAM_STATUS_INTERVAL = 60
+    STREAM_STATUS_INTERVAL = 300
 
     def __init__(
         self,

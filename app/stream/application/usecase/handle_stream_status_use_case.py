@@ -51,8 +51,6 @@ class HandleStreamStatusUseCase:
         game_name = stream_status.stream_data.game_name if stream_status.is_online and stream_status.stream_data else None
         title = stream_status.stream_data.title if stream_status.is_online and stream_status.stream_data else None
 
-        logger.info(f"Статус стрима: {stream_status}")
-
         with self._unit_of_work_factory.create(read_only=True) as uow:
             active_stream = uow.stream_service.get_active_stream(channel_name)
 
