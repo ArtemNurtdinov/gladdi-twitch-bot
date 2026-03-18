@@ -62,10 +62,10 @@ def build_twitch_command_router(
         await registry.equipment_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author)
 
     async def top_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.top_bottom_command_handler.handle_top(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
+        await registry.top_bottom_command_handler.handle_top(channel_name=chat_ctx.channel, display_name=msg.author)
 
     async def bottom_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.top_bottom_command_handler.handle_bottom(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
+        await registry.top_bottom_command_handler.handle_bottom(channel_name=chat_ctx.channel, display_name=msg.author)
 
     async def help_handler(chat_ctx: ChatContext, msg: ChatMessage):
         await registry.help_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)

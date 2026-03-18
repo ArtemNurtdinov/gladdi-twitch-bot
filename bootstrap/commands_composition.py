@@ -35,7 +35,7 @@ from app.commands.shop.infrastructure.shop_command_handler import ShopCommandHan
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
-from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandlerImpl
+from app.commands.top_bottom.infrastructure.top_bottom_command_handler import TopBottomCommandHandlerImpl
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
 from app.commands.transfer.infrastructure.transfer_command_handler import TransferCommandHandlerImpl

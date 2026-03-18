@@ -11,7 +11,7 @@ from app.commands.help.presentation.help_command_handler import HelpCommandHandl
 from app.commands.roll.application.roll_command_handler import RollCommandHandler
 from app.commands.shop.application.shop_command_handler import ShopCommandHandler
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
-from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandler
+from app.commands.top_bottom.application.top_bottom_command_handler import TopBottomCommandHandler
 from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
 
 

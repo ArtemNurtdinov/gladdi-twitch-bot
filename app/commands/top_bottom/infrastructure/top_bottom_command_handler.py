@@ -1,10 +1,9 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.application.commands_registry import TopBottomCommandHandler
-from app.commands.domain.interfaces import ChatContext
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.application.model import BottomDTO, TopDTO
+from app.commands.top_bottom.application.top_bottom_command_handler import TopBottomCommandHandler
 
 
 class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
@@ -29,7 +28,7 @@ class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
         self.top_limit = self._TOP_LIMIT
         self.bottom_limit = self._BOTTOM_LIMIT
 
-    async def handle_top(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
+    async def handle_top(self, channel_name: str, display_name: str):
         bot_nick = self._bot_nick.lower()
 
         dto = TopDTO(
@@ -46,7 +45,7 @@ class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
 
         await self.post_message_fn(result)
 
-    async def handle_bottom(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
+    async def handle_bottom(self, channel_name: str, display_name: str):
         bot_nick = self._bot_nick.lower()
 
         dto = BottomDTO(
@@ -59,8 +58,6 @@ class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
             limit=self.bottom_limit,
         )
 
-        result = await self._handle_top_bottom_use_case.handle_bottom(
-            command_bottom=dto,
-        )
+        result = await self._handle_top_bottom_use_case.handle_bottom(command_bottom=dto)
 
         await self.post_message_fn(result)

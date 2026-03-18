@@ -10,16 +10,12 @@ from app.commands.equipment.application.equipment_command_handler import Equipme
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.roll.application.roll_command_handler import RollCommandHandler
 from app.commands.shop.application.shop_command_handler import ShopCommandHandler
+from app.commands.top_bottom.application.top_bottom_command_handler import TopBottomCommandHandler
 from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
 
 
 class SimpleCommandHandler(Protocol):
     def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-
-
-class TopBottomCommandHandler(Protocol):
-    def handle_top(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-    def handle_bottom(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
 
 
 class GuessCommandHandler(Protocol):
