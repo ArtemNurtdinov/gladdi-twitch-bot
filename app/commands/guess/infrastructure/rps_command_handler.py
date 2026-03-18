@@ -1,8 +1,7 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.application.commands_registry import RpsCommandHandler
-from app.commands.domain.interfaces import ChatContext
+from app.commands.guess.application.rps_command_handler import RpsCommandHandler
 from app.minigame.application.model.rps import RpsDTO
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 
@@ -22,7 +21,7 @@ class RpsCommandHandlerImpl(RpsCommandHandler):
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext, choice: str | None):
+    async def handle(self, channel_name: str, display_name: str, choice: str | None):
         dto = RpsDTO(
             command_prefix=self._command_prefix,
             command_name=self._command_name,

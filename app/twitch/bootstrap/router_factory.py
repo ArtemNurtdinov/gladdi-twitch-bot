@@ -91,7 +91,7 @@ def build_twitch_command_router(
     async def rps_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_rps) :].strip()
         choice = tail or None
-        await registry.rps_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, choice=choice)
+        await registry.rps_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, choice=choice)
 
     router.register(settings.command_followage, followage_handler)
     router.register(settings.command_gladdi, ask_handler)

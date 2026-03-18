@@ -6,7 +6,7 @@ from app.commands.bonus.application.bonus_command_handler import BonusCommandHan
 from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.guess.application.guess_command_handler import GuessCommandHandler
-from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
+from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandler
 from app.commands.help.application.help_command_handler import HelpCommandHandler
 from app.commands.roll.application.roll_command_handler import RollCommandHandler
 from app.commands.shop.application.shop_command_handler import ShopCommandHandler
