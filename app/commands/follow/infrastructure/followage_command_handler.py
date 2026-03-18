@@ -1,8 +1,7 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.application.commands_registry import FollowageCommandHandler
-from app.commands.domain.interfaces import ChatContext
+from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.application.model import FollowageDTO
 
@@ -22,7 +21,7 @@ class FollowageCommandHandlerImpl(FollowageCommandHandler):
         self.bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str, author_id: str, chat_ctx: ChatContext):
+    async def handle(self, channel_name: str, display_name: str, author_id: str):
         dto = FollowageDTO(
             command_prefix=self._command_prefix,
             command_name=self._command_name,

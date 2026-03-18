@@ -18,7 +18,7 @@ from app.commands.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
-from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandlerImpl
+from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandlerImpl
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandlerImpl

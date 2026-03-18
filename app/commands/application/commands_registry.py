@@ -4,14 +4,11 @@ from typing import Protocol
 from app.commands.ask.application.ask_command_handler import AskCommandHandler
 from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.domain.interfaces import ChatContext
+from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 
 
 class SimpleCommandHandler(Protocol):
     def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-
-
-class FollowageCommandHandler(Protocol):
-    def handle(self, channel_name: str, display_name: str, author_id: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
 
 
 class RollCommandHandler(Protocol):

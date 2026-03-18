@@ -12,9 +12,7 @@ def build_twitch_command_router(
     router = PrefixCommandRouter(settings.prefix)
 
     async def followage_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.followage_command_handler.handle(
-            channel_name=chat_ctx.channel, display_name=msg.author, author_id=msg.author_id, chat_ctx=chat_ctx
-        )
+        await registry.followage_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, author_id=msg.author_id)
 
     async def ask_handler(chat_ctx: ChatContext, msg: ChatMessage):
         await registry.ask_command_handler.handle(channel_name=chat_ctx.channel, full_message=msg.text, display_name=msg.author)
