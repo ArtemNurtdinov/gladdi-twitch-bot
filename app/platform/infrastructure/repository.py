@@ -171,10 +171,12 @@ class PlatformRepositoryImpl(PlatformRepository):
             )
         return None
 
-    async def get_followage(self, channel_name: str, user_id: str) -> FollowageInfo | None:
-        user = await self.get_user_by_login(channel_name)
-        broadcaster_id = None if user is None else user.id
-        if not broadcaster_id:
+    async def get_followage(self, channel_name: str, user_name: str) -> FollowageInfo | None:
+        broadcaster = await self.get_user_by_login(channel_name)
+        user = await self.get_user_by_login(user_name)
+        broadcaster_id = None if broadcaster is None else broadcaster.id
+        user_id = None if user is None else user.id
+        if not broadcaster_id or not user_id:
             return None
         return await self._get_user_followage(broadcaster_id=broadcaster_id, user_id=user_id)
 

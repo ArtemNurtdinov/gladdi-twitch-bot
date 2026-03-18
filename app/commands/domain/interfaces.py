@@ -7,7 +7,6 @@ from typing import Protocol
 class ChatMessage:
     author: str
     text: str
-    author_id: str
 
 
 class ChatContext:

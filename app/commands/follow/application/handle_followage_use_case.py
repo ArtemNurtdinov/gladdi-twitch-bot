@@ -27,7 +27,7 @@ class HandleFollowAgeUseCase:
         with self._unit_of_work_factory.create(read_only=True) as uow:
             follow_info = await uow.platform_repository.get_followage(
                 channel_name=channel_name,
-                user_id=command_follow_age.user_id,
+                user_name=command_follow_age.user_name,
             )
 
         if not follow_info:

@@ -78,7 +78,7 @@ class TwitchChatClient(Client, ChatClient):
             return
 
         author_name = chatter.display_name or chatter.name or ""
-        chat_message = ChatMessage(author=author_name, text=payload.text, author_id=chatter.id)
+        chat_message = ChatMessage(author=author_name, text=payload.text)
         chat_ctx = ChatContext(channel=self._channel_login)
 
         handled = False

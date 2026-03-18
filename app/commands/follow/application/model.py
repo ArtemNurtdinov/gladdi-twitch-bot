@@ -19,4 +19,3 @@ class FollowageDTO:
     user_name: str
     bot_nick: str
     occurred_at: datetime
-    user_id: str
