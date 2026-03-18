@@ -6,19 +6,18 @@ from app.commands.battle.application.model import BattleDTO, BattleTimeoutAction
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
-from core.provider import SingletonProvider
 
 
 class HandleBattleUseCase:
     def __init__(
         self,
-        unit_of_work_factory: BattleUnitOfWorkFactory,
+        battle_uow: BattleUnitOfWorkFactory,
         chat_response_use_case: ChatResponseUseCase,
-        calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase],
+        calculate_timeout_use_case: CalculateTimeoutUseCase,
     ):
-        self._unit_of_work_factory = unit_of_work_factory
+        self._battle_uow = battle_uow
         self._chat_response_use_case = chat_response_use_case
-        self._calculate_timeout_use_case_provider = calculate_timeout_use_case_provider
+        self._calculate_timeout_use_case = calculate_timeout_use_case
 
     async def handle(self, command_battle: BattleDTO) -> BattleUseCaseResult:
         challenger_display = command_battle.display_name
@@ -28,12 +27,12 @@ class HandleBattleUseCase:
 
         fee = EconomyPolicy.BATTLE_ENTRY_FEE
 
-        with self._unit_of_work_factory.create(read_only=True) as uow:
+        with self._battle_uow.create(read_only=True) as uow:
             user_balance = uow.economy_policy.get_user_balance(channel_name=command_battle.channel_name, user_name=challenger_user)
 
         if user_balance.balance < fee:
             result = f"@{challenger_display}, недостаточно монет для участия в битве! Необходимо: {EconomyPolicy.BATTLE_ENTRY_FEE} монет."
-            with self._unit_of_work_factory.create() as uow:
+            with self._battle_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=command_battle.user_name,
@@ -54,7 +53,7 @@ class HandleBattleUseCase:
 
         if not command_battle.waiting_user:
             error_result = None
-            with self._unit_of_work_factory.create() as uow:
+            with self._battle_uow.create() as uow:
                 user_balance = uow.economy_policy.subtract_balance(
                     channel_name=command_battle.channel_name,
                     user_name=challenger_user,
@@ -89,7 +88,7 @@ class HandleBattleUseCase:
                 f"Взнос: {EconomyPolicy.BATTLE_ENTRY_FEE} монет. "
                 f"Используй {command_battle.command_call}, чтобы принять вызов."
             )
-            with self._unit_of_work_factory.create() as uow:
+            with self._battle_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=command_battle.user_name,
@@ -111,7 +110,7 @@ class HandleBattleUseCase:
 
         if command_battle.waiting_user == challenger_display:
             result = f"@{challenger_display}, ты не можешь сражаться сам с собой. Подожди достойного противника."
-            with self._unit_of_work_factory.create() as uow:
+            with self._battle_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=command_battle.user_name,
@@ -130,7 +129,7 @@ class HandleBattleUseCase:
                 timeout_action=None,
             )
 
-        with self._unit_of_work_factory.create() as uow:
+        with self._battle_uow.create() as uow:
             challenger_balance = uow.economy_policy.subtract_balance(
                 channel_name=command_battle.channel_name,
                 user_name=challenger_user,
@@ -140,7 +139,7 @@ class HandleBattleUseCase:
             )
         if not challenger_balance:
             result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
-            with self._unit_of_work_factory.create() as uow:
+            with self._battle_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=command_battle.user_name,
@@ -172,7 +171,7 @@ class HandleBattleUseCase:
         result_story = await self._chat_response_use_case.generate_response(prompt, command_battle.channel_name)
 
         winner_amount = EconomyPolicy.BATTLE_WINNER_PRIZE
-        with self._unit_of_work_factory.create() as uow:
+        with self._battle_uow.create() as uow:
             uow.economy_policy.add_balance(
                 channel_name=command_battle.channel_name,
                 user_name=winner,
@@ -208,7 +207,7 @@ class HandleBattleUseCase:
         winner_message = f"{winner} получает {EconomyPolicy.BATTLE_WINNER_PRIZE} монет!"
         messages.append(winner_message)
 
-        with self._unit_of_work_factory.create() as uow:
+        with self._battle_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_battle.channel_name,
                 user_name=bot_nick,
@@ -217,12 +216,12 @@ class HandleBattleUseCase:
             )
 
         base_battle_timeout = 120
-        with self._unit_of_work_factory.create(read_only=True) as uow:
+        with self._battle_uow.create(read_only=True) as uow:
             equipment = uow.get_user_equipment_use_case.get_user_equipment(
                 channel_name=command_battle.channel_name, user_name=loser.lower()
             )
 
-        final_timeout, protection_message = self._calculate_timeout_use_case_provider.get().calculate_timeout_with_equipment(
+        final_timeout, protection_message = self._calculate_timeout_use_case.calculate_timeout_with_equipment(
             base_timeout_seconds=base_battle_timeout, equipment=equipment
         )
 
@@ -232,7 +231,7 @@ class HandleBattleUseCase:
         if final_timeout == 0:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
             messages.append(no_timeout_message)
-            with self._unit_of_work_factory.create() as uow:
+            with self._battle_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=bot_nick,

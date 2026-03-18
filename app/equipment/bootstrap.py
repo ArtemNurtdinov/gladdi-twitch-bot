@@ -17,7 +17,7 @@ class EquipmentProviders:
     equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase]
     add_equipment_use_case_provider: Provider[AddEquipmentUseCase]
     roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase]
-    calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase]
+    calculate_timeout_use_case: CalculateTimeoutUseCase
 
 
 def build_equipment_providers() -> EquipmentProviders:
@@ -54,13 +54,10 @@ def build_equipment_providers() -> EquipmentProviders:
     def roll_cooldown_use_case():
         return RollCooldownUseCase()
 
-    def calculate_timeout_use_case():
-        return CalculateTimeoutUseCase()
-
     return EquipmentProviders(
         get_user_equipment_use_case_provider=Provider(get_user_equipment_use_case),
         equipment_exists_use_case_provider=Provider(equipment_exists_use_case),
         add_equipment_use_case_provider=Provider(add_equipment_use_case),
         roll_cooldown_use_case_provider=SingletonProvider(roll_cooldown_use_case),
-        calculate_timeout_use_case_provider=SingletonProvider(calculate_timeout_use_case),
+        calculate_timeout_use_case=CalculateTimeoutUseCase(),
     )

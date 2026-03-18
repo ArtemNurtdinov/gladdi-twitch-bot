@@ -89,9 +89,9 @@ def build_command_registry(
         command_prefix=prefix,
         command_name=settings.command_fight,
         handle_battle_use_case=HandleBattleUseCase(
-            unit_of_work_factory=uow_factories.build_battle_uow_factory(),
+            battle_uow=uow_factories.build_battle_uow_factory(),
             chat_response_use_case=chat_response_use_case,
-            calculate_timeout_use_case_provider=providers.equipment_providers.calculate_timeout_use_case_provider,
+            calculate_timeout_use_case=providers.equipment_providers.calculate_timeout_use_case,
         ),
         chat_moderation=moderation_service,
         bot_name=bot_name,
@@ -103,7 +103,7 @@ def build_command_registry(
         handle_roll_use_case=HandleRollUseCase(
             unit_of_work_factory=uow_factories.build_roll_uow_factory(),
             roll_cooldown_use_case_provider=providers.equipment_providers.roll_cooldown_use_case_provider,
-            calculate_timeout_use_case_provider=providers.equipment_providers.calculate_timeout_use_case_provider,
+            calculate_timeout_use_case=providers.equipment_providers.calculate_timeout_use_case,
         ),
         chat_moderation=moderation_service,
         bot_nick=bot_name,

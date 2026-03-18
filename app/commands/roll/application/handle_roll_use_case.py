@@ -32,16 +32,13 @@ class HandleRollUseCase:
         self,
         unit_of_work_factory: RollUnitOfWorkFactory,
         roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase],
-        calculate_timeout_use_case_provider: SingletonProvider[CalculateTimeoutUseCase],
+        calculate_timeout_use_case: CalculateTimeoutUseCase,
     ):
         self._unit_of_work_factory = unit_of_work_factory
         self._roll_cooldown_use_case_provider = roll_cooldown_use_case_provider
-        self._calculate_timeout_use_case_provider = calculate_timeout_use_case_provider
+        self._calculate_timeout_use_case = calculate_timeout_use_case
 
-    async def handle(
-        self,
-        command_roll: RollDTO,
-    ) -> RollUseCaseResult:
+    async def handle(self, command_roll: RollDTO) -> RollUseCaseResult:
         messages: list[str] = []
         timeout_action: RollTimeoutAction | None = None
         current_time = datetime.now()
@@ -247,7 +244,7 @@ class HandleRollUseCase:
         if timeout_seconds is not None and timeout_seconds > 0:
             base_timeout_duration = timeout_seconds if timeout_seconds else 0
 
-            final_timeout, protection_message = self._calculate_timeout_use_case_provider.get().calculate_timeout_with_equipment(
+            final_timeout, protection_message = self._calculate_timeout_use_case.calculate_timeout_with_equipment(
                 base_timeout_seconds=base_timeout_duration, equipment=equipment
             )
 
