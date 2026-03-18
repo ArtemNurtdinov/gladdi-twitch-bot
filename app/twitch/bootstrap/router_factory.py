@@ -1,7 +1,7 @@
 from app.commands.application.commands_registry import CommandRegistryProtocol
+from app.commands.application.prefix_command_router import PrefixCommandRouter
+from app.commands.domain.interfaces import ChatContext, ChatMessage, CommandRouter
 from app.platform.bot.model.bot_settings import BotSettings
-from core.chat.interfaces import ChatContext, ChatMessage, CommandRouter
-from core.chat.prefix_command_router import PrefixCommandRouter
 
 
 def build_twitch_command_router(
@@ -23,10 +23,7 @@ def build_twitch_command_router(
 
     async def battle_handler(chat_ctx: ChatContext, msg: ChatMessage):
         await registry.battle_command_handler.handle(
-            channel_name=chat_ctx.channel,
-            display_name=msg.author,
-            battle_waiting_user=battle_waiting_user,
-            chat_ctx=chat_ctx,
+            channel_name=chat_ctx.channel, display_name=msg.author, battle_waiting_user=battle_waiting_user
         )
 
     async def roll_handler(chat_ctx: ChatContext, msg: ChatMessage):

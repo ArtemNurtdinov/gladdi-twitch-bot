@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.chat.interfaces import ChatContext, ChatMessage, CommandHandler, CommandRouter
+from app.commands.domain.interfaces import ChatContext, ChatMessage, CommandHandler, CommandRouter
 
 
 class PrefixCommandRouter(CommandRouter):

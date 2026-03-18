@@ -4,7 +4,7 @@ from datetime import datetime
 from app.commands.application.commands_registry import SimpleCommandHandler
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.bonus.application.model import BonusDTO
-from core.chat.interfaces import ChatContext
+from app.commands.domain.interfaces import ChatContext
 
 
 class BonusCommandHandler(SimpleCommandHandler):

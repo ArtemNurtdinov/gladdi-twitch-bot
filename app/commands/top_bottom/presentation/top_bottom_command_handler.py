@@ -2,9 +2,9 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.application.commands_registry import TopBottomCommandHandler
+from app.commands.domain.interfaces import ChatContext
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.application.model import BottomDTO, TopDTO
-from core.chat.interfaces import ChatContext
 
 
 class TopBottomCommandHandlerImpl(TopBottomCommandHandler):

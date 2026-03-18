@@ -4,7 +4,7 @@ from datetime import datetime
 from app.commands.application.commands_registry import SimpleCommandHandler
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.balance.application.model import BalanceDTO
-from core.chat.interfaces import ChatContext
+from app.commands.domain.interfaces import ChatContext
 
 
 class BalanceCommandHandler(SimpleCommandHandler):

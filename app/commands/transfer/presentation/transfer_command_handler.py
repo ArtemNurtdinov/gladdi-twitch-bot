@@ -2,9 +2,9 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.application.commands_registry import TransferCommandHandler
+from app.commands.domain.interfaces import ChatContext
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.application.model import TransferDTO
-from core.chat.interfaces import ChatContext
 
 
 class TransferCommandHandlerImpl(TransferCommandHandler):

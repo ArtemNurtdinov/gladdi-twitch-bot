@@ -8,10 +8,10 @@ from twitchio.eventsub import ChatMessageSubscription
 from twitchio.exceptions import HTTPException
 from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
+from app.commands.domain.interfaces import ChatContext, ChatMessage, CommandRouter
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
-from app.platform.chat.domain.twitch_client import ChatClient, ChatEventsHandler
-from core.chat.interfaces import ChatContext, ChatMessage, CommandRouter
+from app.platform.chat.domain.chat_client import ChatClient, ChatEventsHandler
 
 logger = logging.getLogger(__name__)
 

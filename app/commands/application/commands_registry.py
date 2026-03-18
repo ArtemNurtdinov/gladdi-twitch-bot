@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, MutableMapping
 from typing import Protocol
 
-from core.chat.interfaces import ChatContext
+from app.commands.domain.interfaces import ChatContext
 
 
 class SimpleCommandHandler(Protocol):
@@ -17,13 +17,7 @@ class FollowageCommandHandler(Protocol):
 
 
 class BattleCommandHandler(Protocol):
-    def handle(
-        self,
-        channel_name: str,
-        display_name: str,
-        battle_waiting_user: MutableMapping[str, str | None],
-        chat_ctx: ChatContext,
-    ) -> Awaitable[None]: ...
+    def handle(self, channel_name: str, display_name: str, battle_waiting_user: MutableMapping[str, str | None]) -> Awaitable[None]: ...
 
 
 class RollCommandHandler(Protocol):

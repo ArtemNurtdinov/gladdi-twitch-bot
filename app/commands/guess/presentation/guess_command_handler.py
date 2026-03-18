@@ -2,9 +2,9 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.application.commands_registry import GuessCommandHandler
+from app.commands.domain.interfaces import ChatContext
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.application.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
-from core.chat.interfaces import ChatContext
 
 
 class GuessCommandHandlerImpl(GuessCommandHandler):

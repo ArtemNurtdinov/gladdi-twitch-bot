@@ -2,9 +2,9 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.application.commands_registry import RpsCommandHandler
+from app.commands.domain.interfaces import ChatContext
 from app.minigame.application.model.rps import RpsDTO
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
-from core.chat.interfaces import ChatContext
 
 
 class RpsCommandHandlerImpl(RpsCommandHandler):

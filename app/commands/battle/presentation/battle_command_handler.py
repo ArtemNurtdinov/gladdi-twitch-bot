@@ -6,7 +6,6 @@ from app.commands.application.commands_registry import BattleCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.application.model import BattleDTO
 from app.moderation.application.chat_moderation_port import ChatModerationPort
-from core.chat.interfaces import ChatContext
 
 
 class BattleCommandHandlerImpl(BattleCommandHandler):
@@ -26,8 +25,8 @@ class BattleCommandHandlerImpl(BattleCommandHandler):
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str, battle_waiting_user, chat_ctx: ChatContext):
-        battle_dto = BattleDTO(
+    async def handle(self, channel_name: str, display_name: str, battle_waiting_user):
+        battle = BattleDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_name,
             channel_name=channel_name,
@@ -39,9 +38,7 @@ class BattleCommandHandlerImpl(BattleCommandHandler):
             waiting_user=battle_waiting_user["value"],
         )
 
-        result = await self._handle_battle_use_case.handle(
-            command_battle=battle_dto,
-        )
+        result = await self._handle_battle_use_case.handle(command_battle=battle)
 
         battle_waiting_user["value"] = result.new_waiting_user
 

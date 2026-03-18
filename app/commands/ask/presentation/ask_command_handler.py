@@ -4,7 +4,7 @@ from datetime import datetime
 from app.commands.application.commands_registry import AskCommandHandler
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.application.model import AskCommandDTO
-from core.chat.interfaces import ChatContext
+from app.commands.domain.interfaces import ChatContext
 
 
 class AskCommandHandlerImpl(AskCommandHandler):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from core.chat.interfaces import CommandRouter
+from app.commands.domain.interfaces import CommandRouter
 
 
 class ChatEventsHandler(Protocol):

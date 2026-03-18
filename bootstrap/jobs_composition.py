@@ -20,7 +20,7 @@ from app.platform.application.handle_token_checker_use_case import HandleTokenCh
 from app.platform.application.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
-from app.platform.chat.domain.twitch_client import ChatClient
+from app.platform.chat.domain.chat_client import ChatClient
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
