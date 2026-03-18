@@ -53,7 +53,7 @@ def build_command_registry(
     bot_name: str,
     chat_response_use_case: ChatResponseUseCase,
     platform_repository: PlatformRepository,
-    post_message_fn: Callable[[str], Awaitable[None]],
+    send_channel_message: Callable[[str], Awaitable[None]],
 ) -> CommandRegistry:
     prefix = settings.prefix
     moderation_service = ModerationService(
@@ -72,7 +72,7 @@ def build_command_registry(
             unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
         ),
         bot_nick=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     ask_command_handler: AskCommandHandler = AskCommandHandlerImpl(
         command_prefix=prefix,
@@ -83,7 +83,7 @@ def build_command_registry(
             unit_of_work_factory=ask_uow_factory,
             chat_response_use_case=chat_response_use_case,
         ),
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
         bot_nick=bot_name,
     )
     battle_command_handler: BattleCommandHandler = BattleCommandHandlerImpl(
@@ -96,7 +96,7 @@ def build_command_registry(
         ),
         chat_moderation=moderation_service,
         bot_name=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     roll_command_handler = RollCommandHandlerImpl(
         command_prefix=prefix,
@@ -108,7 +108,7 @@ def build_command_registry(
         ),
         chat_moderation=moderation_service,
         bot_nick=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     balance_command_handler: BalanceCommandHandler = BalanceCommandHandlerImpl(
         command_prefix=prefix,
@@ -117,7 +117,7 @@ def build_command_registry(
             balance_uow=uow_factories.build_balance_uow_factory(),
         ),
         bot_name=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     bonus_command_handler: BonusCommandHandler = BonusCommandHandlerImpl(
         command_prefix=prefix,
@@ -126,7 +126,7 @@ def build_command_registry(
             bonus_uow=uow_factories.build_bonus_uow_factory(),
         ),
         bot_name=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     transfer_command_handler: TransferCommandHandler = TransferCommandHandlerImpl(
         command_prefix=prefix,
@@ -135,7 +135,7 @@ def build_command_registry(
             unit_of_work_factory=uow_factories.build_transfer_uow_factory(),
         ),
         bot_nick=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     shop_command_handler: ShopCommandHandler = ShopCommandHandlerImpl(
         command_prefix=prefix,
@@ -145,7 +145,7 @@ def build_command_registry(
             unit_of_work_factory=uow_factories.build_shop_uow_factory(),
         ),
         bot_nick=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     equipment_command_handler = EquipmentCommandHandlerImpl(
         command_prefix=prefix,
@@ -155,7 +155,7 @@ def build_command_registry(
             unit_of_work_factory=uow_factories.build_equipment_uow_factory(),
         ),
         bot_name=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     top_bottom_command_handler = TopBottomCommandHandlerImpl(
         command_prefix=prefix,
@@ -165,7 +165,7 @@ def build_command_registry(
             unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
         ),
         bot_nick=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     stats_command_handler = StatsCommandHandlerImpl(
         command_prefix=prefix,
@@ -174,7 +174,7 @@ def build_command_registry(
             stats_uow=uow_factories.build_stats_uow_factory(),
         ),
         bot_name=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     commands = {
         settings.command_balance,
@@ -197,7 +197,7 @@ def build_command_registry(
         handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=uow_factories.build_help_uow_factory()),
         commands=commands,
         bot_name=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     guess_command_handler = GuessCommandHandlerImpl(
         command_prefix=prefix,
@@ -209,7 +209,7 @@ def build_command_registry(
             guess_uow=uow_factories.build_guess_uow_factory(),
         ),
         bot_nick=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
     rps_command_handler = RpsCommandHandlerImpl(
         command_prefix=prefix,
@@ -219,7 +219,7 @@ def build_command_registry(
             rps_uow=uow_factories.build_rps_uow_factory(),
         ),
         bot_nick=bot_name,
-        post_message_fn=post_message_fn,
+        post_message_fn=send_channel_message,
     )
 
     return CommandRegistry(

@@ -125,7 +125,13 @@ class BotManager:
             bot_user = await platform_repository.get_user_by_login(self._settings.bot_name)
             bot_user_id = bot_user.id if bot_user else None
 
-            chat_client: ChatClient = TwitchChatClient(auth=platform_auth, settings=self._settings, bot_id=bot_user_id)
+            chat_client: ChatClient = TwitchChatClient(
+                auth=platform_auth,
+                channel_name=self._settings.channel_name,
+                command_prefix=self._settings.prefix,
+                bot_id=bot_user_id,
+                bot_name=self._settings.bot_name,
+            )
 
             battle_waiting_user = {"value": None}
 
@@ -157,7 +163,7 @@ class BotManager:
                 bot_name=self._settings.bot_name,
                 chat_response_use_case=chat_response_use_case,
                 platform_repository=platform_repository,
-                post_message_fn=chat_client.post_message,
+                send_channel_message=chat_client.send_channel_message,
             )
 
             chat_events_handler = build_chat_event_handler(

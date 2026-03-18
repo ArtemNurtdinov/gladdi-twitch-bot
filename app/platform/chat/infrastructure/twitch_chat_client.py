@@ -10,7 +10,6 @@ from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.commands.domain.interfaces import ChatContext, ChatMessage, CommandRouter
 from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.chat.domain.chat_client import ChatClient, ChatEventsHandler
 
 logger = logging.getLogger(__name__)
@@ -19,13 +18,13 @@ logger = logging.getLogger(__name__)
 class TwitchChatClient(Client, ChatClient):
     TWITCH_MESSAGE_LENGTH_MAX = 500
 
-    def __init__(self, auth: PlatformAuth, settings: BotSettings, bot_id: str):
+    def __init__(self, auth: PlatformAuth, channel_name: str, command_prefix: str, bot_id: str, bot_name: str):
         self._auth = auth
-        self._settings = settings
         self._command_router: CommandRouter | None = None
         self._chat_event_handler: ChatEventsHandler | None = None
-        self._prefix = settings.prefix
-        self._channel_login = settings.channel_name
+        self._channel_name = channel_name
+        self._command_prefix = command_prefix
+        self._bot_name = bot_name
 
         self._token_user_id: str | None = None
         self._broadcaster_id: str | None = None
@@ -79,7 +78,7 @@ class TwitchChatClient(Client, ChatClient):
 
         author_name = chatter.display_name or chatter.name or ""
         chat_message = ChatMessage(author=author_name, text=payload.text)
-        chat_ctx = ChatContext(channel=self._channel_login)
+        chat_ctx = ChatContext(channel=self._channel_name)
 
         handled = False
         try:
@@ -92,17 +91,17 @@ class TwitchChatClient(Client, ChatClient):
         if self._is_self_message(payload):
             return
 
-        if payload.text.startswith(self._prefix):
+        if payload.text.startswith(self._command_prefix):
             logger.debug("Неизвестная команда: %s", payload.text)
             return
 
         if self._chat_event_handler:
             try:
                 await self._chat_event_handler.handle(
-                    channel_name=self._channel_login,
+                    channel_name=self._channel_name,
                     display_name=chat_message.author,
                     message=payload.text,
-                    bot_name=self._settings.bot_name,
+                    bot_name=self._bot_name,
                 )
             except Exception:
                 logger.exception("Ошибка в ChatEventHandler для сообщения: %s", payload.text)
@@ -147,13 +146,12 @@ class TwitchChatClient(Client, ChatClient):
         if self._broadcaster_id:
             return
 
-        if self._channel_login:
-            try:
-                users = await self.fetch_users(logins=[self._channel_login])
-                if users:
-                    self._broadcaster_id = users[0].id
-            except Exception:
-                logger.exception("Не удалось получить broadcaster_id по логину %s", self._channel_login)
+        try:
+            users = await self.fetch_users(logins=[self._channel_name])
+            if users:
+                self._broadcaster_id = users[0].id
+        except Exception:
+            logger.exception("Не удалось получить broadcaster_id по логину %s", self._channel_name)
 
         if not self._broadcaster_id and self._token_user_id:
             self._broadcaster_id = self._token_user_id
@@ -227,7 +225,7 @@ class TwitchChatClient(Client, ChatClient):
             text = text[split_pos:].strip()
         return messages
 
-    async def send_chat_message_internal(self, message: str) -> None:
+    async def send_channel_message(self, message: str):
         if not self._broadcaster_id or not self._token_user_id:
             return
         for msg in self._split_text(message):
@@ -249,20 +247,12 @@ class TwitchChatClient(Client, ChatClient):
             except Exception:
                 logger.exception("Ошибка отправки сообщения в чат: %s", msg)
 
-    async def send_channel_message(self, message: str) -> None:
-        await self.send_chat_message_internal(message)
-
-    async def post_message(self, message: str) -> None:
-        for msg in self._split_text(message):
-            await self.send_chat_message_internal(msg)
-            await asyncio.sleep(0.3)
-
     def _is_self_message(self, payload: EventSubChatMessage) -> bool:
         chatter = getattr(payload, "chatter", None)
         if chatter is None:
             return False
         if self._token_user_id and chatter.id == self._token_user_id:
             return True
-        if chatter.name and chatter.name.lower() == (self._settings.bot_name or "").lower():
+        if chatter.name and chatter.name.lower() == (self._bot_name or "").lower():
             return True
         return False
