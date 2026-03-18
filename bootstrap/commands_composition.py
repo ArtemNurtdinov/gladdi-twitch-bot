@@ -23,7 +23,7 @@ from app.commands.follow.application.followage_command_handler import FollowageC
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
-from app.commands.guess.presentation.guess_command_handler import GuessCommandHandlerImpl
+from app.commands.guess.infrastructure.guess_command_handler import GuessCommandHandlerImpl
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandlerImpl
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.infrastructure.help_command_handler import HelpCommandHandlerImpl

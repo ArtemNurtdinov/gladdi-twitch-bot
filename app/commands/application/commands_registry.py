@@ -8,6 +8,7 @@ from app.commands.bonus.application.bonus_command_handler import BonusCommandHan
 from app.commands.domain.interfaces import ChatContext
 from app.commands.equipment.application.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
+from app.commands.guess.application.guess_command_handler import GuessCommandHandler
 from app.commands.help.application.help_command_handler import HelpCommandHandler
 from app.commands.roll.application.roll_command_handler import RollCommandHandler
 from app.commands.shop.application.shop_command_handler import ShopCommandHandler
@@ -18,12 +19,6 @@ from app.commands.transfer.application.transfer_command_handler import TransferC
 
 class SimpleCommandHandler(Protocol):
     def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-
-
-class GuessCommandHandler(Protocol):
-    def handle_guess_number(self, channel_name: str, display_name: str, chat_ctx: ChatContext, number: str | None) -> Awaitable[None]: ...
-    def handle_guess_letter(self, channel_name: str, display_name: str, chat_ctx: ChatContext, letter: str | None) -> Awaitable[None]: ...
-    def handle_guess_word(self, channel_name: str, display_name: str, chat_ctx: ChatContext, word: str | None) -> Awaitable[None]: ...
 
 
 class RpsCommandHandler(Protocol):

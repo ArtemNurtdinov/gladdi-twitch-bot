@@ -76,23 +76,17 @@ def build_twitch_command_router(
     async def guess_number_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_guess) :].strip()
         number = tail or None
-        await registry.guess_command_handler.handle_guess_number(
-            channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, number=number
-        )
+        await registry.guess_command_handler.handle_guess_number(channel_name=chat_ctx.channel, display_name=msg.author, number=number)
 
     async def guess_letter_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_guess_letter) :].strip()
         letter = tail or None
-        await registry.guess_command_handler.handle_guess_letter(
-            channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, letter=letter
-        )
+        await registry.guess_command_handler.handle_guess_letter(channel_name=chat_ctx.channel, display_name=msg.author, letter=letter)
 
     async def guess_word_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_guess_word) :].strip()
         word = tail or None
-        await registry.guess_command_handler.handle_guess_word(
-            channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx, word=word
-        )
+        await registry.guess_command_handler.handle_guess_word(channel_name=chat_ctx.channel, display_name=msg.author, word=word)
 
     async def rps_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_rps) :].strip()

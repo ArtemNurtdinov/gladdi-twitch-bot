@@ -1,8 +1,7 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.application.commands_registry import GuessCommandHandler
-from app.commands.domain.interfaces import ChatContext
+from app.commands.guess.application.guess_command_handler import GuessCommandHandler
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.application.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
 
@@ -26,7 +25,7 @@ class GuessCommandHandlerImpl(GuessCommandHandler):
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
-    async def handle_guess_number(self, channel_name: str, display_name: str, chat_ctx: ChatContext, number: str | None):
+    async def handle_guess_number(self, channel_name: str, display_name: str, number: str | None):
         guess_number = GuessNumberDTO(
             command_prefix=self.command_prefix,
             command_guess=self.command_guess,
@@ -41,7 +40,7 @@ class GuessCommandHandlerImpl(GuessCommandHandler):
         message = await self._handle_guess_use_case.handle_number(guess_number=guess_number)
         await self.post_message_fn(message)
 
-    async def handle_guess_letter(self, channel_name: str, display_name: str, chat_ctx: ChatContext, letter: str | None):
+    async def handle_guess_letter(self, channel_name: str, display_name: str, letter: str | None):
         guess_letter = GuessLetterDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_guess_letter,
@@ -56,7 +55,7 @@ class GuessCommandHandlerImpl(GuessCommandHandler):
         message = await self._handle_guess_use_case.handle_letter(guess_letter=guess_letter)
         await self.post_message_fn(message)
 
-    async def handle_guess_word(self, channel_name: str, display_name: str, chat_ctx: ChatContext, word: str | None):
+    async def handle_guess_word(self, channel_name: str, display_name: str, word: str | None):
         guess_word = GuessWordDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_guess_word,
