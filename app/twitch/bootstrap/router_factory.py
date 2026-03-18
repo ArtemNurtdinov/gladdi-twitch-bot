@@ -71,7 +71,7 @@ def build_twitch_command_router(
         await registry.help_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
 
     async def stats_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.stats_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
+        await registry.stats_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author)
 
     async def guess_number_handler(chat_ctx: ChatContext, msg: ChatMessage):
         tail = msg.text[len(settings.prefix + settings.command_guess) :].strip()

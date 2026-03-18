@@ -10,6 +10,7 @@ from app.commands.equipment.application.equipment_command_handler import Equipme
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.roll.application.roll_command_handler import RollCommandHandler
 from app.commands.shop.application.shop_command_handler import ShopCommandHandler
+from app.commands.stats.application.stats_command_handler import StatsCommandHandler
 from app.commands.top_bottom.application.top_bottom_command_handler import TopBottomCommandHandler
 from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
 
@@ -39,7 +40,7 @@ class CommandRegistryProtocol(Protocol):
     shop_command_handler: ShopCommandHandler
     equipment_command_handler: EquipmentCommandHandler
     top_bottom_command_handler: TopBottomCommandHandler
-    stats_command_handler: SimpleCommandHandler
+    stats_command_handler: StatsCommandHandler
     help_command_handler: SimpleCommandHandler
     guess_command_handler: GuessCommandHandler
     rps_command_handler: RpsCommandHandler

@@ -1,13 +1,12 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.application.commands_registry import SimpleCommandHandler
-from app.commands.domain.interfaces import ChatContext
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.application.model import CommandStatsDTO
+from app.commands.stats.application.stats_command_handler import StatsCommandHandler
 
 
-class StatsCommandHandler(SimpleCommandHandler):
+class StatsCommandHandlerImpl(StatsCommandHandler):
     def __init__(
         self,
         command_prefix: str,
@@ -22,7 +21,7 @@ class StatsCommandHandler(SimpleCommandHandler):
         self._bot_name = bot_name
         self._post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext):
+    async def handle(self, channel_name: str, display_name: str):
         command_stats = CommandStatsDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_name,
