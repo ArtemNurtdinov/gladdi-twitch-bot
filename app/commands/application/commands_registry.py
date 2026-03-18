@@ -1,6 +1,7 @@
-from collections.abc import Awaitable, MutableMapping
+from collections.abc import Awaitable
 from typing import Protocol
 
+from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.domain.interfaces import ChatContext
 
 
@@ -14,10 +15,6 @@ class AskCommandHandler(Protocol):
 
 class FollowageCommandHandler(Protocol):
     def handle(self, channel_name: str, display_name: str, author_id: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-
-
-class BattleCommandHandler(Protocol):
-    def handle(self, channel_name: str, display_name: str, battle_waiting_user: MutableMapping[str, str | None]) -> Awaitable[None]: ...
 
 
 class RollCommandHandler(Protocol):

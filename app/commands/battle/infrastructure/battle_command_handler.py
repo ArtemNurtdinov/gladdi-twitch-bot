@@ -2,7 +2,7 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.application.commands_registry import BattleCommandHandler
+from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.application.model import BattleDTO
 from app.moderation.application.chat_moderation_port import ChatModerationPort
@@ -15,14 +15,14 @@ class BattleCommandHandlerImpl(BattleCommandHandler):
         command_name: str,
         handle_battle_use_case: HandleBattleUseCase,
         chat_moderation: ChatModerationPort,
-        bot_nick: str,
+        bot_name: str,
         post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
         self._handle_battle_use_case = handle_battle_use_case
         self._chat_moderation = chat_moderation
-        self._bot_nick = bot_nick
+        self._bot_name = bot_name
         self.post_message_fn = post_message_fn
 
     async def handle(self, channel_name: str, display_name: str, battle_waiting_user):
@@ -32,7 +32,7 @@ class BattleCommandHandlerImpl(BattleCommandHandler):
             channel_name=channel_name,
             display_name=display_name,
             user_name=display_name.lower(),
-            bot_nick=self._bot_nick.lower(),
+            bot_nick=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             command_call=f"{self.command_prefix}{self.command_name}",
             waiting_user=battle_waiting_user["value"],
@@ -51,7 +51,7 @@ class BattleCommandHandlerImpl(BattleCommandHandler):
         if result.timeout_action:
             await self._chat_moderation.timeout_user(
                 channel_name=channel_name,
-                moderator_name=self._bot_nick,
+                moderator_name=self._bot_name,
                 username=result.timeout_action.user_name,
                 duration_seconds=result.timeout_action.duration_seconds,
                 reason=result.timeout_action.reason,

@@ -20,10 +20,7 @@ class HandleBattleUseCase:
         self._chat_response_use_case = chat_response_use_case
         self._calculate_timeout_use_case_provider = calculate_timeout_use_case_provider
 
-    async def handle(
-        self,
-        command_battle: BattleDTO,
-    ) -> BattleUseCaseResult:
+    async def handle(self, command_battle: BattleDTO) -> BattleUseCaseResult:
         challenger_display = command_battle.display_name
         challenger_user = command_battle.user_name
         bot_nick = command_battle.bot_nick
@@ -32,9 +29,7 @@ class HandleBattleUseCase:
         fee = EconomyPolicy.BATTLE_ENTRY_FEE
 
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            user_balance = uow.economy_policy.get_user_balance(
-                channel_name=command_battle.channel_name, user_name=challenger_user
-            )
+            user_balance = uow.economy_policy.get_user_balance(channel_name=command_battle.channel_name, user_name=challenger_user)
 
         if user_balance.balance < fee:
             result = f"@{challenger_display}, недостаточно монет для участия в битве! Необходимо: {EconomyPolicy.BATTLE_ENTRY_FEE} монет."

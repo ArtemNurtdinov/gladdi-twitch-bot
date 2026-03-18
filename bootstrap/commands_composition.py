@@ -9,9 +9,10 @@ from app.commands.ask.presentation.ask_command_handler import AskCommandHandlerI
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
-from app.commands.battle.presentation.battle_command_handler import BattleCommandHandlerImpl
+from app.commands.battle.infrastructure.battle_command_handler import BattleCommandHandlerImpl
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHandler
+from app.commands.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
@@ -23,7 +24,6 @@ from app.commands.guess.presentation.guess_command_handler import GuessCommandHa
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandlerImpl
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
-from app.commands.presentation.commands_registry import CommandRegistry
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.presentation.roll_command_handler import RollCommandHandlerImpl
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
@@ -94,7 +94,7 @@ def build_command_registry(
             calculate_timeout_use_case_provider=providers.equipment_providers.calculate_timeout_use_case_provider,
         ),
         chat_moderation=moderation_service,
-        bot_nick=bot_name,
+        bot_name=bot_name,
         post_message_fn=post_message_fn,
     )
     roll_command_handler = RollCommandHandlerImpl(
