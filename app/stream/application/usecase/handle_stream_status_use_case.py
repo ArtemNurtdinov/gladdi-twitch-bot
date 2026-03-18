@@ -59,10 +59,7 @@ class HandleStreamStatusUseCase:
             await self._handle_stream_start(channel_name, game_name, title)
 
         elif not stream_status.is_online and active_stream is not None:
-            await self._handle_stream_end(
-                channel_name=channel_name,
-                active_stream=active_stream,
-            )
+            await self._handle_stream_end(channel_name=channel_name, active_stream=active_stream)
 
         elif stream_status.is_online and active_stream:
             if active_stream.game_name != game_name or active_stream.title != title:
