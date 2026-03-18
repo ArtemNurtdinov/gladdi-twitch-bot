@@ -196,7 +196,7 @@ class BotManager:
             self._started_at = datetime.utcnow()
             self._last_error = None
 
-            self._task = asyncio.create_task(self._chat_client.start())
+            self._task = asyncio.create_task(self._chat_client.start_chat())
             self._task.add_done_callback(self._on_bot_done)
 
             return BotActionResult(**self.get_status().model_dump(), message="Запуск инициализирован")
@@ -211,7 +211,7 @@ class BotManager:
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже остановлен")
             try:
                 if self._chat_client:
-                    await self._chat_client.stop()
+                    await self._chat_client.start_chat()
                 if platform_api_service:
                     await platform_api_service.aclose()
                 if self._background_tasks:

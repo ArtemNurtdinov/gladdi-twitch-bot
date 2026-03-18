@@ -39,10 +39,10 @@ class TwitchChatClient(Client, ChatClient):
             fetch_client_user=True,
         )
 
-    def set_router(self, router: CommandRouter) -> None:
+    def set_router(self, router: CommandRouter):
         self._command_router = router
 
-    def set_chat_event_handler(self, handler: ChatEventsHandler) -> None:
+    def set_chat_event_handler(self, handler: ChatEventsHandler):
         self._chat_event_handler = handler
 
     async def setup_hook(self) -> None:
@@ -50,7 +50,10 @@ class TwitchChatClient(Client, ChatClient):
         await self._ensure_broadcaster_id()
         await self._subscribe_chat_message_with_retry(reason="startup")
 
-    async def stop(self) -> None:
+    async def start_chat(self):
+        await super().start()
+
+    async def stop_chat(self):
         await super().close()
 
     async def event_ready(self) -> None:
