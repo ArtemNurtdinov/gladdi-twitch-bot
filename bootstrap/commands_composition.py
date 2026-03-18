@@ -26,7 +26,7 @@ from app.commands.guess.application.handle_guess_use_case import HandleGuessUseC
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandlerImpl
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandlerImpl
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
-from app.commands.help.presentation.help_command_handler import HelpCommandHandler
+from app.commands.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.infrastructure.roll_command_handler import RollCommandHandlerImpl
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
@@ -192,12 +192,12 @@ def build_command_registry(
         f"{settings.command_gladdi} текст",
         settings.command_followage,
     }
-    help_command_handler = HelpCommandHandler(
+    help_command_handler = HelpCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_help,
         handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=uow_factories.build_help_uow_factory()),
         commands=commands,
-        bot_nick=bot_name,
+        bot_name=bot_name,
         post_message_fn=post_message_fn,
     )
     guess_command_handler = GuessCommandHandlerImpl(

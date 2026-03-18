@@ -8,6 +8,7 @@ from app.commands.bonus.application.bonus_command_handler import BonusCommandHan
 from app.commands.domain.interfaces import ChatContext
 from app.commands.equipment.application.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
+from app.commands.help.application.help_command_handler import HelpCommandHandler
 from app.commands.roll.application.roll_command_handler import RollCommandHandler
 from app.commands.shop.application.shop_command_handler import ShopCommandHandler
 from app.commands.stats.application.stats_command_handler import StatsCommandHandler
@@ -41,6 +42,6 @@ class CommandRegistryProtocol(Protocol):
     equipment_command_handler: EquipmentCommandHandler
     top_bottom_command_handler: TopBottomCommandHandler
     stats_command_handler: StatsCommandHandler
-    help_command_handler: SimpleCommandHandler
+    help_command_handler: HelpCommandHandler
     guess_command_handler: GuessCommandHandler
     rps_command_handler: RpsCommandHandler
