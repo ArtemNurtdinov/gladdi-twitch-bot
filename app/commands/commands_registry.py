@@ -1,5 +1,5 @@
 from app.commands.application.commands_registry import CommandRegistryProtocol
-from app.commands.ask.presentation.ask_command_handler import AskCommandHandler
+from app.commands.ask.infrastructure.ask_command_handler import AskCommandHandler
 from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHandler

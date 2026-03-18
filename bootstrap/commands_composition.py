@@ -4,10 +4,12 @@ from collections.abc import Awaitable, Callable
 
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.commands.application.commands_registry import CommandRegistryProtocol
+from app.commands.ask.application.ask_command_handler import AskCommandHandler
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
-from app.commands.ask.presentation.ask_command_handler import AskCommandHandlerImpl
+from app.commands.ask.infrastructure.ask_command_handler import AskCommandHandlerImpl
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
+from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.infrastructure.battle_command_handler import BattleCommandHandlerImpl
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
@@ -73,7 +75,7 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    ask_command_handler = AskCommandHandlerImpl(
+    ask_command_handler: AskCommandHandler = AskCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_gladdi,
         handle_ask_use_case=HandleAskUseCase(
@@ -85,7 +87,7 @@ def build_command_registry(
         post_message_fn=post_message_fn,
         bot_nick=bot_name,
     )
-    battle_command_handler = BattleCommandHandlerImpl(
+    battle_command_handler: BattleCommandHandler = BattleCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_fight,
         handle_battle_use_case=HandleBattleUseCase(

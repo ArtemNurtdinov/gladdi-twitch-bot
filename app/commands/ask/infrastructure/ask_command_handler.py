@@ -1,10 +1,9 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.application.commands_registry import AskCommandHandler
+from app.commands.ask.application.ask_command_handler import AskCommandHandler
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.application.model import AskCommandDTO
-from app.commands.domain.interfaces import ChatContext
 
 
 class AskCommandHandlerImpl(AskCommandHandler):
@@ -22,7 +21,7 @@ class AskCommandHandlerImpl(AskCommandHandler):
         self.post_message_fn = post_message_fn
         self._bot_nick = bot_nick
 
-    async def handle(self, channel_name: str, full_message: str, display_name: str, chat_ctx: ChatContext):
+    async def handle(self, channel_name: str, full_message: str, display_name: str):
         user_message = full_message[len(f"{self.command_prefix}{self.command_name}") :].strip()
 
         dto = AskCommandDTO(

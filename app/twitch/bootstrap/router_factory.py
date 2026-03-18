@@ -17,9 +17,7 @@ def build_twitch_command_router(
         )
 
     async def ask_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.ask_command_handler.handle(
-            channel_name=chat_ctx.channel, full_message=msg.text, display_name=msg.author, chat_ctx=chat_ctx
-        )
+        await registry.ask_command_handler.handle(channel_name=chat_ctx.channel, full_message=msg.text, display_name=msg.author)
 
     async def battle_handler(chat_ctx: ChatContext, msg: ChatMessage):
         await registry.battle_command_handler.handle(
