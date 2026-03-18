@@ -7,8 +7,9 @@ from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.commands.ask.application.ask_command_handler import AskCommandHandler
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_command_handler import AskCommandHandlerImpl
+from app.commands.balance.application.balance_command_handler import BalanceCommandHandler
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
-from app.commands.balance.presentation.balance_command_handler import BalanceCommandHandler
+from app.commands.balance.infrastructure.balance_command_handler import BalanceCommandHandlerImpl
 from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.infrastructure.battle_command_handler import BattleCommandHandlerImpl
@@ -107,13 +108,13 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    balance_command_handler = BalanceCommandHandler(
+    balance_command_handler: BalanceCommandHandler = BalanceCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_balance,
         handle_balance_use_case=HandleBalanceUseCase(
-            unit_of_work_factory=uow_factories.build_balance_uow_factory(),
+            balance_uow=uow_factories.build_balance_uow_factory(),
         ),
-        bot_nick=bot_name,
+        bot_name=bot_name,
         post_message_fn=post_message_fn,
     )
     bonus_command_handler = BonusCommandHandler(

@@ -2,6 +2,7 @@ from collections.abc import Awaitable
 from typing import Protocol
 
 from app.commands.ask.application.ask_command_handler import AskCommandHandler
+from app.commands.balance.application.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.domain.interfaces import ChatContext
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
@@ -48,7 +49,7 @@ class CommandRegistryProtocol(Protocol):
     ask_command_handler: AskCommandHandler
     battle_command_handler: BattleCommandHandler
     roll_command_handler: RollCommandHandler
-    balance_command_handler: SimpleCommandHandler
+    balance_command_handler: BalanceCommandHandler
     bonus_command_handler: SimpleCommandHandler
     transfer_command_handler: TransferCommandHandler
     shop_command_handler: ShopCommandHandler

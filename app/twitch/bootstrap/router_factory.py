@@ -28,7 +28,7 @@ def build_twitch_command_router(
         await registry.roll_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, amount=amount)
 
     async def balance_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.balance_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
+        await registry.balance_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author)
 
     async def bonus_handler(chat_ctx: ChatContext, msg: ChatMessage):
         await registry.bonus_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, chat_ctx=chat_ctx)
