@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
-from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.commands.ask.application.ask_command_handler import AskCommandHandler
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_command_handler import AskCommandHandlerImpl
@@ -55,7 +54,7 @@ def build_command_registry(
     chat_response_use_case: ChatResponseUseCase,
     platform_repository: PlatformRepository,
     post_message_fn: Callable[[str], Awaitable[None]],
-) -> CommandRegistryProtocol:
+) -> CommandRegistry:
     prefix = settings.prefix
     moderation_service = ModerationService(
         platform_repository=platform_repository,

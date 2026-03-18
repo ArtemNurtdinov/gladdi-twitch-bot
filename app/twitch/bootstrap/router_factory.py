@@ -1,13 +1,11 @@
-from app.commands.application.commands_registry import CommandRegistryProtocol
 from app.commands.application.prefix_command_router import PrefixCommandRouter
+from app.commands.commands_registry import CommandRegistry
 from app.commands.domain.interfaces import ChatContext, ChatMessage, CommandRouter
 from app.platform.bot.model.bot_settings import BotSettings
 
 
 def build_twitch_command_router(
-    settings: BotSettings,
-    registry: CommandRegistryProtocol,
-    battle_waiting_user: dict[str, str | None],
+    settings: BotSettings, registry: CommandRegistry, battle_waiting_user: dict[str, str | None]
 ) -> CommandRouter:
     router = PrefixCommandRouter(settings.prefix)
 

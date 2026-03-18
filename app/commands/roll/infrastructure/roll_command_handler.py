@@ -1,9 +1,9 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.application.commands_registry import RollCommandHandler
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.application.model import RollDTO
+from app.commands.roll.application.roll_command_handler import RollCommandHandler
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 
 
