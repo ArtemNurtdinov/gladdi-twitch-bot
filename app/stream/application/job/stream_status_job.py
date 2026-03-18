@@ -8,11 +8,7 @@ class StreamStatusJob:
     name = "check_stream_status"
     STREAM_STATUS_INTERVAL = 300
 
-    def __init__(
-        self,
-        channel_name: str,
-        handle_stream_status_use_case: HandleStreamStatusUseCase,
-    ):
+    def __init__(self, channel_name: str, handle_stream_status_use_case: HandleStreamStatusUseCase):
         self._channel_name = channel_name
         self._handle_stream_status_use_case = handle_stream_status_use_case
 
