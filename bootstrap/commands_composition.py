@@ -36,7 +36,8 @@ from app.commands.stats.presentation.stats_command_handler import StatsCommandHa
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.presentation.top_bottom_command_handler import TopBottomCommandHandlerImpl
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
-from app.commands.transfer.presentation.transfer_command_handler import TransferCommandHandlerImpl
+from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
+from app.commands.transfer.infrastructure.transfer_command_handler import TransferCommandHandlerImpl
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.bot.model.bot_settings import BotSettings
@@ -127,7 +128,7 @@ def build_command_registry(
         bot_name=bot_name,
         post_message_fn=post_message_fn,
     )
-    transfer_command_handler = TransferCommandHandlerImpl(
+    transfer_command_handler: TransferCommandHandler = TransferCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_transfer,
         handle_transfer_use_case=HandleTransferUseCase(

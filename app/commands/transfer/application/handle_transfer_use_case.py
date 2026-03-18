@@ -6,10 +6,7 @@ class HandleTransferUseCase:
     def __init__(self, unit_of_work_factory: TransferUnitOfWorkFactory):
         self._unit_of_work_factory = unit_of_work_factory
 
-    async def handle(
-        self,
-        command_transfer: TransferDTO,
-    ) -> str:
+    async def handle(self, command_transfer: TransferDTO) -> str:
         command_prefix = command_transfer.command_prefix
         command_name = command_transfer.channel_name
         user_message = command_transfer.command_prefix + command_transfer.command_name

@@ -1,10 +1,9 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.application.commands_registry import TransferCommandHandler
-from app.commands.domain.interfaces import ChatContext
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.application.model import TransferDTO
+from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
 
 
 class TransferCommandHandlerImpl(TransferCommandHandler):
@@ -22,10 +21,8 @@ class TransferCommandHandlerImpl(TransferCommandHandler):
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
-    async def handle(
-        self, channel_name: str, sender_display_name: str, chat_ctx: ChatContext, recipient: str | None = None, amount: str | None = None
-    ):
-        dto = TransferDTO(
+    async def handle(self, channel_name: str, sender_display_name: str, recipient: str | None = None, amount: str | None = None):
+        transfer = TransferDTO(
             channel_name=channel_name,
             display_name=sender_display_name,
             user_name=sender_display_name.lower(),
@@ -37,6 +34,6 @@ class TransferCommandHandlerImpl(TransferCommandHandler):
             command_name=self.command_name,
         )
 
-        result = await self._handle_transfer_use_case.handle(command_transfer=dto)
+        result = await self._handle_transfer_use_case.handle(command_transfer=transfer)
 
         await self.post_message_fn(result)

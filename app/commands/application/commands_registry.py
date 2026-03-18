@@ -8,21 +8,11 @@ from app.commands.bonus.application.bonus_command_handler import BonusCommandHan
 from app.commands.domain.interfaces import ChatContext
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.roll.application.roll_command_handler import RollCommandHandler
+from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
 
 
 class SimpleCommandHandler(Protocol):
     def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-
-
-class TransferCommandHandler(Protocol):
-    def handle(
-        self,
-        channel_name: str,
-        sender_display_name: str,
-        chat_ctx: ChatContext,
-        recipient: str | None = None,
-        amount: str | None = None,
-    ) -> Awaitable[None]: ...
 
 
 class ShopCommandHandler(Protocol):

@@ -46,7 +46,6 @@ def build_twitch_command_router(
         await registry.transfer_command_handler.handle(
             channel_name=chat_ctx.channel,
             sender_display_name=msg.author,
-            chat_ctx=chat_ctx,
             recipient=recipient,
             amount=amount,
         )
