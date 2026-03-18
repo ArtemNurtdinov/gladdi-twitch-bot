@@ -5,14 +5,11 @@ from app.commands.ask.application.ask_command_handler import AskCommandHandler
 from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.domain.interfaces import ChatContext
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
+from app.commands.roll.application.roll_command_handler import RollCommandHandler
 
 
 class SimpleCommandHandler(Protocol):
     def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-
-
-class RollCommandHandler(Protocol):
-    def handle(self, chat_ctx: ChatContext, channel_name: str, display_name: str, amount: str | None = None) -> Awaitable[None]: ...
 
 
 class TransferCommandHandler(Protocol):

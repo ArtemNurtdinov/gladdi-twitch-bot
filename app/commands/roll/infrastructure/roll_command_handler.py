@@ -2,7 +2,6 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.application.commands_registry import RollCommandHandler
-from app.commands.domain.interfaces import ChatContext
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.application.model import RollDTO
 from app.moderation.application.chat_moderation_port import ChatModerationPort
@@ -42,7 +41,7 @@ class RollCommandHandlerImpl(RollCommandHandler):
         for nickname in nicknames:
             del self.roll_cooldowns[nickname]
 
-    async def handle(self, chat_ctx: ChatContext, channel_name: str, display_name: str, amount: str | None = None):
+    async def handle(self, channel_name: str, display_name: str, amount: str | None = None):
         self._cleanup_old_cooldowns()
 
         dto = RollDTO(

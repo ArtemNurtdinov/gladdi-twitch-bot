@@ -17,6 +17,7 @@ from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHa
 from app.commands.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
+from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
@@ -25,7 +26,7 @@ from app.commands.guess.presentation.rps_command_handler import RpsCommandHandle
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.presentation.help_command_handler import HelpCommandHandler
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
-from app.commands.roll.presentation.roll_command_handler import RollCommandHandlerImpl
+from app.commands.roll.infrastructure.roll_command_handler import RollCommandHandlerImpl
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.presentation.shop_command_handler import ShopCommandHandlerImpl
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
@@ -58,7 +59,7 @@ def build_command_registry(
     )
     ask_uow_factory = uow_factories.build_ask_uow_factory()
 
-    followage_command_handler = FollowageCommandHandlerImpl(
+    followage_command_handler: FollowageCommandHandler = FollowageCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_followage,
         handle_follow_age_use_case=HandleFollowAgeUseCase(
