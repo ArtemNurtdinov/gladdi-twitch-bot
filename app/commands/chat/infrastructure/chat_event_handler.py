@@ -6,7 +6,7 @@ from app.commands.chat.application.model import ChatMessageDTO
 from app.platform.chat.domain.chat_client import ChatEventsHandler
 
 
-class DefaultChatEventsHandler(ChatEventsHandler):
+class ChatEventsHandlerImpl(ChatEventsHandler):
     def __init__(
         self,
         handle_chat_message_use_case: HandleChatMessageUseCase,

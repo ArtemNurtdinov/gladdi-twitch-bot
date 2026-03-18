@@ -6,7 +6,7 @@ from app.commands.domain.interfaces import CommandRouter
 
 
 class ChatEventsHandler(Protocol):
-    async def handle(self, *, channel_name: str, display_name: str, message: str, bot_name: str) -> None: ...
+    async def handle(self, channel_name: str, display_name: str, message: str, bot_name: str) -> None: ...
 
 
 class ChatClient(Protocol):
