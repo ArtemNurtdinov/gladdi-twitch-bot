@@ -14,7 +14,10 @@ class HandleEquipmentUseCase:
             )
 
         if not equipment:
-            result = f"@{equipment_command.display_name}, у вас нет активной экипировки. Загляните в {equipment_command.command_prefix}{equipment_command.command_shop}!"
+            result = (
+                f"@{equipment_command.display_name}, у вас нет активной экипировки. "
+                f"Загляните в {equipment_command.command_prefix}{equipment_command.command_shop}!"
+            )
         else:
             lines = [f"Экипировка @{equipment_command.display_name}:"]
             for item in equipment:
