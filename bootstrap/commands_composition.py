@@ -13,8 +13,9 @@ from app.commands.balance.infrastructure.balance_command_handler import BalanceC
 from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.infrastructure.battle_command_handler import BattleCommandHandlerImpl
+from app.commands.bonus.application.bonus_command_handler import BonusCommandHandler
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
-from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHandler
+from app.commands.bonus.infrastructure.bonus_command_handler import BonusCommandHandlerImpl
 from app.commands.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
@@ -117,13 +118,13 @@ def build_command_registry(
         bot_name=bot_name,
         post_message_fn=post_message_fn,
     )
-    bonus_command_handler = BonusCommandHandler(
+    bonus_command_handler: BonusCommandHandler = BonusCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_bonus,
         handle_bonus_use_case=HandleBonusUseCase(
             bonus_uow=uow_factories.build_bonus_uow_factory(),
         ),
-        bot_nick=bot_name,
+        bot_name=bot_name,
         post_message_fn=post_message_fn,
     )
     transfer_command_handler = TransferCommandHandlerImpl(
