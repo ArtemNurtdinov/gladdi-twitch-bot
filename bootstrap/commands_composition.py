@@ -18,7 +18,7 @@ from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseC
 from app.commands.bonus.infrastructure.bonus_command_handler import BonusCommandHandlerImpl
 from app.commands.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
-from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
+from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
@@ -148,14 +148,14 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    equipment_command_handler = EquipmentCommandHandler(
+    equipment_command_handler = EquipmentCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_equipment,
         command_shop=settings.command_shop,
         handle_equipment_use_case=HandleEquipmentUseCase(
             unit_of_work_factory=uow_factories.build_equipment_uow_factory(),
         ),
-        bot_nick=bot_name,
+        bot_name=bot_name,
         post_message_fn=post_message_fn,
     )
     top_bottom_command_handler = TopBottomCommandHandlerImpl(

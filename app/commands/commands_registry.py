@@ -3,7 +3,7 @@ from app.commands.ask.application.ask_command_handler import AskCommandHandler
 from app.commands.balance.application.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.bonus.application.bonus_command_handler import BonusCommandHandler
-from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
+from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandler
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandler
 from app.commands.guess.presentation.rps_command_handler import RpsCommandHandler
