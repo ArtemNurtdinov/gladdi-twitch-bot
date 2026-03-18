@@ -2,8 +2,7 @@ from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponse
 from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
 from app.chat.domain.model.chat_message import ChatMessage
 from app.chat.domain.repo import ChatRepository
-from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
-from app.commands.follow.application.model import FollowageDTO, FollowageInfo
+from app.commands.follow.application.model import FollowageDTO
 from app.commands.follow.application.uow import FollowAgeUnitOfWorkFactory
 from core.provider import Provider
 
@@ -13,13 +12,11 @@ class HandleFollowAgeUseCase:
         self,
         chat_repo_provider: Provider[ChatRepository],
         conversation_repo_provider: Provider[ConversationRepository],
-        get_followage_use_case: GetFollowageUseCase,
         chat_response_use_case: ChatResponseUseCase,
         unit_of_work_factory: FollowAgeUnitOfWorkFactory,
     ):
         self._chat_repo_provider = chat_repo_provider
         self._conversation_repo_provider = conversation_repo_provider
-        self._get_followage_use_case = get_followage_use_case
         self._chat_response_use_case = chat_response_use_case
         self._unit_of_work_factory = unit_of_work_factory
 
@@ -27,10 +24,11 @@ class HandleFollowAgeUseCase:
         channel_name = command_follow_age.channel_name
         user_message = command_follow_age.command_prefix + command_follow_age.command_name
 
-        follow_info: FollowageInfo | None = await self._get_followage_use_case.get_followage(
-            channel_name=channel_name,
-            user_id=command_follow_age.user_id,
-        )
+        with self._unit_of_work_factory.create(read_only=True) as uow:
+            follow_info = await uow.platform_repository.get_followage(
+                channel_name=channel_name,
+                user_id=command_follow_age.user_id,
+            )
 
         if not follow_info:
             result = f"@{command_follow_age.display_name}, вы не отслеживаете канал."

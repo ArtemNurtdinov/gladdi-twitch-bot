@@ -23,6 +23,7 @@ from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowers
 from app.joke.infrastructure.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
+from app.platform.domain.repository import PlatformRepository
 from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
 from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
 from app.viewer.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
@@ -61,6 +62,7 @@ def create_uow_factories(
     session_factory_rw: SessionFactory,
     session_factory_ro: SessionFactory,
     providers: ProvidersBundle,
+    platform_repository: PlatformRepository,
 ) -> UowFactories:
     ai_providers = providers.ai_providers
     chat_providers = providers.chat_providers
@@ -242,6 +244,7 @@ def create_uow_factories(
             chat_repo_provider=chat_providers.chat_repo_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
             system_prompt_repository_provider=ai_providers.system_prompt_repo_provider,
+            platform_repository=platform_repository,
         )
 
     def build_followers_sync_uow_factory() -> SqlAlchemyFollowersSyncUnitOfWorkFactory:

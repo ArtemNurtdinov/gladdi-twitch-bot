@@ -17,9 +17,7 @@ from app.commands.bonus.presentation.bonus_command_handler import BonusCommandHa
 from app.commands.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.presentation.equipment_command_handler import EquipmentCommandHandler
-from app.commands.follow.application.get_followage_use_case import GetFollowageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
-from app.commands.follow.infrastructure.followage_uow import SimpleFollowageUnitOfWorkFactory
 from app.commands.follow.presentation.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.presentation.guess_command_handler import GuessCommandHandlerImpl
@@ -66,9 +64,6 @@ def build_command_registry(
         handle_follow_age_use_case=HandleFollowAgeUseCase(
             chat_repo_provider=providers.chat_providers.chat_repo_provider,
             conversation_repo_provider=providers.ai_providers.conversation_repo_provider,
-            get_followage_use_case=GetFollowageUseCase(
-                unit_of_work_factory=SimpleFollowageUnitOfWorkFactory(platform_repository),
-            ),
             chat_response_use_case=chat_response_use_case,
             unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
         ),

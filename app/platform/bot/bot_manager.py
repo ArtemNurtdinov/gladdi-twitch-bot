@@ -119,6 +119,7 @@ class BotManager:
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
                 providers=providers_bundle,
+                platform_repository=platform_repository,
             )
 
             bot_user = await platform_repository.get_user_by_login(self._settings.bot_name)
