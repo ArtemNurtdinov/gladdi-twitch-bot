@@ -30,7 +30,8 @@ from app.commands.help.presentation.help_command_handler import HelpCommandHandl
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.infrastructure.roll_command_handler import RollCommandHandlerImpl
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
-from app.commands.shop.presentation.shop_command_handler import ShopCommandHandlerImpl
+from app.commands.shop.application.shop_command_handler import ShopCommandHandler
+from app.commands.shop.infrastructure.shop_command_handler import ShopCommandHandlerImpl
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.presentation.stats_command_handler import StatsCommandHandler
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
@@ -137,7 +138,7 @@ def build_command_registry(
         bot_nick=bot_name,
         post_message_fn=post_message_fn,
     )
-    shop_command_handler = ShopCommandHandlerImpl(
+    shop_command_handler: ShopCommandHandler = ShopCommandHandlerImpl(
         command_prefix=prefix,
         command_shop_name=settings.command_shop,
         command_buy_name=settings.command_buy,

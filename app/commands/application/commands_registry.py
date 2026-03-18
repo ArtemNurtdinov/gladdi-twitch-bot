@@ -8,16 +8,12 @@ from app.commands.bonus.application.bonus_command_handler import BonusCommandHan
 from app.commands.domain.interfaces import ChatContext
 from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.roll.application.roll_command_handler import RollCommandHandler
+from app.commands.shop.application.shop_command_handler import ShopCommandHandler
 from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
 
 
 class SimpleCommandHandler(Protocol):
     def handle(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-
-
-class ShopCommandHandler(Protocol):
-    def handle_shop(self, channel_name: str, display_name: str, chat_ctx: ChatContext) -> Awaitable[None]: ...
-    def handle_buy(self, channel_name: str, display_name: str, chat_ctx: ChatContext, item_name: str | None) -> Awaitable[None]: ...
 
 
 class TopBottomCommandHandler(Protocol):
