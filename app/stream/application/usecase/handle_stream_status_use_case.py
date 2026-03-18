@@ -20,7 +20,7 @@ class HandleStreamStatusUseCase:
         self,
         user_cache: UserCachePort,
         platform_repository: PlatformRepository,
-        unit_of_work_factory: StreamStatusUnitOfWorkFactory,
+        stream_status_uow: StreamStatusUnitOfWorkFactory,
         minigame_repository: MinigameRepository,
         notification_repository: NotificationRepository,
         notification_group_id: int,
@@ -29,7 +29,7 @@ class HandleStreamStatusUseCase:
     ):
         self._user_cache = user_cache
         self._platform_repository = platform_repository
-        self._unit_of_work_factory = unit_of_work_factory
+        self._stream_status_uow = stream_status_uow
         self._minigame_repository = minigame_repository
         self._notification_repository = notification_repository
         self._notification_group_id = notification_group_id
@@ -51,7 +51,7 @@ class HandleStreamStatusUseCase:
         game_name = stream_status.stream_data.game_name if stream_status.is_online and stream_status.stream_data else None
         title = stream_status.stream_data.title if stream_status.is_online and stream_status.stream_data else None
 
-        with self._unit_of_work_factory.create(read_only=True) as uow:
+        with self._stream_status_uow.create(read_only=True) as uow:
             active_stream = uow.stream_service.get_active_stream(channel_name)
 
         if stream_status.is_online and active_stream is None:
@@ -66,20 +66,15 @@ class HandleStreamStatusUseCase:
 
         elif stream_status.is_online and active_stream:
             if active_stream.game_name != game_name or active_stream.title != title:
-                with self._unit_of_work_factory.create() as uow:
+                with self._stream_status_uow.create() as uow:
                     uow.stream_service.update_stream_metadata(active_stream.id, game_name, title)
                 logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
-    async def _handle_stream_start(
-        self,
-        channel_name: str,
-        game_name: str | None,
-        title: str | None,
-    ):
+    async def _handle_stream_start(self, channel_name: str, game_name: str | None, title: str | None):
         started_at = datetime.utcnow()
         try:
-            with self._unit_of_work_factory.create() as uow:
-                uow.start_stream_use_case.execute(channel_name, started_at, game_name, title)
+            with self._stream_status_uow.create() as uow:
+                uow.stream_repository.start_new_stream(channel_name, started_at, game_name, title)
             self._minigame_repository.set_stream_start_time(channel_name, started_at)
             logger.info("handle stream start for %s: %s", channel_name, started_at)
             await self._stream_announcement(channel_name, game_name, title)
@@ -90,7 +85,7 @@ class HandleStreamStatusUseCase:
     async def _handle_stream_end(self, channel_name: str, active_stream: StreamInfo):
         finish_time = datetime.utcnow()
         logger.info("Стрим завершён")
-        with self._unit_of_work_factory.create() as uow:
+        with self._stream_status_uow.create() as uow:
             uow.stream_service.end_stream(active_stream.id, finish_time)
 
             active_sessions = uow.viewer_repository.get_active_sessions(active_stream.id)
@@ -107,10 +102,10 @@ class HandleStreamStatusUseCase:
 
         self._minigame_repository.reset_stream_state(channel_name)
 
-        with self._unit_of_work_factory.create(read_only=True) as uow:
+        with self._stream_status_uow.create(read_only=True) as uow:
             battles = uow.battle_use_case.get_battles(channel_name, active_stream.started_at)
 
-        with self._unit_of_work_factory.create(read_only=True) as uow:
+        with self._stream_status_uow.create(read_only=True) as uow:
             chat_messages = uow.chat_use_case.get_chat_messages(
                 channel_name=channel_name,
                 from_time=active_stream.started_at,
@@ -165,7 +160,7 @@ class HandleStreamStatusUseCase:
         if self._state.last_chat_summary_time is None:
             self._state.last_chat_summary_time = stream_start_dt
 
-        with self._unit_of_work_factory.create(read_only=True) as uow:
+        with self._stream_status_uow.create(read_only=True) as uow:
             last_messages = uow.chat_use_case.get_chat_messages(
                 channel_name=channel_name,
                 from_time=self._state.last_chat_summary_time,
@@ -195,7 +190,7 @@ class HandleStreamStatusUseCase:
 
         if stream_stat.top_user and stream_stat.top_user != "нет":
             reward_amount = 200
-            with self._unit_of_work_factory.create() as uow:
+            with self._stream_status_uow.create() as uow:
                 user_balance = uow.economy_policy.add_balance(
                     channel_name=channel_name,
                     user_name=stream_stat.top_user,
@@ -218,7 +213,7 @@ class HandleStreamStatusUseCase:
         prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции"
         result = await self._chat_response_port.generate(prompt, channel_name)
 
-        with self._unit_of_work_factory.create() as uow:
+        with self._stream_status_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(channel_name, prompt, result)
 
         self._state.current_stream_summaries = []

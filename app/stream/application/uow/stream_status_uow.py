@@ -7,7 +7,7 @@ from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.application.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.stream.application.usecase.start_new_stream_use_case import StartNewStreamUseCase
+from app.stream.domain.repo import StreamRepository
 from app.stream.domain.stream_service import StreamService
 from app.viewer.domain.repo import ViewerRepository
 
@@ -17,7 +17,7 @@ class StreamStatusUnitOfWork(UnitOfWork, Protocol):
     def stream_service(self) -> StreamService: ...
 
     @property
-    def start_stream_use_case(self) -> StartNewStreamUseCase: ...
+    def stream_repository(self) -> StreamRepository: ...
 
     @property
     def viewer_repository(self) -> ViewerRepository: ...

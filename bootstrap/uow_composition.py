@@ -266,7 +266,7 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             stream_service_provider=stream_providers.stream_service_provider,
-            start_stream_use_case_provider=stream_providers.start_stream_use_case_provider,
+            stream_repository_provider=stream_providers.stream_repo_provider,
             viewer_repository_provider=viewer_providers.viewer_repo_provider,
             battle_use_case_provider=battle_providers.battle_use_case_provider,
             economy_policy_provider=economy_providers.economy_policy_provider,

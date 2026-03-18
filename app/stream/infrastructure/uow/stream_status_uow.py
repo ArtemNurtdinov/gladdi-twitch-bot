@@ -8,7 +8,7 @@ from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWork, StreamStatusUnitOfWorkFactory
-from app.stream.application.usecase.start_new_stream_use_case import StartNewStreamUseCase
+from app.stream.domain.repo import StreamRepository
 from app.stream.domain.stream_service import StreamService
 from app.viewer.domain.repo import ViewerRepository
 from core.provider import Provider
@@ -20,7 +20,7 @@ class SqlAlchemyStreamStatusUnitOfWork(SqlAlchemyUnitOfWorkBase, StreamStatusUni
         self,
         session: Session,
         stream_service: StreamService,
-        start_stream_use_case: StartNewStreamUseCase,
+        stream_repository: StreamRepository,
         viewer_repository: ViewerRepository,
         battle_use_case: BattleUseCase,
         economy_policy: EconomyPolicy,
@@ -30,7 +30,7 @@ class SqlAlchemyStreamStatusUnitOfWork(SqlAlchemyUnitOfWorkBase, StreamStatusUni
     ):
         super().__init__(session=session, read_only=read_only)
         self._stream_service = stream_service
-        self._start_stream_use_case = start_stream_use_case
+        self._stream_repository = stream_repository
         self._viewer_repository = viewer_repository
         self._battle_use_case = battle_use_case
         self._economy_policy = economy_policy
@@ -42,8 +42,8 @@ class SqlAlchemyStreamStatusUnitOfWork(SqlAlchemyUnitOfWorkBase, StreamStatusUni
         return self._stream_service
 
     @property
-    def start_stream_use_case(self) -> StartNewStreamUseCase:
-        return self._start_stream_use_case
+    def stream_repository(self) -> StreamRepository:
+        return self._stream_repository
 
     @property
     def viewer_repository(self) -> ViewerRepository:
@@ -72,7 +72,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
         stream_service_provider: Provider[StreamService],
-        start_stream_use_case_provider: Provider[StartNewStreamUseCase],
+        stream_repository_provider: Provider[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
         battle_use_case_provider: Provider[BattleUseCase],
         economy_policy_provider: Provider[EconomyPolicy],
@@ -85,7 +85,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
             builder=self._build_uow,
         )
         self._stream_service_provider = stream_service_provider
-        self._start_stream_use_case_provider = start_stream_use_case_provider
+        self._stream_repository_provider = stream_repository_provider
         self._viewer_repository_provider = viewer_repository_provider
         self._battle_use_case_provider = battle_use_case_provider
         self._economy_policy_provider = economy_policy_provider
@@ -96,7 +96,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         return SqlAlchemyStreamStatusUnitOfWork(
             session=db,
             stream_service=self._stream_service_provider.get(db),
-            start_stream_use_case=self._start_stream_use_case_provider.get(db),
+            stream_repository=self._stream_repository_provider.get(db),
             viewer_repository=self._viewer_repository_provider.get(db),
             battle_use_case=self._battle_use_case_provider.get(db),
             economy_policy=self._economy_policy_provider.get(db),
