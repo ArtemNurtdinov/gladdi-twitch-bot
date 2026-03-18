@@ -1,18 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-import logging
+from collections import deque
 
 from twitchio import Client, WebsocketWelcome
 from twitchio.eventsub import ChatMessageSubscription
-from twitchio.exceptions import HTTPException
 from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.commands.domain.interfaces import ChatContext, ChatMessage, CommandRouter
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.domain.chat_client import ChatClient, ChatEventsHandler
-
-logger = logging.getLogger(__name__)
 
 
 class TwitchChatClient(Client, ChatClient):
@@ -32,12 +29,11 @@ class TwitchChatClient(Client, ChatClient):
         self._has_active_subscription = False
         self._eventsub_lock = asyncio.Lock()
 
-        super().__init__(
-            client_id=auth.client_id,
-            client_secret=auth.client_secret,
-            bot_id=bot_id,
-            fetch_client_user=True,
-        )
+        self._startup_subscription_done = asyncio.Event()
+        self._subscription_in_progress = False
+        self._recent_message_ids = deque(maxlen=1000)
+
+        super().__init__(client_id=auth.client_id, client_secret=auth.client_secret, bot_id=bot_id, fetch_client_user=False)
 
     def set_router(self, router: CommandRouter):
         self._command_router = router
@@ -48,32 +44,29 @@ class TwitchChatClient(Client, ChatClient):
     async def setup_hook(self) -> None:
         await self._register_token()
         await self._ensure_broadcaster_id()
-        await self._subscribe_chat_message_with_retry(reason="startup")
+        await self._subscribe_chat(reason="startup")
 
     async def start_chat(self):
-        await super().start()
+        await super().start(with_adapter=False, load_tokens=False, save_tokens=False)
 
     async def stop_chat(self):
         await super().close()
 
     async def event_ready(self) -> None:
-        logger.info("TwitchChatClient ready. Broadcaster: %s", self._broadcaster_id or "unknown")
+        pass
 
     async def event_message(self, payload: EventSubChatMessage) -> None:
-        message_id = getattr(payload, "message_id", None)
+        message_id = payload.id
+
+        if message_id and message_id in self._recent_message_ids:
+            return
+
+        if message_id:
+            self._recent_message_ids.append(message_id)
+
         chatter = getattr(payload, "chatter", None)
-        author = (chatter.display_name or chatter.name or "") if chatter else ""
-        text_preview = (payload.text[:50] + "…") if len(payload.text) > 50 else payload.text
-        logger.info(
-            "EventSub event_message: message_id=%s author=%s text=%r subscribed_session=%s",
-            message_id,
-            author,
-            text_preview,
-            self._subscribed_session_id,
-        )
 
         if not self._command_router:
-            logger.error("CommandRouter is not set for TwitchChatClient")
             return
 
         if chatter is None:
@@ -87,7 +80,7 @@ class TwitchChatClient(Client, ChatClient):
         try:
             handled = await self._command_router.dispatch(chat_message, chat_ctx)
         except Exception:
-            logger.exception("Ошибка обработки сообщения: %s", payload.text)
+            pass
         if handled:
             return
 
@@ -95,7 +88,6 @@ class TwitchChatClient(Client, ChatClient):
             return
 
         if payload.text.startswith(self._command_prefix):
-            logger.debug("Неизвестная команда: %s", payload.text)
             return
 
         if self._chat_event_handler:
@@ -107,54 +99,46 @@ class TwitchChatClient(Client, ChatClient):
                     bot_name=self._bot_name,
                 )
             except Exception:
-                logger.exception("Ошибка в ChatEventHandler для сообщения: %s", payload.text)
+                pass
 
     async def event_websocket_welcome(self, payload: WebsocketWelcome) -> None:
         session_id = payload.id
-        logger.info(
-            "EventSub session_welcome: new_session_id=%s current_subscribed_session=%s has_active_sub=%s",
-            session_id,
-            self._subscribed_session_id,
-            self._has_active_subscription,
-        )
-        if self._subscribed_session_id is None and self._has_active_subscription:
-            self._subscribed_session_id = session_id
-            logger.info("Привязали существующую подписку к session_id=%s", session_id)
-            return
+        old_session = self._subscribed_session_id
 
-        if session_id == self._subscribed_session_id:
-            logger.info("Подписка уже актуальна для session_id=%s", session_id)
-            return
+        if not self._has_active_subscription and self._subscribed_session_id is None:
+            try:
+                await asyncio.wait_for(self._startup_subscription_done.wait(), timeout=5.0)
+            except TimeoutError:
+                pass
 
-        if self._has_active_subscription:
-            self._subscribed_session_id = session_id
-            logger.info("EventSub реконнект: обновили session_id на %s (подписку восстанавливает TwitchIO)", session_id)
-            return
+        async with self._eventsub_lock:
+            if self._has_active_subscription and self._subscribed_session_id is None:
+                self._subscribed_session_id = session_id
+                return
 
-        logger.info("EventSub welcome: подписываемся на новую сессию session_id=%s", session_id)
-        await self._subscribe_chat_message_with_retry(session_id=session_id, reason="welcome")
+            if self._has_active_subscription and old_session != session_id:
+                self._has_active_subscription = False
+                asyncio.create_task(self._subscribe_chat(session_id=session_id, reason="reconnect"))
+                return
+
+            if session_id == self._subscribed_session_id:
+                return
+
+            if not self._has_active_subscription:
+                asyncio.create_task(self._subscribe_chat(session_id=session_id, reason="welcome"))
 
     async def _register_token(self) -> None:
         if self._token_user_id:
             return
-        try:
-            validate = await self.add_token(self._auth.access_token, self._auth.refresh_token)
-            self._token_user_id = validate.user_id
-            if not self._token_user_id:
-                logger.warning("Не удалось получить user_id из validate токена")
-        except Exception:
-            logger.exception("Не удалось добавить токен в TwitchIO Client")
+        validate = await self.add_token(self._auth.access_token, self._auth.refresh_token)
+        self._token_user_id = validate.user_id
 
     async def _ensure_broadcaster_id(self) -> None:
         if self._broadcaster_id:
             return
-
-        try:
-            users = await self.fetch_users(logins=[self._channel_name])
-            if users:
-                self._broadcaster_id = users[0].id
-        except Exception:
-            logger.exception("Не удалось получить broadcaster_id по логину %s", self._channel_name)
+        users = await self.fetch_users(logins=[self._channel_name])
+        if users:
+            self._broadcaster_id = users[0].id
 
         if not self._broadcaster_id and self._token_user_id:
             self._broadcaster_id = self._token_user_id
@@ -167,48 +151,24 @@ class TwitchChatClient(Client, ChatClient):
             user_id=self._token_user_id,
         )
         await self.subscribe_websocket(payload, token_for=self._token_user_id)
-        logger.info("Подписка на channel.chat.message оформлена для %s", self._broadcaster_id)
 
-    async def _subscribe_chat_message_with_retry(self, session_id: str | None = None, reason: str = "unknown") -> None:
-        logger.info(
-            "EventSub _subscribe_chat_message_with_retry: reason=%s session_id=%s current_subscribed=%s has_active=%s",
-            reason,
-            session_id,
-            self._subscribed_session_id,
-            self._has_active_subscription,
-        )
+    async def _subscribe_chat(self, reason: str, session_id: str | None = None):
         async with self._eventsub_lock:
-            if session_id and session_id == self._subscribed_session_id:
-                logger.info("Подписка уже актуальна для session_id=%s", session_id)
+            if self._subscription_in_progress:
                 return
 
-            delay = 1.0
-            for attempt in range(1, 4):
-                try:
-                    await self._subscribe_chat_message()
-                    self._has_active_subscription = True
-                    if session_id:
-                        self._subscribed_session_id = session_id
-                    logger.info("Подписка EventSub восстановлена (%s) session_id=%s", reason, session_id)
-                    return
-                except HTTPException as e:
-                    status = getattr(e, "status", None)
-                    text = getattr(e, "text", None)
-                    logger.warning(
-                        "Попытка подписки %s/%s не удалась: status=%s text=%s",
-                        attempt,
-                        3,
-                        status,
-                        text,
-                    )
-                    if status not in {400, 409, 429, 500, 502, 503, 504}:
-                        break
-                except Exception:
-                    logger.exception("Попытка подписки %s/%s завершилась ошибкой", attempt, 3)
-                await asyncio.sleep(delay)
-                delay *= 2
+            self._subscription_in_progress = True
+            try:
+                await self._subscribe_chat_message()
+                self._has_active_subscription = True
+                if session_id:
+                    self._subscribed_session_id = session_id
 
-            logger.error("Не удалось восстановить подписку EventSub (%s)", reason)
+                if reason == "startup":
+                    self._startup_subscription_done.set()
+
+            finally:
+                self._subscription_in_progress = False
 
     def _split_text(self, text: str) -> list[str]:
         if len(text) <= self.TWITCH_MESSAGE_LENGTH_MAX:
@@ -240,15 +200,8 @@ class TwitchChatClient(Client, ChatClient):
                     token_for=self._token_user_id,
                 )
                 await asyncio.sleep(0.3)
-            except HTTPException as e:
-                logger.error(
-                    "Ошибка отправки сообщения в чат: status=%s text=%s msg=%s",
-                    getattr(e, "status", None),
-                    getattr(e, "text", None),
-                    msg,
-                )
             except Exception:
-                logger.exception("Ошибка отправки сообщения в чат: %s", msg)
+                pass
 
     def _is_self_message(self, payload: EventSubChatMessage) -> bool:
         chatter = getattr(payload, "chatter", None)
