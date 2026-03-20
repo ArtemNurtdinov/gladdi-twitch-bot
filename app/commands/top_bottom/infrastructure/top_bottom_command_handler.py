@@ -29,14 +29,12 @@ class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
         self.bottom_limit = self._BOTTOM_LIMIT
 
     async def handle_top(self, channel_name: str, display_name: str):
-        bot_nick = self._bot_nick.lower()
-
         dto = TopDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_top,
             channel_name=channel_name,
             user_name=display_name.lower(),
-            bot_nick=bot_nick,
+            bot_nick=self._bot_nick.lower(),
             occurred_at=datetime.utcnow(),
             limit=self.top_limit,
         )
@@ -46,18 +44,16 @@ class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
         await self.post_message_fn(result)
 
     async def handle_bottom(self, channel_name: str, display_name: str):
-        bot_nick = self._bot_nick.lower()
-
-        dto = BottomDTO(
+        command_bottom = BottomDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_bottom,
             channel_name=channel_name,
             user_name=display_name.lower(),
-            bot_nick=bot_nick,
+            bot_nick=self._bot_nick.lower(),
             occurred_at=datetime.utcnow(),
             limit=self.bottom_limit,
         )
 
-        result = await self._handle_top_bottom_use_case.handle_bottom(command_bottom=dto)
+        result = await self._handle_top_bottom_use_case.handle_bottom(command_bottom=command_bottom)
 
         await self.post_message_fn(result)

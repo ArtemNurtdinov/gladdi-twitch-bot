@@ -94,17 +94,25 @@ class EconomyRepositoryImpl(EconomyRepository):
         return [BalanceBrief(user_name=r.user_name, balance=r.balance) for r in rows]
 
     def get_bottom_users(self, channel_name: str, limit: int, active_since: datetime) -> list[BalanceBrief]:
-        stmt = select(UserBalance).where(UserBalance.channel_name == channel_name).order_by(UserBalance.balance.asc()).limit(limit)
         has_tx = (
             select(1)
             .select_from(TransactionHistory)
             .where(
-                TransactionHistory.channel_name == UserBalance.channel_name,
+                TransactionHistory.channel_name == channel_name,
                 TransactionHistory.user_name == UserBalance.user_name,
                 TransactionHistory.created_at >= active_since,
             )
             .exists()
         )
-        stmt = stmt.where(has_tx)
+
+        stmt = (
+            select(UserBalance)
+            .where(
+                UserBalance.channel_name == channel_name,
+                has_tx,
+            )
+            .order_by(UserBalance.balance.asc())
+            .limit(limit)
+        )
         rows = self._db.execute(stmt).scalars().all()
         return [BalanceBrief(user_name=r.user_name, balance=r.balance) for r in rows]

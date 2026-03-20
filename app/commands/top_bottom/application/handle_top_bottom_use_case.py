@@ -8,10 +8,7 @@ class HandleTopBottomUseCase:
     def __init__(self, unit_of_work_factory: TopBottomUnitOfWorkFactory):
         self._unit_of_work_factory = unit_of_work_factory
 
-    async def handle_top(
-        self,
-        command_top: TopDTO,
-    ) -> str:
+    async def handle_top(self, command_top: TopDTO) -> str:
         user_message = command_top.command_prefix + command_top.command_name
         with self._unit_of_work_factory.create(read_only=True) as uow:
             top_users = uow.economy_policy.get_top_users(command_top.channel_name, limit=command_top.limit)
@@ -40,10 +37,7 @@ class HandleTopBottomUseCase:
 
         return result
 
-    async def handle_bottom(
-        self,
-        command_bottom: BottomDTO,
-    ) -> str:
+    async def handle_bottom(self, command_bottom: BottomDTO) -> str:
         user_message = command_bottom.command_prefix + command_bottom.command_name
         with self._unit_of_work_factory.create(read_only=True) as uow:
             active_since = datetime.utcnow() - timedelta(days=30)
