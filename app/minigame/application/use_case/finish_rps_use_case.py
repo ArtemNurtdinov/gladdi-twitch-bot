@@ -56,6 +56,8 @@ class FinishRpsUseCase:
         else:
             message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
 
+        self._minigame_repository.delete_active_rps_game(channel_name)
+
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
                 channel_name=channel_name, user_name=self._bot_name, content=message, current_time=datetime.utcnow()
