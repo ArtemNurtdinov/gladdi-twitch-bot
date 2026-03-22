@@ -13,6 +13,8 @@ from app.commands.battle.infrastructure.battle_command_handler import BattleComm
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.bonus.infrastructure.bonus_command_handler import BonusCommandHandlerImpl
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
+from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
@@ -32,7 +34,6 @@ from app.platform.chat.infrastructure.chat_event_handler import ChatEventsHandle
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_handler import (
     BottomHandler,
-    EquipmentHandler,
     GuessLetterHandler,
     GuessNumberHandler,
     GuessWordHandler,
@@ -319,7 +320,17 @@ class BotManager:
                 post_message_fn=chat_client.send_channel_message,
             )
 
-            equipment_handler = EquipmentHandler(command_registry)
+            equipment_command_handler: CommandHandler = EquipmentCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_equipment,
+                command_shop=self._settings.command_shop,
+                handle_equipment_use_case=HandleEquipmentUseCase(
+                    unit_of_work_factory=uow_factories.build_equipment_uow_factory(),
+                ),
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
             top_handler = TopHandler(command_registry)
             bottom_handler = BottomHandler(command_registry)
             help_handler = HelpHandler(command_registry)
@@ -340,7 +351,7 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_transfer, transfer_command_handler)
             command_router.register_command_handler(self._settings.command_shop, shop_command_handler)
             command_router.register_command_handler(self._settings.command_buy, buy_command_handler)
-            command_router.register_command_handler(self._settings.command_equipment, equipment_handler)
+            command_router.register_command_handler(self._settings.command_equipment, equipment_command_handler)
             command_router.register_command_handler(self._settings.command_top, top_handler)
             command_router.register_command_handler(self._settings.command_bottom, bottom_handler)
             command_router.register_command_handler(self._settings.command_help, help_handler)

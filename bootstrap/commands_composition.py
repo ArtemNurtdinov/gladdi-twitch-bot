@@ -3,8 +3,6 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 
 from app.commands.commands_registry import CommandRegistry
-from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
-from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.infrastructure.guess_command_handler import GuessCommandHandlerImpl
 from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandlerImpl
@@ -29,16 +27,6 @@ def build_command_registry(
 ) -> CommandRegistry:
     prefix = settings.prefix
 
-    equipment_command_handler = EquipmentCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_equipment,
-        command_shop=settings.command_shop,
-        handle_equipment_use_case=HandleEquipmentUseCase(
-            unit_of_work_factory=uow_factories.build_equipment_uow_factory(),
-        ),
-        bot_name=bot_name,
-        post_message_fn=send_channel_message,
-    )
     top_bottom_command_handler = TopBottomCommandHandlerImpl(
         command_prefix=prefix,
         command_top=settings.command_top,
@@ -105,14 +93,6 @@ def build_command_registry(
     )
 
     return CommandRegistry(
-        ask_command_handler=ask_command_handler,
-        battle_command_handler=battle_command_handler,
-        roll_command_handler=roll_command_handler,
-        balance_command_handler=balance_command_handler,
-        bonus_command_handler=bonus_command_handler,
-        transfer_command_handler=transfer_command_handler,
-        shop_command_handler=shop_command_handler,
-        equipment_command_handler=equipment_command_handler,
         top_bottom_command_handler=top_bottom_command_handler,
         stats_command_handler=stats_command_handler,
         help_command_handler=help_command_handler,
