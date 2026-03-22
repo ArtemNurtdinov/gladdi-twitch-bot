@@ -29,7 +29,6 @@ from app.platform.command.application.command_router import (
     StatsHandler,
     TopHandler,
     TransferHandler,
-    build_twitch_command_router,
 )
 from app.platform.command.application.prefix_command_router import PrefixCommandRouter
 from app.platform.infrastructure.client import TwitchHelixClient
@@ -194,8 +193,6 @@ class BotManager:
                 send_channel_message=chat_client.send_channel_message,
             )
 
-            command_router = PrefixCommandRouter(self._settings.prefix)
-
             followage_handler = FollowageHandler(command_registry)
             ask_handler = AskHandler(command_registry)
             battle_handler = BattleHandler(command_registry, battle_waiting_user)
@@ -215,6 +212,8 @@ class BotManager:
             guess_word_handler = GuessWordHandler(command_registry, self._settings.prefix, self._settings.command_guess_word)
             rps_handler = RpsHandler(command_registry, self._settings.prefix, self._settings.command_rps)
 
+            command_router = PrefixCommandRouter(self._settings.prefix)
+
             command_router.register(self._settings.command_followage, followage_handler)
             command_router.register(self._settings.command_gladdi, ask_handler)
             command_router.register(self._settings.command_fight, battle_handler)
@@ -233,8 +232,6 @@ class BotManager:
             command_router.register(self._settings.command_guess_letter, guess_letter_handler)
             command_router.register(self._settings.command_guess_word, guess_word_handler)
             command_router.register(self._settings.command_rps, rps_handler)
-
-            command_router = build_twitch_command_router(self._settings, command_registry, battle_waiting_user)
 
             chat_client.set_chat_event_handler(chat_events_handler)
             chat_client.set_router(command_router)
