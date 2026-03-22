@@ -1,12 +1,12 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.bonus.application.bonus_command_handler import BonusCommandHandler
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.bonus.application.model import BonusDTO
+from app.platform.command.domain.command_handler import CommandHandler
 
 
-class BonusCommandHandlerImpl(BonusCommandHandler):
+class BonusCommandHandlerImpl(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
@@ -21,13 +21,13 @@ class BonusCommandHandlerImpl(BonusCommandHandler):
         self._bot_name = bot_name
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str):
+    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
         bonus = BonusDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_name,
             channel_name=channel_name,
-            display_name=display_name,
-            user_name=display_name.lower(),
+            display_name=user_name,
+            user_name=user_name.lower(),
             bot_nick=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
         )

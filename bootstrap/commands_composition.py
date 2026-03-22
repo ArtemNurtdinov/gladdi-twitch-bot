@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 
-from app.commands.bonus.application.bonus_command_handler import BonusCommandHandler
-from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
-from app.commands.bonus.infrastructure.bonus_command_handler import BonusCommandHandlerImpl
 from app.commands.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
@@ -38,15 +35,6 @@ def build_command_registry(
 ) -> CommandRegistry:
     prefix = settings.prefix
 
-    bonus_command_handler: BonusCommandHandler = BonusCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_bonus,
-        handle_bonus_use_case=HandleBonusUseCase(
-            bonus_uow=uow_factories.build_bonus_uow_factory(),
-        ),
-        bot_name=bot_name,
-        post_message_fn=send_channel_message,
-    )
     transfer_command_handler: TransferCommandHandler = TransferCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_transfer,
