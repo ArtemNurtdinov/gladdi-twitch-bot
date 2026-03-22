@@ -10,10 +10,10 @@ from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.chat.platform_chat_client import PlatformChatClient
+from app.platform.command.application.command_router import build_twitch_command_router
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.platform.providers import PlatformApiClient
-from app.twitch.bootstrap.router_factory import build_twitch_command_router
 from bootstrap.chat_composition import build_chat_event_handler
 from bootstrap.commands_composition import build_command_registry
 from bootstrap.jobs_composition import build_background_tasks

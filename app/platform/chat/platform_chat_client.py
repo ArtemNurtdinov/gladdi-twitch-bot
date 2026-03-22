@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Protocol
 
-from app.commands.domain.interfaces import CommandRouter
+from app.platform.command.domain.command_router import CommandRouter
 
 
 class ChatEventsHandler(Protocol):

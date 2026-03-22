@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from app.commands.domain.interfaces import CommandHandler, CommandRouter
+from app.platform.command.domain.command_handler import CommandHandler
+from app.platform.command.domain.command_router import CommandRouter
 
 
 class PrefixCommandRouter(CommandRouter):

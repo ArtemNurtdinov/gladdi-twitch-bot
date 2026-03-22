@@ -7,9 +7,9 @@ from twitchio import Client, WebsocketWelcome
 from twitchio.eventsub import ChatMessageSubscription
 from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
-from app.commands.domain.interfaces import ChatMessage, CommandRouter
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.platform_chat_client import ChatEventsHandler, PlatformChatClient
+from app.platform.command.domain.command_router import CommandRouter
 
 
 class TwitchChatClient(Client, PlatformChatClient):
@@ -59,7 +59,6 @@ class TwitchChatClient(Client, PlatformChatClient):
         message_id = payload.id
         chatter = getattr(payload, "chatter", None)
         author_name = chatter.display_name or chatter.name or ""
-        chat_message = ChatMessage(author=author_name, text=payload.text)
         text_message = payload.text
 
         if message_id and message_id in self._recent_message_ids:
@@ -92,7 +91,7 @@ class TwitchChatClient(Client, PlatformChatClient):
             try:
                 await self._chat_event_handler.handle(
                     channel_name=self._channel_name,
-                    display_name=chat_message.author,
+                    display_name=author_name,
                     message=payload.text,
                     bot_name=self._bot_name,
                 )

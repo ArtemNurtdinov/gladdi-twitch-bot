@@ -1,7 +1,8 @@
-from app.commands.application.prefix_command_router import PrefixCommandRouter
 from app.commands.commands_registry import CommandRegistry
-from app.commands.domain.interfaces import CommandHandler, CommandRouter
 from app.platform.bot.model.bot_settings import BotSettings
+from app.platform.command.application.prefix_command_router import PrefixCommandRouter
+from app.platform.command.domain.command_handler import CommandHandler
+from app.platform.command.domain.command_router import CommandRouter
 
 
 def build_twitch_command_router(
