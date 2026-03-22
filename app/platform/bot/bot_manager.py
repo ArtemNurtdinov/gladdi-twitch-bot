@@ -241,7 +241,7 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_rps, rps_handler)
 
             chat_client.set_chat_event_handler(chat_events_handler)
-            chat_client.set_router(command_router)
+            chat_client.set_command_router(command_router)
 
             restore_stream_context(
                 providers=providers_bundle,

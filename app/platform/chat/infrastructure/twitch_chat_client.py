@@ -36,7 +36,7 @@ class TwitchChatClient(Client, PlatformChatClient):
 
         super().__init__(client_id=auth.client_id, client_secret=auth.client_secret, bot_id=bot_id, fetch_client_user=False)
 
-    def set_router(self, router: CommandRouter):
+    def set_command_router(self, router: CommandRouter):
         self._command_router = router
 
     def set_chat_event_handler(self, handler: ChatEventsHandler):
