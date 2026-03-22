@@ -3,15 +3,11 @@ from datetime import datetime
 
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.chat.application.model import ChatMessageDTO
-from app.platform.chat.domain.platform_chat_client import ChatEventsHandler
+from app.platform.chat.platform_chat_client import ChatEventsHandler
 
 
 class ChatEventsHandlerImpl(ChatEventsHandler):
-    def __init__(
-        self,
-        handle_chat_message_use_case: HandleChatMessageUseCase,
-        send_channel_message: Callable[[str], Awaitable[None]],
-    ):
+    def __init__(self, handle_chat_message_use_case: HandleChatMessageUseCase, send_channel_message: Callable[[str], Awaitable[None]]):
         self._handle_chat_message_use_case = handle_chat_message_use_case
         self._send_channel_message = send_channel_message
 

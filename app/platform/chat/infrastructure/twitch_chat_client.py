@@ -7,9 +7,9 @@ from twitchio import Client, WebsocketWelcome
 from twitchio.eventsub import ChatMessageSubscription
 from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
-from app.commands.domain.interfaces import ChatContext, ChatMessage, CommandRouter
+from app.commands.domain.interfaces import ChatMessage, CommandRouter
 from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.chat.domain.platform_chat_client import ChatEventsHandler, PlatformChatClient
+from app.platform.chat.platform_chat_client import ChatEventsHandler, PlatformChatClient
 
 
 class TwitchChatClient(Client, PlatformChatClient):
@@ -57,6 +57,10 @@ class TwitchChatClient(Client, PlatformChatClient):
 
     async def event_message(self, payload: EventSubChatMessage) -> None:
         message_id = payload.id
+        chatter = getattr(payload, "chatter", None)
+        author_name = chatter.display_name or chatter.name or ""
+        chat_message = ChatMessage(author=author_name, text=payload.text)
+        text_message = payload.text
 
         if message_id and message_id in self._recent_message_ids:
             return
@@ -64,21 +68,15 @@ class TwitchChatClient(Client, PlatformChatClient):
         if message_id:
             self._recent_message_ids.append(message_id)
 
-        chatter = getattr(payload, "chatter", None)
-
         if not self._command_router:
             return
 
         if chatter is None:
             return
 
-        author_name = chatter.display_name or chatter.name or ""
-        chat_message = ChatMessage(author=author_name, text=payload.text)
-        chat_ctx = ChatContext(channel=self._channel_name)
-
         handled = False
         try:
-            handled = await self._command_router.dispatch(chat_message, chat_ctx)
+            handled = await self._command_router.dispatch_command_handler(self._channel_name, author_name, text_message)
         except Exception:
             pass
         if handled:

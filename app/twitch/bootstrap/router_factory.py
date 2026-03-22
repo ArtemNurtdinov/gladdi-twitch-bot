@@ -1,6 +1,6 @@
 from app.commands.application.prefix_command_router import PrefixCommandRouter
 from app.commands.commands_registry import CommandRegistry
-from app.commands.domain.interfaces import ChatContext, ChatMessage, CommandRouter
+from app.commands.domain.interfaces import CommandHandler, CommandRouter
 from app.platform.bot.model.bot_settings import BotSettings
 
 
@@ -9,87 +9,124 @@ def build_twitch_command_router(
 ) -> CommandRouter:
     router = PrefixCommandRouter(settings.prefix)
 
-    async def followage_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.followage_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author)
+    class FollowageHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.followage_command_handler.handle(channel_name=channel_name, display_name=user_name)
 
-    async def ask_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.ask_command_handler.handle(channel_name=chat_ctx.channel, full_message=msg.text, display_name=msg.author)
+    class AskHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.ask_command_handler.handle(channel_name, user_message, user_name)
 
-    async def battle_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.battle_command_handler.handle(
-            channel_name=chat_ctx.channel, display_name=msg.author, battle_waiting_user=battle_waiting_user
-        )
+    class BattleHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.battle_command_handler.handle(
+                channel_name=channel_name, display_name=user_name, battle_waiting_user=battle_waiting_user
+            )
 
-    async def roll_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        tail = msg.text[len(settings.prefix + settings.command_roll) :].strip()
-        amount = tail or None
-        await registry.roll_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, amount=amount)
+    class RollHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            tail = user_message[len(settings.prefix + settings.command_roll) :].strip()
+            amount = tail or None
+            await registry.roll_command_handler.handle(channel_name=channel_name, display_name=user_name, amount=amount)
 
-    async def balance_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.balance_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author)
+    class BalanceHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.balance_command_handler.handle(channel_name=channel_name, display_name=user_name)
 
-    async def bonus_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.bonus_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author)
+    class BonusHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.bonus_command_handler.handle(channel_name=channel_name, display_name=user_name)
 
-    async def transfer_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        tail = msg.text[len(settings.prefix + settings.command_transfer) :].strip()
-        recipient = None
-        amount = None
-        if tail:
-            parts = tail.split()
-            if parts:
-                recipient = parts[0]
-                if len(parts) > 1:
-                    amount = parts[1]
-        await registry.transfer_command_handler.handle(
-            channel_name=chat_ctx.channel,
-            sender_display_name=msg.author,
-            recipient=recipient,
-            amount=amount,
-        )
+    class TransferHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            tail = user_message[len(settings.prefix + settings.command_transfer) :].strip()
+            recipient = None
+            amount = None
+            if tail:
+                parts = tail.split()
+                if parts:
+                    recipient = parts[0]
+                    if len(parts) > 1:
+                        amount = parts[1]
+            await registry.transfer_command_handler.handle(
+                channel_name=channel_name,
+                sender_display_name=user_name,
+                recipient=recipient,
+                amount=amount,
+            )
 
-    async def shop_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.shop_command_handler.handle_shop(channel_name=chat_ctx.channel, display_name=msg.author)
+    class ShopHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.shop_command_handler.handle_shop(channel_name=channel_name, display_name=user_name)
 
-    async def buy_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        tail = msg.text[len(settings.prefix + settings.command_buy) :].strip()
-        item_name = tail or None
-        await registry.shop_command_handler.handle_buy(channel_name=chat_ctx.channel, display_name=msg.author, item_name=item_name)
+    class BuyHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            tail = user_message[len(settings.prefix + settings.command_buy) :].strip()
+            item_name = tail or None
+            await registry.shop_command_handler.handle_buy(channel_name=channel_name, display_name=user_name, item_name=item_name)
 
-    async def equipment_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.equipment_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author)
+    class EquipmentHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.equipment_command_handler.handle(channel_name=channel_name, display_name=user_name)
 
-    async def top_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.top_bottom_command_handler.handle_top(channel_name=chat_ctx.channel, display_name=msg.author)
+    class TopHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.top_bottom_command_handler.handle_top(channel_name=channel_name, display_name=user_name)
 
-    async def bottom_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.top_bottom_command_handler.handle_bottom(channel_name=chat_ctx.channel, display_name=msg.author)
+    class BottomHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.top_bottom_command_handler.handle_bottom(channel_name=channel_name, display_name=user_name)
 
-    async def help_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.help_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author)
+    class HelpHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.help_command_handler.handle(channel_name=channel_name, display_name=user_name)
 
-    async def stats_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        await registry.stats_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author)
+    class StatsHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            await registry.stats_command_handler.handle(channel_name=channel_name, display_name=user_name)
 
-    async def guess_number_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        tail = msg.text[len(settings.prefix + settings.command_guess) :].strip()
-        number = tail or None
-        await registry.guess_command_handler.handle_guess_number(channel_name=chat_ctx.channel, display_name=msg.author, number=number)
+    class GuessNumberHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            tail = user_message[len(settings.prefix + settings.command_guess) :].strip()
+            number = tail or None
+            await registry.guess_command_handler.handle_guess_number(channel_name=channel_name, display_name=user_name, number=number)
 
-    async def guess_letter_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        tail = msg.text[len(settings.prefix + settings.command_guess_letter) :].strip()
-        letter = tail or None
-        await registry.guess_command_handler.handle_guess_letter(channel_name=chat_ctx.channel, display_name=msg.author, letter=letter)
+    class GuessLetterHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            tail = user_message[len(settings.prefix + settings.command_guess_letter) :].strip()
+            letter = tail or None
+            await registry.guess_command_handler.handle_guess_letter(channel_name=channel_name, display_name=user_name, letter=letter)
 
-    async def guess_word_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        tail = msg.text[len(settings.prefix + settings.command_guess_word) :].strip()
-        word = tail or None
-        await registry.guess_command_handler.handle_guess_word(channel_name=chat_ctx.channel, display_name=msg.author, word=word)
+    class GuessWordHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            tail = user_message[len(settings.prefix + settings.command_guess_word) :].strip()
+            word = tail or None
+            await registry.guess_command_handler.handle_guess_word(channel_name=channel_name, display_name=user_name, word=word)
 
-    async def rps_handler(chat_ctx: ChatContext, msg: ChatMessage):
-        tail = msg.text[len(settings.prefix + settings.command_rps) :].strip()
-        choice = tail or None
-        await registry.rps_command_handler.handle(channel_name=chat_ctx.channel, display_name=msg.author, choice=choice)
+    class RpsHandler(CommandHandler):
+        async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+            tail = user_message[len(settings.prefix + settings.command_rps) :].strip()
+            choice = tail or None
+            await registry.rps_command_handler.handle(channel_name=channel_name, display_name=user_name, choice=choice)
+
+    followage_handler = FollowageHandler()
+    ask_handler = AskHandler()
+    battle_handler = BattleHandler()
+    roll_handler = RollHandler()
+    balance_handler = BalanceHandler()
+    bonus_handler = BonusHandler()
+    transfer_handler = TransferHandler()
+    shop_handler = ShopHandler()
+    buy_handler = BuyHandler()
+    equipment_handler = EquipmentHandler()
+    top_handler = TopHandler()
+    bottom_handler = BottomHandler()
+    help_handler = HelpHandler()
+    stats_handler = StatsHandler()
+    guess_number_handler = GuessNumberHandler()
+    guess_letter_handler = GuessLetterHandler()
+    guess_word_handler = GuessWordHandler()
+    rps_handler = RpsHandler()
 
     router.register(settings.command_followage, followage_handler)
     router.register(settings.command_gladdi, ask_handler)

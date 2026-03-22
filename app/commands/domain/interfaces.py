@@ -1,6 +1,5 @@
-from collections.abc import Awaitable, Callable
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Protocol
 
 
 @dataclass(frozen=True)
@@ -14,9 +13,13 @@ class ChatContext:
         self.channel = channel
 
 
-CommandHandler = Callable[[ChatContext, ChatMessage], Awaitable[None]]
+class CommandHandler(ABC):
+    @abstractmethod
+    async def handle_command(self, channel_name: str, user_name: str, user_message: str): ...
 
 
-class CommandRouter(Protocol):
+class CommandRouter(ABC):
+    @abstractmethod
     def register(self, name: str, handler: CommandHandler) -> None: ...
-    async def dispatch(self, message: ChatMessage, ctx: ChatContext) -> bool: ...
+    @abstractmethod
+    async def dispatch_command_handler(self, channel_name: str, user_name: str, message: str) -> bool: ...
