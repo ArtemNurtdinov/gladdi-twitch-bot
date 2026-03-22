@@ -6,8 +6,6 @@ from app.commands.commands_registry import CommandRegistry
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.infrastructure.guess_command_handler import GuessCommandHandlerImpl
 from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandlerImpl
-from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
-from app.commands.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.infrastructure.stats_command_handler import StatsCommandHandlerImpl
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
@@ -34,29 +32,7 @@ def build_command_registry(
         bot_name=bot_name,
         post_message_fn=send_channel_message,
     )
-    commands = {
-        settings.command_balance,
-        settings.command_bonus,
-        f"{settings.command_roll} [сумма]",
-        f"{settings.command_transfer} @ник сумма",
-        settings.command_shop,
-        f"{settings.command_buy} название",
-        settings.command_equipment,
-        settings.command_top,
-        settings.command_bottom,
-        settings.command_stats,
-        settings.command_fight,
-        f"{settings.command_gladdi} текст",
-        settings.command_followage,
-    }
-    help_command_handler = HelpCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_help,
-        handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=uow_factories.build_help_uow_factory()),
-        commands=commands,
-        bot_name=bot_name,
-        post_message_fn=send_channel_message,
-    )
+
     guess_command_handler = GuessCommandHandlerImpl(
         command_prefix=prefix,
         command_guess=settings.command_guess,

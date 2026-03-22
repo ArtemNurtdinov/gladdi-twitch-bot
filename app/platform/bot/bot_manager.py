@@ -17,6 +17,8 @@ from app.commands.equipment.application.handle_equipment_use_case import HandleE
 from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
+from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
+from app.commands.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.infrastructure.roll_command_handler import RollCommandHandlerImpl
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
@@ -39,7 +41,6 @@ from app.platform.command.application.command_handler import (
     GuessLetterHandler,
     GuessNumberHandler,
     GuessWordHandler,
-    HelpHandler,
     RpsHandler,
     StatsHandler,
 )
@@ -352,7 +353,31 @@ class BotManager:
                 post_message_fn=chat_client.send_channel_message,
             )
 
-            help_handler = HelpHandler(command_registry)
+            commands = {
+                self._settings.command_balance,
+                self._settings.command_bonus,
+                f"{self._settings.command_roll} [сумма]",
+                f"{self._settings.command_transfer} @ник сумма",
+                self._settings.command_shop,
+                f"{self._settings.command_buy} название",
+                self._settings.command_equipment,
+                self._settings.command_top,
+                self._settings.command_bottom,
+                self._settings.command_stats,
+                self._settings.command_fight,
+                f"{self._settings.command_gladdi} текст",
+                self._settings.command_followage,
+            }
+
+            help_command_handler: CommandHandler = HelpCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_help,
+                handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=uow_factories.build_help_uow_factory()),
+                commands=commands,
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
             stats_handler = StatsHandler(command_registry)
             guess_number_handler = GuessNumberHandler(command_registry, self._settings.prefix, self._settings.command_guess)
             guess_letter_handler = GuessLetterHandler(command_registry, self._settings.prefix, self._settings.command_guess_letter)
@@ -373,7 +398,7 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_equipment, equipment_command_handler)
             command_router.register_command_handler(self._settings.command_top, top_command_handler)
             command_router.register_command_handler(self._settings.command_bottom, bottom_command_handler)
-            command_router.register_command_handler(self._settings.command_help, help_handler)
+            command_router.register_command_handler(self._settings.command_help, help_command_handler)
             command_router.register_command_handler(self._settings.command_stats, stats_handler)
             command_router.register_command_handler(self._settings.command_guess, guess_number_handler)
             command_router.register_command_handler(self._settings.command_guess_letter, guess_letter_handler)

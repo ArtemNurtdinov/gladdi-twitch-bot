@@ -2,11 +2,11 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
-from app.commands.help.application.help_command_handler import HelpCommandHandler
 from app.commands.help.application.model import HelpDTO
+from app.platform.command.domain.command_handler import CommandHandler
 
 
-class HelpCommandHandlerImpl(HelpCommandHandler):
+class HelpCommandHandlerImpl(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
@@ -23,17 +23,17 @@ class HelpCommandHandlerImpl(HelpCommandHandler):
         self._bot_name = bot_name
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str):
-        dto = HelpDTO(
+    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+        help = HelpDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_name,
-            user_name=display_name.lower(),
+            user_name=user_name.lower(),
             channel_name=channel_name,
             bot_nick=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             commands=self.commands,
         )
 
-        result = await self._handle_help_use_case.handle(dto)
+        result = await self._handle_help_use_case.handle(help)
 
         await self.post_message_fn(result)
