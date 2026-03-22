@@ -1,12 +1,12 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.application.model import FollowageDTO
+from app.platform.command.domain.command_handler import CommandHandler
 
 
-class FollowageCommandHandlerImpl(FollowageCommandHandler):
+class FollowageCommandHandlerImpl(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
@@ -21,13 +21,13 @@ class FollowageCommandHandlerImpl(FollowageCommandHandler):
         self.bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str):
+    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
         followage = FollowageDTO(
             command_prefix=self._command_prefix,
             command_name=self._command_name,
             channel_name=channel_name,
-            display_name=display_name,
-            user_name=display_name.lower(),
+            display_name=user_name,
+            user_name=user_name.lower(),
             bot_nick=self.bot_nick,
             occurred_at=datetime.utcnow(),
         )
@@ -35,3 +35,4 @@ class FollowageCommandHandlerImpl(FollowageCommandHandler):
         result = await self._handle_follow_age_use_case.handle(followage)
         if result:
             await self.post_message_fn(result)
+        pass

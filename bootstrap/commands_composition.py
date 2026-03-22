@@ -18,9 +18,6 @@ from app.commands.bonus.infrastructure.bonus_command_handler import BonusCommand
 from app.commands.commands_registry import CommandRegistry
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
-from app.commands.follow.application.followage_command_handler import FollowageCommandHandler
-from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
-from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.infrastructure.guess_command_handler import GuessCommandHandlerImpl
 from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandlerImpl
@@ -62,18 +59,6 @@ def build_command_registry(
     )
     ask_uow_factory = uow_factories.build_ask_uow_factory()
 
-    followage_command_handler: FollowageCommandHandler = FollowageCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_followage,
-        handle_follow_age_use_case=HandleFollowAgeUseCase(
-            chat_repo_provider=providers.chat_providers.chat_repo_provider,
-            conversation_repo_provider=providers.ai_providers.conversation_repo_provider,
-            chat_response_use_case=chat_response_use_case,
-            unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
-        ),
-        bot_nick=bot_name,
-        post_message_fn=send_channel_message,
-    )
     ask_command_handler: AskCommandHandler = AskCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_gladdi,
@@ -223,7 +208,6 @@ def build_command_registry(
     )
 
     return CommandRegistry(
-        followage_command_handler=followage_command_handler,
         ask_command_handler=ask_command_handler,
         battle_command_handler=battle_command_handler,
         roll_command_handler=roll_command_handler,

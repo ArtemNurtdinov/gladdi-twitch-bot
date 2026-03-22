@@ -2,14 +2,6 @@ from app.commands.commands_registry import CommandRegistry
 from app.platform.command.domain.command_handler import CommandHandler
 
 
-class FollowageHandler(CommandHandler):
-    def __init__(self, registry: CommandRegistry):
-        self._registry = registry
-
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        await self._registry.followage_command_handler.handle(channel_name=channel_name, display_name=user_name)
-
-
 class AskHandler(CommandHandler):
     def __init__(self, registry: CommandRegistry):
         self._registry = registry

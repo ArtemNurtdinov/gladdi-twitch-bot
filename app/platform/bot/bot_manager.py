@@ -5,6 +5,8 @@ from datetime import datetime
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
+from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
@@ -20,7 +22,6 @@ from app.platform.command.application.command_handler import (
     BottomHandler,
     BuyHandler,
     EquipmentHandler,
-    FollowageHandler,
     GuessLetterHandler,
     GuessNumberHandler,
     GuessWordHandler,
@@ -33,6 +34,7 @@ from app.platform.command.application.command_handler import (
     TransferHandler,
 )
 from app.platform.command.application.command_router import CommandRouterImpl
+from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
@@ -200,7 +202,19 @@ class BotManager:
                 send_channel_message=chat_client.send_channel_message,
             )
 
-            followage_handler = FollowageHandler(command_registry)
+            followage_command_handler: CommandHandler = FollowageCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_followage,
+                handle_follow_age_use_case=HandleFollowAgeUseCase(
+                    chat_repo_provider=providers_bundle.chat_providers.chat_repo_provider,
+                    conversation_repo_provider=providers_bundle.ai_providers.conversation_repo_provider,
+                    chat_response_use_case=chat_response_use_case,
+                    unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
+                ),
+                bot_nick=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
             ask_handler = AskHandler(command_registry)
             battle_handler = BattleHandler(command_registry, battle_waiting_user)
             roll_handler = RollHandler(command_registry, self._settings.prefix, self._settings.command_roll)
@@ -221,7 +235,7 @@ class BotManager:
 
             command_router: CommandRouter = CommandRouterImpl(self._settings.prefix)
 
-            command_router.register_command_handler(self._settings.command_followage, followage_handler)
+            command_router.register_command_handler(self._settings.command_followage, followage_command_handler)
             command_router.register_command_handler(self._settings.command_gladdi, ask_handler)
             command_router.register_command_handler(self._settings.command_fight, battle_handler)
             command_router.register_command_handler(self._settings.command_roll, roll_handler)
