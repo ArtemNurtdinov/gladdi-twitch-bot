@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 
-from app.commands.balance.application.balance_command_handler import BalanceCommandHandler
-from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
-from app.commands.balance.infrastructure.balance_command_handler import BalanceCommandHandlerImpl
 from app.commands.bonus.application.bonus_command_handler import BonusCommandHandler
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.bonus.infrastructure.bonus_command_handler import BonusCommandHandlerImpl
@@ -41,15 +38,6 @@ def build_command_registry(
 ) -> CommandRegistry:
     prefix = settings.prefix
 
-    balance_command_handler: BalanceCommandHandler = BalanceCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_balance,
-        handle_balance_use_case=HandleBalanceUseCase(
-            balance_uow=uow_factories.build_balance_uow_factory(),
-        ),
-        bot_name=bot_name,
-        post_message_fn=send_channel_message,
-    )
     bonus_command_handler: BonusCommandHandler = BonusCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_bonus,

@@ -6,6 +6,8 @@ from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponse
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_command_handler import AskCommandHandlerImpl
+from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
+from app.commands.balance.infrastructure.balance_command_handler import BalanceCommandHandlerImpl
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.commands.battle.infrastructure.battle_command_handler import BattleCommandHandlerImpl
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
@@ -22,7 +24,6 @@ from app.platform.chat.application.platform_chat_client import PlatformChatClien
 from app.platform.chat.infrastructure.chat_event_handler import ChatEventsHandlerImpl
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_handler import (
-    BalanceHandler,
     BonusHandler,
     BottomHandler,
     BuyHandler,
@@ -264,7 +265,16 @@ class BotManager:
                 post_message_fn=chat_client.send_channel_message,
             )
 
-            balance_handler = BalanceHandler(command_registry)
+            balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_balance,
+                handle_balance_use_case=HandleBalanceUseCase(
+                    balance_uow=uow_factories.build_balance_uow_factory(),
+                ),
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
             bonus_handler = BonusHandler(command_registry)
             transfer_handler = TransferHandler(command_registry, self._settings.prefix, self._settings.command_transfer)
             shop_handler = ShopHandler(command_registry)
@@ -285,7 +295,7 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_gladdi, ask_command_handler)
             command_router.register_command_handler(self._settings.command_fight, battle_command_handler)
             command_router.register_command_handler(self._settings.command_roll, roll_command_handler)
-            command_router.register_command_handler(self._settings.command_balance, balance_handler)
+            command_router.register_command_handler(self._settings.command_balance, balance_command_handler)
             command_router.register_command_handler(self._settings.command_bonus, bonus_handler)
             command_router.register_command_handler(self._settings.command_transfer, transfer_handler)
             command_router.register_command_handler(self._settings.command_shop, shop_handler)
