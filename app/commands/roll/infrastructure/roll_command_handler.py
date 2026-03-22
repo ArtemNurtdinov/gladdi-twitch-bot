@@ -3,11 +3,11 @@ from datetime import datetime
 
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.application.model import RollDTO
-from app.commands.roll.application.roll_command_handler import RollCommandHandler
 from app.moderation.application.chat_moderation_port import ChatModerationPort
+from app.platform.command.domain.command_handler import CommandHandler
 
 
-class RollCommandHandlerImpl(RollCommandHandler):
+class RollCommandHandlerImpl(CommandHandler):
     DEFAULT_COOLDOWN_SECONDS = 60
     CLEANUP_THRESHOLD_SECONDS = 300
 
@@ -40,6 +40,42 @@ class RollCommandHandlerImpl(RollCommandHandler):
 
         for nickname in nicknames:
             del self.roll_cooldowns[nickname]
+
+    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+        tail = user_message[len(self.command_prefix + self.command_name) :].strip()
+        amount = tail or None
+
+        self._cleanup_old_cooldowns()
+
+        dto = RollDTO(
+            command_prefix=self.command_prefix,
+            command_name=self.command_name,
+            channel_name=channel_name,
+            display_name=user_name,
+            user_name=user_name.lower(),
+            bot_nick=self._bot_nick.lower(),
+            occurred_at=datetime.utcnow(),
+            amount_input=amount,
+            last_roll_time=self.roll_cooldowns.get(user_name),
+        )
+
+        result = await self._handle_roll_use_case.handle(command_roll=dto)
+
+        if result.new_last_roll_time:
+            self.roll_cooldowns[user_name] = result.new_last_roll_time
+
+        for message in result.messages:
+            await self.post_message_fn(message)
+
+        if result.timeout_action:
+            await self.post_message_fn(result.timeout_action.reason)
+            await self._chat_moderation.timeout_user(
+                channel_name=channel_name,
+                moderator_name=self._bot_nick,
+                username=result.timeout_action.user_name,
+                duration_seconds=result.timeout_action.duration_seconds,
+                reason=result.timeout_action.reason,
+            )
 
     async def handle(self, channel_name: str, display_name: str, amount: str | None = None):
         self._cleanup_old_cooldowns()

@@ -2,18 +2,6 @@ from app.commands.commands_registry import CommandRegistry
 from app.platform.command.domain.command_handler import CommandHandler
 
 
-class RollHandler(CommandHandler):
-    def __init__(self, registry: CommandRegistry, prefix: str, command_name: str):
-        self._registry = registry
-        self._prefix = prefix
-        self._command_name = command_name
-
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        tail = user_message[len(self._prefix + self._command_name) :].strip()
-        amount = tail or None
-        await self._registry.roll_command_handler.handle(channel_name=channel_name, display_name=user_name, amount=amount)
-
-
 class BalanceHandler(CommandHandler):
     def __init__(self, registry: CommandRegistry):
         self._registry = registry

@@ -11,6 +11,8 @@ from app.commands.battle.infrastructure.battle_command_handler import BattleComm
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
+from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
+from app.commands.roll.infrastructure.roll_command_handler import RollCommandHandlerImpl
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.auth.platform_auth import PlatformAuth
@@ -29,7 +31,6 @@ from app.platform.command.application.command_handler import (
     GuessNumberHandler,
     GuessWordHandler,
     HelpHandler,
-    RollHandler,
     RpsHandler,
     ShopHandler,
     StatsHandler,
@@ -194,7 +195,6 @@ class BotManager:
                 settings=self._settings,
                 bot_name=self._settings.bot_name,
                 send_channel_message=chat_client.send_channel_message,
-                moderation_service=moderation_service,
             )
 
             handle_chat_message = HandleChatMessageUseCase(
@@ -251,7 +251,19 @@ class BotManager:
                 battle_waiting_user=battle_waiting_user,
             )
 
-            roll_handler = RollHandler(command_registry, self._settings.prefix, self._settings.command_roll)
+            roll_command_handler: CommandHandler = RollCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_roll,
+                handle_roll_use_case=HandleRollUseCase(
+                    unit_of_work_factory=uow_factories.build_roll_uow_factory(),
+                    roll_cooldown_use_case_provider=providers_bundle.equipment_providers.roll_cooldown_use_case_provider,
+                    calculate_timeout_use_case=providers_bundle.equipment_providers.calculate_timeout_use_case,
+                ),
+                chat_moderation=moderation_service,
+                bot_nick=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
             balance_handler = BalanceHandler(command_registry)
             bonus_handler = BonusHandler(command_registry)
             transfer_handler = TransferHandler(command_registry, self._settings.prefix, self._settings.command_transfer)
@@ -272,7 +284,7 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_followage, followage_command_handler)
             command_router.register_command_handler(self._settings.command_gladdi, ask_command_handler)
             command_router.register_command_handler(self._settings.command_fight, battle_command_handler)
-            command_router.register_command_handler(self._settings.command_roll, roll_handler)
+            command_router.register_command_handler(self._settings.command_roll, roll_command_handler)
             command_router.register_command_handler(self._settings.command_balance, balance_handler)
             command_router.register_command_handler(self._settings.command_bonus, bonus_handler)
             command_router.register_command_handler(self._settings.command_transfer, transfer_handler)

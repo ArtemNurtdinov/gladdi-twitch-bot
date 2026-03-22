@@ -16,8 +16,6 @@ from app.commands.guess.infrastructure.guess_command_handler import GuessCommand
 from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandlerImpl
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
-from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
-from app.commands.roll.infrastructure.roll_command_handler import RollCommandHandlerImpl
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.application.shop_command_handler import ShopCommandHandler
 from app.commands.shop.infrastructure.shop_command_handler import ShopCommandHandlerImpl
@@ -29,7 +27,6 @@ from app.commands.transfer.application.handle_transfer_use_case import HandleTra
 from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
 from app.commands.transfer.infrastructure.transfer_command_handler import TransferCommandHandlerImpl
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
-from app.moderation.application.moderation_service import ModerationService
 from app.platform.bot.model.bot_settings import BotSettings
 from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
@@ -41,22 +38,9 @@ def build_command_registry(
     settings: BotSettings,
     bot_name: str,
     send_channel_message: Callable[[str], Awaitable[None]],
-    moderation_service: ModerationService,
 ) -> CommandRegistry:
     prefix = settings.prefix
 
-    roll_command_handler = RollCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_roll,
-        handle_roll_use_case=HandleRollUseCase(
-            unit_of_work_factory=uow_factories.build_roll_uow_factory(),
-            roll_cooldown_use_case_provider=providers.equipment_providers.roll_cooldown_use_case_provider,
-            calculate_timeout_use_case=providers.equipment_providers.calculate_timeout_use_case,
-        ),
-        chat_moderation=moderation_service,
-        bot_nick=bot_name,
-        post_message_fn=send_channel_message,
-    )
     balance_command_handler: BalanceCommandHandler = BalanceCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_balance,
