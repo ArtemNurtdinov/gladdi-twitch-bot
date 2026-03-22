@@ -4,6 +4,8 @@ from datetime import datetime
 
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
+from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.commands.chat.infrastructure.chat_event_handler import ChatEventsHandlerImpl
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
@@ -34,7 +36,6 @@ from app.platform.command.application.prefix_command_router import PrefixCommand
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.platform.providers import PlatformApiClient
-from bootstrap.chat_composition import build_chat_event_handler
 from bootstrap.commands_composition import build_command_registry
 from bootstrap.jobs_composition import build_background_tasks
 from bootstrap.providers_bundle import build_providers_bundle
@@ -186,10 +187,15 @@ class BotManager:
                 send_channel_message=chat_client.send_channel_message,
             )
 
-            chat_events_handler = build_chat_event_handler(
-                providers=providers_bundle,
-                uow_factories=uow_factories,
+            handle_chat_message = HandleChatMessageUseCase(
+                unit_of_work_factory=uow_factories.build_chat_message_uow_factory(),
+                get_intent_from_text_use_case=providers_bundle.ai_providers.get_intent_use_case,
+                prompt_service=providers_bundle.ai_providers.prompt_service,
                 chat_response_use_case=chat_response_use_case,
+            )
+
+            chat_events_handler = ChatEventsHandlerImpl(
+                handle_chat_message_use_case=handle_chat_message,
                 send_channel_message=chat_client.send_channel_message,
             )
 
