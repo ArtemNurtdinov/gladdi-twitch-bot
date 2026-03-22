@@ -10,7 +10,28 @@ from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.chat.platform_chat_client import PlatformChatClient
-from app.platform.command.application.command_router import build_twitch_command_router
+from app.platform.command.application.command_router import (
+    AskHandler,
+    BalanceHandler,
+    BattleHandler,
+    BonusHandler,
+    BottomHandler,
+    BuyHandler,
+    EquipmentHandler,
+    FollowageHandler,
+    GuessLetterHandler,
+    GuessNumberHandler,
+    GuessWordHandler,
+    HelpHandler,
+    RollHandler,
+    RpsHandler,
+    ShopHandler,
+    StatsHandler,
+    TopHandler,
+    TransferHandler,
+    build_twitch_command_router,
+)
+from app.platform.command.application.prefix_command_router import PrefixCommandRouter
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.platform.providers import PlatformApiClient
@@ -172,6 +193,47 @@ class BotManager:
                 chat_response_use_case=chat_response_use_case,
                 send_channel_message=chat_client.send_channel_message,
             )
+
+            command_router = PrefixCommandRouter(self._settings.prefix)
+
+            followage_handler = FollowageHandler(command_registry)
+            ask_handler = AskHandler(command_registry)
+            battle_handler = BattleHandler(command_registry, battle_waiting_user)
+            roll_handler = RollHandler(command_registry, self._settings.prefix, self._settings.command_roll)
+            balance_handler = BalanceHandler(command_registry)
+            bonus_handler = BonusHandler(command_registry)
+            transfer_handler = TransferHandler(command_registry, self._settings.prefix, self._settings.command_transfer)
+            shop_handler = ShopHandler(command_registry)
+            buy_handler = BuyHandler(command_registry, self._settings.prefix, self._settings.command_buy)
+            equipment_handler = EquipmentHandler(command_registry)
+            top_handler = TopHandler(command_registry)
+            bottom_handler = BottomHandler(command_registry)
+            help_handler = HelpHandler(command_registry)
+            stats_handler = StatsHandler(command_registry)
+            guess_number_handler = GuessNumberHandler(command_registry, self._settings.prefix, self._settings.command_guess)
+            guess_letter_handler = GuessLetterHandler(command_registry, self._settings.prefix, self._settings.command_guess_letter)
+            guess_word_handler = GuessWordHandler(command_registry, self._settings.prefix, self._settings.command_guess_word)
+            rps_handler = RpsHandler(command_registry, self._settings.prefix, self._settings.command_rps)
+
+            command_router.register(self._settings.command_followage, followage_handler)
+            command_router.register(self._settings.command_gladdi, ask_handler)
+            command_router.register(self._settings.command_fight, battle_handler)
+            command_router.register(self._settings.command_roll, roll_handler)
+            command_router.register(self._settings.command_balance, balance_handler)
+            command_router.register(self._settings.command_bonus, bonus_handler)
+            command_router.register(self._settings.command_transfer, transfer_handler)
+            command_router.register(self._settings.command_shop, shop_handler)
+            command_router.register(self._settings.command_buy, buy_handler)
+            command_router.register(self._settings.command_equipment, equipment_handler)
+            command_router.register(self._settings.command_top, top_handler)
+            command_router.register(self._settings.command_bottom, bottom_handler)
+            command_router.register(self._settings.command_help, help_handler)
+            command_router.register(self._settings.command_stats, stats_handler)
+            command_router.register(self._settings.command_guess, guess_number_handler)
+            command_router.register(self._settings.command_guess_letter, guess_letter_handler)
+            command_router.register(self._settings.command_guess_word, guess_word_handler)
+            command_router.register(self._settings.command_rps, rps_handler)
+
             command_router = build_twitch_command_router(self._settings, command_registry, battle_waiting_user)
 
             chat_client.set_chat_event_handler(chat_events_handler)
