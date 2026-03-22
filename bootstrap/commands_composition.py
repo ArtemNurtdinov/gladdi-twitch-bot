@@ -3,8 +3,6 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 
 from app.commands.commands_registry import CommandRegistry
-from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
-from app.commands.guess.infrastructure.guess_command_handler import GuessCommandHandlerImpl
 from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandlerImpl
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.platform.bot.model.bot_settings import BotSettings
@@ -21,18 +19,6 @@ def build_command_registry(
 ) -> CommandRegistry:
     prefix = settings.prefix
 
-    guess_command_handler = GuessCommandHandlerImpl(
-        command_prefix=prefix,
-        command_guess=settings.command_guess,
-        command_guess_letter=settings.command_guess_letter,
-        command_guess_word=settings.command_guess_word,
-        handle_guess_use_case=HandleGuessUseCase(
-            minigame_repository=providers.minigame_providers.minigame_repository,
-            guess_uow=uow_factories.build_guess_uow_factory(),
-        ),
-        bot_nick=bot_name,
-        post_message_fn=send_channel_message,
-    )
     rps_command_handler = RpsCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_rps,
@@ -45,6 +31,5 @@ def build_command_registry(
     )
 
     return CommandRegistry(
-        guess_command_handler=guess_command_handler,
         rps_command_handler=rps_command_handler,
     )

@@ -17,6 +17,9 @@ from app.commands.equipment.application.handle_equipment_use_case import HandleE
 from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
+from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
+from app.commands.guess.infrastructure.guess_number_command_handler import GuessNumberCommandHandlerImpl
+from app.commands.guess.infrastructure.guess_word_command_handler import GuessWordCommandHandlerImpl
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
@@ -40,9 +43,6 @@ from app.platform.chat.application.platform_chat_client import PlatformChatClien
 from app.platform.chat.infrastructure.chat_event_handler import ChatEventsHandlerImpl
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_handler import (
-    GuessLetterHandler,
-    GuessNumberHandler,
-    GuessWordHandler,
     RpsHandler,
 )
 from app.platform.command.application.command_router import CommandRouterImpl
@@ -389,9 +389,39 @@ class BotManager:
                 post_message_fn=chat_client.send_channel_message,
             )
 
-            guess_number_handler = GuessNumberHandler(command_registry, self._settings.prefix, self._settings.command_guess)
-            guess_letter_handler = GuessLetterHandler(command_registry, self._settings.prefix, self._settings.command_guess_letter)
-            guess_word_handler = GuessWordHandler(command_registry, self._settings.prefix, self._settings.command_guess_word)
+            guess_number_command_handler: CommandHandler = GuessNumberCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_guess,
+                handle_guess_use_case=HandleGuessUseCase(
+                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    guess_uow=uow_factories.build_guess_uow_factory(),
+                ),
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
+            guess_letter_command_handler: CommandHandler = GuessNumberCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_guess_letter,
+                handle_guess_use_case=HandleGuessUseCase(
+                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    guess_uow=uow_factories.build_guess_uow_factory(),
+                ),
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
+            guess_word_command_handler: CommandHandler = GuessWordCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_guess_word,
+                handle_guess_use_case=HandleGuessUseCase(
+                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    guess_uow=uow_factories.build_guess_uow_factory(),
+                ),
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
             rps_handler = RpsHandler(command_registry, self._settings.prefix, self._settings.command_rps)
 
             command_router: CommandRouter = CommandRouterImpl(self._settings.prefix)
@@ -410,9 +440,9 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_bottom, bottom_command_handler)
             command_router.register_command_handler(self._settings.command_help, help_command_handler)
             command_router.register_command_handler(self._settings.command_stats, stats_command_handler)
-            command_router.register_command_handler(self._settings.command_guess, guess_number_handler)
-            command_router.register_command_handler(self._settings.command_guess_letter, guess_letter_handler)
-            command_router.register_command_handler(self._settings.command_guess_word, guess_word_handler)
+            command_router.register_command_handler(self._settings.command_guess, guess_number_command_handler)
+            command_router.register_command_handler(self._settings.command_guess_letter, guess_letter_command_handler)
+            command_router.register_command_handler(self._settings.command_guess_word, guess_word_command_handler)
             command_router.register_command_handler(self._settings.command_rps, rps_handler)
 
             chat_client.set_chat_event_handler(chat_events_handler)
