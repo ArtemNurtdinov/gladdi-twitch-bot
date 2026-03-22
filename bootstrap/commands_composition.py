@@ -3,9 +3,6 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
-from app.commands.ask.application.ask_command_handler import AskCommandHandler
-from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
-from app.commands.ask.infrastructure.ask_command_handler import AskCommandHandlerImpl
 from app.commands.balance.application.balance_command_handler import BalanceCommandHandler
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.balance.infrastructure.balance_command_handler import BalanceCommandHandlerImpl
@@ -57,20 +54,7 @@ def build_command_registry(
         platform_repository=platform_repository,
         user_cache=providers.user_providers.user_cache,
     )
-    ask_uow_factory = uow_factories.build_ask_uow_factory()
 
-    ask_command_handler: AskCommandHandler = AskCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_gladdi,
-        handle_ask_use_case=HandleAskUseCase(
-            get_intent_from_text_use_case=providers.ai_providers.get_intent_use_case,
-            prompt_service=providers.ai_providers.prompt_service,
-            unit_of_work_factory=ask_uow_factory,
-            chat_response_use_case=chat_response_use_case,
-        ),
-        post_message_fn=send_channel_message,
-        bot_nick=bot_name,
-    )
     battle_command_handler: BattleCommandHandler = BattleCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_fight,

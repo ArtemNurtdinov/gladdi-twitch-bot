@@ -1,4 +1,3 @@
-from app.commands.ask.application.ask_command_handler import AskCommandHandler
 from app.commands.balance.application.balance_command_handler import BalanceCommandHandler
 from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.bonus.application.bonus_command_handler import BonusCommandHandler
@@ -16,7 +15,6 @@ from app.commands.transfer.application.transfer_command_handler import TransferC
 class CommandRegistry:
     def __init__(
         self,
-        ask_command_handler: AskCommandHandler,
         battle_command_handler: BattleCommandHandler,
         roll_command_handler: RollCommandHandler,
         balance_command_handler: BalanceCommandHandler,
@@ -30,7 +28,6 @@ class CommandRegistry:
         guess_command_handler: GuessCommandHandler,
         rps_command_handler: RpsCommandHandler,
     ):
-        self.ask_command_handler = ask_command_handler
         self.battle_command_handler = battle_command_handler
         self.roll_command_handler = roll_command_handler
         self.balance_command_handler = balance_command_handler
