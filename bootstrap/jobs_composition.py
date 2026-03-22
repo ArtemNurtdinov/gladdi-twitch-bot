@@ -16,11 +16,11 @@ from app.minigame.application.use_case.start_number_guess_game_use_case import S
 from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.notification.infrastructure.repository import NotificationRepositoryImpl
-from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
-from app.platform.application.token_checker_job import TokenCheckerJob
+from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
+from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
-from app.platform.chat.domain.chat_client import ChatClient
+from app.platform.chat.domain.platform_chat_client import PlatformChatClient
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
@@ -40,7 +40,7 @@ def build_background_tasks(
     bot_name: str,
     chat_summary_state: ChatSummaryState,
     chat_response_use_case: ChatResponseUseCase,
-    outbound: ChatClient,
+    outbound: PlatformChatClient,
     platform_auth: PlatformAuth,
     platform_repository: PlatformRepository,
 ) -> BackgroundTasks:

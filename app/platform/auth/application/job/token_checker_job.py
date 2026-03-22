@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from app.platform.application.handle_token_checker_use_case import HandleTokenCheckerUseCase
+from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from core.background.task_runner import BackgroundTaskRunner
 
 logger = logging.getLogger(__name__)

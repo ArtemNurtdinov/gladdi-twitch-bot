@@ -40,6 +40,7 @@ class TwitchAuth(PlatformAuth):
 
         url = "https://id.twitch.tv/oauth2/validate"
         headers = {"Authorization": f"OAuth {self.access_token}"}
+
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.get(url, headers=headers)
 
@@ -49,10 +50,7 @@ class TwitchAuth(PlatformAuth):
             self.logger.info("Токен действителен")
             return expires_in > 4000
         elif response.status_code == 401:
-            self.logger.info("Токен истек или недействителен.")
-            self.logger.info("Ответ от сервера:", response.json())
+            self.logger.info("Токен истек или недействителен.", response.json())
         else:
-            self.logger.info("Произошла ошибка при проверке токена.")
-            self.logger.info("Статус код:", response.status_code)
-            self.logger.info("Ответ от сервера:", response.json())
+            self.logger.info("Произошла ошибка при проверке токена.", response.json())
         return False

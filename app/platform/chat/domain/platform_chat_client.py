@@ -10,7 +10,7 @@ class ChatEventsHandler(Protocol):
     async def handle(self, channel_name: str, display_name: str, message: str, bot_name: str) -> None: ...
 
 
-class ChatClient(ABC):
+class PlatformChatClient(ABC):
     @abstractmethod
     def set_router(self, router: CommandRouter): ...
     @abstractmethod

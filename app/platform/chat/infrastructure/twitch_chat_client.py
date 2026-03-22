@@ -9,10 +9,10 @@ from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.commands.domain.interfaces import ChatContext, ChatMessage, CommandRouter
 from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.chat.domain.chat_client import ChatClient, ChatEventsHandler
+from app.platform.chat.domain.platform_chat_client import ChatEventsHandler, PlatformChatClient
 
 
-class TwitchChatClient(Client, ChatClient):
+class TwitchChatClient(Client, PlatformChatClient):
     TWITCH_MESSAGE_LENGTH_MAX = 500
 
     def __init__(self, auth: PlatformAuth, channel_name: str, command_prefix: str, bot_id: str, bot_name: str):

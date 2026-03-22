@@ -8,7 +8,7 @@ from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
-from app.platform.chat.domain.chat_client import ChatClient
+from app.platform.chat.domain.platform_chat_client import PlatformChatClient
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
@@ -32,7 +32,7 @@ class BotManager:
 
         self._background_tasks: BackgroundTasks | None = None
 
-        self._chat_client: ChatClient | None = None
+        self._chat_client: PlatformChatClient | None = None
         self._task: asyncio.Task | None = None
         self._status: BotStatusEnum = BotStatusEnum.STOPPED
         self._started_at: datetime | None = None
@@ -125,7 +125,7 @@ class BotManager:
             bot_user = await platform_repository.get_user_by_login(self._settings.bot_name)
             bot_user_id = bot_user.id if bot_user else None
 
-            chat_client: ChatClient = TwitchChatClient(
+            chat_client: PlatformChatClient = TwitchChatClient(
                 auth=platform_auth,
                 channel_name=self._settings.channel_name,
                 command_prefix=self._settings.prefix,
