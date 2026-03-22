@@ -334,7 +334,7 @@ class BotManager:
 
             top_command_handler: CommandHandler = TopCommandHandlerImpl(
                 command_prefix=self._settings.prefix,
-                command_top=self._settings.command_top,
+                command_name=self._settings.command_top,
                 handle_top_bottom_use_case=HandleTopBottomUseCase(
                     unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
                 ),
@@ -344,7 +344,7 @@ class BotManager:
 
             bottom_command_handler: CommandHandler = BottomCommandHandlerImpl(
                 command_prefix=self._settings.prefix,
-                command_bottom=self._settings.command_bottom,
+                command_name=self._settings.command_bottom,
                 handle_top_bottom_use_case=HandleTopBottomUseCase(
                     unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
                 ),

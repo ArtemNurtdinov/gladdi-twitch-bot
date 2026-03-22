@@ -13,13 +13,13 @@ class TopCommandHandlerImpl(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
-        command_top: str,
+        command_name: str,
         handle_top_bottom_use_case: HandleTopBottomUseCase,
         bot_name: str,
         post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
-        self.command_top = command_top
+        self._command_name = command_name
         self._handle_top_bottom_use_case = handle_top_bottom_use_case
         self._bot_name = bot_name
         self.post_message_fn = post_message_fn
@@ -27,9 +27,9 @@ class TopCommandHandlerImpl(CommandHandler):
         self.bottom_limit = self._BOTTOM_LIMIT
 
     async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        dto = TopDTO(
+        top = TopDTO(
             command_prefix=self.command_prefix,
-            command_name=self.command_top,
+            command_name=self._command_name,
             channel_name=channel_name,
             user_name=user_name.lower(),
             bot_nick=self._bot_name.lower(),
@@ -37,6 +37,6 @@ class TopCommandHandlerImpl(CommandHandler):
             limit=self.top_limit,
         )
 
-        result = await self._handle_top_bottom_use_case.handle_top(command_top=dto)
+        result = await self._handle_top_bottom_use_case.handle_top(command_top=top)
 
         await self.post_message_fn(result)
