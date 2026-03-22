@@ -2,30 +2,6 @@ from app.commands.commands_registry import CommandRegistry
 from app.platform.command.domain.command_handler import CommandHandler
 
 
-class TransferHandler(CommandHandler):
-    def __init__(self, registry: CommandRegistry, prefix: str, command_name: str):
-        self._registry = registry
-        self._prefix = prefix
-        self._command_name = command_name
-
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        tail = user_message[len(self._prefix + self._command_name) :].strip()
-        recipient = None
-        amount = None
-        if tail:
-            parts = tail.split()
-            if parts:
-                recipient = parts[0]
-                if len(parts) > 1:
-                    amount = parts[1]
-        await self._registry.transfer_command_handler.handle(
-            channel_name=channel_name,
-            sender_display_name=user_name,
-            recipient=recipient,
-            amount=amount,
-        )
-
-
 class ShopHandler(CommandHandler):
     def __init__(self, registry: CommandRegistry):
         self._registry = registry

@@ -17,9 +17,6 @@ from app.commands.stats.application.handle_stats_use_case import HandleStatsUseC
 from app.commands.stats.infrastructure.stats_command_handler import StatsCommandHandlerImpl
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.infrastructure.top_bottom_command_handler import TopBottomCommandHandlerImpl
-from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
-from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
-from app.commands.transfer.infrastructure.transfer_command_handler import TransferCommandHandlerImpl
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.platform.bot.model.bot_settings import BotSettings
 from bootstrap.providers_bundle import ProvidersBundle
@@ -35,15 +32,6 @@ def build_command_registry(
 ) -> CommandRegistry:
     prefix = settings.prefix
 
-    transfer_command_handler: TransferCommandHandler = TransferCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_transfer,
-        handle_transfer_use_case=HandleTransferUseCase(
-            unit_of_work_factory=uow_factories.build_transfer_uow_factory(),
-        ),
-        bot_nick=bot_name,
-        post_message_fn=send_channel_message,
-    )
     shop_command_handler: ShopCommandHandler = ShopCommandHandlerImpl(
         command_prefix=prefix,
         command_shop_name=settings.command_shop,

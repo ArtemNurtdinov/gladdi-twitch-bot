@@ -3,10 +3,10 @@ from datetime import datetime
 
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.application.model import TransferDTO
-from app.commands.transfer.application.transfer_command_handler import TransferCommandHandler
+from app.platform.command.domain.command_handler import CommandHandler
 
 
-class TransferCommandHandlerImpl(TransferCommandHandler):
+class TransferCommandHandlerImpl(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
@@ -21,11 +21,21 @@ class TransferCommandHandlerImpl(TransferCommandHandler):
         self._bot_nick = bot_nick
         self.post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, sender_display_name: str, recipient: str | None = None, amount: str | None = None):
+    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+        tail = user_message[len(self.command_prefix + self.command_name) :].strip()
+        recipient = None
+        amount = None
+        if tail:
+            parts = tail.split()
+            if parts:
+                recipient = parts[0]
+                if len(parts) > 1:
+                    amount = parts[1]
+
         transfer = TransferDTO(
             channel_name=channel_name,
-            display_name=sender_display_name,
-            user_name=sender_display_name.lower(),
+            display_name=user_name,
+            user_name=user_name.lower(),
             bot_nick=self._bot_nick.lower(),
             occurred_at=datetime.utcnow(),
             recipient_input=recipient,
