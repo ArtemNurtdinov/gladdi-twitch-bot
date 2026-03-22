@@ -2,54 +2,37 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
-from app.commands.top_bottom.application.model import BottomDTO, TopDTO
-from app.commands.top_bottom.application.top_bottom_command_handler import TopBottomCommandHandler
+from app.commands.top_bottom.application.model import BottomDTO
+from app.platform.command.domain.command_handler import CommandHandler
 
 
-class TopBottomCommandHandlerImpl(TopBottomCommandHandler):
+class BottomCommandHandlerImpl(CommandHandler):
     _TOP_LIMIT = 7
     _BOTTOM_LIMIT = 10
 
     def __init__(
         self,
         command_prefix: str,
-        command_top: str,
         command_bottom: str,
         handle_top_bottom_use_case: HandleTopBottomUseCase,
-        bot_nick: str,
+        bot_name: str,
         post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
-        self.command_top = command_top
         self.command_bottom = command_bottom
         self._handle_top_bottom_use_case = handle_top_bottom_use_case
-        self._bot_nick = bot_nick
+        self._bot_name = bot_name
         self.post_message_fn = post_message_fn
         self.top_limit = self._TOP_LIMIT
         self.bottom_limit = self._BOTTOM_LIMIT
 
-    async def handle_top(self, channel_name: str, display_name: str):
-        dto = TopDTO(
-            command_prefix=self.command_prefix,
-            command_name=self.command_top,
-            channel_name=channel_name,
-            user_name=display_name.lower(),
-            bot_nick=self._bot_nick.lower(),
-            occurred_at=datetime.utcnow(),
-            limit=self.top_limit,
-        )
-
-        result = await self._handle_top_bottom_use_case.handle_top(command_top=dto)
-
-        await self.post_message_fn(result)
-
-    async def handle_bottom(self, channel_name: str, display_name: str):
+    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
         command_bottom = BottomDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_bottom,
             channel_name=channel_name,
-            user_name=display_name.lower(),
-            bot_nick=self._bot_nick.lower(),
+            user_name=user_name.lower(),
+            bot_nick=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             limit=self.bottom_limit,
         )

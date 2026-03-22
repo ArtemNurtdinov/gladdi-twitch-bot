@@ -10,8 +10,6 @@ from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.infrastructure.stats_command_handler import StatsCommandHandlerImpl
-from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
-from app.commands.top_bottom.infrastructure.top_bottom_command_handler import TopBottomCommandHandlerImpl
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.platform.bot.model.bot_settings import BotSettings
 from bootstrap.providers_bundle import ProvidersBundle
@@ -27,16 +25,6 @@ def build_command_registry(
 ) -> CommandRegistry:
     prefix = settings.prefix
 
-    top_bottom_command_handler = TopBottomCommandHandlerImpl(
-        command_prefix=prefix,
-        command_top=settings.command_top,
-        command_bottom=settings.command_bottom,
-        handle_top_bottom_use_case=HandleTopBottomUseCase(
-            unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
-        ),
-        bot_nick=bot_name,
-        post_message_fn=send_channel_message,
-    )
     stats_command_handler = StatsCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_stats,
@@ -93,7 +81,6 @@ def build_command_registry(
     )
 
     return CommandRegistry(
-        top_bottom_command_handler=top_bottom_command_handler,
         stats_command_handler=stats_command_handler,
         help_command_handler=help_command_handler,
         guess_command_handler=guess_command_handler,

@@ -22,6 +22,9 @@ from app.commands.roll.infrastructure.roll_command_handler import RollCommandHan
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.infrastructure.buy_command_handler import BuyCommandHandlerImpl
 from app.commands.shop.infrastructure.shop_command_handler import ShopCommandHandlerImpl
+from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
+from app.commands.top_bottom.infrastructure.bottom_command_handler import BottomCommandHandlerImpl
+from app.commands.top_bottom.infrastructure.top_command_handler import TopCommandHandlerImpl
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.infrastructure.transfer_command_handler import TransferCommandHandlerImpl
 from app.moderation.application.moderation_service import ModerationService
@@ -33,14 +36,12 @@ from app.platform.chat.application.platform_chat_client import PlatformChatClien
 from app.platform.chat.infrastructure.chat_event_handler import ChatEventsHandlerImpl
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_handler import (
-    BottomHandler,
     GuessLetterHandler,
     GuessNumberHandler,
     GuessWordHandler,
     HelpHandler,
     RpsHandler,
     StatsHandler,
-    TopHandler,
 )
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.domain.command_handler import CommandHandler
@@ -331,8 +332,26 @@ class BotManager:
                 post_message_fn=chat_client.send_channel_message,
             )
 
-            top_handler = TopHandler(command_registry)
-            bottom_handler = BottomHandler(command_registry)
+            top_command_handler: CommandHandler = TopCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_top=self._settings.command_top,
+                handle_top_bottom_use_case=HandleTopBottomUseCase(
+                    unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
+                ),
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
+            bottom_command_handler: CommandHandler = BottomCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_bottom=self._settings.command_bottom,
+                handle_top_bottom_use_case=HandleTopBottomUseCase(
+                    unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
+                ),
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
             help_handler = HelpHandler(command_registry)
             stats_handler = StatsHandler(command_registry)
             guess_number_handler = GuessNumberHandler(command_registry, self._settings.prefix, self._settings.command_guess)
@@ -352,8 +371,8 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_shop, shop_command_handler)
             command_router.register_command_handler(self._settings.command_buy, buy_command_handler)
             command_router.register_command_handler(self._settings.command_equipment, equipment_command_handler)
-            command_router.register_command_handler(self._settings.command_top, top_handler)
-            command_router.register_command_handler(self._settings.command_bottom, bottom_handler)
+            command_router.register_command_handler(self._settings.command_top, top_command_handler)
+            command_router.register_command_handler(self._settings.command_bottom, bottom_command_handler)
             command_router.register_command_handler(self._settings.command_help, help_handler)
             command_router.register_command_handler(self._settings.command_stats, stats_handler)
             command_router.register_command_handler(self._settings.command_guess, guess_number_handler)
