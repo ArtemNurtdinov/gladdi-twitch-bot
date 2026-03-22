@@ -1,5 +1,4 @@
 from app.commands.balance.application.balance_command_handler import BalanceCommandHandler
-from app.commands.battle.application.battle_command_handler import BattleCommandHandler
 from app.commands.bonus.application.bonus_command_handler import BonusCommandHandler
 from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandler
 from app.commands.guess.application.guess_command_handler import GuessCommandHandler
@@ -15,7 +14,6 @@ from app.commands.transfer.application.transfer_command_handler import TransferC
 class CommandRegistry:
     def __init__(
         self,
-        battle_command_handler: BattleCommandHandler,
         roll_command_handler: RollCommandHandler,
         balance_command_handler: BalanceCommandHandler,
         bonus_command_handler: BonusCommandHandler,
@@ -28,7 +26,6 @@ class CommandRegistry:
         guess_command_handler: GuessCommandHandler,
         rps_command_handler: RpsCommandHandler,
     ):
-        self.battle_command_handler = battle_command_handler
         self.roll_command_handler = roll_command_handler
         self.balance_command_handler = balance_command_handler
         self.bonus_command_handler = bonus_command_handler

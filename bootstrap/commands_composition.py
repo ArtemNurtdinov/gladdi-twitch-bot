@@ -2,13 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 
-from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.commands.balance.application.balance_command_handler import BalanceCommandHandler
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.balance.infrastructure.balance_command_handler import BalanceCommandHandlerImpl
-from app.commands.battle.application.battle_command_handler import BattleCommandHandler
-from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
-from app.commands.battle.infrastructure.battle_command_handler import BattleCommandHandlerImpl
 from app.commands.bonus.application.bonus_command_handler import BonusCommandHandler
 from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.commands.bonus.infrastructure.bonus_command_handler import BonusCommandHandlerImpl
@@ -35,7 +31,6 @@ from app.commands.transfer.infrastructure.transfer_command_handler import Transf
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.bot.model.bot_settings import BotSettings
-from app.platform.domain.repository import PlatformRepository
 from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
 
@@ -45,28 +40,11 @@ def build_command_registry(
     uow_factories: UowFactories,
     settings: BotSettings,
     bot_name: str,
-    chat_response_use_case: ChatResponseUseCase,
-    platform_repository: PlatformRepository,
     send_channel_message: Callable[[str], Awaitable[None]],
+    moderation_service: ModerationService,
 ) -> CommandRegistry:
     prefix = settings.prefix
-    moderation_service = ModerationService(
-        platform_repository=platform_repository,
-        user_cache=providers.user_providers.user_cache,
-    )
 
-    battle_command_handler: BattleCommandHandler = BattleCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_fight,
-        handle_battle_use_case=HandleBattleUseCase(
-            battle_uow=uow_factories.build_battle_uow_factory(),
-            chat_response_use_case=chat_response_use_case,
-            calculate_timeout_use_case=providers.equipment_providers.calculate_timeout_use_case,
-        ),
-        chat_moderation=moderation_service,
-        bot_name=bot_name,
-        post_message_fn=send_channel_message,
-    )
     roll_command_handler = RollCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_roll,

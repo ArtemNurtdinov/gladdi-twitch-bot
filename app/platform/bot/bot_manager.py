@@ -6,9 +6,12 @@ from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponse
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_command_handler import AskCommandHandlerImpl
+from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
+from app.commands.battle.infrastructure.battle_command_handler import BattleCommandHandlerImpl
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
+from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
@@ -18,7 +21,6 @@ from app.platform.chat.infrastructure.chat_event_handler import ChatEventsHandle
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_handler import (
     BalanceHandler,
-    BattleHandler,
     BonusHandler,
     BottomHandler,
     BuyHandler,
@@ -181,14 +183,18 @@ class BotManager:
                 platform_repository=platform_repository,
             )
 
+            moderation_service = ModerationService(
+                platform_repository=platform_repository,
+                user_cache=providers_bundle.user_providers.user_cache,
+            )
+
             command_registry = build_command_registry(
                 providers=providers_bundle,
                 uow_factories=uow_factories,
                 settings=self._settings,
                 bot_name=self._settings.bot_name,
-                chat_response_use_case=chat_response_use_case,
-                platform_repository=platform_repository,
                 send_channel_message=chat_client.send_channel_message,
+                moderation_service=moderation_service,
             )
 
             handle_chat_message = HandleChatMessageUseCase(
@@ -231,7 +237,20 @@ class BotManager:
                 bot_nick=self._settings.bot_name,
             )
 
-            battle_handler = BattleHandler(command_registry, battle_waiting_user)
+            battle_command_handler: CommandHandler = BattleCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_fight,
+                handle_battle_use_case=HandleBattleUseCase(
+                    battle_uow=uow_factories.build_battle_uow_factory(),
+                    chat_response_use_case=chat_response_use_case,
+                    calculate_timeout_use_case=providers_bundle.equipment_providers.calculate_timeout_use_case,
+                ),
+                chat_moderation=moderation_service,
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+                battle_waiting_user=battle_waiting_user,
+            )
+
             roll_handler = RollHandler(command_registry, self._settings.prefix, self._settings.command_roll)
             balance_handler = BalanceHandler(command_registry)
             bonus_handler = BonusHandler(command_registry)
@@ -252,7 +271,7 @@ class BotManager:
 
             command_router.register_command_handler(self._settings.command_followage, followage_command_handler)
             command_router.register_command_handler(self._settings.command_gladdi, ask_command_handler)
-            command_router.register_command_handler(self._settings.command_fight, battle_handler)
+            command_router.register_command_handler(self._settings.command_fight, battle_command_handler)
             command_router.register_command_handler(self._settings.command_roll, roll_handler)
             command_router.register_command_handler(self._settings.command_balance, balance_handler)
             command_router.register_command_handler(self._settings.command_bonus, bonus_handler)

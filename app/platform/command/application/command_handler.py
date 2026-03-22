@@ -2,25 +2,6 @@ from app.commands.commands_registry import CommandRegistry
 from app.platform.command.domain.command_handler import CommandHandler
 
 
-class AskHandler(CommandHandler):
-    def __init__(self, registry: CommandRegistry):
-        self._registry = registry
-
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        await self._registry.ask_command_handler.handle(channel_name, user_message, user_name)
-
-
-class BattleHandler(CommandHandler):
-    def __init__(self, registry: CommandRegistry, battle_waiting_user: dict[str, str | None]):
-        self._registry = registry
-        self._battle_waiting_user = battle_waiting_user
-
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        await self._registry.battle_command_handler.handle(
-            channel_name=channel_name, display_name=user_name, battle_waiting_user=self._battle_waiting_user
-        )
-
-
 class RollHandler(CommandHandler):
     def __init__(self, registry: CommandRegistry, prefix: str, command_name: str):
         self._registry = registry
