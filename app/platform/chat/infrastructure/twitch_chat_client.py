@@ -8,7 +8,8 @@ from twitchio.eventsub import ChatMessageSubscription
 from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.chat.platform_chat_client import ChatEventsHandler, PlatformChatClient
+from app.platform.chat.application.chat_events_handler import ChatEventsHandler
+from app.platform.chat.application.platform_chat_client import PlatformChatClient
 from app.platform.command.domain.command_router import CommandRouter
 
 
@@ -46,99 +47,14 @@ class TwitchChatClient(Client, PlatformChatClient):
         await self._ensure_broadcaster_id()
         await self._subscribe_chat(reason="startup")
 
-    async def start_chat(self):
-        await super().start(with_adapter=False, load_tokens=False, save_tokens=False)
-
-    async def stop_chat(self):
-        await super().close()
-
-    async def event_ready(self) -> None:
-        pass
-
-    async def event_message(self, payload: EventSubChatMessage) -> None:
-        message_id = payload.id
-        chatter = getattr(payload, "chatter", None)
-        author_name = chatter.display_name or chatter.name or ""
-        text_message = payload.text
-
-        if message_id and message_id in self._recent_message_ids:
-            return
-
-        if message_id:
-            self._recent_message_ids.append(message_id)
-
-        if not self._command_router:
-            return
-
-        if chatter is None:
-            return
-
-        handled = False
-        try:
-            handled = await self._command_router.dispatch_command_handler(self._channel_name, author_name, text_message)
-        except Exception:
-            pass
-        if handled:
-            return
-
-        if self._is_self_message(payload):
-            return
-
-        if payload.text.startswith(self._command_prefix):
-            return
-
-        if self._chat_event_handler:
-            try:
-                await self._chat_event_handler.handle(
-                    channel_name=self._channel_name,
-                    display_name=author_name,
-                    message=payload.text,
-                    bot_name=self._bot_name,
-                )
-            except Exception:
-                pass
-
-    async def event_websocket_welcome(self, payload: WebsocketWelcome) -> None:
-        session_id = payload.id
-        old_session = self._subscribed_session_id
-
-        if not self._has_active_subscription and self._subscribed_session_id is None:
-            try:
-                await asyncio.wait_for(self._startup_subscription_done.wait(), timeout=5.0)
-            except TimeoutError:
-                pass
-
-        async with self._eventsub_lock:
-            if self._has_active_subscription and self._subscribed_session_id is None:
-                self._subscribed_session_id = session_id
-                return
-
-            if self._has_active_subscription and old_session != session_id:
-                self._has_active_subscription = False
-                asyncio.create_task(self._subscribe_chat(session_id=session_id, reason="reconnect"))
-                return
-
-            if session_id == self._subscribed_session_id:
-                return
-
-            if not self._has_active_subscription:
-                asyncio.create_task(self._subscribe_chat(session_id=session_id, reason="welcome"))
-
     async def _register_token(self) -> None:
-        if self._token_user_id:
-            return
-        validate = await self.add_token(self._auth.access_token, self._auth.refresh_token)
-        self._token_user_id = validate.user_id
+        payload = await self.add_token(self._auth.access_token, self._auth.refresh_token)
+        self._token_user_id = payload.user_id
 
     async def _ensure_broadcaster_id(self) -> None:
-        if self._broadcaster_id:
-            return
         users = await self.fetch_users(logins=[self._channel_name])
         if users:
             self._broadcaster_id = users[0].id
-
-        if not self._broadcaster_id and self._token_user_id:
-            self._broadcaster_id = self._token_user_id
 
     async def _subscribe_chat_message(self) -> None:
         if not self._broadcaster_id or not self._token_user_id:
@@ -166,6 +82,79 @@ class TwitchChatClient(Client, PlatformChatClient):
 
             finally:
                 self._subscription_in_progress = False
+
+    async def start_chat(self):
+        await super().start(with_adapter=False, load_tokens=False, save_tokens=False)
+
+    async def stop_chat(self):
+        await super().close()
+
+    async def event_ready(self) -> None:
+        pass
+
+    async def event_message(self, payload: EventSubChatMessage) -> None:
+        message_id = payload.id
+        chatter = payload.chatter
+        author_name = chatter.display_name or chatter.name
+        text_message = payload.text
+
+        if not message_id or not author_name:
+            return
+
+        if message_id in self._recent_message_ids:
+            return
+
+        self._recent_message_ids.append(message_id)
+
+        handled = False
+        try:
+            handled = await self._command_router.dispatch_command_handler(self._channel_name, author_name, text_message)
+        except Exception:
+            pass
+        if handled:
+            return
+
+        if self._is_self_message(payload):
+            return
+
+        if payload.text.startswith(self._command_prefix):
+            return
+
+        try:
+            await self._chat_event_handler.handle(
+                channel_name=self._channel_name,
+                display_name=author_name,
+                message=payload.text,
+                bot_name=self._bot_name,
+            )
+        except Exception:
+            pass
+
+    async def event_websocket_welcome(self, payload: WebsocketWelcome) -> None:
+        session_id = payload.id
+        old_session = self._subscribed_session_id
+
+        if not self._has_active_subscription and self._subscribed_session_id is None:
+            try:
+                await asyncio.wait_for(self._startup_subscription_done.wait(), timeout=5.0)
+            except TimeoutError:
+                pass
+
+        async with self._eventsub_lock:
+            if self._has_active_subscription and self._subscribed_session_id is None:
+                self._subscribed_session_id = session_id
+                return
+
+            if self._has_active_subscription and old_session != session_id:
+                self._has_active_subscription = False
+                asyncio.create_task(self._subscribe_chat(session_id=session_id, reason="reconnect"))
+                return
+
+            if session_id == self._subscribed_session_id:
+                return
+
+            if not self._has_active_subscription:
+                asyncio.create_task(self._subscribe_chat(session_id=session_id, reason="welcome"))
 
     def _split_text(self, text: str) -> list[str]:
         if len(text) <= self.TWITCH_MESSAGE_LENGTH_MAX:

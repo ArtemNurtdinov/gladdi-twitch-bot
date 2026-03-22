@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Protocol
 
+from app.platform.chat.application.chat_events_handler import ChatEventsHandler
 from app.platform.command.domain.command_router import CommandRouter
-
-
-class ChatEventsHandler(Protocol):
-    async def handle(self, channel_name: str, display_name: str, message: str, bot_name: str) -> None: ...
 
 
 class PlatformChatClient(ABC):
