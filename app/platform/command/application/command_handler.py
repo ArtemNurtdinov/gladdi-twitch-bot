@@ -2,26 +2,6 @@ from app.commands.commands_registry import CommandRegistry
 from app.platform.command.domain.command_handler import CommandHandler
 
 
-class ShopHandler(CommandHandler):
-    def __init__(self, registry: CommandRegistry):
-        self._registry = registry
-
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        await self._registry.shop_command_handler.handle_shop(channel_name=channel_name, display_name=user_name)
-
-
-class BuyHandler(CommandHandler):
-    def __init__(self, registry: CommandRegistry, prefix: str, command_name: str):
-        self._registry = registry
-        self._prefix = prefix
-        self._command_name = command_name
-
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        tail = user_message[len(self._prefix + self._command_name) :].strip()
-        item_name = tail or None
-        await self._registry.shop_command_handler.handle_buy(channel_name=channel_name, display_name=user_name, item_name=item_name)
-
-
 class EquipmentHandler(CommandHandler):
     def __init__(self, registry: CommandRegistry):
         self._registry = registry

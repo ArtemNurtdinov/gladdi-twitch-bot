@@ -10,9 +10,6 @@ from app.commands.guess.infrastructure.guess_command_handler import GuessCommand
 from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandlerImpl
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
-from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
-from app.commands.shop.application.shop_command_handler import ShopCommandHandler
-from app.commands.shop.infrastructure.shop_command_handler import ShopCommandHandlerImpl
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.infrastructure.stats_command_handler import StatsCommandHandlerImpl
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
@@ -32,16 +29,6 @@ def build_command_registry(
 ) -> CommandRegistry:
     prefix = settings.prefix
 
-    shop_command_handler: ShopCommandHandler = ShopCommandHandlerImpl(
-        command_prefix=prefix,
-        command_shop_name=settings.command_shop,
-        command_buy_name=settings.command_buy,
-        handle_shop_use_case=HandleShopUseCase(
-            unit_of_work_factory=uow_factories.build_shop_uow_factory(),
-        ),
-        bot_nick=bot_name,
-        post_message_fn=send_channel_message,
-    )
     equipment_command_handler = EquipmentCommandHandlerImpl(
         command_prefix=prefix,
         command_name=settings.command_equipment,

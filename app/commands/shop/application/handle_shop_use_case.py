@@ -45,10 +45,7 @@ class HandleShopUseCase:
             )
         return result
 
-    async def handle_buy(
-        self,
-        command_buy: CommandBuyDTO,
-    ) -> str:
+    async def handle_buy(self, command_buy: CommandBuyDTO) -> str:
         user_name = command_buy.user_name
 
         user_message = command_buy.command_prefix + command_buy.command_name
@@ -118,9 +115,7 @@ class HandleShopUseCase:
             return result
 
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            user_balance = uow.economy_policy.get_user_balance(
-                channel_name=command_buy.channel_name, user_name=user_name
-            )
+            user_balance = uow.economy_policy.get_user_balance(channel_name=command_buy.channel_name, user_name=user_name)
 
         if user_balance.balance < item.price:
             result = f"Недостаточно монет! Нужно {item.price}, у вас {user_balance.balance}"
@@ -147,9 +142,7 @@ class HandleShopUseCase:
                 transaction_type=TransactionType.SHOP_PURCHASE,
                 description=f"Покупка '{item.name}'",
             )
-            uow.add_equipment_use_case.add(
-                channel_name=command_buy.channel_name, user_name=user_name, item_type=item_type
-            )
+            uow.add_equipment_use_case.add(channel_name=command_buy.channel_name, user_name=user_name, item_type=item_type)
 
         result = f"@{command_buy.display_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 

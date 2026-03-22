@@ -17,6 +17,9 @@ from app.commands.follow.application.handle_followage_use_case import HandleFoll
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.commands.roll.infrastructure.roll_command_handler import RollCommandHandlerImpl
+from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
+from app.commands.shop.infrastructure.buy_command_handler import BuyCommandHandlerImpl
+from app.commands.shop.infrastructure.shop_command_handler import ShopCommandHandlerImpl
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.infrastructure.transfer_command_handler import TransferCommandHandlerImpl
 from app.moderation.application.moderation_service import ModerationService
@@ -29,14 +32,12 @@ from app.platform.chat.infrastructure.chat_event_handler import ChatEventsHandle
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_handler import (
     BottomHandler,
-    BuyHandler,
     EquipmentHandler,
     GuessLetterHandler,
     GuessNumberHandler,
     GuessWordHandler,
     HelpHandler,
     RpsHandler,
-    ShopHandler,
     StatsHandler,
     TopHandler,
 )
@@ -297,8 +298,27 @@ class BotManager:
                 post_message_fn=chat_client.send_channel_message,
             )
 
-            shop_handler = ShopHandler(command_registry)
-            buy_handler = BuyHandler(command_registry, self._settings.prefix, self._settings.command_buy)
+            shop_command_handler: CommandHandler = ShopCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_shop_name=self._settings.command_shop,
+                command_buy_name=self._settings.command_buy,
+                handle_shop_use_case=HandleShopUseCase(
+                    unit_of_work_factory=uow_factories.build_shop_uow_factory(),
+                ),
+                bot_nick=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
+            buy_command_handler: CommandHandler = BuyCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_buy_name=self._settings.command_buy,
+                handle_shop_use_case=HandleShopUseCase(
+                    unit_of_work_factory=uow_factories.build_shop_uow_factory(),
+                ),
+                bot_nick=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
             equipment_handler = EquipmentHandler(command_registry)
             top_handler = TopHandler(command_registry)
             bottom_handler = BottomHandler(command_registry)
@@ -318,8 +338,8 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_balance, balance_command_handler)
             command_router.register_command_handler(self._settings.command_bonus, bonus_command_handler)
             command_router.register_command_handler(self._settings.command_transfer, transfer_command_handler)
-            command_router.register_command_handler(self._settings.command_shop, shop_handler)
-            command_router.register_command_handler(self._settings.command_buy, buy_handler)
+            command_router.register_command_handler(self._settings.command_shop, shop_command_handler)
+            command_router.register_command_handler(self._settings.command_buy, buy_command_handler)
             command_router.register_command_handler(self._settings.command_equipment, equipment_handler)
             command_router.register_command_handler(self._settings.command_top, top_handler)
             command_router.register_command_handler(self._settings.command_bottom, bottom_handler)
