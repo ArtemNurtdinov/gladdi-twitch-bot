@@ -20,6 +20,7 @@ from app.commands.follow.infrastructure.followage_command_handler import Followa
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.infrastructure.guess_number_command_handler import GuessNumberCommandHandlerImpl
 from app.commands.guess.infrastructure.guess_word_command_handler import GuessWordCommandHandlerImpl
+from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandlerImpl
 from app.commands.help.application.handle_help_use_case import HandleHelpUseCase
 from app.commands.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
@@ -34,6 +35,7 @@ from app.commands.top_bottom.infrastructure.bottom_command_handler import Bottom
 from app.commands.top_bottom.infrastructure.top_command_handler import TopCommandHandlerImpl
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.commands.transfer.infrastructure.transfer_command_handler import TransferCommandHandlerImpl
+from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.auth.platform_auth import PlatformAuth
@@ -42,16 +44,12 @@ from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
 from app.platform.chat.infrastructure.chat_event_handler import ChatEventsHandlerImpl
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
-from app.platform.command.application.command_handler import (
-    RpsHandler,
-)
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.platform.providers import PlatformApiClient
-from bootstrap.commands_composition import build_command_registry
 from bootstrap.jobs_composition import build_background_tasks
 from bootstrap.providers_bundle import build_providers_bundle
 from bootstrap.stream_composition import restore_stream_context
@@ -195,14 +193,6 @@ class BotManager:
             moderation_service = ModerationService(
                 platform_repository=platform_repository,
                 user_cache=providers_bundle.user_providers.user_cache,
-            )
-
-            command_registry = build_command_registry(
-                providers=providers_bundle,
-                uow_factories=uow_factories,
-                settings=self._settings,
-                bot_name=self._settings.bot_name,
-                send_channel_message=chat_client.send_channel_message,
             )
 
             handle_chat_message = HandleChatMessageUseCase(
@@ -422,7 +412,16 @@ class BotManager:
                 post_message_fn=chat_client.send_channel_message,
             )
 
-            rps_handler = RpsHandler(command_registry, self._settings.prefix, self._settings.command_rps)
+            rps_command_handler: CommandHandler = RpsCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_rps,
+                handle_rps_use_case=HandleRpsUseCase(
+                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    rps_uow=uow_factories.build_rps_uow_factory(),
+                ),
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
 
             command_router: CommandRouter = CommandRouterImpl(self._settings.prefix)
 
@@ -443,7 +442,7 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_guess, guess_number_command_handler)
             command_router.register_command_handler(self._settings.command_guess_letter, guess_letter_command_handler)
             command_router.register_command_handler(self._settings.command_guess_word, guess_word_command_handler)
-            command_router.register_command_handler(self._settings.command_rps, rps_handler)
+            command_router.register_command_handler(self._settings.command_rps, rps_command_handler)
 
             chat_client.set_chat_event_handler(chat_events_handler)
             chat_client.set_command_router(command_router)
