@@ -24,6 +24,8 @@ from app.commands.roll.infrastructure.roll_command_handler import RollCommandHan
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.commands.shop.infrastructure.buy_command_handler import BuyCommandHandlerImpl
 from app.commands.shop.infrastructure.shop_command_handler import ShopCommandHandlerImpl
+from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
+from app.commands.stats.infrastructure.stats_command_handler import StatsCommandHandlerImpl
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.commands.top_bottom.infrastructure.bottom_command_handler import BottomCommandHandlerImpl
 from app.commands.top_bottom.infrastructure.top_command_handler import TopCommandHandlerImpl
@@ -42,7 +44,6 @@ from app.platform.command.application.command_handler import (
     GuessNumberHandler,
     GuessWordHandler,
     RpsHandler,
-    StatsHandler,
 )
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.domain.command_handler import CommandHandler
@@ -378,7 +379,16 @@ class BotManager:
                 post_message_fn=chat_client.send_channel_message,
             )
 
-            stats_handler = StatsHandler(command_registry)
+            stats_command_handler: CommandHandler = StatsCommandHandlerImpl(
+                command_prefix=self._settings.prefix,
+                command_name=self._settings.command_stats,
+                handle_stats_use_case=HandleStatsUseCase(
+                    stats_uow=uow_factories.build_stats_uow_factory(),
+                ),
+                bot_name=self._settings.bot_name,
+                post_message_fn=chat_client.send_channel_message,
+            )
+
             guess_number_handler = GuessNumberHandler(command_registry, self._settings.prefix, self._settings.command_guess)
             guess_letter_handler = GuessLetterHandler(command_registry, self._settings.prefix, self._settings.command_guess_letter)
             guess_word_handler = GuessWordHandler(command_registry, self._settings.prefix, self._settings.command_guess_word)
@@ -399,7 +409,7 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_top, top_command_handler)
             command_router.register_command_handler(self._settings.command_bottom, bottom_command_handler)
             command_router.register_command_handler(self._settings.command_help, help_command_handler)
-            command_router.register_command_handler(self._settings.command_stats, stats_handler)
+            command_router.register_command_handler(self._settings.command_stats, stats_command_handler)
             command_router.register_command_handler(self._settings.command_guess, guess_number_handler)
             command_router.register_command_handler(self._settings.command_guess_letter, guess_letter_handler)
             command_router.register_command_handler(self._settings.command_guess_word, guess_word_handler)

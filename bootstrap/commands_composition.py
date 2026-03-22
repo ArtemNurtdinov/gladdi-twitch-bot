@@ -6,8 +6,6 @@ from app.commands.commands_registry import CommandRegistry
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.infrastructure.guess_command_handler import GuessCommandHandlerImpl
 from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandlerImpl
-from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
-from app.commands.stats.infrastructure.stats_command_handler import StatsCommandHandlerImpl
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.platform.bot.model.bot_settings import BotSettings
 from bootstrap.providers_bundle import ProvidersBundle
@@ -22,16 +20,6 @@ def build_command_registry(
     send_channel_message: Callable[[str], Awaitable[None]],
 ) -> CommandRegistry:
     prefix = settings.prefix
-
-    stats_command_handler = StatsCommandHandlerImpl(
-        command_prefix=prefix,
-        command_name=settings.command_stats,
-        handle_stats_use_case=HandleStatsUseCase(
-            stats_uow=uow_factories.build_stats_uow_factory(),
-        ),
-        bot_name=bot_name,
-        post_message_fn=send_channel_message,
-    )
 
     guess_command_handler = GuessCommandHandlerImpl(
         command_prefix=prefix,
@@ -57,8 +45,6 @@ def build_command_registry(
     )
 
     return CommandRegistry(
-        stats_command_handler=stats_command_handler,
-        help_command_handler=help_command_handler,
         guess_command_handler=guess_command_handler,
         rps_command_handler=rps_command_handler,
     )

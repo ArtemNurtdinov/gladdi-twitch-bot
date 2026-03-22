@@ -3,10 +3,10 @@ from datetime import datetime
 
 from app.commands.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.commands.stats.application.model import CommandStatsDTO
-from app.commands.stats.application.stats_command_handler import StatsCommandHandler
+from app.platform.command.domain.command_handler import CommandHandler
 
 
-class StatsCommandHandlerImpl(StatsCommandHandler):
+class StatsCommandHandlerImpl(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
@@ -21,13 +21,13 @@ class StatsCommandHandlerImpl(StatsCommandHandler):
         self._bot_name = bot_name
         self._post_message_fn = post_message_fn
 
-    async def handle(self, channel_name: str, display_name: str):
+    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
         command_stats = CommandStatsDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_name,
             channel_name=channel_name,
-            display_name=display_name,
-            user_name=display_name.lower(),
+            display_name=user_name,
+            user_name=user_name.lower(),
             bot_name=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
         )
