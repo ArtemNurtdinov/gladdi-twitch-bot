@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.chat.application.chat_events_handler import ChatEventsHandler
+from app.platform.chat.application.chat_event_handler import ChatEventsHandler
 from app.platform.command.domain.command_router import CommandRouter
 
 
@@ -11,8 +11,9 @@ class PlatformChatClient(ABC):
     _command_router: CommandRouter | None = None
     _chat_events_handler: ChatEventsHandler | None = None
 
-    def __init__(self, auth: PlatformAuth, channel_name: str, bot_name: str, command_prefix: str):
+    def __init__(self, auth: PlatformAuth, chat_events_handler: ChatEventsHandler, channel_name: str, bot_name: str, command_prefix: str):
         self.auth = auth
+        self.chat_events_handler = chat_events_handler
         self.channel_name = channel_name
         self.bot_name = bot_name
         self.command_prefix = command_prefix
@@ -42,12 +43,9 @@ class PlatformChatClient(ABC):
             return
 
         try:
-            await self._chat_events_handler.handle(
-                channel_name=self.channel_name,
-                display_name=user_name,
-                message=message,
-                bot_name=self.bot_name,
-            )
+            result = await self._chat_events_handler.handle(self.channel_name, user_name, message, self.bot_name)
+            if result:
+                await self.send_channel_message(result)
         except Exception:
             pass
 

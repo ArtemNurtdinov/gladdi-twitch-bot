@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.commands.ask.infrastructure.ask_command_handler import AskCommandHandlerImpl
@@ -41,8 +41,8 @@ from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
+from app.platform.chat.application.chat_event_handler import ChatEventsHandler
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
-from app.platform.chat.infrastructure.chat_event_handler import ChatEventsHandlerImpl
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.domain.command_handler import CommandHandler
@@ -159,8 +159,25 @@ class BotManager:
             bot_user = await platform_repository.get_user_by_login(self._settings.bot_name)
             bot_user_id = bot_user.id if bot_user else None
 
+            generate_response_use_case = GenerateResponseUseCase(
+                unit_of_work_factory=uow_factories.build_chat_response_uow_factory(),
+                llm_repository=providers_bundle.ai_providers.llm_repository,
+                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
+                db_ro_session=db_ro_session,
+            )
+
+            handle_chat_message_use_case = HandleChatMessageUseCase(
+                unit_of_work_factory=uow_factories.build_chat_message_uow_factory(),
+                get_intent_from_text_use_case=providers_bundle.ai_providers.get_intent_use_case,
+                prompt_service=providers_bundle.ai_providers.prompt_service,
+                generate_response_use_case=generate_response_use_case,
+            )
+
+            chat_events_handler = ChatEventsHandler(handle_chat_message_use_case=handle_chat_message_use_case)
+
             chat_client: PlatformChatClient = TwitchChatClient(
                 auth=platform_auth,
+                chat_events_handler=chat_events_handler,
                 channel_name=self._settings.channel_name,
                 command_prefix=self._settings.prefix,
                 bot_id=bot_user_id,
@@ -171,20 +188,13 @@ class BotManager:
 
             chat_summary_state = ChatSummaryState()
 
-            chat_response_use_case = ChatResponseUseCase(
-                unit_of_work_factory=uow_factories.build_chat_response_uow_factory(),
-                llm_repository=providers_bundle.ai_providers.llm_repository,
-                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
-                db_ro_session=db_ro_session,
-            )
-
             self._background_tasks = build_background_tasks(
                 providers=providers_bundle,
                 uow_factories=uow_factories,
                 settings=self._settings,
                 bot_name=self._settings.bot_name,
                 chat_summary_state=chat_summary_state,
-                chat_response_use_case=chat_response_use_case,
+                chat_response_use_case=generate_response_use_case,
                 send_channel_message=chat_client.send_channel_message,
                 platform_auth=platform_auth,
                 platform_repository=platform_repository,
@@ -195,25 +205,13 @@ class BotManager:
                 user_cache=providers_bundle.user_providers.user_cache,
             )
 
-            handle_chat_message = HandleChatMessageUseCase(
-                unit_of_work_factory=uow_factories.build_chat_message_uow_factory(),
-                get_intent_from_text_use_case=providers_bundle.ai_providers.get_intent_use_case,
-                prompt_service=providers_bundle.ai_providers.prompt_service,
-                chat_response_use_case=chat_response_use_case,
-            )
-
-            chat_events_handler = ChatEventsHandlerImpl(
-                handle_chat_message_use_case=handle_chat_message,
-                send_channel_message=chat_client.send_channel_message,
-            )
-
             followage_command_handler: CommandHandler = FollowageCommandHandlerImpl(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_followage,
                 handle_follow_age_use_case=HandleFollowAgeUseCase(
                     chat_repo_provider=providers_bundle.chat_providers.chat_repo_provider,
                     conversation_repo_provider=providers_bundle.ai_providers.conversation_repo_provider,
-                    chat_response_use_case=chat_response_use_case,
+                    chat_response_use_case=generate_response_use_case,
                     unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
                 ),
                 bot_nick=self._settings.bot_name,
@@ -229,7 +227,7 @@ class BotManager:
                     get_intent_from_text_use_case=providers_bundle.ai_providers.get_intent_use_case,
                     prompt_service=providers_bundle.ai_providers.prompt_service,
                     unit_of_work_factory=ask_uow_factory,
-                    chat_response_use_case=chat_response_use_case,
+                    chat_response_use_case=generate_response_use_case,
                 ),
                 post_message_fn=chat_client.send_channel_message,
                 bot_nick=self._settings.bot_name,
@@ -240,7 +238,7 @@ class BotManager:
                 command_name=self._settings.command_fight,
                 handle_battle_use_case=HandleBattleUseCase(
                     battle_uow=uow_factories.build_battle_uow_factory(),
-                    chat_response_use_case=chat_response_use_case,
+                    chat_response_use_case=generate_response_use_case,
                     calculate_timeout_use_case=providers_bundle.equipment_providers.calculate_timeout_use_case,
                 ),
                 chat_moderation=moderation_service,
@@ -444,7 +442,6 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_guess_word, guess_word_command_handler)
             command_router.register_command_handler(self._settings.command_rps, rps_command_handler)
 
-            chat_client.set_chat_event_handler(chat_events_handler)
             chat_client.set_command_router(command_router)
 
             restore_stream_context(

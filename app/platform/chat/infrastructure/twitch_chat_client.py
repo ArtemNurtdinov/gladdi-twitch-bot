@@ -9,15 +9,31 @@ from twitchio.eventsub import ChatMessageSubscription
 from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.platform.auth.platform_auth import PlatformAuth
+from app.platform.chat.application.chat_event_handler import ChatEventsHandler
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
 
 
 class TwitchChatClient(Client, PlatformChatClient):
     TWITCH_MESSAGE_LENGTH_MAX = 500
 
-    def __init__(self, auth: PlatformAuth, channel_name: str, command_prefix: str, bot_id: str, bot_name: str):
+    def __init__(
+        self,
+        auth: PlatformAuth,
+        chat_events_handler: ChatEventsHandler,
+        channel_name: str,
+        command_prefix: str,
+        bot_id: str,
+        bot_name: str,
+    ):
         Client.__init__(self, client_id=auth.client_id, client_secret=auth.client_secret, bot_id=bot_id, fetch_client_user=False)
-        PlatformChatClient.__init__(self, auth=auth, channel_name=channel_name, bot_name=bot_name, command_prefix=command_prefix)
+        PlatformChatClient.__init__(
+            self,
+            auth=auth,
+            chat_events_handler=chat_events_handler,
+            channel_name=channel_name,
+            bot_name=bot_name,
+            command_prefix=command_prefix,
+        )
 
         self._token_user_id: str | None = None
         self._broadcaster_id: str | None = None

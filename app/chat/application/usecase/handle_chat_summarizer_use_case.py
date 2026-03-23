@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.summarizer_job import SummarizerJobDTO
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
 
@@ -9,7 +9,7 @@ class HandleChatSummarizerUseCase:
     def __init__(
         self,
         unit_of_work_factory: ChatSummarizerUnitOfWorkFactory,
-        chat_response_use_case: ChatResponseUseCase,
+        chat_response_use_case: GenerateResponseUseCase,
     ):
         self._unit_of_work_factory = unit_of_work_factory
         self._chat_response_use_case = chat_response_use_case

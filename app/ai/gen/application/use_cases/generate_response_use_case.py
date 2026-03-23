@@ -6,7 +6,7 @@ from core.provider import Provider
 from core.types import SessionFactory
 
 
-class ChatResponseUseCase:
+class GenerateResponseUseCase:
     def __init__(
         self,
         unit_of_work_factory: ChatResponseUnitOfWorkFactory,

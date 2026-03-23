@@ -1,6 +1,6 @@
 import random
 
-from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.commands.battle.application.battle_uow import BattleUnitOfWorkFactory
 from app.commands.battle.application.model import BattleDTO, BattleTimeoutAction, BattleUseCaseResult
 from app.economy.domain.economy_policy import EconomyPolicy
@@ -12,7 +12,7 @@ class HandleBattleUseCase:
     def __init__(
         self,
         battle_uow: BattleUnitOfWorkFactory,
-        chat_response_use_case: ChatResponseUseCase,
+        chat_response_use_case: GenerateResponseUseCase,
         calculate_timeout_use_case: CalculateTimeoutUseCase,
     ):
         self._battle_uow = battle_uow

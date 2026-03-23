@@ -1,4 +1,4 @@
-from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
@@ -13,7 +13,7 @@ class HandleAskUseCase:
         get_intent_from_text_use_case: GetIntentFromTextUseCase,
         prompt_service: PromptService,
         unit_of_work_factory: AskUnitOfWorkFactory,
-        chat_response_use_case: ChatResponseUseCase,
+        chat_response_use_case: GenerateResponseUseCase,
     ):
         self._get_intent_from_text_use_case = get_intent_from_text_use_case
         self._prompt_service = prompt_service

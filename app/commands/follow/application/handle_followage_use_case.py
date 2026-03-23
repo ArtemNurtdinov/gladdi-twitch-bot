@@ -1,4 +1,4 @@
-from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
 from app.chat.domain.model.chat_message import ChatMessage
 from app.chat.domain.repo import ChatRepository
@@ -12,7 +12,7 @@ class HandleFollowAgeUseCase:
         self,
         chat_repo_provider: Provider[ChatRepository],
         conversation_repo_provider: Provider[ConversationRepository],
-        chat_response_use_case: ChatResponseUseCase,
+        chat_response_use_case: GenerateResponseUseCase,
         unit_of_work_factory: FollowAgeUnitOfWorkFactory,
     ):
         self._chat_repo_provider = chat_repo_provider

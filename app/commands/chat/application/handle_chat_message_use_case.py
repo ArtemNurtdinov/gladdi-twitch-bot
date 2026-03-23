@@ -1,4 +1,4 @@
-from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
@@ -13,12 +13,12 @@ class HandleChatMessageUseCase:
         unit_of_work_factory: ChatMessageUnitOfWorkFactory,
         get_intent_from_text_use_case: GetIntentFromTextUseCase,
         prompt_service: PromptService,
-        chat_response_use_case: ChatResponseUseCase,
+        generate_response_use_case: GenerateResponseUseCase,
     ):
         self._unit_of_work_factory = unit_of_work_factory
         self._get_intent_from_text_use_case = get_intent_from_text_use_case
         self._prompt_service = prompt_service
-        self._chat_response_use_case = chat_response_use_case
+        self._generate_response_use_case = generate_response_use_case
 
     async def handle(self, chat_message: ChatMessageDTO) -> str | None:
         intent = await self._get_intent_from_text_use_case.get_intent_from_text(chat_message.message)
@@ -76,7 +76,7 @@ class HandleChatMessageUseCase:
                 system_prompt=system_prompt.prompt,
             )
 
-        result = await self._chat_response_use_case.generate_response_from_history(history, prompt)
+        result = await self._generate_response_use_case.generate_response_from_history(history, prompt)
 
         with self._unit_of_work_factory.create() as uow:
             uow.conversation_service.save_conversation_to_db(

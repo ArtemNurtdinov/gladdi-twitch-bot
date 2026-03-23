@@ -1,4 +1,4 @@
-from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.domain.joke_service import JokeService
@@ -12,7 +12,7 @@ class HandlePostJokeUseCase:
         joke_service: JokeService,
         user_cache: UserCachePort,
         platform_repository: PlatformRepository,
-        chat_response_use_case: ChatResponseUseCase,
+        chat_response_use_case: GenerateResponseUseCase,
         unit_of_work_factory: JokeUnitOfWorkFactory,
     ):
         self._joke_service = joke_service

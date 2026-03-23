@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 
-from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
+from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
@@ -40,7 +40,7 @@ def build_background_tasks(
     settings: BotSettings,
     bot_name: str,
     chat_summary_state: ChatSummaryState,
-    chat_response_use_case: ChatResponseUseCase,
+    chat_response_use_case: GenerateResponseUseCase,
     send_channel_message: Callable[[str], Awaitable[None]],
     platform_auth: PlatformAuth,
     platform_repository: PlatformRepository,
