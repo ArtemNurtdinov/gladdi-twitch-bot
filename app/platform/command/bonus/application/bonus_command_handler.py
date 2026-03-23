@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
-from app.commands.bonus.application.model import BonusDTO
+from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
+from app.platform.command.bonus.application.model import BonusDTO
 from app.platform.command.domain.command_handler import CommandHandler
 
 

@@ -3,10 +3,10 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.chat.application.usecase.chat_use_case import ChatUseCase
-from app.commands.bonus.application.bonus_uow import BonusUnitOfWork, BonusUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
+from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWork, BonusUnitOfWorkFactory
 from app.stream.domain.stream_service import StreamService
 from core.provider import Provider
 from core.types import SessionFactory

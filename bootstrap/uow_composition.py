@@ -5,8 +5,6 @@ from dataclasses import dataclass
 
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
-from app.commands.battle.infrastructure.battle_uow import SqlAlchemyBattleUnitOfWorkFactory
-from app.commands.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
 from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.commands.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
 from app.commands.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
@@ -22,6 +20,8 @@ from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitO
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.platform.command.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
 from app.platform.command.balance.infrastructure.balance_uow import SqlAlchemyBalanceUnitOfWorkFactory
+from app.platform.command.battle.infrastructure.battle_uow import SqlAlchemyBattleUnitOfWorkFactory
+from app.platform.command.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
 from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
 from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory

@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
-from app.commands.battle.application.model import BattleDTO
 from app.moderation.application.chat_moderation_port import ChatModerationPort
+from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
+from app.platform.command.battle.application.model import BattleDTO
 from app.platform.command.domain.command_handler import CommandHandler
 
 

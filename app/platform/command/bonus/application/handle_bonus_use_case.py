@@ -1,5 +1,5 @@
-from app.commands.bonus.application.bonus_uow import BonusUnitOfWorkFactory
-from app.commands.bonus.application.model import BonusDTO
+from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
+from app.platform.command.bonus.application.model import BonusDTO
 
 
 class HandleBonusUseCase:

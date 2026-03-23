@@ -4,10 +4,6 @@ from datetime import datetime
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
-from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
-from app.commands.battle.infrastructure.battle_command_handler import BattleCommandHandlerImpl
-from app.commands.bonus.application.handle_bonus_use_case import HandleBonusUseCase
-from app.commands.bonus.infrastructure.bonus_command_handler import BonusCommandHandlerImpl
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
@@ -44,6 +40,10 @@ from app.platform.command.ask.application.ask_command_handler import AskCommandH
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
 from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
+from app.platform.command.battle.application.battle_command_handler import BattleCommandHandlerImpl
+from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
+from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
+from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
