@@ -354,7 +354,6 @@ class BotManager:
                 handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=uow_factories.build_help_uow_factory()),
                 commands=commands,
                 bot_name=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
             stats_command_handler: CommandHandler = StatsCommandHandlerImpl(
