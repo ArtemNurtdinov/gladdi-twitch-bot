@@ -28,14 +28,7 @@ class PlatformChatClient(ABC):
         self.command_prefix = command_prefix
 
     async def handle_message(self, user_name: str, message: str):
-        command_handler = self._command_router.get_command_handler(message)
-
-        if command_handler:
-            try:
-                result = await command_handler.handle(self.channel_name, user_name, message)
-                await self.send_channel_message(result)
-            except Exception:
-                pass
+        if self._command_handled(user_name, message):
             return
 
         if self._is_self_message(user_name):
@@ -50,6 +43,18 @@ class PlatformChatClient(ABC):
                 await self.send_channel_message(result)
         except Exception:
             pass
+
+    async def _command_handled(self, user_name: str, message: str) -> bool:
+        command_handler = self._command_router.get_command_handler(message)
+        if command_handler is None:
+            return False
+        try:
+            result = await command_handler.handle(self.channel_name, user_name, message)
+            await self.send_channel_message(result)
+            return True
+        except Exception:
+            pass
+        return False
 
     def _is_self_message(self, user_name: str) -> bool:
         if user_name.lower() == self.bot_name.lower():
