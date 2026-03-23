@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
-from app.commands.chat.application.model import ChatMessageDTO
+from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.platform.chat.application.model import ChatMessageDTO
 
 
 class ChatEventsHandler:

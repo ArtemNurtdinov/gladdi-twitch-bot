@@ -4,7 +4,6 @@ from datetime import datetime
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
-from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
@@ -33,6 +32,7 @@ from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.platform.chat.application.chat_event_handler import ChatEventsHandler
+from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl

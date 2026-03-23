@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.domain.repo import ChatRepository
-from app.commands.chat.application.chat_message_uow import ChatMessageUnitOfWork, ChatMessageUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
+from app.platform.chat.application.chat_message_uow import ChatMessageUnitOfWork, ChatMessageUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
 from app.viewer.domain.repo import ViewerRepository
 from core.provider import Provider

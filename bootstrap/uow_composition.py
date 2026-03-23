@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
-from app.commands.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.commands.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
 from app.commands.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
 from app.commands.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
@@ -18,6 +17,7 @@ from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowers
 from app.joke.infrastructure.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
+from app.platform.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.platform.command.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
 from app.platform.command.balance.infrastructure.balance_uow import SqlAlchemyBalanceUnitOfWorkFactory
 from app.platform.command.battle.infrastructure.battle_uow import SqlAlchemyBattleUnitOfWorkFactory
