@@ -43,10 +43,6 @@ class HandleRollUseCase:
         timeout_action: RollTimeoutAction | None = None
         current_time = datetime.now()
 
-        user_message = command_roll.command_prefix + command_roll.command_name
-        if command_roll.amount_input:
-            user_message += command_roll.amount_input
-
         with self._unit_of_work_factory.create(read_only=True) as uow:
             equipment = uow.get_user_equipment_use_case.get_user_equipment(
                 channel_name=command_roll.channel_name, user_name=command_roll.user_name
@@ -66,12 +62,12 @@ class HandleRollUseCase:
                     uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.user_name,
-                        content=user_message,
+                        content=command_roll.message,
                         current_time=command_roll.occurred_at,
                     )
                     uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
-                        user_name=command_roll.bot_nick,
+                        user_name=command_roll.bot_name,
                         content=result,
                         current_time=command_roll.occurred_at,
                     )
@@ -93,12 +89,12 @@ class HandleRollUseCase:
                     uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.user_name,
-                        content=user_message,
+                        content=command_roll.message,
                         current_time=command_roll.occurred_at,
                     )
                     uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
-                        user_name=command_roll.bot_nick,
+                        user_name=command_roll.bot_name,
                         content=result,
                         current_time=command_roll.occurred_at,
                     )
@@ -113,12 +109,12 @@ class HandleRollUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
-                    content=user_message,
+                    content=command_roll.message,
                     current_time=command_roll.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
-                    user_name=command_roll.bot_nick,
+                    user_name=command_roll.bot_name,
                     content=result,
                     current_time=command_roll.occurred_at,
                 )
@@ -131,12 +127,12 @@ class HandleRollUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
-                    content=user_message,
+                    content=command_roll.message,
                     current_time=command_roll.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
-                    user_name=command_roll.bot_nick,
+                    user_name=command_roll.bot_name,
                     content=result,
                     current_time=command_roll.occurred_at,
                 )
@@ -172,12 +168,12 @@ class HandleRollUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
                     user_name=command_roll.user_name,
-                    content=user_message,
+                    content=command_roll.message,
                     current_time=command_roll.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_roll.channel_name,
-                    user_name=command_roll.bot_nick,
+                    user_name=command_roll.bot_name,
                     content=result,
                     current_time=command_roll.occurred_at,
                 )
@@ -230,12 +226,12 @@ class HandleRollUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_roll.channel_name,
                 user_name=command_roll.user_name,
-                content=user_message,
+                content=command_roll.message,
                 current_time=command_roll.occurred_at,
             )
             uow.chat_use_case.save_chat_message(
                 channel_name=command_roll.channel_name,
-                user_name=command_roll.bot_nick,
+                user_name=command_roll.bot_name,
                 content=final_result,
                 current_time=command_roll.occurred_at,
             )
@@ -255,12 +251,12 @@ class HandleRollUseCase:
                     uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
                         user_name=command_roll.user_name,
-                        content=user_message,
+                        content=command_roll.message,
                         current_time=command_roll.occurred_at,
                     )
                     uow.chat_use_case.save_chat_message(
                         channel_name=command_roll.channel_name,
-                        user_name=command_roll.bot_nick,
+                        user_name=command_roll.bot_name,
                         content=no_timeout_message,
                         current_time=command_roll.occurred_at,
                     )

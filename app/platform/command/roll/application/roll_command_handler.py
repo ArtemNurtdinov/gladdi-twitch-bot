@@ -50,10 +50,11 @@ class RollCommandHandlerImpl(CommandHandler):
             channel_name=channel_name,
             display_name=user_name,
             user_name=user_name.lower(),
-            bot_nick=self._bot_name.lower(),
+            bot_name=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             amount_input=amount,
             last_roll_time=self.roll_cooldowns.get(user_name),
+            message=message,
         )
 
         result = await self._handle_roll_use_case.handle(command_roll=dto)

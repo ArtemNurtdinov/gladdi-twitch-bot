@@ -231,8 +231,6 @@ class BotManager:
             )
 
             balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_balance,
                 handle_balance_use_case=HandleBalanceUseCase(
                     balance_uow=uow_factories.build_balance_uow_factory(),
                 ),

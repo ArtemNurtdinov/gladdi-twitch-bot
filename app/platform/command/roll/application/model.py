@@ -9,10 +9,11 @@ class RollDTO:
     channel_name: str
     display_name: str
     user_name: str
-    bot_nick: str
+    bot_name: str
     occurred_at: datetime
     amount_input: str | None
     last_roll_time: datetime | None
+    message: str
 
 
 @dataclass(frozen=True)
