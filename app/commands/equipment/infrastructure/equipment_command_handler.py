@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
@@ -14,16 +13,14 @@ class EquipmentCommandHandlerImpl(CommandHandler):
         command_shop: str,
         handle_equipment_use_case: HandleEquipmentUseCase,
         bot_name: str,
-        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self._handle_equipment_use_case = handle_equipment_use_case
         self.command_name = command_name
         self.command_shop = command_shop
         self.command_prefix = command_prefix
         self._bot_name = bot_name
-        self.post_message_fn = post_message_fn
 
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
         equipment = EquipmentDTO(
             command_prefix=self.command_prefix,
             channel_name=channel_name,
@@ -35,6 +32,4 @@ class EquipmentCommandHandlerImpl(CommandHandler):
             command_shop=self.command_shop,
         )
 
-        result = await self._handle_equipment_use_case.handle(equipment_command=equipment)
-
-        await self.post_message_fn(result)
+        return await self._handle_equipment_use_case.handle(equipment_command=equipment)
