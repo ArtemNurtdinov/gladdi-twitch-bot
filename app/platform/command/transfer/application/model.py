@@ -13,3 +13,4 @@ class TransferDTO:
     occurred_at: datetime
     recipient_input: str | None
     amount_input: str | None
+    message: str

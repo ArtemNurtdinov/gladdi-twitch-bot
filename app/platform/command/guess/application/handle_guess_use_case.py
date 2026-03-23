@@ -18,16 +18,14 @@ class HandleGuessUseCase:
     async def handle_number(self, guess_number: GuessNumberDTO) -> str:
         command_prefix = guess_number.command_prefix
         command_guess = guess_number.command_guess
-        user_message = guess_number.command_prefix + guess_number.command_guess
-        if guess_number.guess_input:
-            user_message += f" {guess_number.guess_input}"
+
         if not guess_number.guess_input:
             result = f"@{guess_number.display_name}, используй: {command_prefix}{command_guess} [число]"
             with self._guess_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
-                    content=user_message,
+                    content=guess_number.message,
                     current_time=guess_number.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -45,7 +43,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
-                    content=user_message,
+                    content=guess_number.message,
                     current_time=guess_number.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -64,7 +62,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
-                    content=user_message,
+                    content=guess_number.message,
                     current_time=guess_number.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -83,7 +81,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
-                    content=user_message,
+                    content=guess_number.message,
                     current_time=guess_number.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -100,7 +98,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
-                    content=user_message,
+                    content=guess_number.message,
                     current_time=guess_number.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -117,7 +115,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
-                    content=user_message,
+                    content=guess_number.message,
                     current_time=guess_number.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -147,7 +145,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
-                    content=user_message,
+                    content=guess_number.message,
                     current_time=guess_number.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -166,7 +164,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
-                    content=user_message,
+                    content=guess_number.message,
                     current_time=guess_number.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -178,11 +176,6 @@ class HandleGuessUseCase:
             return message
 
     async def handle_letter(self, guess_letter: GuessLetterDTO) -> str:
-        user_message = guess_letter.command_prefix + guess_letter.command_name
-
-        if guess_letter.letter_input:
-            user_message += guess_letter.letter_input
-
         game = self._minigame_repository.get_active_word_game(guess_letter.channel_name)
 
         if not game:
@@ -191,7 +184,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter.channel_name,
                     user_name=guess_letter.user_name,
-                    content=user_message,
+                    content=guess_letter.message,
                     current_time=guess_letter.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -220,7 +213,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter.channel_name,
                     user_name=guess_letter.user_name,
-                    content=user_message,
+                    content=guess_letter.message,
                     current_time=guess_letter.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -240,7 +233,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter.channel_name,
                     user_name=guess_letter.user_name,
-                    content=user_message,
+                    content=guess_letter.message,
                     current_time=guess_letter.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -259,7 +252,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter.channel_name,
                     user_name=guess_letter.user_name,
-                    content=user_message,
+                    content=guess_letter.message,
                     current_time=guess_letter.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -301,7 +294,7 @@ class HandleGuessUseCase:
                     uow.chat_use_case.save_chat_message(
                         channel_name=guess_letter.channel_name,
                         user_name=guess_letter.user_name,
-                        content=user_message,
+                        content=guess_letter.message,
                         current_time=guess_letter.occurred_at,
                     )
                     uow.chat_use_case.save_chat_message(
@@ -321,7 +314,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter.channel_name,
                     user_name=guess_letter.user_name,
-                    content=user_message,
+                    content=guess_letter.message,
                     current_time=guess_letter.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -336,7 +329,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_letter.channel_name,
                     user_name=guess_letter.user_name,
-                    content=user_message,
+                    content=guess_letter.message,
                     current_time=guess_letter.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -349,10 +342,6 @@ class HandleGuessUseCase:
         return message
 
     async def handle_word(self, guess_word: GuessWordDTO) -> str:
-        user_message = guess_word.command_prefix + guess_word.command_name
-        if guess_word.word_input:
-            user_message += guess_word.word_input
-
         game = self._minigame_repository.get_active_word_game(guess_word.channel_name)
 
         if not game:
@@ -361,7 +350,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_word.channel_name,
                     user_name=guess_word.user_name,
-                    content=user_message,
+                    content=guess_word.message,
                     current_time=guess_word.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -390,7 +379,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_word.channel_name,
                     user_name=guess_word.user_name,
-                    content=user_message,
+                    content=guess_word.message,
                     current_time=guess_word.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -409,7 +398,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_word.channel_name,
                     user_name=guess_word.user_name,
-                    content=user_message,
+                    content=guess_word.message,
                     current_time=guess_word.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -440,7 +429,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_word.channel_name,
                     user_name=guess_word.user_name,
-                    content=user_message,
+                    content=guess_word.message,
                     current_time=guess_word.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -457,7 +446,7 @@ class HandleGuessUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=guess_word.channel_name,
                     user_name=guess_word.user_name,
-                    content=user_message,
+                    content=guess_word.message,
                     current_time=guess_word.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(

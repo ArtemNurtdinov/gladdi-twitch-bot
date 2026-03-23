@@ -32,6 +32,7 @@ class ShopCommandHandlerImpl(CommandHandler):
             command_prefix=self.command_prefix,
             command_name=self.command_shop_name,
             command_buy_name=self.command_buy_name,
+            message=message,
         )
 
         return await self._handle_shop_use_case.handle_shop(command_shop=command_shop)

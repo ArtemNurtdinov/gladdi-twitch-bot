@@ -23,14 +23,13 @@ class GuessLetterCommandHandlerImpl(CommandHandler):
         letter = tail or None
 
         guess_letter = GuessLetterDTO(
-            command_prefix=self._command_prefix,
-            command_name=self._command_name,
             channel_name=channel_name,
             display_name=user_name,
             user_name=user_name.lower(),
             bot_nick=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             letter_input=letter,
+            message=message,
         )
 
         return await self._handle_guess_use_case.handle_letter(guess_letter=guess_letter)

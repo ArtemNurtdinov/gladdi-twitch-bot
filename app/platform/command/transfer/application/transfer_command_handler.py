@@ -39,6 +39,7 @@ class TransferCommandHandlerImpl(CommandHandler):
             amount_input=amount,
             command_prefix=self.command_prefix,
             command_name=self.command_name,
+            message=message,
         )
 
         return await self._handle_transfer_use_case.handle(command_transfer=transfer)

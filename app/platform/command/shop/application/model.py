@@ -12,6 +12,7 @@ class CommandShopDTO:
     bot_nick: str
     occurred_at: datetime
     command_buy_name: str
+    message: str
 
 
 @dataclass(frozen=True)
@@ -24,4 +25,4 @@ class CommandBuyDTO:
     bot_nick: str
     occurred_at: datetime
     item_name_input: str | None
-    command_prefix: str
+    message: str

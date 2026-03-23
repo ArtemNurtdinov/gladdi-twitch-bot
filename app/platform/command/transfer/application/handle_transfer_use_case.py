@@ -8,12 +8,7 @@ class HandleTransferUseCase:
 
     async def handle(self, command_transfer: TransferDTO) -> str:
         command_prefix = command_transfer.command_prefix
-        command_name = command_transfer.channel_name
-        user_message = command_transfer.command_prefix + command_transfer.command_name
-        if command_transfer.recipient_input:
-            user_message += command_transfer.recipient_input
-        if command_transfer.amount_input:
-            user_message += command_transfer.amount_input
+        command_name = command_transfer.command_name
 
         if not command_transfer.recipient_input or not command_transfer.amount_input:
             result = (
@@ -24,7 +19,7 @@ class HandleTransferUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.user_name,
-                    content=user_message,
+                    content=command_transfer.message,
                     current_time=command_transfer.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -46,7 +41,7 @@ class HandleTransferUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.user_name,
-                    content=user_message,
+                    content=command_transfer.message,
                     current_time=command_transfer.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -63,7 +58,7 @@ class HandleTransferUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_transfer.channel_name,
                     user_name=command_transfer.user_name,
-                    content=user_message,
+                    content=command_transfer.message,
                     current_time=command_transfer.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -94,7 +89,7 @@ class HandleTransferUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_transfer.channel_name,
                 user_name=command_transfer.user_name,
-                content=user_message,
+                content=command_transfer.message,
                 current_time=command_transfer.occurred_at,
             )
             uow.chat_use_case.save_chat_message(

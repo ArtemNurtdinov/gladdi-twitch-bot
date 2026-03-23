@@ -11,14 +11,9 @@ class HandleShopUseCase:
     ):
         self._unit_of_work_factory = unit_of_work_factory
 
-    async def handle_shop(
-        self,
-        command_shop: CommandShopDTO,
-    ) -> str:
+    async def handle_shop(self, command_shop: CommandShopDTO) -> str:
         all_items = ShopItems.get_all_items()
         sorted_items = sorted(all_items.items(), key=lambda x: x[1].price)
-
-        user_message = command_shop.command_prefix + command_shop.command_name
 
         result_parts = ["МАГАЗИН АРТЕФАКТОВ:"]
         for _, item in sorted_items:
@@ -34,7 +29,7 @@ class HandleShopUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_shop.channel_name,
                 user_name=command_shop.user_name,
-                content=user_message,
+                content=command_shop.message,
                 current_time=command_shop.occurred_at,
             )
             uow.chat_use_case.save_chat_message(
@@ -48,8 +43,6 @@ class HandleShopUseCase:
     async def handle_buy(self, command_buy: CommandBuyDTO) -> str:
         user_name = command_buy.user_name
 
-        user_message = command_buy.command_prefix + command_buy.command_name
-
         if not command_buy.item_name_input:
             result = (
                 f"@{command_buy.display_name}, укажи название предмета! "
@@ -60,7 +53,7 @@ class HandleShopUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.user_name,
-                    content=user_message,
+                    content=command_buy.message,
                     current_time=command_buy.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -79,7 +72,7 @@ class HandleShopUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.user_name,
-                    content=user_message,
+                    content=command_buy.message,
                     current_time=command_buy.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -103,7 +96,7 @@ class HandleShopUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.user_name,
-                    content=user_message,
+                    content=command_buy.message,
                     current_time=command_buy.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -123,7 +116,7 @@ class HandleShopUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_buy.channel_name,
                     user_name=command_buy.user_name,
-                    content=user_message,
+                    content=command_buy.message,
                     current_time=command_buy.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -150,7 +143,7 @@ class HandleShopUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_buy.channel_name,
                 user_name=command_buy.user_name,
-                content=user_message,
+                content=command_buy.message,
                 current_time=command_buy.occurred_at,
             )
             uow.chat_use_case.save_chat_message(

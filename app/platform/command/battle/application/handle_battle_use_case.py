@@ -23,7 +23,6 @@ class HandleBattleUseCase:
         challenger_display = command_battle.display_name
         challenger_user = command_battle.user_name
         bot_nick = command_battle.bot_name
-        user_message = command_battle.message
 
         fee = EconomyPolicy.BATTLE_ENTRY_FEE
 
@@ -36,7 +35,7 @@ class HandleBattleUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=command_battle.user_name,
-                    content=user_message,
+                    content=command_battle.message,
                     current_time=command_battle.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -66,7 +65,7 @@ class HandleBattleUseCase:
                     uow.chat_use_case.save_chat_message(
                         channel_name=command_battle.channel_name,
                         user_name=command_battle.user_name,
-                        content=user_message,
+                        content=command_battle.message,
                         current_time=command_battle.occurred_at,
                     )
                     uow.chat_use_case.save_chat_message(
@@ -92,7 +91,7 @@ class HandleBattleUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=command_battle.user_name,
-                    content=user_message,
+                    content=command_battle.message,
                     current_time=command_battle.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -114,7 +113,7 @@ class HandleBattleUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=command_battle.user_name,
-                    content=user_message,
+                    content=command_battle.message,
                     current_time=command_battle.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -143,7 +142,7 @@ class HandleBattleUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=command_battle.user_name,
-                    content=user_message,
+                    content=command_battle.message,
                     current_time=command_battle.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
@@ -185,7 +184,7 @@ class HandleBattleUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_battle.channel_name,
                 user_name=command_battle.user_name,
-                content=user_message,
+                content=command_battle.message,
                 current_time=command_battle.occurred_at,
             )
             uow.chat_use_case.save_chat_message(

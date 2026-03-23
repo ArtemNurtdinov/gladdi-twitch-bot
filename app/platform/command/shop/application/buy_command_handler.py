@@ -33,6 +33,7 @@ class BuyCommandHandlerImpl(CommandHandler):
             bot_nick=bot_name,
             occurred_at=datetime.utcnow(),
             item_name_input=item_name,
+            message=message,
         )
 
         return await self._handle_shop_use_case.handle_buy(command_buy=command_buy)

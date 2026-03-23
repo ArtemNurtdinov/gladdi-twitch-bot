@@ -31,6 +31,7 @@ class GuessNumberCommandHandlerImpl(CommandHandler):
             bot_nick=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             guess_input=number,
+            message=message,
         )
 
         return await self._handle_guess_use_case.handle_number(guess_number=guess_number)
