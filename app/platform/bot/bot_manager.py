@@ -18,6 +18,7 @@ from app.commands.equipment.infrastructure.equipment_command_handler import Equi
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
 from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
+from app.commands.guess.infrastructure.guess_letter_command_handler import GuessLetterCommandHandlerImpl
 from app.commands.guess.infrastructure.guess_number_command_handler import GuessNumberCommandHandlerImpl
 from app.commands.guess.infrastructure.guess_word_command_handler import GuessWordCommandHandlerImpl
 from app.commands.guess.infrastructure.rps_command_handler import RpsCommandHandlerImpl
@@ -373,10 +374,9 @@ class BotManager:
                     guess_uow=uow_factories.build_guess_uow_factory(),
                 ),
                 bot_name=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
-            guess_letter_command_handler: CommandHandler = GuessNumberCommandHandlerImpl(
+            guess_letter_command_handler: CommandHandler = GuessLetterCommandHandlerImpl(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_guess_letter,
                 handle_guess_use_case=HandleGuessUseCase(
