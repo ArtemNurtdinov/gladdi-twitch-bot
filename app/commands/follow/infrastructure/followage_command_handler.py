@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
@@ -7,21 +6,13 @@ from app.platform.command.domain.command_handler import CommandHandler
 
 
 class FollowageCommandHandlerImpl(CommandHandler):
-    def __init__(
-        self,
-        command_prefix: str,
-        command_name: str,
-        handle_follow_age_use_case: HandleFollowAgeUseCase,
-        bot_nick: str,
-        post_message_fn: Callable[[str], Awaitable[None]],
-    ):
+    def __init__(self, command_prefix: str, command_name: str, handle_follow_age_use_case: HandleFollowAgeUseCase, bot_nick: str):
         self._command_prefix = command_prefix
         self._command_name = command_name
         self._handle_follow_age_use_case = handle_follow_age_use_case
         self.bot_nick = bot_nick
-        self.post_message_fn = post_message_fn
 
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
         followage = FollowageDTO(
             command_prefix=self._command_prefix,
             command_name=self._command_name,
@@ -31,8 +22,4 @@ class FollowageCommandHandlerImpl(CommandHandler):
             bot_nick=self.bot_nick,
             occurred_at=datetime.utcnow(),
         )
-
-        result = await self._handle_follow_age_use_case.handle(followage)
-        if result:
-            await self.post_message_fn(result)
-        pass
+        return await self._handle_follow_age_use_case.handle(followage)

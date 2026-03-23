@@ -20,7 +20,7 @@ class HandleFollowAgeUseCase:
         self._chat_response_use_case = chat_response_use_case
         self._unit_of_work_factory = unit_of_work_factory
 
-    async def handle(self, command_follow_age: FollowageDTO) -> str | None:
+    async def handle(self, command_follow_age: FollowageDTO) -> str:
         channel_name = command_follow_age.channel_name
         user_message = command_follow_age.command_prefix + command_follow_age.command_name
 

@@ -32,7 +32,9 @@ class PlatformChatClient(ABC):
 
         if command_handler:
             try:
-                await command_handler.handle_command(self.channel_name, user_name, message)
+                result = await command_handler.handle(self.channel_name, user_name, message)
+                if result:
+                    await self.send_channel_message(result)
             except Exception:
                 pass
             return

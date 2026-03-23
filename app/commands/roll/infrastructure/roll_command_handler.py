@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.roll.application.handle_roll_use_case import HandleRollUseCase
@@ -17,16 +16,14 @@ class RollCommandHandlerImpl(CommandHandler):
         command_name: str,
         handle_roll_use_case: HandleRollUseCase,
         chat_moderation: ChatModerationPort,
-        bot_nick: str,
-        post_message_fn: Callable[[str], Awaitable[None]],
+        bot_name: str,
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
         self._handle_roll_use_case = handle_roll_use_case
         self.roll_cooldowns: dict[str, datetime] = {}
         self._chat_moderation = chat_moderation
-        self._bot_nick = bot_nick
-        self.post_message_fn = post_message_fn
+        self._bot_name = bot_name
 
     def _cleanup_old_cooldowns(self):
         current_time = datetime.now()
@@ -41,8 +38,8 @@ class RollCommandHandlerImpl(CommandHandler):
         for nickname in nicknames:
             del self.roll_cooldowns[nickname]
 
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        tail = user_message[len(self.command_prefix + self.command_name) :].strip()
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+        tail = message[len(self.command_prefix + self.command_name) :].strip()
         amount = tail or None
 
         self._cleanup_old_cooldowns()
@@ -53,7 +50,7 @@ class RollCommandHandlerImpl(CommandHandler):
             channel_name=channel_name,
             display_name=user_name,
             user_name=user_name.lower(),
-            bot_nick=self._bot_nick.lower(),
+            bot_nick=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             amount_input=amount,
             last_roll_time=self.roll_cooldowns.get(user_name),
@@ -64,48 +61,17 @@ class RollCommandHandlerImpl(CommandHandler):
         if result.new_last_roll_time:
             self.roll_cooldowns[user_name] = result.new_last_roll_time
 
-        for message in result.messages:
-            await self.post_message_fn(message)
+        response_parts = []
+        response_parts.extend(result.messages)
 
         if result.timeout_action:
-            await self.post_message_fn(result.timeout_action.reason)
+            response_parts.append(result.timeout_action.reason)
             await self._chat_moderation.timeout_user(
                 channel_name=channel_name,
-                moderator_name=self._bot_nick,
+                moderator_name=self._bot_name,
                 username=result.timeout_action.user_name,
                 duration_seconds=result.timeout_action.duration_seconds,
                 reason=result.timeout_action.reason,
             )
 
-    async def handle(self, channel_name: str, display_name: str, amount: str | None = None):
-        self._cleanup_old_cooldowns()
-
-        dto = RollDTO(
-            command_prefix=self.command_prefix,
-            command_name=self.command_name,
-            channel_name=channel_name,
-            display_name=display_name,
-            user_name=display_name.lower(),
-            bot_nick=self._bot_nick.lower(),
-            occurred_at=datetime.utcnow(),
-            amount_input=amount,
-            last_roll_time=self.roll_cooldowns.get(display_name),
-        )
-
-        result = await self._handle_roll_use_case.handle(command_roll=dto)
-
-        if result.new_last_roll_time:
-            self.roll_cooldowns[display_name] = result.new_last_roll_time
-
-        for message in result.messages:
-            await self.post_message_fn(message)
-
-        if result.timeout_action:
-            await self.post_message_fn(result.timeout_action.reason)
-            await self._chat_moderation.timeout_user(
-                channel_name=channel_name,
-                moderator_name=self._bot_nick,
-                username=result.timeout_action.user_name,
-                duration_seconds=result.timeout_action.duration_seconds,
-                reason=result.timeout_action.reason,
-            )
+        return "\n".join(response_parts)

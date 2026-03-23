@@ -215,7 +215,6 @@ class BotManager:
                     unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
                 ),
                 bot_nick=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
             ask_uow_factory = uow_factories.build_ask_uow_factory()
@@ -229,7 +228,6 @@ class BotManager:
                     unit_of_work_factory=ask_uow_factory,
                     chat_response_use_case=generate_response_use_case,
                 ),
-                post_message_fn=chat_client.send_channel_message,
                 bot_nick=self._settings.bot_name,
             )
 
@@ -243,7 +241,6 @@ class BotManager:
                 ),
                 chat_moderation=moderation_service,
                 bot_name=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
                 battle_waiting_user=battle_waiting_user,
             )
 
@@ -257,7 +254,6 @@ class BotManager:
                 ),
                 chat_moderation=moderation_service,
                 bot_nick=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
             balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(

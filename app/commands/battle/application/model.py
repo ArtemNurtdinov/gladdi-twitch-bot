@@ -23,4 +23,3 @@ class BattleUseCaseResult:
     messages: list[str]
     new_waiting_user: str | None
     timeout_action: BattleTimeoutAction | None
-    delay_before_timeout: float = 0.0

@@ -226,7 +226,6 @@ class HandleBattleUseCase:
         )
 
         timeout_action = None
-        delay_before_timeout = 1.0
 
         if final_timeout == 0:
             no_timeout_message = f"@{loser}, спасен от таймаута! {protection_message}"
@@ -259,5 +258,4 @@ class HandleBattleUseCase:
             messages=messages,
             new_waiting_user=new_waiting_user,
             timeout_action=timeout_action,
-            delay_before_timeout=delay_before_timeout,
         )
