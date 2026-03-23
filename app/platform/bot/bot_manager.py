@@ -281,7 +281,6 @@ class BotManager:
                     unit_of_work_factory=uow_factories.build_transfer_uow_factory(),
                 ),
                 bot_nick=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
             shop_command_handler: CommandHandler = ShopCommandHandlerImpl(
@@ -292,7 +291,6 @@ class BotManager:
                     unit_of_work_factory=uow_factories.build_shop_uow_factory(),
                 ),
                 bot_nick=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
             buy_command_handler: CommandHandler = BuyCommandHandlerImpl(

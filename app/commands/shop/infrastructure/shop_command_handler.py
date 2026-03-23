@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.shop.application.handle_shop_use_case import HandleShopUseCase
@@ -14,16 +13,14 @@ class ShopCommandHandlerImpl(CommandHandler):
         command_buy_name: str,
         handle_shop_use_case: HandleShopUseCase,
         bot_nick: str,
-        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self.command_shop_name = command_shop_name
         self.command_buy_name = command_buy_name
         self._handle_shop_use_case = handle_shop_use_case
         self._bot_nick = bot_nick
-        self.post_message_fn = post_message_fn
 
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
         bot_nick = self._bot_nick.lower()
 
         command_shop = CommandShopDTO(
@@ -37,6 +34,4 @@ class ShopCommandHandlerImpl(CommandHandler):
             command_buy_name=self.command_buy_name,
         )
 
-        result = await self._handle_shop_use_case.handle_shop(command_shop=command_shop)
-
-        await self.post_message_fn(result)
+        return await self._handle_shop_use_case.handle_shop(command_shop=command_shop)
