@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from app.commands.dto import ChatContextDTO
+from app.platform.command.dto import ChatContextDTO
 
 
 @dataclass(frozen=True)

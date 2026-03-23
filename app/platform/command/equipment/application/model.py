@@ -4,5 +4,7 @@ from app.platform.command.dto import ChatContextDTO
 
 
 @dataclass(frozen=True)
-class ChatMessageDTO(ChatContextDTO):
-    message: str
+class EquipmentDTO(ChatContextDTO):
+    command_prefix: str
+    command_name: str
+    command_shop: str

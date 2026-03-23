@@ -1,0 +1,77 @@
+from datetime import datetime
+
+from app.moderation.application.chat_moderation_port import ChatModerationPort
+from app.platform.command.domain.command_handler import CommandHandler
+from app.platform.command.roll.application.handle_roll_use_case import HandleRollUseCase
+from app.platform.command.roll.application.model import RollDTO
+
+
+class RollCommandHandlerImpl(CommandHandler):
+    DEFAULT_COOLDOWN_SECONDS = 60
+    CLEANUP_THRESHOLD_SECONDS = 300
+
+    def __init__(
+        self,
+        command_prefix: str,
+        command_name: str,
+        handle_roll_use_case: HandleRollUseCase,
+        chat_moderation: ChatModerationPort,
+        bot_name: str,
+    ):
+        self.command_prefix = command_prefix
+        self.command_name = command_name
+        self._handle_roll_use_case = handle_roll_use_case
+        self.roll_cooldowns: dict[str, datetime] = {}
+        self._chat_moderation = chat_moderation
+        self._bot_name = bot_name
+
+    def _cleanup_old_cooldowns(self):
+        current_time = datetime.now()
+        cleanup_threshold = self.CLEANUP_THRESHOLD_SECONDS
+
+        nicknames = [
+            nickname
+            for nickname, last_time in self.roll_cooldowns.items()
+            if (current_time - last_time).total_seconds() > cleanup_threshold
+        ]
+
+        for nickname in nicknames:
+            del self.roll_cooldowns[nickname]
+
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
+        tail = message[len(self.command_prefix + self.command_name) :].strip()
+        amount = tail or None
+
+        self._cleanup_old_cooldowns()
+
+        dto = RollDTO(
+            command_prefix=self.command_prefix,
+            command_name=self.command_name,
+            channel_name=channel_name,
+            display_name=user_name,
+            user_name=user_name.lower(),
+            bot_nick=self._bot_name.lower(),
+            occurred_at=datetime.utcnow(),
+            amount_input=amount,
+            last_roll_time=self.roll_cooldowns.get(user_name),
+        )
+
+        result = await self._handle_roll_use_case.handle(command_roll=dto)
+
+        if result.new_last_roll_time:
+            self.roll_cooldowns[user_name] = result.new_last_roll_time
+
+        response_parts = []
+        response_parts.extend(result.messages)
+
+        if result.timeout_action:
+            response_parts.append(result.timeout_action.reason)
+            await self._chat_moderation.timeout_user(
+                channel_name=channel_name,
+                moderator_name=self._bot_name,
+                username=result.timeout_action.user_name,
+                duration_seconds=result.timeout_action.duration_seconds,
+                reason=result.timeout_action.reason,
+            )
+
+        return "\n".join(response_parts)
