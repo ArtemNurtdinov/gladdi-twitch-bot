@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
@@ -16,17 +15,15 @@ class TopCommandHandlerImpl(CommandHandler):
         command_name: str,
         handle_top_bottom_use_case: HandleTopBottomUseCase,
         bot_name: str,
-        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self._command_name = command_name
         self._handle_top_bottom_use_case = handle_top_bottom_use_case
         self._bot_name = bot_name
-        self.post_message_fn = post_message_fn
         self.top_limit = self._TOP_LIMIT
         self.bottom_limit = self._BOTTOM_LIMIT
 
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
         top = TopDTO(
             command_prefix=self.command_prefix,
             command_name=self._command_name,
@@ -37,6 +34,4 @@ class TopCommandHandlerImpl(CommandHandler):
             limit=self.top_limit,
         )
 
-        result = await self._handle_top_bottom_use_case.handle_top(command_top=top)
-
-        await self.post_message_fn(result)
+        return await self._handle_top_bottom_use_case.handle_top(command_top=top)

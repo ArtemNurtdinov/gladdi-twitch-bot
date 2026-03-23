@@ -320,7 +320,6 @@ class BotManager:
                     unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
                 ),
                 bot_name=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
             bottom_command_handler: CommandHandler = BottomCommandHandlerImpl(
