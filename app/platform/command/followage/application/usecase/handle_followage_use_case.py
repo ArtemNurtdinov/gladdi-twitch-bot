@@ -19,7 +19,6 @@ class HandleFollowAgeUseCase:
 
     async def handle(self, command_follow_age: FollowageDTO) -> str:
         channel_name = command_follow_age.channel_name
-        user_message = command_follow_age.command_prefix + command_follow_age.command_name
 
         with self._unit_of_work_factory.create(read_only=True) as uow:
             follow_info = await uow.platform_repository.get_followage(
@@ -34,7 +33,7 @@ class HandleFollowAgeUseCase:
                     ChatMessage(
                         channel_name=channel_name,
                         user_name=command_follow_age.user_name,
-                        content=user_message,
+                        content=command_follow_age.message,
                         created_at=command_follow_age.occurred_at,
                     )
                 )
@@ -78,7 +77,7 @@ class HandleFollowAgeUseCase:
                 ChatMessage(
                     channel_name=channel_name,
                     user_name=command_follow_age.user_name,
-                    content=user_message,
+                    content=command_follow_age.message,
                     created_at=command_follow_age.occurred_at,
                 )
             )
