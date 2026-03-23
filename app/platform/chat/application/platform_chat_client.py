@@ -28,12 +28,13 @@ class PlatformChatClient(ABC):
         if self._command_router is None:
             return
 
-        handled = False
-        try:
-            handled = await self._command_router.dispatch_command_handler(self.channel_name, user_name, message)
-        except Exception:
-            pass
-        if handled:
+        command_handler = self._command_router.get_command_handler(message)
+
+        if command_handler:
+            try:
+                await command_handler.handle_command(self.channel_name, user_name, message)
+            except Exception:
+                pass
             return
 
         if self._is_self_message(user_name):

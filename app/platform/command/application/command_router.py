@@ -12,21 +12,17 @@ class CommandRouterImpl(CommandRouter):
     def register_command_handler(self, name: str, handler: CommandHandler) -> None:
         self._handlers[name.lower()] = handler
 
-    async def dispatch_command_handler(self, channel_name: str, user_name: str, message: str) -> bool:
+    def get_command_handler(self, message: str) -> CommandHandler | None:
         if not message.startswith(self._prefix):
-            return False
+            return None
 
         without_prefix = message[len(self._prefix) :].strip()
 
         if not without_prefix:
-            return False
+            return None
 
         parts = without_prefix.split(" ", 1)
         cmd_name = parts[0].lower()
         command_handler = self._handlers.get(cmd_name)
 
-        if not command_handler:
-            return False
-
-        await command_handler.handle_command(channel_name, user_name, message)
-        return True
+        return command_handler
