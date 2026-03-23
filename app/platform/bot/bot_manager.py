@@ -159,6 +159,8 @@ class BotManager:
 
             bot_user = await platform_repository.get_user_by_login(self._settings.bot_name)
             bot_user_id = bot_user.id if bot_user else None
+            battle_waiting_user = {"value": None}
+            chat_summary_state = ChatSummaryState()
 
             generate_response_use_case = GenerateResponseUseCase(
                 unit_of_work_factory=uow_factories.build_chat_response_uow_factory(),
@@ -409,10 +411,6 @@ class BotManager:
                 bot_id=bot_user_id,
                 bot_name=self._settings.bot_name,
             )
-
-            battle_waiting_user = {"value": None}
-
-            chat_summary_state = ChatSummaryState()
 
             self._background_tasks = build_background_tasks(
                 providers=providers_bundle,
