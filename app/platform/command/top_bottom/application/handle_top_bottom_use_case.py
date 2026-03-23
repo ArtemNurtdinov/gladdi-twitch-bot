@@ -9,7 +9,6 @@ class HandleTopBottomUseCase:
         self._unit_of_work_factory = unit_of_work_factory
 
     async def handle_top(self, command_top: TopDTO) -> str:
-        user_message = command_top.command_prefix + command_top.command_name
         with self._unit_of_work_factory.create(read_only=True) as uow:
             top_users = uow.economy_policy.get_top_users(command_top.channel_name, limit=command_top.limit)
 
@@ -25,7 +24,7 @@ class HandleTopBottomUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_top.channel_name,
                 user_name=command_top.user_name,
-                content=user_message,
+                content=command_top.message,
                 current_time=command_top.occurred_at,
             )
             uow.chat_use_case.save_chat_message(
@@ -38,7 +37,6 @@ class HandleTopBottomUseCase:
         return result
 
     async def handle_bottom(self, command_bottom: BottomDTO) -> str:
-        user_message = command_bottom.command_prefix + command_bottom.command_name
         with self._unit_of_work_factory.create(read_only=True) as uow:
             active_since = datetime.utcnow() - timedelta(days=30)
             bottom_users = uow.economy_policy.get_bottom_users(
@@ -57,7 +55,7 @@ class HandleTopBottomUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_bottom.channel_name,
                 user_name=command_bottom.user_name,
-                content=user_message,
+                content=command_bottom.message,
                 current_time=command_bottom.occurred_at,
             )
             uow.chat_use_case.save_chat_message(

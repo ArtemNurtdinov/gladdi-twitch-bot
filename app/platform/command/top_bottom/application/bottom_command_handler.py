@@ -25,13 +25,12 @@ class BottomCommandHandlerImpl(CommandHandler):
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         command_bottom = BottomDTO(
-            command_prefix=self.command_prefix,
-            command_name=self._command_name,
             channel_name=channel_name,
             user_name=user_name.lower(),
             bot_nick=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             limit=self.bottom_limit,
+            message=message,
         )
 
         return await self._handle_top_bottom_use_case.handle_bottom(command_bottom=command_bottom)

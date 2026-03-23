@@ -25,13 +25,12 @@ class TopCommandHandlerImpl(CommandHandler):
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         top = TopDTO(
-            command_prefix=self.command_prefix,
-            command_name=self._command_name,
             channel_name=channel_name,
             user_name=user_name.lower(),
             bot_nick=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             limit=self.top_limit,
+            message=message,
         )
 
         return await self._handle_top_bottom_use_case.handle_top(command_top=top)
