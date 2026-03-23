@@ -253,7 +253,7 @@ class BotManager:
                     calculate_timeout_use_case=providers_bundle.equipment_providers.calculate_timeout_use_case,
                 ),
                 chat_moderation=moderation_service,
-                bot_nick=self._settings.bot_name,
+                bot_name=self._settings.bot_name,
             )
 
             balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(
@@ -263,7 +263,6 @@ class BotManager:
                     balance_uow=uow_factories.build_balance_uow_factory(),
                 ),
                 bot_name=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
             bonus_command_handler: CommandHandler = BonusCommandHandlerImpl(
