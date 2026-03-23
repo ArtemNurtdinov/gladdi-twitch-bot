@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
-from app.commands.balance.application.model import BalanceDTO
+from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
+from app.platform.command.balance.application.model import BalanceDTO
 from app.platform.command.domain.command_handler import CommandHandler
 
 

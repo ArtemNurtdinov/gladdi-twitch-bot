@@ -1,5 +1,5 @@
-from app.commands.balance.application.balance_uow import BalanceUnitOfWorkFactory
-from app.commands.balance.application.model import BalanceDTO
+from app.platform.command.balance.application.balance_uow import BalanceUnitOfWorkFactory
+from app.platform.command.balance.application.model import BalanceDTO
 
 
 class HandleBalanceUseCase:

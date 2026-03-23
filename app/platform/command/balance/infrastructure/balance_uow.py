@@ -3,9 +3,9 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.chat.application.usecase.chat_use_case import ChatUseCase
-from app.commands.balance.application.balance_uow import BalanceUnitOfWork, BalanceUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
+from app.platform.command.balance.application.balance_uow import BalanceUnitOfWork, BalanceUnitOfWorkFactory
 from core.provider import Provider
 from core.types import SessionFactory
 
