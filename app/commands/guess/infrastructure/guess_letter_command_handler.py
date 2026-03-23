@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
@@ -15,7 +14,6 @@ class GuessLetterCommandHandlerImpl(CommandHandler):
         command_guess_word: str,
         handle_guess_use_case: HandleGuessUseCase,
         bot_name: str,
-        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self._command_prefix = command_prefix
         self._command_name = command_name
@@ -23,10 +21,9 @@ class GuessLetterCommandHandlerImpl(CommandHandler):
         self.command_guess_word = command_guess_word
         self._handle_guess_use_case = handle_guess_use_case
         self._bot_name = bot_name
-        self.post_message_fn = post_message_fn
 
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        tail = user_message[len(self._command_prefix + self._command_name) :].strip()
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+        tail = message[len(self._command_prefix + self._command_name) :].strip()
         letter = tail or None
 
         guess_letter = GuessLetterDTO(
@@ -40,5 +37,4 @@ class GuessLetterCommandHandlerImpl(CommandHandler):
             letter_input=letter,
         )
 
-        message = await self._handle_guess_use_case.handle_letter(guess_letter=guess_letter)
-        await self.post_message_fn(message)
+        return await self._handle_guess_use_case.handle_letter(guess_letter=guess_letter)
