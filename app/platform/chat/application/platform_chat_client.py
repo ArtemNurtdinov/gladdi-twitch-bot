@@ -8,9 +8,6 @@ from app.platform.command.domain.command_router import CommandRouter
 
 
 class PlatformChatClient(ABC):
-    _command_router: CommandRouter | None = None
-    _chat_events_handler: ChatEventsHandler | None = None
-
     def __init__(
         self,
         auth: PlatformAuth,
@@ -28,7 +25,7 @@ class PlatformChatClient(ABC):
         self.command_prefix = command_prefix
 
     async def handle_message(self, user_name: str, message: str):
-        if self._command_handled(user_name, message):
+        if await self._command_handled(user_name, message):
             return
 
         if self._is_self_message(user_name):
