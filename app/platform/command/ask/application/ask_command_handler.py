@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
-from app.commands.ask.application.model import AskCommandDTO
+from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
+from app.platform.command.ask.application.model import AskCommandDTO
 from app.platform.command.domain.command_handler import CommandHandler
 
 

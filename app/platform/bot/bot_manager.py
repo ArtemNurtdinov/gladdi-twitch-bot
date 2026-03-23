@@ -4,8 +4,6 @@ from datetime import datetime
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
-from app.commands.ask.application.handle_ask_use_case import HandleAskUseCase
-from app.commands.ask.infrastructure.ask_command_handler import AskCommandHandlerImpl
 from app.commands.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.commands.balance.infrastructure.balance_command_handler import BalanceCommandHandlerImpl
 from app.commands.battle.application.handle_battle_use_case import HandleBattleUseCase
@@ -44,6 +42,8 @@ from app.platform.chat.application.chat_event_handler import ChatEventsHandler
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
+from app.platform.command.ask.application.ask_command_handler import AskCommandHandlerImpl
+from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl

@@ -3,8 +3,8 @@ from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
 from app.chat.domain.model.chat_message import ChatMessage
-from app.commands.ask.application.ask_uow import AskUnitOfWorkFactory
-from app.commands.ask.application.model import AskCommandDTO
+from app.platform.command.ask.application.ask_uow import AskUnitOfWorkFactory
+from app.platform.command.ask.application.model import AskCommandDTO
 
 
 class HandleAskUseCase:
