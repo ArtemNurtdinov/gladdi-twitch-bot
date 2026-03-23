@@ -406,7 +406,6 @@ class BotManager:
                     rps_uow=uow_factories.build_rps_uow_factory(),
                 ),
                 bot_name=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
             command_router: CommandRouter = CommandRouterImpl(self._settings.prefix)

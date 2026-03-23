@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.minigame.application.model.rps import RpsDTO
@@ -13,16 +12,14 @@ class RpsCommandHandlerImpl(CommandHandler):
         command_name: str,
         handle_rps_use_case: HandleRpsUseCase,
         bot_name: str,
-        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self._command_prefix = command_prefix
         self._command_name = command_name
         self._handle_rps_use_case = handle_rps_use_case
         self._bot_name = bot_name
-        self.post_message_fn = post_message_fn
 
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        tail = user_message[len(self._command_prefix + self._command_name) :].strip()
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+        tail = message[len(self._command_prefix + self._command_name) :].strip()
         choice = tail or None
         rps = RpsDTO(
             command_prefix=self._command_prefix,
@@ -35,6 +32,4 @@ class RpsCommandHandlerImpl(CommandHandler):
             choice_input=choice,
         )
 
-        result = await self._handle_rps_use_case.handle(rps=rps)
-
-        await self.post_message_fn(result)
+        return await self._handle_rps_use_case.handle(rps=rps)
