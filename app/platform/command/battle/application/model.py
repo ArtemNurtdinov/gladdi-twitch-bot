@@ -1,13 +1,16 @@
 from dataclasses import dataclass, field
-
-from app.platform.command.dto import ChatContextDTO
+from datetime import datetime
 
 
 @dataclass(frozen=True)
-class BattleDTO(ChatContextDTO):
-    command_prefix: str
-    command_name: str
+class BattleDTO:
+    channel_name: str
+    display_name: str
+    user_name: str
     command_call: str
+    bot_name: str
+    occurred_at: datetime
+    message: str
     waiting_user: str | None = field(default=None)
 
 

@@ -7,7 +7,6 @@ class HandleEquipmentUseCase:
         self._unit_of_work_factory = unit_of_work_factory
 
     async def handle(self, equipment_command: EquipmentDTO) -> str:
-        user_message = equipment_command.command_prefix + equipment_command.command_name
         with self._unit_of_work_factory.create(read_only=True) as uow:
             equipment = uow.get_user_equipment_use_case.get_user_equipment(
                 channel_name=equipment_command.channel_name, user_name=equipment_command.user_name
@@ -29,12 +28,12 @@ class HandleEquipmentUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=equipment_command.channel_name,
                 user_name=equipment_command.user_name,
-                content=user_message,
+                content=equipment_command.message,
                 current_time=equipment_command.occurred_at,
             )
             uow.chat_use_case.save_chat_message(
                 channel_name=equipment_command.channel_name,
-                user_name=equipment_command.bot_nick,
+                user_name=equipment_command.bot_name,
                 content=result,
                 current_time=equipment_command.occurred_at,
             )

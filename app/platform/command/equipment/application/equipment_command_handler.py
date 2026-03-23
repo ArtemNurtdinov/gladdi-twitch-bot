@@ -24,12 +24,12 @@ class EquipmentCommandHandlerImpl(CommandHandler):
         equipment = EquipmentDTO(
             command_prefix=self.command_prefix,
             channel_name=channel_name,
-            command_name=self.command_name,
             display_name=user_name,
             user_name=user_name.lower(),
-            bot_nick=self._bot_name.lower(),
+            bot_name=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             command_shop=self.command_shop,
+            message=message,
         )
 
         return await self._handle_equipment_use_case.handle(equipment_command=equipment)

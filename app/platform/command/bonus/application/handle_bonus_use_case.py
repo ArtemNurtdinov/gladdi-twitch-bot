@@ -7,8 +7,6 @@ class HandleBonusUseCase:
         self._bonus_uow = bonus_uow
 
     async def handle(self, bonus: BonusDTO) -> str:
-        user_message = bonus.command_prefix + bonus.command_name
-
         with self._bonus_uow.create(read_only=True) as uow:
             active_stream = uow.stream_service.get_active_stream(bonus.channel_name)
 
@@ -18,12 +16,12 @@ class HandleBonusUseCase:
                 uow.chat_use_case.save_chat_message(
                     channel_name=bonus.channel_name,
                     user_name=bonus.user_name,
-                    content=user_message,
+                    content=bonus.message,
                     current_time=bonus.occurred_at,
                 )
                 uow.chat_use_case.save_chat_message(
                     channel_name=bonus.channel_name,
-                    user_name=bonus.bot_nick,
+                    user_name=bonus.bot_name,
                     content=result,
                     current_time=bonus.occurred_at,
                 )
@@ -55,12 +53,12 @@ class HandleBonusUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=bonus.channel_name,
                 user_name=bonus.user_name,
-                content=user_message,
+                content=bonus.message,
                 current_time=bonus.occurred_at,
             )
             uow.chat_use_case.save_chat_message(
                 channel_name=bonus.channel_name,
-                user_name=bonus.bot_nick,
+                user_name=bonus.bot_name,
                 content=result,
                 current_time=bonus.occurred_at,
             )

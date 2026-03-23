@@ -50,7 +50,6 @@ from app.platform.command.transfer.application.handle_transfer_use_case import H
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
-from app.platform.providers import PlatformApiClient
 from bootstrap.jobs_composition import build_background_tasks
 from bootstrap.providers_bundle import build_providers_bundle
 from bootstrap.stream_composition import restore_stream_context
@@ -73,8 +72,6 @@ class BotManager:
         self._started_at: datetime | None = None
         self._last_error: str | None = None
         self._lock = asyncio.Lock()
-
-        self._streaming_client: PlatformApiClient | None = None
 
     def _reset_state(self):
         self._background_tasks = None

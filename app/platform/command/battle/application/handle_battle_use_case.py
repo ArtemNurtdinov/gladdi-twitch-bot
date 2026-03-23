@@ -22,8 +22,8 @@ class HandleBattleUseCase:
     async def handle(self, command_battle: BattleDTO) -> BattleUseCaseResult:
         challenger_display = command_battle.display_name
         challenger_user = command_battle.user_name
-        bot_nick = command_battle.bot_nick
-        user_message = command_battle.command_prefix + command_battle.command_name
+        bot_nick = command_battle.bot_name
+        user_message = command_battle.message
 
         fee = EconomyPolicy.BATTLE_ENTRY_FEE
 

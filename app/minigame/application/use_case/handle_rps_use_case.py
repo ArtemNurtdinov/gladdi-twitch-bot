@@ -11,13 +11,10 @@ class HandleRpsUseCase:
         self._rps_uow = rps_uow
 
     async def handle(self, rps: RpsDTO) -> str:
-        bot_nick = rps.bot_nick
         user_name = rps.user_name
 
         if not rps.choice_input:
             return f"@{rps.display_name}, укажите ваш выбор: камень / ножницы / бумага"
-
-        user_message = rps.command_prefix + rps.command_name + " " + rps.choice_input
 
         game = self._minigame_repository.get_active_rps_game(rps.channel_name)
 
@@ -25,10 +22,10 @@ class HandleRpsUseCase:
             message = "Сейчас нет активной игры 'камень-ножницы-бумага'"
             with self._rps_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=rps.user_name, content=user_message, current_time=rps.occurred_at
+                    channel_name=rps.channel_name, user_name=rps.user_name, content=rps.message, current_time=rps.occurred_at
                 )
                 uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=bot_nick, content=message, current_time=rps.occurred_at
+                    channel_name=rps.channel_name, user_name=rps.bot_name, content=message, current_time=rps.occurred_at
                 )
             return message
 
@@ -37,10 +34,10 @@ class HandleRpsUseCase:
             message = "Выберите: камень, ножницы или бумага"
             with self._rps_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=rps.user_name, content=user_message, current_time=rps.occurred_at
+                    channel_name=rps.channel_name, user_name=rps.user_name, content=rps.message, current_time=rps.occurred_at
                 )
                 uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=bot_nick, content=message, current_time=rps.occurred_at
+                    channel_name=rps.channel_name, user_name=rps.bot_name, content=message, current_time=rps.occurred_at
                 )
             return message
 
@@ -49,10 +46,10 @@ class HandleRpsUseCase:
             message = f"Вы уже выбрали: {existing}. Сменить нельзя в текущей игре"
             with self._rps_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=rps.user_name, content=user_message, current_time=rps.occurred_at
+                    channel_name=rps.channel_name, user_name=rps.user_name, content=rps.message, current_time=rps.occurred_at
                 )
                 uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=bot_nick, content=message, current_time=rps.occurred_at
+                    channel_name=rps.channel_name, user_name=rps.bot_name, content=message, current_time=rps.occurred_at
                 )
             return message
 
@@ -70,10 +67,10 @@ class HandleRpsUseCase:
             message = f"Недостаточно средств! Требуется {fee} монет"
             with self._rps_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=rps.user_name, content=user_message, current_time=rps.occurred_at
+                    channel_name=rps.channel_name, user_name=rps.user_name, content=rps.message, current_time=rps.occurred_at
                 )
                 uow.chat_use_case.save_chat_message(
-                    channel_name=rps.channel_name, user_name=bot_nick, content=message, current_time=rps.occurred_at
+                    channel_name=rps.channel_name, user_name=rps.bot_name, content=message, current_time=rps.occurred_at
                 )
             return message
 
@@ -83,9 +80,9 @@ class HandleRpsUseCase:
         message = f"Принято: @{rps.display_name} — {normalized_choice}"
         with self._rps_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
-                channel_name=rps.channel_name, user_name=rps.user_name, content=user_message, current_time=rps.occurred_at
+                channel_name=rps.channel_name, user_name=rps.user_name, content=rps.message, current_time=rps.occurred_at
             )
             uow.chat_use_case.save_chat_message(
-                channel_name=rps.channel_name, user_name=bot_nick, content=message, current_time=rps.occurred_at
+                channel_name=rps.channel_name, user_name=rps.bot_name, content=message, current_time=rps.occurred_at
             )
         return message

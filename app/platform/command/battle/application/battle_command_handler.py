@@ -25,13 +25,12 @@ class BattleCommandHandlerImpl(CommandHandler):
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         battle = BattleDTO(
-            command_prefix=self.command_prefix,
-            command_name=self.command_name,
             channel_name=channel_name,
             display_name=user_name,
             user_name=user_name.lower(),
-            bot_nick=self._bot_name.lower(),
+            bot_name=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
+            message=message,
             command_call=f"{self.command_prefix}{self.command_name}",
             waiting_user=self._battle_waiting_user["value"],
         )

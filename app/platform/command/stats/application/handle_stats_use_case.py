@@ -8,8 +8,6 @@ class HandleStatsUseCase:
         self._stats_uow = stats_uow
 
     async def handle(self, command_stats: CommandStatsDTO) -> str:
-        user_message = command_stats.command_prefix + command_stats.command_name
-
         with self._stats_uow.create(read_only=True) as uow:
             balance = uow.economy_policy.get_user_balance(command_stats.channel_name, command_stats.user_name)
             bets = uow.betting_service.get_user_bets(command_stats.channel_name, command_stats.user_name)
@@ -46,7 +44,7 @@ class HandleStatsUseCase:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_stats.channel_name,
                 user_name=command_stats.user_name,
-                content=user_message,
+                content=command_stats.message,
                 current_time=command_stats.occurred_at,
             )
             uow.chat_use_case.save_chat_message(

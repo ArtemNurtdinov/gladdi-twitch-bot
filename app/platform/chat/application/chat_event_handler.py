@@ -14,7 +14,7 @@ class ChatEventsHandler:
             display_name=display_name,
             user_name=display_name.lower(),
             message=message,
-            bot_nick=bot_name,
+            bot_name=bot_name,
             occurred_at=datetime.utcnow(),
         )
         return await self._handle_chat_message_use_case.handle(chat_message)

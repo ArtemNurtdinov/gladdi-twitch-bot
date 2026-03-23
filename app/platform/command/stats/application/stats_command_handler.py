@@ -27,6 +27,7 @@ class StatsCommandHandlerImpl(CommandHandler):
             user_name=user_name.lower(),
             bot_name=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
+            message=message,
         )
 
         return await self._handle_stats_use_case.handle(command_stats=command_stats)

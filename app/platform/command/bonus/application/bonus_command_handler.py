@@ -20,13 +20,12 @@ class BonusCommandHandlerImpl(CommandHandler):
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         bonus = BonusDTO(
-            command_prefix=self.command_prefix,
-            command_name=self.command_name,
             channel_name=channel_name,
             display_name=user_name,
             user_name=user_name.lower(),
-            bot_nick=self._bot_name.lower(),
+            bot_name=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
+            message=message,
         )
 
         return await self._handle_bonus_use_case.handle(bonus=bonus)

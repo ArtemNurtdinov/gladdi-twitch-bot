@@ -11,6 +11,7 @@ class CommandStatsDTO:
     user_name: str
     bot_name: str
     occurred_at: datetime
+    message: str
 
 
 @dataclass(frozen=True)

@@ -22,14 +22,14 @@ class RpsCommandHandlerImpl(CommandHandler):
         tail = message[len(self._command_prefix + self._command_name) :].strip()
         choice = tail or None
         rps = RpsDTO(
-            command_prefix=self._command_prefix,
             command_name=self._command_name,
             channel_name=channel_name,
             display_name=user_name,
             user_name=user_name.lower(),
-            bot_nick=self._bot_name.lower(),
+            bot_name=self._bot_name.lower(),
             occurred_at=datetime.utcnow(),
             choice_input=choice,
+            message=message,
         )
 
         return await self._handle_rps_use_case.handle(rps=rps)
