@@ -3,8 +3,8 @@ import logging
 import httpx
 from pydantic import ValidationError
 
-from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.models.follower import ChannelFollowerDTO
+from app.platform.command.followage.application.model import FollowageInfo
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api_client import StreamingApiClient
 from app.platform.infrastructure.common import handle_api_response

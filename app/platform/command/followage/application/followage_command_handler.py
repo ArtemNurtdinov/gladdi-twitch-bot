@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
-from app.commands.follow.application.model import FollowageDTO
 from app.platform.command.domain.command_handler import CommandHandler
+from app.platform.command.followage.application.model import FollowageDTO
+from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 
 
 class FollowageCommandHandlerImpl(CommandHandler):

@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.domain.repo import ChatRepository
-from app.commands.follow.application.uow import FollowAgeUnitOfWork, FollowAgeUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.platform.command.followage.application.uow import FollowAgeUnitOfWork, FollowAgeUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
 from core.provider import Provider
 from core.types import SessionFactory

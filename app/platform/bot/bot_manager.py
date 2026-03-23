@@ -15,8 +15,6 @@ from app.commands.bonus.infrastructure.bonus_command_handler import BonusCommand
 from app.commands.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.commands.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.commands.equipment.infrastructure.equipment_command_handler import EquipmentCommandHandlerImpl
-from app.commands.follow.application.handle_followage_use_case import HandleFollowAgeUseCase
-from app.commands.follow.infrastructure.followage_command_handler import FollowageCommandHandlerImpl
 from app.commands.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.commands.guess.infrastructure.guess_letter_command_handler import GuessLetterCommandHandlerImpl
 from app.commands.guess.infrastructure.guess_number_command_handler import GuessNumberCommandHandlerImpl
@@ -48,6 +46,8 @@ from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
+from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
+from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.platform.providers import PlatformApiClient
@@ -187,7 +187,6 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_followage,
                 handle_follow_age_use_case=HandleFollowAgeUseCase(
-                    chat_repo_provider=providers_bundle.chat_providers.chat_repo_provider,
                     conversation_repo_provider=providers_bundle.ai_providers.conversation_repo_provider,
                     chat_response_use_case=generate_response_use_case,
                     unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),

@@ -1,7 +1,7 @@
 from typing import Protocol
 
-from app.commands.follow.application.model import FollowageInfo
 from app.follow.application.models.follower import ChannelFollowerDTO
+from app.platform.command.followage.application.model import FollowageInfo
 from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
 from app.user.application.model.model import UserInfoDTO
