@@ -364,7 +364,6 @@ class BotManager:
                     stats_uow=uow_factories.build_stats_uow_factory(),
                 ),
                 bot_name=self._settings.bot_name,
-                post_message_fn=chat_client.send_channel_message,
             )
 
             guess_number_command_handler: CommandHandler = GuessNumberCommandHandlerImpl(
