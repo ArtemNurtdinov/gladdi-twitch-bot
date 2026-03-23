@@ -185,7 +185,7 @@ class BotManager:
                 bot_name=self._settings.bot_name,
                 chat_summary_state=chat_summary_state,
                 chat_response_use_case=chat_response_use_case,
-                outbound=chat_client,
+                send_channel_message=chat_client.send_channel_message,
                 platform_auth=platform_auth,
                 platform_repository=platform_repository,
             )

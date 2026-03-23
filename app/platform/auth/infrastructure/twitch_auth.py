@@ -6,16 +6,15 @@ from app.platform.auth.platform_auth import PlatformAuth
 
 
 class TwitchAuth(PlatformAuth):
+    _TWITCH_OAUTH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
+    _TWITCH_OAUTH_VALIDATE_URL = "https://id.twitch.tv/oauth2/validate"
+
     def __init__(self, access_token: str, refresh_token: str, client_id: str, client_secret: str, logger: Logger):
-        self.access_token = access_token
-        self.refresh_token = refresh_token
-        self.client_id = client_id
-        self.client_secret = client_secret
+        super().__init__(access_token, refresh_token, client_id, client_secret)
         self.logger = logger
 
     async def update_access_token(self):
         self.logger.info("updating access token")
-        url = "https://id.twitch.tv/oauth2/token"
 
         data = {
             "client_id": self.client_id,
@@ -25,24 +24,21 @@ class TwitchAuth(PlatformAuth):
         }
 
         async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.post(url, data=data)
+            response = await client.post(self._TWITCH_OAUTH_TOKEN_URL, data=data)
         token_data = response.json()
 
         if "access_token" in token_data:
-            self.access_token = token_data["access_token"]
-            self.refresh_token = token_data.get("refresh_token", self.refresh_token)
+            access_token = token_data["access_token"]
+            refresh_token = token_data.get("refresh_token", self.refresh_token)
+            self.update_tokens(access_token, refresh_token)
         else:
             raise Exception("Ошибка обновления токена:", token_data)
 
     async def check_token_is_valid(self) -> bool:
-        if not self.access_token:
-            raise ValueError("Access token пуст")
-
-        url = "https://id.twitch.tv/oauth2/validate"
         headers = {"Authorization": f"OAuth {self.access_token}"}
 
         async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get(url, headers=headers)
+            response = await client.get(self._TWITCH_OAUTH_VALIDATE_URL, headers=headers)
 
         if response.status_code == 200:
             token_info = response.json()

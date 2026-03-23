@@ -2,18 +2,66 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.application.chat_events_handler import ChatEventsHandler
 from app.platform.command.domain.command_router import CommandRouter
 
 
 class PlatformChatClient(ABC):
-    @abstractmethod
-    def set_command_router(self, router: CommandRouter): ...
-    @abstractmethod
-    def set_chat_event_handler(self, handler: ChatEventsHandler): ...
+    _command_router: CommandRouter | None = None
+    _chat_events_handler: ChatEventsHandler | None = None
+
+    def __init__(self, auth: PlatformAuth, channel_name: str, bot_name: str, command_prefix: str):
+        self.auth = auth
+        self.channel_name = channel_name
+        self.bot_name = bot_name
+        self.command_prefix = command_prefix
+
+    def set_command_router(self, command_router: CommandRouter):
+        self._command_router = command_router
+
+    def set_chat_event_handler(self, chat_events_handler: ChatEventsHandler):
+        self._chat_events_handler = chat_events_handler
+
+    async def handle_message(self, user_name: str, message: str):
+        if self._command_router is None:
+            return
+
+        handled = False
+        try:
+            handled = await self._command_router.dispatch_command_handler(self.channel_name, user_name, message)
+        except Exception:
+            pass
+        if handled:
+            return
+
+        if self._is_self_message(user_name):
+            return
+
+        if message.startswith(self.command_prefix):
+            return
+
+        try:
+            await self._chat_events_handler.handle(
+                channel_name=self.channel_name,
+                display_name=user_name,
+                message=message,
+                bot_name=self.bot_name,
+            )
+        except Exception:
+            pass
+
+    def _is_self_message(self, user_name: str) -> bool:
+        if user_name.lower() == self.bot_name.lower():
+            return True
+        else:
+            return False
+
     @abstractmethod
     async def send_channel_message(self, message: str): ...
+
     @abstractmethod
     async def start_chat(self): ...
+
     @abstractmethod
     async def stop_chat(self): ...

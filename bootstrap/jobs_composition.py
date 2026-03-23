@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+
 from app.ai.gen.application.use_cases.chat_response_use_case import ChatResponseUseCase
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
@@ -20,7 +22,6 @@ from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
-from app.platform.chat.application.platform_chat_client import PlatformChatClient
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
@@ -40,11 +41,10 @@ def build_background_tasks(
     bot_name: str,
     chat_summary_state: ChatSummaryState,
     chat_response_use_case: ChatResponseUseCase,
-    outbound: PlatformChatClient,
+    send_channel_message: Callable[[str], Awaitable[None]],
     platform_auth: PlatformAuth,
     platform_repository: PlatformRepository,
 ) -> BackgroundTasks:
-    send_channel_message = outbound.send_channel_message
     notifications_port = NotificationRepositoryImpl(providers.telegram_providers.telegram_bot)
     chat_response_port = GenerateStreamInfoAdapter(chat_response_use_case)
     return BackgroundTasks(
