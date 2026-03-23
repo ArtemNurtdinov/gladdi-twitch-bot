@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from app.commands.transfer.application.handle_transfer_use_case import HandleTransferUseCase
@@ -13,16 +12,14 @@ class TransferCommandHandlerImpl(CommandHandler):
         handle_transfer_use_case: HandleTransferUseCase,
         command_name: str,
         bot_nick: str,
-        post_message_fn: Callable[[str], Awaitable[None]],
     ):
         self.command_prefix = command_prefix
         self._handle_transfer_use_case = handle_transfer_use_case
         self.command_name = command_name
         self._bot_nick = bot_nick
-        self.post_message_fn = post_message_fn
 
-    async def handle_command(self, channel_name: str, user_name: str, user_message: str):
-        tail = user_message[len(self.command_prefix + self.command_name) :].strip()
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+        tail = message[len(self.command_prefix + self.command_name) :].strip()
         recipient = None
         amount = None
         if tail:
@@ -44,6 +41,4 @@ class TransferCommandHandlerImpl(CommandHandler):
             command_name=self.command_name,
         )
 
-        result = await self._handle_transfer_use_case.handle(command_transfer=transfer)
-
-        await self.post_message_fn(result)
+        return await self._handle_transfer_use_case.handle(command_transfer=transfer)
