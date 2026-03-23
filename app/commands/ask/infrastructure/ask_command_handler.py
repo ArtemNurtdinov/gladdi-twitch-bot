@@ -18,7 +18,7 @@ class AskCommandHandlerImpl(CommandHandler):
         self._handle_ask_use_case = handle_ask_use_case
         self._bot_nick = bot_nick
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         user_message = message[len(f"{self.command_prefix}{self.command_name}") :].strip()
 
         dto = AskCommandDTO(

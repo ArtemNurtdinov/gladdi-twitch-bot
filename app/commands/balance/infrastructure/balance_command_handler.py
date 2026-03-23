@@ -12,7 +12,7 @@ class BalanceCommandHandlerImpl(CommandHandler):
         self._handle_balance_use_case = handle_balance_use_case
         self._bot_name = bot_name
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         balance = BalanceDTO(
             command_prefix=self._command_prefix,
             command_name=self._command_name,

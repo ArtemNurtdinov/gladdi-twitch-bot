@@ -18,7 +18,7 @@ class RpsCommandHandlerImpl(CommandHandler):
         self._handle_rps_use_case = handle_rps_use_case
         self._bot_name = bot_name
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         tail = message[len(self._command_prefix + self._command_name) :].strip()
         choice = tail or None
         rps = RpsDTO(

@@ -12,7 +12,7 @@ class FollowageCommandHandlerImpl(CommandHandler):
         self._handle_follow_age_use_case = handle_follow_age_use_case
         self.bot_nick = bot_nick
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         followage = FollowageDTO(
             command_prefix=self._command_prefix,
             command_name=self._command_name,

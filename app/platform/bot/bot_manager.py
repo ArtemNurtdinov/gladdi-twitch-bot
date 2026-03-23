@@ -176,31 +176,6 @@ class BotManager:
 
             chat_events_handler = ChatEventsHandler(handle_chat_message_use_case=handle_chat_message_use_case)
 
-            chat_client: PlatformChatClient = TwitchChatClient(
-                auth=platform_auth,
-                chat_events_handler=chat_events_handler,
-                channel_name=self._settings.channel_name,
-                command_prefix=self._settings.prefix,
-                bot_id=bot_user_id,
-                bot_name=self._settings.bot_name,
-            )
-
-            battle_waiting_user = {"value": None}
-
-            chat_summary_state = ChatSummaryState()
-
-            self._background_tasks = build_background_tasks(
-                providers=providers_bundle,
-                uow_factories=uow_factories,
-                settings=self._settings,
-                bot_name=self._settings.bot_name,
-                chat_summary_state=chat_summary_state,
-                chat_response_use_case=generate_response_use_case,
-                send_channel_message=chat_client.send_channel_message,
-                platform_auth=platform_auth,
-                platform_repository=platform_repository,
-            )
-
             moderation_service = ModerationService(
                 platform_repository=platform_repository,
                 user_cache=providers_bundle.user_providers.user_cache,
@@ -425,7 +400,31 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_guess_word, guess_word_command_handler)
             command_router.register_command_handler(self._settings.command_rps, rps_command_handler)
 
-            chat_client.set_command_router(command_router)
+            chat_client: PlatformChatClient = TwitchChatClient(
+                auth=platform_auth,
+                chat_events_handler=chat_events_handler,
+                command_router=command_router,
+                channel_name=self._settings.channel_name,
+                command_prefix=self._settings.prefix,
+                bot_id=bot_user_id,
+                bot_name=self._settings.bot_name,
+            )
+
+            battle_waiting_user = {"value": None}
+
+            chat_summary_state = ChatSummaryState()
+
+            self._background_tasks = build_background_tasks(
+                providers=providers_bundle,
+                uow_factories=uow_factories,
+                settings=self._settings,
+                bot_name=self._settings.bot_name,
+                chat_summary_state=chat_summary_state,
+                chat_response_use_case=generate_response_use_case,
+                send_channel_message=chat_client.send_channel_message,
+                platform_auth=platform_auth,
+                platform_repository=platform_repository,
+            )
 
             restore_stream_context(
                 providers=providers_bundle,

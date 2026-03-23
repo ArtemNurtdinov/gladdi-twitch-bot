@@ -38,7 +38,7 @@ class RollCommandHandlerImpl(CommandHandler):
         for nickname in nicknames:
             del self.roll_cooldowns[nickname]
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         tail = message[len(self.command_prefix + self.command_name) :].strip()
         amount = tail or None
 

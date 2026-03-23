@@ -20,7 +20,7 @@ class EquipmentCommandHandlerImpl(CommandHandler):
         self.command_prefix = command_prefix
         self._bot_name = bot_name
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         equipment = EquipmentDTO(
             command_prefix=self.command_prefix,
             channel_name=channel_name,

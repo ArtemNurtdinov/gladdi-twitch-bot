@@ -23,7 +23,7 @@ class BattleCommandHandlerImpl(CommandHandler):
         self._bot_name = bot_name
         self._battle_waiting_user = battle_waiting_user
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         battle = BattleDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_name,

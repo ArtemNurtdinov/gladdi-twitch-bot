@@ -23,7 +23,7 @@ class TopCommandHandlerImpl(CommandHandler):
         self.top_limit = self._TOP_LIMIT
         self.bottom_limit = self._BOTTOM_LIMIT
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         top = TopDTO(
             command_prefix=self.command_prefix,
             command_name=self._command_name,

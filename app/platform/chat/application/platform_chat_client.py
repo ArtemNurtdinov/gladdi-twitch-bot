@@ -11,30 +11,29 @@ class PlatformChatClient(ABC):
     _command_router: CommandRouter | None = None
     _chat_events_handler: ChatEventsHandler | None = None
 
-    def __init__(self, auth: PlatformAuth, chat_events_handler: ChatEventsHandler, channel_name: str, bot_name: str, command_prefix: str):
+    def __init__(
+        self,
+        auth: PlatformAuth,
+        chat_events_handler: ChatEventsHandler,
+        command_router: CommandRouter,
+        channel_name: str,
+        bot_name: str,
+        command_prefix: str,
+    ):
         self.auth = auth
-        self.chat_events_handler = chat_events_handler
+        self._chat_events_handler = chat_events_handler
+        self._command_router = command_router
         self.channel_name = channel_name
         self.bot_name = bot_name
         self.command_prefix = command_prefix
 
-    def set_command_router(self, command_router: CommandRouter):
-        self._command_router = command_router
-
-    def set_chat_event_handler(self, chat_events_handler: ChatEventsHandler):
-        self._chat_events_handler = chat_events_handler
-
     async def handle_message(self, user_name: str, message: str):
-        if self._command_router is None:
-            return
-
         command_handler = self._command_router.get_command_handler(message)
 
         if command_handler:
             try:
                 result = await command_handler.handle(self.channel_name, user_name, message)
-                if result:
-                    await self.send_channel_message(result)
+                await self.send_channel_message(result)
             except Exception:
                 pass
             return

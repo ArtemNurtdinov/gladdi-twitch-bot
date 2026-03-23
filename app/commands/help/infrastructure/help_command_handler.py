@@ -20,7 +20,7 @@ class HelpCommandHandlerImpl(CommandHandler):
         self.commands = commands
         self._bot_name = bot_name
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         help_dto = HelpDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_name,

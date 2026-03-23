@@ -18,7 +18,7 @@ class TransferCommandHandlerImpl(CommandHandler):
         self.command_name = command_name
         self._bot_nick = bot_nick
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         tail = message[len(self.command_prefix + self.command_name) :].strip()
         recipient = None
         amount = None

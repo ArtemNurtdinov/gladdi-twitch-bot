@@ -18,7 +18,7 @@ class BuyCommandHandlerImpl(CommandHandler):
         self._handle_shop_use_case = handle_shop_use_case
         self._bot_nick = bot_nick
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         tail = message[len(self.command_prefix + self.command_buy_name) :].strip()
         item_name = tail or None
 

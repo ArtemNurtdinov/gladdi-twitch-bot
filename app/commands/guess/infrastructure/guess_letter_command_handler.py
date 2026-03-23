@@ -10,25 +10,21 @@ class GuessLetterCommandHandlerImpl(CommandHandler):
         self,
         command_prefix: str,
         command_name: str,
-        command_guess_letter: str,
-        command_guess_word: str,
         handle_guess_use_case: HandleGuessUseCase,
         bot_name: str,
     ):
         self._command_prefix = command_prefix
         self._command_name = command_name
-        self.command_guess_letter = command_guess_letter
-        self.command_guess_word = command_guess_word
         self._handle_guess_use_case = handle_guess_use_case
         self._bot_name = bot_name
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         tail = message[len(self._command_prefix + self._command_name) :].strip()
         letter = tail or None
 
         guess_letter = GuessLetterDTO(
             command_prefix=self._command_prefix,
-            command_name=self.command_guess_letter,
+            command_name=self._command_name,
             channel_name=channel_name,
             display_name=user_name,
             user_name=user_name.lower(),

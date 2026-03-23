@@ -20,7 +20,7 @@ class ShopCommandHandlerImpl(CommandHandler):
         self._handle_shop_use_case = handle_shop_use_case
         self._bot_nick = bot_nick
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         bot_nick = self._bot_nick.lower()
 
         command_shop = CommandShopDTO(

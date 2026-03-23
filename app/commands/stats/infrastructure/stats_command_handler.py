@@ -18,7 +18,7 @@ class StatsCommandHandlerImpl(CommandHandler):
         self._handle_stats_use_case = handle_stats_use_case
         self._bot_name = bot_name
 
-    async def handle(self, channel_name: str, user_name: str, message: str) -> str | None:
+    async def handle(self, channel_name: str, user_name: str, message: str) -> str:
         command_stats = CommandStatsDTO(
             command_prefix=self.command_prefix,
             command_name=self.command_name,

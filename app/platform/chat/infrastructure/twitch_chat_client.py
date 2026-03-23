@@ -11,6 +11,7 @@ from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.application.chat_event_handler import ChatEventsHandler
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
+from app.platform.command.domain.command_router import CommandRouter
 
 
 class TwitchChatClient(Client, PlatformChatClient):
@@ -20,6 +21,7 @@ class TwitchChatClient(Client, PlatformChatClient):
         self,
         auth: PlatformAuth,
         chat_events_handler: ChatEventsHandler,
+        command_router: CommandRouter,
         channel_name: str,
         command_prefix: str,
         bot_id: str,
@@ -30,6 +32,7 @@ class TwitchChatClient(Client, PlatformChatClient):
             self,
             auth=auth,
             chat_events_handler=chat_events_handler,
+            command_router=command_router,
             channel_name=channel_name,
             bot_name=bot_name,
             command_prefix=command_prefix,
