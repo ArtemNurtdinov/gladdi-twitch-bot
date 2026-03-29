@@ -6,25 +6,12 @@ from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
 from app.stream.application.port.stream_chat_stats_port import StreamChatStatsPort
 from app.stream.application.usecase.stream_query_use_case import StreamQueryUseCase
 from app.stream.domain.repo import StreamRepository
-from app.stream.domain.stream_service import StreamService
 from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
-from core.db import get_db_ro, get_db_rw
+from core.db import get_db_ro
 
 
 def get_stream_repo_ro(db: Session = Depends(get_db_ro)) -> StreamRepository:
     return StreamRepositoryImpl(db)
-
-
-def get_stream_repo_rw(db: Session = Depends(get_db_rw)) -> StreamRepository:
-    return StreamRepositoryImpl(db)
-
-
-def get_stream_service_ro(repo: StreamRepositoryImpl = Depends(get_stream_repo_ro)) -> StreamService:
-    return StreamService(repo)
-
-
-def get_stream_service_rw(repo: StreamRepositoryImpl = Depends(get_stream_repo_rw)) -> StreamService:
-    return StreamService(repo)
 
 
 def get_stream_chat_stats_ro(db: Session = Depends(get_db_ro)) -> StreamChatStatsPort:
