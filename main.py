@@ -4,8 +4,9 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.ai.gen.prompt.presentation import system_prompt_routes
 from app.auth.presentation import auth_routes
-from app.bootstrap import get_logger, load_config
 from app.chat.presentation import chat_routes
+from app.core.config.di.composition import load_config
+from app.core.logger.di.composition import get_logger
 from app.follow.presentation import followers_routes
 from app.joke.presentation import joke_routes
 from app.stream.presentation import stream_routes
