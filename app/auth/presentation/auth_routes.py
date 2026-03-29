@@ -5,8 +5,8 @@ from app.auth.application.contracts import LoginResponse, UserLogin, UserRespons
 from app.auth.application.model.user import UserDTO
 from app.auth.application.usecase.login_use_case import LoginUseCase
 from app.auth.application.usecase.validate_access_token_use_case import ValidateAccessTokenUseCase
+from app.auth.di.dependencies import provide_login_use_case, provide_validate_access_token_use_case
 from app.auth.domain.model.role import UserRole
-from bootstrap.auth_provider import get_login_use_case, get_validate_access_token_use_case
 
 router = APIRouter()
 admin_router = APIRouter()
@@ -16,7 +16,7 @@ security_optional = HTTPBearer(auto_error=False)
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(get_validate_access_token_use_case),
+    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(provide_validate_access_token_use_case),
 ) -> UserDTO:
     user = validate_access_token_use_case.validate_access_token(credentials.credentials)
     if not user:
@@ -32,7 +32,35 @@ def get_admin_user(current_user: UserDTO = Depends(get_current_user)) -> UserDTO
 
 def get_optional_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
-    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(get_validate_access_token_use_case),
+    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(provide_validate_access_token_use_case),
+) -> UserDTO | None:
+    if credentials is None:
+        return None
+    user = validate_access_token_use_case.validate_access_token(credentials.credentials)
+    if not user:
+        raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
+    return user
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(provide_validate_access_token_use_case),
+) -> UserDTO:
+    user = validate_access_token_use_case.validate_access_token(credentials.credentials)
+    if not user:
+        raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
+    return user
+
+
+def get_admin_user(current_user: UserDTO = Depends(get_current_user)) -> UserDTO:
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недостаточно прав доступа")
+    return current_user
+
+
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
+    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(provide_validate_access_token_use_case),
 ) -> UserDTO | None:
     if credentials is None:
         return None
@@ -48,7 +76,7 @@ async def get_me(current_user: UserDTO = Depends(get_current_user)):
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(user_data: UserLogin, login_use_case: LoginUseCase = Depends(get_login_use_case)):
+async def login(user_data: UserLogin, login_use_case: LoginUseCase = Depends(provide_login_use_case)):
     result = login_use_case.login(user_data.email, user_data.password)
     if not result:
         raise HTTPException(
