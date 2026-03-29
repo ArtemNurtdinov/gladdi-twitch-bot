@@ -78,6 +78,7 @@ def build_background_tasks(
                     notification_group_id=settings.group_id,
                     chat_response_port=chat_response_port,
                     state=chat_summary_state,
+                    logger=logger,
                 ),
             ),
             ChatSummarizerJob(

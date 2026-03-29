@@ -13,7 +13,7 @@ class JokeProviders:
 
 
 def build_joke_providers(logger: Logger) -> JokeProviders:
-    domain_service = JokeService(FileJokeSettingsRepository(), logger)
+    domain_service = JokeService(FileJokeSettingsRepository(logger), logger)
     return JokeProviders(
         joke_service=domain_service,
         joke_use_case=JokeUseCase(domain_service),
