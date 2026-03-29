@@ -8,7 +8,7 @@ class ModerationService(ChatModerationPort):
     def __init__(self, platform_repository: PlatformRepository, user_cache: UserCachePort, logger: Logger):
         self._platform_repository = platform_repository
         self._user_cache = user_cache
-        self._logger = logger
+        self._logger = logger.create_child(__name__)
 
     async def timeout_user(self, channel_name: str, moderator_name: str, username: str, duration_seconds: int, reason: str) -> bool:
         try:

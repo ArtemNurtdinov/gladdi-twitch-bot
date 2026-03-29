@@ -134,6 +134,7 @@ def build_background_tasks(
                         bot_name=settings.bot_name.lower(),
                     ),
                 ),
+                logger=logger,
             ),
             ViewerTimeJob(
                 channel_name=settings.channel_name,

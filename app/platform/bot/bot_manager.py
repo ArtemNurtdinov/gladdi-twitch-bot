@@ -420,9 +420,7 @@ class BotManager:
             )
 
             restore_stream_context(
-                providers=providers_bundle,
-                uow_factories=uow_factories,
-                channel_name=self._settings.channel_name,
+                providers=providers_bundle, uow_factories=uow_factories, channel_name=self._settings.channel_name, logger=logger
             )
 
             self._chat_client = chat_client
