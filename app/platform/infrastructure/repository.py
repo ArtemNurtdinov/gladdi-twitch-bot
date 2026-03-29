@@ -1,8 +1,7 @@
-import logging
-
 import httpx
 from pydantic import ValidationError
 
+from app.core.logger.domain.logger import Logger
 from app.follow.application.models.follower import ChannelFollowerDTO
 from app.platform.command.followage.application.model import FollowageInfo
 from app.platform.domain.repository import PlatformRepository
@@ -16,12 +15,11 @@ from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
 from app.user.application.model.model import UserInfoDTO
 
-logger = logging.getLogger(__name__)
-
 
 class PlatformRepositoryImpl(PlatformRepository):
-    def __init__(self, client: StreamingApiClient):
+    def __init__(self, client: StreamingApiClient, logger: Logger):
         self._api_client = client
+        self._logger = logger
 
     async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool:
         response = await self._api_client.post(
@@ -31,10 +29,12 @@ class PlatformRepositoryImpl(PlatformRepository):
             json={"data": {"user_id": user_id, "duration": duration_seconds, "reason": reason}},
         )
         if response.status_code == 200:
-            logger.info(f"Таймаут успешно применён для пользователя {user_id} на {duration_seconds} секунд за: {reason}")
+            self._logger.log_info(f"Таймаут успешно применён для пользователя {user_id} на {duration_seconds} секунд за: {reason}")
             return True
         else:
-            logger.error(f"Не удалось дать таймаут пользователю {user_id}. Status: {response.status_code}, Response: {response.text}")
+            self._logger.log_error(
+                f"Не удалось дать таймаут пользователю {user_id}. Status: {response.status_code}, Response: {response.text}"
+            )
             return False
 
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> list[str]:
@@ -46,66 +46,66 @@ class PlatformRepositoryImpl(PlatformRepository):
             try:
                 parsed: ChattersResponse = ChattersResponse.model_validate(data)
             except ValidationError as e:
-                logger.error(f"Валидация chatters для {broadcaster_id} не прошла: {e}")
+                self._logger.log_error(f"Валидация chatters для {broadcaster_id} не прошла: {e}")
                 return []
 
             chatters = parsed.data
             return [ch.user_login for ch in chatters]
         except Exception as e:
-            logger.error(f"Ошибка при получении списка зрителей: {e}")
+            self._logger.log_error(f"Ошибка при получении списка зрителей: {e}")
             return []
 
     async def get_user_by_login(self, login: str) -> UserInfoDTO | None:
-        logger.debug(f"Получение информации о пользователе для логина: {login}")
+        self._logger.log_debug(f"Получение информации о пользователе для логина: {login}")
         try:
             response = await self._api_client.get(url="/users", params={"login": login})
             if response.status_code == 401:
-                logger.error(f"Ошибка авторизации при получении пользователя {login}. Проверьте токен.")
+                self._logger.log_error(f"Ошибка авторизации при получении пользователя {login}. Проверьте токен.")
                 return None
             if response.status_code == 404:
-                logger.warning(f"Пользователь {login} не найден")
+                self._logger.log_error(f"Пользователь {login} не найден")
                 return None
             if response.status_code != 200:
-                logger.error(f"API ошибка при получении пользователя {login}: {response.status_code}, {response.text}")
+                self._logger.log_error(f"API ошибка при получении пользователя {login}: {response.status_code}, {response.text}")
                 return None
 
             try:
                 parsed = UsersResponse.model_validate(response.json_data)
             except ValidationError as e:
-                logger.error(f"Валидация пользователя {login} не прошла: {e}")
+                self._logger.log_error(f"Валидация пользователя {login} не прошла: {e}")
                 return None
 
             if not parsed.data:
-                logger.warning(f"Пользователь {login} не найден в ответе API")
+                self._logger.log_error(f"Пользователь {login} не найден в ответе API")
                 return None
 
             user_data = parsed.data[0]
-            logger.debug(f"Информация о пользователе {login} получена")
+            self._logger.log_debug(f"Информация о пользователе {login} получена")
             return UserInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
         except httpx.TimeoutException:
-            logger.error(f"Таймаут при получении пользователя {login}")
+            self._logger.log_error(f"Таймаут при получении пользователя {login}")
             return None
         except httpx.RequestError as e:
-            logger.error(f"Ошибка соединения при получении пользователя {login}: {e}")
+            self._logger.log_error(f"Ошибка соединения при получении пользователя {login}: {e}")
             return None
         except Exception as e:
-            logger.error(f"Неожиданная ошибка при получении пользователя {login}: {e}")
+            self._logger.log_error(f"Неожиданная ошибка при получении пользователя {login}: {e}")
             return None
 
     async def get_stream_status(self, broadcaster_id: str) -> StreamStatusDTO | None:
         try:
             response = await self._api_client.get(url="/streams", params={"user_id": broadcaster_id})
             if response.status_code == 401:
-                logger.error(f"Ошибка авторизации при получении статуса стрима {broadcaster_id}. Проверьте токен.")
+                self._logger.log_error(f"Ошибка авторизации при получении статуса стрима {broadcaster_id}. Проверьте токен.")
                 return None
             if response.status_code != 200:
-                logger.error(f"API ошибка при получении статуса стрима {broadcaster_id}: {response.status_code}, {response.text}")
+                self._logger.log_error(f"API ошибка при получении статуса стрима {broadcaster_id}: {response.status_code}, {response.text}")
                 return None
 
             try:
                 parsed = StreamsResponse.model_validate(response.json_data)
             except ValidationError as e:
-                logger.error(f"Валидация статуса стрима {broadcaster_id} не прошла: {e}")
+                self._logger.log_error(f"Валидация статуса стрима {broadcaster_id} не прошла: {e}")
                 return None
 
             streams = parsed.data
@@ -127,18 +127,18 @@ class PlatformRepositoryImpl(PlatformRepository):
                     tag_ids=stream_raw.tag_ids,
                     is_mature=stream_raw.is_mature,
                 )
-                logger.debug(f"Стрим для {broadcaster_id}: онлайн")
+                self._logger.log_debug(f"Стрим для {broadcaster_id}: онлайн")
                 return StreamStatusDTO(is_online=True, stream_data=stream_data)
-            logger.debug(f"Стрим для {broadcaster_id}: офлайн")
+            self._logger.log_debug(f"Стрим для {broadcaster_id}: офлайн")
             return StreamStatusDTO(is_online=False, stream_data=None)
         except httpx.TimeoutException:
-            logger.error(f"Таймаут при получении статуса стрима {broadcaster_id}")
+            self._logger.log_error(f"Таймаут при получении статуса стрима {broadcaster_id}")
             return None
         except httpx.RequestError as e:
-            logger.error(f"Ошибка соединения при получении статуса стрима {broadcaster_id}: {e}")
+            self._logger.log_error(f"Ошибка соединения при получении статуса стрима {broadcaster_id}: {e}")
             return None
         except Exception as e:
-            logger.error(f"Неожиданная ошибка при получении статуса стрима {broadcaster_id}: {e}")
+            self._logger.log_error(f"Неожиданная ошибка при получении статуса стрима {broadcaster_id}: {e}")
             return None
 
     async def get_stream_info(self, channel_name: str) -> StreamInfoDTO | None:

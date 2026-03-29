@@ -1,9 +1,9 @@
 import asyncio
-import logging
 from datetime import datetime
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
+from app.core.logger.domain.logger import Logger
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
@@ -57,11 +57,9 @@ from bootstrap.uow_composition import create_uow_factories
 from core.background.tasks import BackgroundTasks
 from core.db import db_ro_session, db_rw_session
 
-logger = logging.getLogger(__name__)
-
 
 class BotManager:
-    def __init__(self, settings: BotSettings):
+    def __init__(self, settings: BotSettings, logger: Logger):
         self._settings = settings
 
         self._background_tasks: BackgroundTasks | None = None
@@ -72,6 +70,7 @@ class BotManager:
         self._started_at: datetime | None = None
         self._last_error: str | None = None
         self._lock = asyncio.Lock()
+        self._logger = logger.create_child(__name__)
 
     def _reset_state(self):
         self._background_tasks = None
@@ -85,11 +84,11 @@ class BotManager:
             exc = task.exception()
             if exc:
                 self._last_error = str(exc)
-                logger.error(f"Twitch бот завершился с ошибкой: {exc}")
+                self._logger.log_error(f"Twitch бот завершился с ошибкой: {exc}")
             else:
-                logger.info("Twitch бот остановлен")
+                self._logger.log_info("Twitch бот остановлен")
         except asyncio.CancelledError:
-            logger.info("Задача Twitch бота отменена")
+            self._logger.log_info("Задача Twitch бота отменена")
         finally:
             self._reset_state()
 
@@ -132,11 +131,11 @@ class BotManager:
                 refresh_token=refresh_token,
                 client_id=client_id,
                 client_secret=client_secret,
-                logger=logger,
+                logger=self._logger,
             )
 
             streaming_client = TwitchHelixClient(platform_auth)
-            platform_repository = PlatformRepositoryImpl(streaming_client)
+            platform_repository = PlatformRepositoryImpl(streaming_client, self._logger)
 
             self._streaming_client = streaming_client
 
@@ -404,6 +403,7 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 bot_id=bot_user_id,
                 bot_name=self._settings.bot_name,
+                logger=self._logger,
             )
 
             self._background_tasks = build_background_tasks(
@@ -429,7 +429,7 @@ class BotManager:
             try:
                 await providers_bundle.user_providers.user_cache.warmup(self._settings.channel_name)
             except Exception:
-                logger.error("Не удалось прогреть cache")
+                self._logger.log_error("Не удалось прогреть cache")
 
             self._background_tasks.start_all()
 
@@ -448,7 +448,7 @@ class BotManager:
             platform_api_service = self._streaming_client if self._streaming_client else None
 
             if not isinstance(task, asyncio.Task):
-                logger.info("Попытка остановки, но бот не запущен")
+                self._logger.log_info("Попытка остановки, но бот не запущен")
                 return BotActionResult(**self.get_status().model_dump(), message="Бот уже остановлен")
             try:
                 if self._chat_client:
@@ -462,7 +462,7 @@ class BotManager:
                     try:
                         await task
                     except asyncio.CancelledError:
-                        logger.debug("Задача бота отменена")
+                        self._logger.log_debug("Задача бота отменена")
             finally:
                 self._reset_state()
 

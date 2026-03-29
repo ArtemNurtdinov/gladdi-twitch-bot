@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+
 from app.core.config.domain.config_repository import ConfigRepository
 from app.core.config.domain.config_source import ConfigSource
 from app.core.config.domain.model.application import ApplicationConfig
@@ -13,6 +15,7 @@ from app.core.config.domain.model.twitch import TwitchConfig
 class ConfigRepositoryImpl(ConfigRepository):
     def __init__(self, config_source: ConfigSource):
         self._config_source = config_source
+        load_dotenv()
 
     def get_config(self) -> Config:
         return Config(

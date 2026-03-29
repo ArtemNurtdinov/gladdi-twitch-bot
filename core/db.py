@@ -1,42 +1,31 @@
 from contextlib import AbstractContextManager, contextmanager
-from functools import lru_cache
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.bootstrap import load_config
+from app.core.config.domain.model.db import DatabaseConfig
 
 Base = declarative_base()
 
-
-_database_url: str | None = None
-
-
-def configure_db(database_url: str) -> None:
-    global _database_url
-    _database_url = database_url
-    _get_engine.cache_clear()
-    _get_session_local.cache_clear()
+_engine = None
+_SessionLocal = None
 
 
-@lru_cache
-def _get_engine():
-    config = load_config()
-    return create_engine(config.db.url, echo=False)
+def init_db(config: DatabaseConfig):
+    global _engine, _SessionLocal
+    _engine = create_engine(config.url, echo=False)
+    _SessionLocal = sessionmaker(autocommit=False, autoflush=True, bind=_engine)
 
 
-@lru_cache
-def _get_session_local():
-    return sessionmaker(autocommit=False, autoflush=True, bind=_get_engine())
-
-
-def get_engine():
-    return _get_engine()
+def get_session_local():
+    if _SessionLocal is None:
+        raise RuntimeError("Database not initialized. Call init_db first")
+    return _SessionLocal
 
 
 def get_db():
-    db = _get_session_local()()
+    db = get_session_local()()
     try:
         yield db
         db.commit()
@@ -48,7 +37,7 @@ def get_db():
 
 
 def get_db_rw():
-    db = _get_session_local()()
+    db = get_session_local()()
     try:
         yield db
         db.commit()
@@ -60,7 +49,7 @@ def get_db_rw():
 
 
 def get_db_ro():
-    db = _get_session_local()()
+    db = get_session_local()()
     try:
         yield db
     finally:
@@ -69,7 +58,7 @@ def get_db_ro():
 
 @contextmanager
 def db_ro_session() -> AbstractContextManager[Session]:
-    db = _get_session_local()()
+    db = get_session_local()()
     try:
         yield db
     finally:
@@ -78,7 +67,7 @@ def db_ro_session() -> AbstractContextManager[Session]:
 
 @contextmanager
 def db_rw_session() -> AbstractContextManager[Session]:
-    db = _get_session_local()()
+    db = get_session_local()()
     try:
         yield db
         db.commit()

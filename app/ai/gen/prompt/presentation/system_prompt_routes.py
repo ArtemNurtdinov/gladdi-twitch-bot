@@ -5,7 +5,7 @@ from app.ai.gen.prompt.application.update_system_prompt_use_case import UpdateSy
 from app.ai.gen.prompt.deps import get_get_system_prompt_use_case, get_update_system_prompt_use_case
 from app.ai.gen.prompt.presentation.system_prompt_schemas import SystemPromptResponse, SystemPromptUpdate
 from app.auth.application.model.user import UserDTO
-from bootstrap.auth_provider import get_admin_user
+from app.auth.presentation.auth_routes import get_admin_user
 
 admin_router = APIRouter()
 

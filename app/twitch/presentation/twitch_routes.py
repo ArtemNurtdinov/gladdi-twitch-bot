@@ -1,13 +1,11 @@
-from functools import lru_cache
 from urllib.parse import urlencode
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.bootstrap import load_config
+from app.bootstrap import get_bot_manager, load_config
 from app.core.config.domain.model.configuration import Config
 from app.platform.bot.bot_manager import BotManager
-from app.platform.bot.model.bot_settings import BotSettings, DefaultBotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus
 from app.twitch.presentation.twitch_schemas import AuthStartResponse
 
@@ -22,18 +20,6 @@ PERMISSIONS_SCOPE = (
 )
 
 router = APIRouter()
-
-
-@lru_cache
-def get_bot_settings(config: Config = Depends(load_config)) -> BotSettings:
-    group_id = config.telegram.group_id
-    settings = DefaultBotSettings(group_id=group_id)
-    return settings
-
-
-@lru_cache
-def get_bot_manager(settings: BotSettings = Depends(get_bot_settings)) -> BotManager:
-    return BotManager(settings=settings)
 
 
 @router.get("/status", summary="Получить состояние бота", response_model=BotStatus)

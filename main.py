@@ -11,7 +11,7 @@ from app.joke.presentation import joke_routes
 from app.stream.presentation import stream_routes
 from app.twitch.presentation import twitch_routes
 from app.user.presentation import user_routes
-from core.db import configure_db
+from core.db import init_db
 
 app = FastAPI(
     title="GLaDDi Bot API",
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     host = config.application.host
     port = config.application.port
 
-    configure_db(config.db.url)
+    init_db(config.db)
 
     logger = get_logger()
 
