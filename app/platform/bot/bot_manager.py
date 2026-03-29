@@ -145,6 +145,7 @@ class BotManager:
                 tg_bot_token=tg_bot_token,
                 llmbox_host=llmbox_host,
                 intent_detector_host=intent_detector_host,
+                logger=logger,
             )
 
             uow_factories = create_uow_factories(

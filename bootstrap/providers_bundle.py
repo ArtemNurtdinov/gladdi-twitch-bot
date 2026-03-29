@@ -6,6 +6,7 @@ from app.ai.bootstrap import AIProviders, build_ai_providers
 from app.battle.bootstrap import BattleProviders, build_battle_providers
 from app.betting.bootstrap import BettingProviders, build_betting_providers
 from app.chat.bootstrap import ChatProviders, build_chat_providers
+from app.core.logger.domain.logger import Logger
 from app.economy.bootstrap import EconomyProviders, build_economy_providers
 from app.equipment.bootstrap import EquipmentProviders, build_equipment_providers
 from app.follow.bootstrap import FollowProviders, build_follow_providers
@@ -38,16 +39,13 @@ class ProvidersBundle:
 
 
 def build_providers_bundle(
-    platform_repository: PlatformRepository,
-    tg_bot_token: str,
-    llmbox_host: str,
-    intent_detector_host: str,
+    platform_repository: PlatformRepository, tg_bot_token: str, llmbox_host: str, intent_detector_host: str, logger: Logger
 ) -> ProvidersBundle:
     stream_providers = build_stream_providers()
     ai_providers = build_ai_providers(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
     chat_providers = build_chat_providers()
     follow_providers = build_follow_providers()
-    joke_providers = build_joke_providers()
+    joke_providers = build_joke_providers(logger=logger)
     user_providers = build_user_providers(platform_repository)
     viewer_providers = build_viewer_providers()
     economy_providers = build_economy_providers()
