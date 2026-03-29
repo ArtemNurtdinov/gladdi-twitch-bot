@@ -1,4 +1,3 @@
-import logging
 from functools import lru_cache
 from urllib.parse import urlencode
 
@@ -80,7 +79,6 @@ async def oauth_callback(
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(TOKEN_URL, data=data)
         if response.status_code != 200:
-            logging.error("Не удалось получить токены: %s", response.text)
             raise ValueError(f"Не удалось получить токены: {response.text}")
         tokens = response.json()
         access_token = tokens.get("access_token")
