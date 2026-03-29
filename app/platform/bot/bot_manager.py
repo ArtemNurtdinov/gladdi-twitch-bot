@@ -416,6 +416,7 @@ class BotManager:
                 send_channel_message=chat_client.send_channel_message,
                 platform_auth=platform_auth,
                 platform_repository=platform_repository,
+                logger=self._logger,
             )
 
             restore_stream_context(

@@ -6,6 +6,7 @@ from app.ai.gen.application.use_cases.generate_response_use_case import Generate
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
+from app.core.logger.domain.logger import Logger
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
@@ -44,6 +45,7 @@ def build_background_tasks(
     send_channel_message: Callable[[str], Awaitable[None]],
     platform_auth: PlatformAuth,
     platform_repository: PlatformRepository,
+    logger: Logger,
 ) -> BackgroundTasks:
     notifications_port = NotificationRepositoryImpl(providers.telegram_providers.telegram_bot)
     chat_response_port = GenerateStreamInfoAdapter(chat_response_use_case)
@@ -63,7 +65,7 @@ def build_background_tasks(
                 bot_nick=bot_name,
             ),
             TokenCheckerJob(
-                handle_token_checker_use_case=HandleTokenCheckerUseCase(platform_auth=platform_auth),
+                handle_token_checker_use_case=HandleTokenCheckerUseCase(platform_auth=platform_auth, logger=logger), logger=logger
             ),
             StreamStatusJob(
                 channel_name=settings.channel_name,
@@ -141,6 +143,7 @@ def build_background_tasks(
                     platform_repository=platform_repository,
                 ),
                 bot_nick=bot_name,
+                logger=logger,
             ),
             FollowersSyncJob(
                 channel_name=settings.channel_name,
