@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.auth.application.contracts import LoginResponse, UserLogin, UserResponse
+from app.auth.application.model.login_result import LoginResultDTO
 from app.auth.application.model.user import UserDTO
-from app.auth.application.usecase.login_use_case import LoginUseCase
-from app.auth.application.usecase.validate_access_token_use_case import ValidateAccessTokenUseCase
-from app.auth.di.dependencies import provide_login_use_case, provide_validate_access_token_use_case
+from app.auth.di.composition import get_login_use_case, get_validate_access_token_use_case
 from app.auth.domain.model.role import UserRole
+from core.db import db_rw_session
 
 router = APIRouter()
 admin_router = APIRouter()
@@ -16,9 +16,8 @@ security_optional = HTTPBearer(auto_error=False)
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(provide_validate_access_token_use_case),
 ) -> UserDTO:
-    user = validate_access_token_use_case.validate_access_token(credentials.credentials)
+    user = validate_token(credentials.credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
     return user
@@ -30,23 +29,17 @@ def get_admin_user(current_user: UserDTO = Depends(get_current_user)) -> UserDTO
     return current_user
 
 
-def get_optional_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
-    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(provide_validate_access_token_use_case),
-) -> UserDTO | None:
+def get_optional_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(security_optional)) -> UserDTO | None:
     if credentials is None:
         return None
-    user = validate_access_token_use_case.validate_access_token(credentials.credentials)
+    user = validate_token(credentials.credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
     return user
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(provide_validate_access_token_use_case),
-) -> UserDTO:
-    user = validate_access_token_use_case.validate_access_token(credentials.credentials)
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> UserDTO:
+    user = validate_token(credentials.credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
     return user
@@ -58,13 +51,10 @@ def get_admin_user(current_user: UserDTO = Depends(get_current_user)) -> UserDTO
     return current_user
 
 
-def get_optional_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
-    validate_access_token_use_case: ValidateAccessTokenUseCase = Depends(provide_validate_access_token_use_case),
-) -> UserDTO | None:
+def get_optional_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(security_optional)) -> UserDTO | None:
     if credentials is None:
         return None
-    user = validate_access_token_use_case.validate_access_token(credentials.credentials)
+    user = validate_token(credentials.credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
     return user
@@ -76,8 +66,8 @@ async def get_me(current_user: UserDTO = Depends(get_current_user)):
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(user_data: UserLogin, login_use_case: LoginUseCase = Depends(provide_login_use_case)):
-    result = login_use_case.login(user_data.email, user_data.password)
+async def login(user_data: UserLogin):
+    result = handle_login(user_data.email, user_data.password)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль", headers={"WWW-Authenticate": "Bearer"}
@@ -89,3 +79,15 @@ async def login(user_data: UserLogin, login_use_case: LoginUseCase = Depends(pro
         expires_at=result.expires_at,
         user=user_response,
     )
+
+
+def validate_token(token: str) -> UserDTO | None:
+    with db_rw_session() as session:
+        validate_access_token_use_case = get_validate_access_token_use_case(session)
+        return validate_access_token_use_case.validate_access_token(token)
+
+
+def handle_login(email: str, password: str) -> LoginResultDTO | None:
+    with db_rw_session() as session:
+        login_use_case = get_login_use_case(session)
+        return login_use_case.login(email, password)
