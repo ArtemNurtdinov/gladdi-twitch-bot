@@ -17,7 +17,7 @@ from app.auth.application.usecase.validate_access_token_use_case import Validate
 from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
 from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from app.bootstrap import load_config
-from core.config import Config
+from app.core.config.domain.model.configuration import Config
 from core.db import get_db
 
 security = HTTPBearer()
