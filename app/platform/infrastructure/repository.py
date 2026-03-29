@@ -42,7 +42,7 @@ class PlatformRepositoryImpl(PlatformRepository):
             response = await self._api_client.get(
                 url="/chat/chatters", params={"broadcaster_id": broadcaster_id, "moderator_id": moderator_id}
             )
-            data = await handle_api_response(response, f"get_stream_chatters({broadcaster_id})")
+            data = await handle_api_response(response, f"get_stream_chatters({broadcaster_id})", self._logger)
             try:
                 parsed: ChattersResponse = ChattersResponse.model_validate(data)
             except ValidationError as e:
@@ -154,7 +154,7 @@ class PlatformRepositoryImpl(PlatformRepository):
     async def _get_user_followage(self, broadcaster_id: str, user_id: str) -> FollowageInfo | None:
         response = await self._api_client.get(url="/channels/followers", params={"broadcaster_id": broadcaster_id, "user_id": user_id})
         try:
-            data = await handle_api_response(response, f"get_user_followage({broadcaster_id}, {user_id})")
+            data = await handle_api_response(response, f"get_user_followage({broadcaster_id}, {user_id})", self._logger)
             parsed: FollowersResponse = FollowersResponse.model_validate(data)
         except ValidationError:
             return None
@@ -193,7 +193,7 @@ class PlatformRepositoryImpl(PlatformRepository):
 
             response = await self._api_client.get(url="/channels/followers", params=params)
             try:
-                data = await handle_api_response(response, f"get_channel_followers({broadcaster_id})")
+                data = await handle_api_response(response, f"get_channel_followers({broadcaster_id})", self._logger)
                 parsed: FollowersResponse = FollowersResponse.model_validate(data)
                 followers_page: list[FollowerData] = parsed.data
             except ValidationError:

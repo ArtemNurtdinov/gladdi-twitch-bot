@@ -1,8 +1,8 @@
-import logging
 from collections import Counter
 from datetime import datetime
 
 from app.chat.application.model.chat_summary_state import ChatSummaryState
+from app.core.logger.domain.logger import Logger
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.notification.application.repository import NotificationRepository
@@ -11,8 +11,6 @@ from app.stream.application.port.generate_stream_info_port import GenerateStream
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.models import StreamInfo, StreamStatistics
 from app.user.application.ports.user_cache_port import UserCachePort
-
-logger = logging.getLogger(__name__)
 
 
 class HandleStreamStatusUseCase:
@@ -26,6 +24,7 @@ class HandleStreamStatusUseCase:
         notification_group_id: int,
         chat_response_port: GenerateStreamInfoPort,
         state: ChatSummaryState,
+        logger: Logger,
     ):
         self._user_cache = user_cache
         self._platform_repository = platform_repository
@@ -35,17 +34,18 @@ class HandleStreamStatusUseCase:
         self._notification_group_id = notification_group_id
         self._chat_response_port = chat_response_port
         self._state = state
+        self._logger = logger.create_child(__name__)
 
     async def handle(self, channel_name: str):
         broadcaster_id = await self._user_cache.get_user_id(channel_name)
 
         if not broadcaster_id:
-            logger.error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
+            self._logger.log_error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
             return
 
         stream_status = await self._platform_repository.get_stream_status(broadcaster_id)
         if stream_status is None:
-            logger.error(f"Не удалось получить статус стрима для канала {channel_name}")
+            self._logger.log_error(f"Не удалось получить статус стрима для канала {channel_name}")
             return
 
         game_name = stream_status.stream_data.game_name if stream_status.is_online and stream_status.stream_data else None
@@ -55,7 +55,7 @@ class HandleStreamStatusUseCase:
             active_stream = uow.stream_service.get_active_stream(channel_name)
 
         if stream_status.is_online and active_stream is None:
-            logger.info(f"Стрим начался: {game_name} - {title}")
+            self._logger.log_info(f"Стрим начался: {game_name} - {title}")
             await self._handle_stream_start(channel_name, game_name, title)
 
         elif not stream_status.is_online and active_stream is not None:
@@ -65,7 +65,7 @@ class HandleStreamStatusUseCase:
             if active_stream.game_name != game_name or active_stream.title != title:
                 with self._stream_status_uow.create() as uow:
                     uow.stream_service.update_stream_metadata(active_stream.id, game_name, title)
-                logger.info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
+                self._logger.log_info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
     async def _handle_stream_start(self, channel_name: str, game_name: str | None, title: str | None):
         started_at = datetime.utcnow()
@@ -73,15 +73,15 @@ class HandleStreamStatusUseCase:
             with self._stream_status_uow.create() as uow:
                 uow.stream_repository.start_new_stream(channel_name, started_at, game_name, title)
             self._minigame_repository.set_stream_start_time(channel_name, started_at)
-            logger.info("handle stream start for %s: %s", channel_name, started_at)
+            self._logger.log_info(f"handle stream start for {channel_name}: {started_at}")
             await self._stream_announcement(channel_name, game_name, title)
             self._state.current_stream_summaries = []
         except Exception as e:
-            logger.error(f"Ошибка при создании стрима: {e}")
+            self._logger.log_exception("Ошибка при создании стрима:", e)
 
     async def _handle_stream_end(self, channel_name: str, active_stream: StreamInfo):
         finish_time = datetime.utcnow()
-        logger.info("Стрим завершён")
+        self._logger.log_info("Стрим завершён")
         with self._stream_status_uow.create() as uow:
             uow.stream_service.end_stream(active_stream.id, finish_time)
 
@@ -95,7 +95,7 @@ class HandleStreamStatusUseCase:
 
             total_viewers = uow.viewer_repository.get_unique_viewers_count(active_stream.id)
             uow.stream_service.update_stream_total_viewers(active_stream.id, total_viewers)
-            logger.info(f"Стрим завершен в БД: ID {active_stream.id}")
+            self._logger.log_info(f"Стрим завершен в БД: ID {active_stream.id}")
 
         self._minigame_repository.reset_stream_state(channel_name)
 
@@ -119,7 +119,7 @@ class HandleStreamStatusUseCase:
                 stream_end_dt=finish_time,
             )
         except Exception as e:
-            logger.error(f"Ошибка при вызове stream_summarize: {e}")
+            self._logger.log_exception("Ошибка при вызове stream_summarize:", e)
 
     @staticmethod
     def _build_stream_statistics(chat_messages, battles) -> StreamStatistics:
@@ -143,7 +143,7 @@ class HandleStreamStatusUseCase:
         try:
             await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
         except Exception as e:
-            logger.error(f"Ошибка отправки анонса в Telegram: {e}")
+            self._logger.log_exception("Ошибка отправки анонса в Telegram:", e)
 
     async def _stream_summarize(
         self,
@@ -152,7 +152,7 @@ class HandleStreamStatusUseCase:
         stream_start_dt,
         stream_end_dt,
     ):
-        logger.info("Создание итогового отчёта о стриме")
+        self._logger.log_info("Создание итогового отчёта о стриме")
 
         if self._state.last_chat_summary_time is None:
             self._state.last_chat_summary_time = stream_start_dt
@@ -199,7 +199,7 @@ class HandleStreamStatusUseCase:
                     f"{stream_stat.top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
                 )
 
-        logger.info(f"Статистика стрима: {stream_stat_message}")
+        self._logger.log_info(f"Статистика стрима: {stream_stat_message}")
 
         prompt = f"Трансляция была завершена. Статистика:\n{stream_stat_message}"
 

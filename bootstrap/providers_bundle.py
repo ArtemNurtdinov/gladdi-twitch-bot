@@ -50,7 +50,7 @@ def build_providers_bundle(
     viewer_providers = build_viewer_providers()
     economy_providers = build_economy_providers()
     equipment_providers = build_equipment_providers()
-    minigame_providers = build_minigame_providers()
+    minigame_providers = build_minigame_providers(logger=logger)
     battle_providers = build_battle_providers()
     betting_providers = build_betting_providers()
     background_providers = build_background_providers()

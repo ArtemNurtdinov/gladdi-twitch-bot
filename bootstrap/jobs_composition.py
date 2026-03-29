@@ -152,6 +152,7 @@ def build_background_tasks(
                     platform_repository=platform_repository,
                     sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
                 ),
+                logger=logger,
             ),
         ],
     )

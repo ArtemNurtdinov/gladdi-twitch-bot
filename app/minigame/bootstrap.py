@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from app.core.logger.domain.logger import Logger
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
@@ -17,8 +18,8 @@ class MinigameProviders:
     add_used_words_use_case_provider: Provider[AddUsedWordsUseCase]
 
 
-def build_minigame_providers() -> MinigameProviders:
-    minigame_repository = MinigameRepositoryImpl()
+def build_minigame_providers(logger: Logger) -> MinigameProviders:
+    minigame_repository = MinigameRepositoryImpl(logger)
 
     def word_history_repo(db):
         return WordHistoryRepositoryImpl(db)
