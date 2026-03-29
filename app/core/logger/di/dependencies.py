@@ -4,4 +4,4 @@ from app.core.logger.infrastructure.logger import LoggerImpl
 
 
 def provide_logger(config: LoggingConfig) -> Logger:
-    return LoggerImpl("bootstrap", config)
+    return LoggerImpl("gladdi", config)
