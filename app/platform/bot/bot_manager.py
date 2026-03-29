@@ -50,9 +50,9 @@ from app.platform.command.transfer.application.handle_transfer_use_case import H
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
+from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from bootstrap.jobs_composition import build_background_tasks
 from bootstrap.providers_bundle import build_providers_bundle
-from bootstrap.stream_composition import restore_stream_context
 from bootstrap.uow_composition import create_uow_factories
 from core.background.tasks import BackgroundTasks
 from core.db import db_ro_session, db_rw_session
@@ -420,9 +420,11 @@ class BotManager:
                 logger=self._logger,
             )
 
-            restore_stream_context(
-                providers=providers_bundle, uow_factories=uow_factories, channel_name=self._settings.channel_name, logger=logger
-            )
+            HandleRestoreStreamContextUseCase(
+                restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
+                minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                logger=logger,
+            ).handle(self._settings.channel_name)
 
             self._chat_client = chat_client
 
