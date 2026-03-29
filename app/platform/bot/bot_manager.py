@@ -119,6 +119,7 @@ class BotManager:
         intent_detector_host: str,
         client_id: str,
         client_secret: str,
+        logger: Logger,
     ) -> BotActionResult:
         async with self._lock:
             if self._task and not self._task.done():
@@ -175,8 +176,7 @@ class BotManager:
             chat_events_handler = ChatEventsHandler(handle_chat_message_use_case=handle_chat_message_use_case)
 
             moderation_service = ModerationService(
-                platform_repository=platform_repository,
-                user_cache=providers_bundle.user_providers.user_cache,
+                platform_repository=platform_repository, user_cache=providers_bundle.user_providers.user_cache, logger=logger
             )
 
             followage_command_handler: CommandHandler = FollowageCommandHandlerImpl(

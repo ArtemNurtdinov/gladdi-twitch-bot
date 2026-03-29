@@ -67,6 +67,7 @@ async def oauth_callback(
     state: str | None = None,
     config: Config = Depends(load_config),
     bot_manager: BotManager = Depends(get_bot_manager),
+    logger: Logger = Depends(get_logger),
 ) -> BotActionResult:
     if not code:
         raise HTTPException(status_code=400, detail="Не передан параметр 'code'")
@@ -97,6 +98,7 @@ async def oauth_callback(
             intent_detector_host=config.intent_detector.host,
             client_id=config.twitch.client_id,
             client_secret=config.twitch.client_secret,
+            logger=logger,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

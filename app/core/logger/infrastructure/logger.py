@@ -1,4 +1,5 @@
 import logging
+import sys
 from logging.handlers import TimedRotatingFileHandler
 
 from app.core.config.domain.model.logging import LoggingConfig
@@ -31,7 +32,7 @@ class LoggerImpl(Logger):
         file_formatter = logging.Formatter(config.format)
         file_handler.setFormatter(file_formatter)
 
-        console_handler = logging.StreamHandler()
+        console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(config.level)
         console_formatter = logging.Formatter(config.format)
         console_handler.setFormatter(console_formatter)
