@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
-from core.config import load_config
+from app.bootstrap import load_config
 
 Base = declarative_base()
 
@@ -22,8 +22,8 @@ def configure_db(database_url: str) -> None:
 
 @lru_cache
 def _get_engine():
-    database_url = _database_url or load_config().database.url
-    return create_engine(database_url, echo=False)
+    config = load_config()
+    return create_engine(config.db.url, echo=False)
 
 
 @lru_cache

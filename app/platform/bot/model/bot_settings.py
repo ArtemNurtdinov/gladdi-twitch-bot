@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-from core.config import Config
-
 
 @dataclass(frozen=True)
 class BotSettings:
@@ -53,9 +51,3 @@ class DefaultBotSettings(BotSettings):
     command_guess_word: str = "слово"
     command_rps: str = "кнб"
     command_help: str = "команды"
-
-
-def build_bot_settings(cfg: Config) -> BotSettings:
-    group_id = cfg.telegram.group_id
-    settings = DefaultBotSettings(group_id=group_id)
-    return settings

@@ -16,7 +16,7 @@ from app.auth.application.usecase.login_use_case import LoginUseCase
 from app.auth.application.usecase.validate_access_token_use_case import ValidateAccessTokenUseCase
 from app.auth.infrastructure.auth_repository import AuthRepositoryImpl
 from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
-from bootstrap.config_provider import get_config
+from app.bootstrap import load_config
 from core.config import Config
 from core.db import get_db
 
@@ -40,7 +40,7 @@ def get_auth_service(
 
 def get_create_access_token_use_case(
     session: Session = Depends(get_db),
-    config: Config = Depends(get_config),
+    config: Config = Depends(load_config),
 ) -> CreateAccessTokenUseCase:
     token_mapper = TokenMapper()
     return CreateAccessTokenUseCase(
@@ -54,7 +54,7 @@ def get_create_access_token_use_case(
 
 def get_validate_access_token_use_case(
     session: Session = Depends(get_db),
-    config: Config = Depends(get_config),
+    config: Config = Depends(load_config),
 ) -> ValidateAccessTokenUseCase:
     auth_repo = AuthRepositoryImpl(session)
     return ValidateAccessTokenUseCase(

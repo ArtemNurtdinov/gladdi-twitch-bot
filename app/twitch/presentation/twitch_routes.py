@@ -5,12 +5,12 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.bootstrap import load_config
+from app.core.config.domain.model.configuration import Config
 from app.platform.bot.bot_manager import BotManager
-from app.platform.bot.model.bot_settings import BotSettings, build_bot_settings
+from app.platform.bot.model.bot_settings import BotSettings, DefaultBotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus
 from app.twitch.presentation.twitch_schemas import AuthStartResponse
-from bootstrap.config_provider import get_config
-from core.config import Config
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -26,8 +26,10 @@ router = APIRouter()
 
 
 @lru_cache
-def get_bot_settings(cfg: Config = Depends(get_config)) -> BotSettings:
-    return build_bot_settings(cfg)
+def get_bot_settings(config: Config = Depends(load_config)) -> BotSettings:
+    group_id = config.telegram.group_id
+    settings = DefaultBotSettings(group_id=group_id)
+    return settings
 
 
 @lru_cache
@@ -41,10 +43,10 @@ async def get_bot_status(bot_manager: BotManager = Depends(get_bot_manager)) -> 
 
 
 @router.post("/start", summary="Начать авторизацию Twitch", response_model=AuthStartResponse)
-async def start_authorization(cfg=Depends(get_config)) -> AuthStartResponse:
+async def start_authorization(config=Depends(load_config)) -> AuthStartResponse:
     params = {
-        "client_id": cfg.twitch.client_id,
-        "redirect_uri": cfg.twitch.redirect_url,
+        "client_id": config.twitch.client_id,
+        "redirect_uri": config.twitch.redirect_url,
         "response_type": "code",
         "scope": PERMISSIONS_SCOPE,
     }
@@ -62,18 +64,18 @@ async def start_authorization(cfg=Depends(get_config)) -> AuthStartResponse:
 async def oauth_callback(
     code: str | None = None,
     state: str | None = None,
-    cfg: Config = Depends(get_config),
+    config: Config = Depends(load_config),
     bot_manager: BotManager = Depends(get_bot_manager),
 ) -> BotActionResult:
     if not code:
         raise HTTPException(status_code=400, detail="Не передан параметр 'code'")
     try:
         data = {
-            "client_id": cfg.twitch.client_id,
-            "client_secret": cfg.twitch.client_secret,
+            "client_id": config.twitch.client_id,
+            "client_secret": config.twitch.client_secret,
             "code": code,
             "grant_type": "authorization_code",
-            "redirect_uri": cfg.twitch.redirect_url,
+            "redirect_uri": config.twitch.redirect_url,
         }
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(TOKEN_URL, data=data)
@@ -90,11 +92,11 @@ async def oauth_callback(
         return await bot_manager.start_bot(
             access_token=access_token,
             refresh_token=refresh_token,
-            tg_bot_token=cfg.telegram.bot_token,
-            llmbox_host=cfg.llmbox.host,
-            intent_detector_host=cfg.intent_detector.host,
-            client_id=cfg.twitch.client_id,
-            client_secret=cfg.twitch.client_secret,
+            tg_bot_token=config.telegram.bot_token,
+            llmbox_host=config.llmbox.host,
+            intent_detector_host=config.intent_detector.host,
+            client_id=config.twitch.client_id,
+            client_secret=config.twitch.client_secret,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
