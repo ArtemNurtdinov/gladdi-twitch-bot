@@ -1,11 +1,12 @@
-from typing import Protocol
+from abc import ABC, abstractmethod
 
 from core.background.task_runner import BackgroundTaskRunner
 
 
-class BackgroundJob(Protocol):
+class BackgroundJob(ABC):
     name: str
 
+    @abstractmethod
     def register(self, runner: BackgroundTaskRunner) -> None: ...
 
 

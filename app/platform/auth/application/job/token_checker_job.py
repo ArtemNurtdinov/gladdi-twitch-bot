@@ -3,9 +3,10 @@ import asyncio
 from app.core.logger.domain.logger import Logger
 from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from core.background.task_runner import BackgroundTaskRunner
+from core.background.tasks import BackgroundJob
 
 
-class TokenCheckerJob:
+class TokenCheckerJob(BackgroundJob):
     name = "check_token"
     CHECK_INTERVAL_SECONDS = 1000
 

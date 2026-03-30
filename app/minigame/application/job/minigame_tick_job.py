@@ -3,9 +3,10 @@ import asyncio
 from app.core.logger.domain.logger import Logger
 from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from core.background.task_runner import BackgroundTaskRunner
+from core.background.tasks import BackgroundJob
 
 
-class MinigameTickJob:
+class MinigameTickJob(BackgroundJob):
     _MINIGAME_TICK_DELAY = 60
     name = "check_minigames"
 

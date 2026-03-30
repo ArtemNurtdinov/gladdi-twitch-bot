@@ -4,9 +4,10 @@ from datetime import datetime
 from app.core.logger.domain.logger import Logger
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from core.background.task_runner import BackgroundTaskRunner
+from core.background.tasks import BackgroundJob
 
 
-class FollowersSyncJob:
+class FollowersSyncJob(BackgroundJob):
     SYNC_FOLLOWERS_INTERVAL_SECONDS = 24 * 60 * 60
     name = "sync_followers"
 

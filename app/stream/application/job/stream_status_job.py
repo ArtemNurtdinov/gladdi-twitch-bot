@@ -2,9 +2,10 @@ import asyncio
 
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
 from core.background.task_runner import BackgroundTaskRunner
+from core.background.tasks import BackgroundJob
 
 
-class StreamStatusJob:
+class StreamStatusJob(BackgroundJob):
     name = "check_stream_status"
     STREAM_STATUS_INTERVAL = 300
 

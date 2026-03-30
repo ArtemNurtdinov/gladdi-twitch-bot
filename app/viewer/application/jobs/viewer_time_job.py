@@ -5,9 +5,10 @@ from app.core.logger.domain.logger import Logger
 from app.viewer.application.models.viewer_time import ViewerTimeDTO
 from app.viewer.application.usecases.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from core.background.task_runner import BackgroundTaskRunner
+from core.background.tasks import BackgroundJob
 
 
-class ViewerTimeJob:
+class ViewerTimeJob(BackgroundJob):
     CHECK_VIEWER_INTERVAL_SECONDS = 10
     name = "check_viewer_time"
 

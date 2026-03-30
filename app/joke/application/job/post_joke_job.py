@@ -5,9 +5,10 @@ from datetime import datetime
 from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
 from core.background.task_runner import BackgroundTaskRunner
+from core.background.tasks import BackgroundJob
 
 
-class PostJokeJob:
+class PostJokeJob(BackgroundJob):
     name = "post_joke"
 
     def __init__(

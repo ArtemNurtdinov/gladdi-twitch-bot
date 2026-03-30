@@ -5,9 +5,10 @@ from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.model.summarizer_job import SummarizerJobDTO
 from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from core.background.task_runner import BackgroundTaskRunner
+from core.background.tasks import BackgroundJob
 
 
-class ChatSummarizerJob:
+class ChatSummarizerJob(BackgroundJob):
     name = "summarize_chat"
 
     def __init__(
