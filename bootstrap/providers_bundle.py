@@ -13,7 +13,6 @@ from app.follow.bootstrap import FollowProviders, build_follow_providers
 from app.minigame.bootstrap import MinigameProviders, build_minigame_providers
 from app.stream.bootstrap import StreamProviders, build_stream_providers
 from app.viewer.bootstrap import ViewerProviders, build_viewer_providers
-from core.bootstrap.background import BackgroundProviders, build_background_providers
 
 
 @dataclass(frozen=True)
@@ -28,7 +27,6 @@ class ProvidersBundle:
     minigame_providers: MinigameProviders
     battle_providers: BattleProviders
     betting_providers: BettingProviders
-    background_providers: BackgroundProviders
 
 
 def build_providers_bundle(llmbox_host: str, intent_detector_host: str, logger: Logger) -> ProvidersBundle:
@@ -42,7 +40,6 @@ def build_providers_bundle(llmbox_host: str, intent_detector_host: str, logger: 
     minigame_providers = build_minigame_providers(logger=logger)
     battle_providers = build_battle_providers()
     betting_providers = build_betting_providers()
-    background_providers = build_background_providers()
 
     return ProvidersBundle(
         ai_providers=ai_providers,
@@ -55,5 +52,4 @@ def build_providers_bundle(llmbox_host: str, intent_detector_host: str, logger: 
         minigame_providers=minigame_providers,
         battle_providers=battle_providers,
         betting_providers=betting_providers,
-        background_providers=background_providers,
     )

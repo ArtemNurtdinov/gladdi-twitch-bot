@@ -37,6 +37,7 @@ from app.viewer.application.jobs.viewer_time_job import ViewerTimeJob
 from app.viewer.application.usecases.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
+from core.background.task_runner import BackgroundTaskRunner
 from core.background.tasks import BackgroundTasks
 from core.db import db_ro_session
 from core.provider import Provider
@@ -66,7 +67,7 @@ def build_background_tasks(
     chat_response_port = GenerateStreamInfoAdapter(chat_response_use_case)
     joke_repository = provide_joke_settings_repository(logger)
     return BackgroundTasks(
-        runner=providers.background_providers.runner,
+        runner=BackgroundTaskRunner(),
         jobs=[
             provide_post_joke_job(
                 channel_name=settings.channel_name,
