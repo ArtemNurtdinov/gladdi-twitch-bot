@@ -5,7 +5,7 @@ from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.core.logger.domain.logger import Logger
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_repository import MinigameRepository
-from app.notification.application.repository import NotificationRepository
+from app.notification.domain.repository import NotificationRepository
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.port.generate_stream_info_port import GenerateStreamInfoPort
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory

@@ -135,7 +135,6 @@ class BotManager:
             self._streaming_client = streaming_client
 
             providers_bundle = build_providers_bundle(
-                tg_bot_token=tg_bot_token,
                 llmbox_host=llmbox_host,
                 intent_detector_host=intent_detector_host,
                 logger=logger,
@@ -416,6 +415,7 @@ class BotManager:
                 session_factory_ro=db_ro_session,
                 conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
                 chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
+                tg_bot_token=tg_bot_token,
             )
             self._background_tasks.start_all()
 

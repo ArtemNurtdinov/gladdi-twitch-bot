@@ -13,7 +13,6 @@ from app.follow.bootstrap import FollowProviders, build_follow_providers
 from app.minigame.bootstrap import MinigameProviders, build_minigame_providers
 from app.stream.bootstrap import StreamProviders, build_stream_providers
 from app.viewer.bootstrap import ViewerProviders, build_viewer_providers
-from bootstrap.telegram_provider import TelegramProviders, build_telegram_providers
 from core.bootstrap.background import BackgroundProviders, build_background_providers
 
 
@@ -30,10 +29,9 @@ class ProvidersBundle:
     battle_providers: BattleProviders
     betting_providers: BettingProviders
     background_providers: BackgroundProviders
-    telegram_providers: TelegramProviders
 
 
-def build_providers_bundle(tg_bot_token: str, llmbox_host: str, intent_detector_host: str, logger: Logger) -> ProvidersBundle:
+def build_providers_bundle(llmbox_host: str, intent_detector_host: str, logger: Logger) -> ProvidersBundle:
     stream_providers = build_stream_providers()
     ai_providers = build_ai_providers(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
     chat_providers = build_chat_providers()
@@ -45,7 +43,6 @@ def build_providers_bundle(tg_bot_token: str, llmbox_host: str, intent_detector_
     battle_providers = build_battle_providers()
     betting_providers = build_betting_providers()
     background_providers = build_background_providers()
-    telegram_providers = build_telegram_providers(tg_bot_token=tg_bot_token)
 
     return ProvidersBundle(
         ai_providers=ai_providers,
@@ -59,5 +56,4 @@ def build_providers_bundle(tg_bot_token: str, llmbox_host: str, intent_detector_
         battle_providers=battle_providers,
         betting_providers=betting_providers,
         background_providers=background_providers,
-        telegram_providers=telegram_providers,
     )

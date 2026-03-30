@@ -1,6 +1,6 @@
 import telegram
 
-from app.notification.application.repository import NotificationRepository
+from app.notification.domain.repository import NotificationRepository
 
 
 class NotificationRepositoryImpl(NotificationRepository):

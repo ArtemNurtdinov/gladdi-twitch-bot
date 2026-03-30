@@ -25,7 +25,7 @@ from app.minigame.application.use_case.handle_minigame_tick_use_case import Hand
 from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
 from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
-from app.notification.infrastructure.repository import NotificationRepositoryImpl
+from app.notification.di.dependencies import provide_notification_repository, provide_telegram_bot
 from app.platform.auth.application.di.dependencies import provide_handle_token_checker_use_case, provide_token_checker_job
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
@@ -60,8 +60,10 @@ def build_background_tasks(
     session_factory_ro: SessionFactory,
     conversation_service_provider: Provider[ConversationService],
     chat_use_case_provider: Provider[ChatUseCase],
+    tg_bot_token: str,
 ) -> BackgroundTasks:
-    notifications_port = NotificationRepositoryImpl(providers.telegram_providers.telegram_bot)
+    telegram_bot = provide_telegram_bot(tg_bot_token)
+    notifications_repository = provide_notification_repository(telegram_bot)
     chat_response_port = GenerateStreamInfoAdapter(chat_response_use_case)
     joke_repository = provide_joke_settings_repository(logger)
     return BackgroundTasks(
@@ -94,7 +96,7 @@ def build_background_tasks(
                     platform_repository=platform_repository,
                     stream_status_uow=uow_factories.build_stream_status_uow_factory(),
                     minigame_repository=providers.minigame_providers.minigame_repository,
-                    notification_repository=notifications_port,
+                    notification_repository=notifications_repository,
                     notification_group_id=settings.group_id,
                     chat_response_port=chat_response_port,
                     state=chat_summary_state,
