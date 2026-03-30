@@ -12,17 +12,7 @@ from app.stream.application.port.generate_stream_info_port import GenerateStream
 from app.stream.application.port.stream_chat_stats_port import StreamChatStatsPort
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
-from app.stream.domain.repo import StreamRepository
-from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
 from app.user.application.ports.user_cache_port import UserCachePort
-
-
-def provide_stream_repository(session: Session) -> StreamRepository:
-    return StreamRepositoryImpl(session)
-
-
-def provide_stream_chat_stats_ro(session: Session) -> StreamChatStatsPort:
-    return StreamChatStatsAdapter(ChatRepositoryImpl(session))
 
 
 def provide_stream_chat_stats_port(session: Session) -> StreamChatStatsPort:
