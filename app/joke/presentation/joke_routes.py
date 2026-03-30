@@ -1,12 +1,9 @@
-from functools import lru_cache
-
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.logger.di.composition import get_logger
-from app.core.logger.domain.logger import Logger
 from app.joke.application.dto import JokeIntervalDto, JokesIntervalResultDto, JokesResponseDto, JokesStatusDto, NextJokeDto
 from app.joke.application.usecase.joke_use_case import JokeUseCase
-from app.joke.bootstrap import JokeProviders, build_joke_providers
+from app.joke.di.dependencies import provide_joke_service, provide_joke_settings_repository, provide_joke_use_case
 from app.joke.presentation.joke_schemas import (
     JokeInterval,
     JokesIntervalRequest,
@@ -19,13 +16,11 @@ from app.joke.presentation.joke_schemas import (
 router = APIRouter()
 
 
-@lru_cache
-def get_joke_providers(logger: Logger = Depends(get_logger)) -> JokeProviders:
-    return build_joke_providers(logger)
-
-
-def get_joke_use_case(providers: JokeProviders = Depends(get_joke_providers)) -> JokeUseCase:
-    return providers.joke_use_case
+def get_joke_use_case() -> JokeUseCase:
+    logger = get_logger()
+    joke_settings_repository = provide_joke_settings_repository(logger)
+    joke_service = provide_joke_service(joke_settings_repository, logger)
+    return provide_joke_use_case(joke_service)
 
 
 def _to_next_joke_model(dto_next: NextJokeDto | None) -> NextJoke | None:

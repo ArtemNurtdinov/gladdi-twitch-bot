@@ -15,12 +15,12 @@ class PostJokeJob:
         channel_name: str,
         handle_post_joke_use_case: HandlePostJokeUseCase,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_nick: str,
+        bot_name: str,
     ):
         self._channel_name = channel_name
         self._handle_post_joke_use_case = handle_post_joke_use_case
         self._send_channel_message = send_channel_message
-        self._bot_nick = bot_nick
+        self._bot_name = bot_name
 
     def register(self, runner: BackgroundTaskRunner):
         runner.register(self.name, self.run)
@@ -32,7 +32,7 @@ class PostJokeJob:
 
                 post_joke = PostJokeDTO(
                     channel_name=self._channel_name,
-                    bot_nick=self._bot_nick.lower(),
+                    bot_nick=self._bot_name.lower(),
                     occurred_at=datetime.utcnow(),
                 )
 

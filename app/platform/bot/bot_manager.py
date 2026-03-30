@@ -6,8 +6,7 @@ from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.core.logger.domain.logger import Logger
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
-from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
-from app.platform.auth.platform_auth import PlatformAuth
+from app.platform.auth.application.di.dependencies import provide_platform_auth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.platform.chat.application.chat_event_handler import ChatEventsHandler
@@ -51,6 +50,7 @@ from app.platform.command.transfer.application.transfer_command_handler import T
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
+from app.user.di.dependencies import provide_user_cache
 from bootstrap.jobs_composition import build_background_tasks
 from bootstrap.providers_bundle import build_providers_bundle
 from bootstrap.uow_composition import create_uow_factories
@@ -127,13 +127,7 @@ class BotManager:
 
             self.validate_credentials(access_token, refresh_token, client_id, client_secret)
 
-            platform_auth: PlatformAuth = TwitchAuth(
-                access_token=access_token,
-                refresh_token=refresh_token,
-                client_id=client_id,
-                client_secret=client_secret,
-                logger=self._logger,
-            )
+            platform_auth = provide_platform_auth(access_token, refresh_token, client_id, client_secret, logger)
 
             streaming_client = TwitchHelixClient(platform_auth)
             platform_repository = PlatformRepositoryImpl(streaming_client, self._logger)
@@ -141,12 +135,13 @@ class BotManager:
             self._streaming_client = streaming_client
 
             providers_bundle = build_providers_bundle(
-                platform_repository=platform_repository,
                 tg_bot_token=tg_bot_token,
                 llmbox_host=llmbox_host,
                 intent_detector_host=intent_detector_host,
                 logger=logger,
             )
+
+            user_cache = provide_user_cache(platform_repository)
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -176,9 +171,7 @@ class BotManager:
 
             chat_events_handler = ChatEventsHandler(handle_chat_message_use_case=handle_chat_message_use_case)
 
-            moderation_service = ModerationService(
-                platform_repository=platform_repository, user_cache=providers_bundle.user_providers.user_cache, logger=logger
-            )
+            moderation_service = ModerationService(platform_repository=platform_repository, user_cache=user_cache, logger=logger)
 
             followage_command_handler: CommandHandler = FollowageCommandHandlerImpl(
                 command_prefix=self._settings.prefix,
@@ -418,7 +411,13 @@ class BotManager:
                 platform_auth=platform_auth,
                 platform_repository=platform_repository,
                 logger=self._logger,
+                user_cache=user_cache,
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
+                chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
             )
+            self._background_tasks.start_all()
 
             HandleRestoreStreamContextUseCase(
                 restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
@@ -429,11 +428,9 @@ class BotManager:
             self._chat_client = chat_client
 
             try:
-                await providers_bundle.user_providers.user_cache.warmup(self._settings.channel_name)
+                await user_cache.warmup(self._settings.channel_name)
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
-
-            self._background_tasks.start_all()
 
             self._status = BotStatusEnum.RUNNING
             self._started_at = datetime.utcnow()

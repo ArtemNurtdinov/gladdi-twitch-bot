@@ -10,11 +10,8 @@ from app.core.logger.domain.logger import Logger
 from app.economy.bootstrap import EconomyProviders, build_economy_providers
 from app.equipment.bootstrap import EquipmentProviders, build_equipment_providers
 from app.follow.bootstrap import FollowProviders, build_follow_providers
-from app.joke.bootstrap import JokeProviders, build_joke_providers
 from app.minigame.bootstrap import MinigameProviders, build_minigame_providers
-from app.platform.domain.repository import PlatformRepository
 from app.stream.bootstrap import StreamProviders, build_stream_providers
-from app.user.bootstrap import UserProviders, build_user_providers
 from app.viewer.bootstrap import ViewerProviders, build_viewer_providers
 from bootstrap.telegram_provider import TelegramProviders, build_telegram_providers
 from core.bootstrap.background import BackgroundProviders, build_background_providers
@@ -26,8 +23,6 @@ class ProvidersBundle:
     stream_providers: StreamProviders
     chat_providers: ChatProviders
     follow_providers: FollowProviders
-    joke_providers: JokeProviders
-    user_providers: UserProviders
     viewer_providers: ViewerProviders
     economy_providers: EconomyProviders
     equipment_providers: EquipmentProviders
@@ -38,15 +33,11 @@ class ProvidersBundle:
     telegram_providers: TelegramProviders
 
 
-def build_providers_bundle(
-    platform_repository: PlatformRepository, tg_bot_token: str, llmbox_host: str, intent_detector_host: str, logger: Logger
-) -> ProvidersBundle:
+def build_providers_bundle(tg_bot_token: str, llmbox_host: str, intent_detector_host: str, logger: Logger) -> ProvidersBundle:
     stream_providers = build_stream_providers()
     ai_providers = build_ai_providers(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
     chat_providers = build_chat_providers()
     follow_providers = build_follow_providers()
-    joke_providers = build_joke_providers(logger=logger)
-    user_providers = build_user_providers(platform_repository)
     viewer_providers = build_viewer_providers()
     economy_providers = build_economy_providers()
     equipment_providers = build_equipment_providers()
@@ -61,8 +52,6 @@ def build_providers_bundle(
         stream_providers=stream_providers,
         chat_providers=chat_providers,
         follow_providers=follow_providers,
-        joke_providers=joke_providers,
-        user_providers=user_providers,
         viewer_providers=viewer_providers,
         economy_providers=economy_providers,
         equipment_providers=equipment_providers,

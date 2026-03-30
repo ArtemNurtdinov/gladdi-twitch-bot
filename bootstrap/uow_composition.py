@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
 from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
-from app.joke.infrastructure.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.platform.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
@@ -35,7 +34,6 @@ from core.types import SessionFactory
 class UowFactories:
     build_ask_uow_factory: Callable[[], SqlAlchemyAskUnitOfWorkFactory]
     build_chat_message_uow_factory: Callable[[], SqlAlchemyChatMessageUnitOfWorkFactory]
-    build_joke_uow_factory: Callable[[], SqlAlchemyJokeUnitOfWorkFactory]
     build_chat_response_uow_factory: Callable[[], SqlAlchemyChatResponseUnitOfWorkFactory]
     build_chat_summarizer_uow_factory: Callable[[], SqlAlchemyChatSummarizerUnitOfWorkFactory]
     build_balance_uow_factory: Callable[[], SqlAlchemyBalanceUnitOfWorkFactory]
@@ -94,14 +92,6 @@ def create_uow_factories(
             viewer_repo_provider=viewer_providers.viewer_repo_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
             system_prompt_repository_provider=ai_providers.system_prompt_repo_provider,
-        )
-
-    def build_joke_uow_factory() -> SqlAlchemyJokeUnitOfWorkFactory:
-        return SqlAlchemyJokeUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            conversation_service_provider=ai_providers.conversation_service_provider,
-            chat_use_case_provider=chat_providers.chat_use_case_provider,
         )
 
     def build_chat_response_uow_factory() -> SqlAlchemyChatResponseUnitOfWorkFactory:
@@ -286,7 +276,6 @@ def create_uow_factories(
     return UowFactories(
         build_ask_uow_factory=build_ask_uow_factory,
         build_chat_message_uow_factory=build_chat_message_uow_factory,
-        build_joke_uow_factory=build_joke_uow_factory,
         build_chat_response_uow_factory=build_chat_response_uow_factory,
         build_chat_summarizer_uow_factory=build_chat_summarizer_uow_factory,
         build_balance_uow_factory=build_balance_uow_factory,

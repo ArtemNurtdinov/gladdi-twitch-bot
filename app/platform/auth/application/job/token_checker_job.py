@@ -25,4 +25,4 @@ class TokenCheckerJob:
                 self._logger.log_info("TokenCheckerJob cancelled")
                 break
             except Exception as e:
-                self._logger.log_error(f"Ошибка в TokenCheckerJob: {e}")
+                self._logger.log_exception("Ошибка в TokenCheckerJob:", e)
