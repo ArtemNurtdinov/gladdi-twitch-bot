@@ -52,8 +52,9 @@ def provide_handle_stream_status_use_case(
         logger=logger,
     )
 
+
 def provide_stream_status_job(
     channel_name: str,
     handle_stream_status_use_case: HandleStreamStatusUseCase,
 ) -> StreamStatusJob:
-
+    return StreamStatusJob(channel_name=channel_name, handle_stream_status_use_case=handle_stream_status_use_case)
