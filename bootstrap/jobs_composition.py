@@ -30,8 +30,7 @@ from app.platform.auth.application.di.dependencies import provide_handle_token_c
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.domain.repository import PlatformRepository
-from app.stream.application.job.stream_status_job import StreamStatusJob
-from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
+from app.stream.di.dependencies import provide_handle_stream_status_use_case, provide_stream_status_job
 from app.stream.infrastructure.adapters.generate_stream_info_adapter import GenerateStreamInfoAdapter
 from app.user.application.ports.user_cache_port import UserCachePort
 from app.viewer.application.jobs.viewer_time_job import ViewerTimeJob
@@ -89,12 +88,12 @@ def build_background_tasks(
             provide_token_checker_job(
                 handle_token_checker_use_case=provide_handle_token_checker_use_case(platform_auth, logger), logger=logger
             ),
-            StreamStatusJob(
+            provide_stream_status_job(
                 channel_name=settings.channel_name,
-                handle_stream_status_use_case=HandleStreamStatusUseCase(
+                handle_stream_status_use_case=provide_handle_stream_status_use_case(
                     user_cache=user_cache,
                     platform_repository=platform_repository,
-                    stream_status_uow=uow_factories.build_stream_status_uow_factory(),
+                    stream_status_uow_factory=uow_factories.build_stream_status_uow_factory(),
                     minigame_repository=providers.minigame_providers.minigame_repository,
                     notification_repository=notifications_repository,
                     notification_group_id=settings.group_id,
