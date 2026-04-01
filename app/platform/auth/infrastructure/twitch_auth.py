@@ -1,7 +1,6 @@
-from logging import Logger
-
 import httpx
 
+from app.core.logger.domain.logger import Logger
 from app.platform.auth.platform_auth import PlatformAuth
 
 
@@ -11,10 +10,10 @@ class TwitchAuth(PlatformAuth):
 
     def __init__(self, access_token: str, refresh_token: str, client_id: str, client_secret: str, logger: Logger):
         super().__init__(access_token, refresh_token, client_id, client_secret)
-        self.logger = logger
+        self.logger = logger.create_child(__name__)
 
     async def update_access_token(self):
-        self.logger.info("updating access token")
+        self.logger.log_info("updating access token")
 
         data = {
             "client_id": self.client_id,
@@ -43,10 +42,10 @@ class TwitchAuth(PlatformAuth):
         if response.status_code == 200:
             token_info = response.json()
             expires_in = token_info["expires_in"]
-            self.logger.info("Токен действителен")
+            self.logger.log_info("Токен действителен")
             return expires_in > 4000
         elif response.status_code == 401:
-            self.logger.info("Токен истек или недействителен.", response.json())
+            self.logger.log_info(f"Токен истек или недействителен.{response.json()}")
         else:
-            self.logger.info("Произошла ошибка при проверке токена.", response.json())
+            self.logger.log_info(f"Произошла ошибка при проверке токена.{response.json()}")
         return False
