@@ -9,6 +9,9 @@ from app.platform.infrastructure.api_client import StreamingApiClient, Streaming
 
 
 class TwitchHelixClient(StreamingApiClient):
+    _HEADER_CLIENT_ID = "Client-ID"
+    _HEADER_AUTHORIZATION = "Authorization"
+
     def __init__(self, auth: PlatformAuth):
         self._auth = auth
         self._client = httpx.AsyncClient(
@@ -18,41 +21,25 @@ class TwitchHelixClient(StreamingApiClient):
         )
 
     def _headers(self, extra: dict[str, str] | None = None) -> dict[str, str]:
-        base = {"Client-ID": self._auth.client_id, "Authorization": f"Bearer {self._auth.access_token}"}
+        base = {self._HEADER_CLIENT_ID: self._auth.client_id, self._HEADER_AUTHORIZATION: f"Bearer {self._auth.access_token}"}
         if extra:
             base.update(extra)
         return base
 
-    async def get(self, url: str, params: dict[str, Any]) -> StreamingApiResponse:
-        response = await self._client.get(url, params=params, headers=self._headers())
-        return StreamingApiResponse(
-            status_code=response.status_code,
-            text=response.text,
-            json_data=response.json(),
-        )
-
-    async def get_with_headers(self, url: str, params: dict[str, Any], headers: dict[str, str]) -> StreamingApiResponse:
-        response = await self._client.get(url, params=params, headers=self._headers(headers))
-        return StreamingApiResponse(
-            status_code=response.status_code,
-            text=response.text,
-            json_data=response.json(),
-        )
+    async def get(self, url: str, params: dict[str, Any], headers: dict[str, str] | None = None):
+        response = await self._client.get(url, params=params, headers=headers)
+        return StreamingApiResponse(status_code=response.status_code, text=response.text, json_data=response.json())
 
     async def post(
         self,
         url: str,
         params: dict[str, Any],
         headers: dict[str, str],
-        json: dict[str, Any],
+        data: dict[str, Any],
     ) -> StreamingApiResponse:
         merged_headers = self._headers(headers)
-        response = await self._client.post(url, params=params, headers=merged_headers, json=json)
-        return StreamingApiResponse(
-            status_code=response.status_code,
-            text=response.text,
-            json_data=response.json(),
-        )
+        response = await self._client.post(url, params=params, headers=merged_headers, json=data)
+        return StreamingApiResponse(status_code=response.status_code, text=response.text, json_data=response.json())
 
     async def aclose(self) -> None:
         await self._client.aclose()

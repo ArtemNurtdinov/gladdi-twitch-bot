@@ -26,7 +26,7 @@ class PlatformRepositoryImpl(PlatformRepository):
             url="/moderation/bans",
             params={"broadcaster_id": broadcaster_id, "moderator_id": moderator_id},
             headers={"Content-Type": "application/json"},
-            json={"data": {"user_id": user_id, "duration": duration_seconds, "reason": reason}},
+            data={"data": {"user_id": user_id, "duration": duration_seconds, "reason": reason}},
         )
         if response.status_code == 200:
             self._logger.log_info(f"Таймаут успешно применён для пользователя {user_id} на {duration_seconds} секунд за: {reason}")
