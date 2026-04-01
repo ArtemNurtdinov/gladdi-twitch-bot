@@ -2,10 +2,10 @@ import httpx
 from pydantic import ValidationError
 
 from app.core.logger.domain.logger import Logger
+from app.core.network.api.client import ApiClient
 from app.follow.application.models.follower import ChannelFollowerDTO
 from app.platform.command.followage.application.model import FollowageInfo
 from app.platform.domain.repository import PlatformRepository
-from app.platform.infrastructure.api_client import StreamingApiClient
 from app.platform.infrastructure.common import handle_api_response
 from app.platform.infrastructure.model.chatter import ChattersResponse
 from app.platform.infrastructure.model.follower import FollowerData, FollowersResponse
@@ -17,7 +17,7 @@ from app.user.application.model.model import UserInfoDTO
 
 
 class PlatformRepositoryImpl(PlatformRepository):
-    def __init__(self, client: StreamingApiClient, logger: Logger):
+    def __init__(self, client: ApiClient, logger: Logger):
         self._api_client = client
         self._logger = logger
 
