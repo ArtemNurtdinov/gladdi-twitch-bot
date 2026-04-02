@@ -53,15 +53,14 @@ class PlatformChatClient(ABC):
 
         try:
             if self.is_reply_message(message):
-                self._logger.log_info(f"handle reply message: {message}")
                 result = await self._handle_reply_use_case.handle(chat_message)
                 await self.send_channel_message(result)
                 return
             result = await self._handle_chat_message_use_case.handle(chat_message)
             if result:
-                self._logger.log_info(f"handle chat message: {message}")
                 await self.send_channel_message(result)
-        except Exception:
+        except Exception as e:
+            self._logger.log_exception("message handling error:", e)
             pass
 
     async def _command_handled(self, user_name: str, message: str) -> bool:
@@ -72,7 +71,8 @@ class PlatformChatClient(ABC):
             result = await command_handler.handle(self.channel_name, user_name, message)
             await self.send_channel_message(result)
             return True
-        except Exception:
+        except Exception as e:
+            self._logger.log_exception("_command_handled error:", e)
             pass
         return False
 
