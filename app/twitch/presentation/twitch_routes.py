@@ -64,7 +64,6 @@ async def start_authorization(config=Depends(load_config)) -> AuthStartResponse:
 )
 async def oauth_callback(
     code: str | None = None,
-    state: str | None = None,
     config: Config = Depends(load_config),
     bot_manager: BotManager = Depends(get_bot_manager),
     logger: Logger = Depends(get_logger),

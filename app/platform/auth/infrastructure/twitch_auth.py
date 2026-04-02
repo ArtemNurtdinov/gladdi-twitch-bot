@@ -42,7 +42,6 @@ class TwitchAuth(PlatformAuth):
         if response.status_code == 200:
             token_info = response.json()
             expires_in = token_info["expires_in"]
-            self.logger.log_info("Токен действителен")
             return expires_in > 4000
         elif response.status_code == 401:
             self.logger.log_info(f"Токен истек или недействителен.{response.json()}")

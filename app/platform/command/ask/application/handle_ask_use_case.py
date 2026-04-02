@@ -32,7 +32,7 @@ class HandleAskUseCase:
         elif intent == Intent.HELLO:
             prompt = self._prompt_service.get_hello_prompt(command_ask.display_name, command_ask.message)
         else:
-            prompt = self._prompt_service.get_default_prompt(command_ask.display_name, command_ask.message)
+            prompt = self._prompt_service.get_reply_prompt(command_ask.display_name, command_ask.message)
 
         with self._unit_of_work_factory.create(read_only=True) as uow:
             system_prompt = uow.system_prompt_repository.get_system_prompt(command_ask.channel_name)

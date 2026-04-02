@@ -58,5 +58,5 @@ class PromptService:
             f"\nЕсли сообщение не содержит приветствие, просто забавно прокомментируй его."
         )
 
-    def get_default_prompt(self, nickname: str, message: str) -> str:
-        return f"Ответь пользователю с никнеймом {nickname} на его сообщение: {message}."
+    def get_reply_prompt(self, user_display_name: str, message: str) -> str:
+        return f"Пользователь {user_display_name} обращается к тебе: {message}"

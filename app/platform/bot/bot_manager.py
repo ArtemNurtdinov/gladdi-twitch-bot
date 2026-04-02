@@ -9,8 +9,8 @@ from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.application.di.dependencies import provide_platform_auth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
-from app.platform.chat.application.chat_event_handler import ChatEventsHandler
 from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
@@ -47,6 +47,7 @@ from app.platform.command.top_bottom.application.handle_top_bottom_use_case impo
 from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandlerImpl
 from app.platform.command.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
+from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
@@ -130,7 +131,7 @@ class BotManager:
             platform_auth = provide_platform_auth(access_token, refresh_token, client_id, client_secret, logger)
 
             streaming_client = TwitchHelixClient(platform_auth)
-            platform_repository = PlatformRepositoryImpl(streaming_client, self._logger)
+            platform_repository: PlatformRepository = PlatformRepositoryImpl(streaming_client, self._logger)
 
             self._streaming_client = streaming_client
 
@@ -149,8 +150,11 @@ class BotManager:
                 platform_repository=platform_repository,
             )
 
-            bot_user = await platform_repository.get_user_by_login(self._settings.bot_name)
-            bot_user_id = bot_user.id if bot_user else None
+            bot_user = await platform_repository.get_authenticated_user()
+            if not bot_user:
+                raise ValueError("Не удалось получить профиль бота по токену (GET /users). Проверьте авторизацию.")
+            bot_name = bot_user.display_name.lower()
+            bot_user_id = bot_user.id
             battle_waiting_user = {"value": None}
             chat_summary_state = ChatSummaryState()
 
@@ -160,15 +164,6 @@ class BotManager:
                 system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
                 db_ro_session=db_ro_session,
             )
-
-            handle_chat_message_use_case = HandleChatMessageUseCase(
-                unit_of_work_factory=uow_factories.build_chat_message_uow_factory(),
-                get_intent_from_text_use_case=providers_bundle.ai_providers.get_intent_use_case,
-                prompt_service=providers_bundle.ai_providers.prompt_service,
-                generate_response_use_case=generate_response_use_case,
-            )
-
-            chat_events_handler = ChatEventsHandler(handle_chat_message_use_case=handle_chat_message_use_case)
 
             moderation_service = ModerationService(platform_repository=platform_repository, user_cache=user_cache, logger=logger)
 
@@ -180,7 +175,7 @@ class BotManager:
                     chat_response_use_case=generate_response_use_case,
                     unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
                 ),
-                bot_nick=self._settings.bot_name,
+                bot_nick=bot_name,
             )
 
             ask_uow_factory = uow_factories.build_ask_uow_factory()
@@ -194,7 +189,7 @@ class BotManager:
                     unit_of_work_factory=ask_uow_factory,
                     chat_response_use_case=generate_response_use_case,
                 ),
-                bot_nick=self._settings.bot_name,
+                bot_nick=bot_name,
             )
 
             battle_command_handler: CommandHandler = BattleCommandHandlerImpl(
@@ -206,7 +201,7 @@ class BotManager:
                     calculate_timeout_use_case=providers_bundle.equipment_providers.calculate_timeout_use_case,
                 ),
                 chat_moderation=moderation_service,
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
                 battle_waiting_user=battle_waiting_user,
             )
 
@@ -219,14 +214,14 @@ class BotManager:
                     calculate_timeout_use_case=providers_bundle.equipment_providers.calculate_timeout_use_case,
                 ),
                 chat_moderation=moderation_service,
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(
                 handle_balance_use_case=HandleBalanceUseCase(
                     balance_uow=uow_factories.build_balance_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             bonus_command_handler: CommandHandler = BonusCommandHandlerImpl(
@@ -235,7 +230,7 @@ class BotManager:
                 handle_bonus_use_case=HandleBonusUseCase(
                     bonus_uow=uow_factories.build_bonus_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             transfer_command_handler: CommandHandler = TransferCommandHandlerImpl(
@@ -244,7 +239,7 @@ class BotManager:
                 handle_transfer_use_case=HandleTransferUseCase(
                     unit_of_work_factory=uow_factories.build_transfer_uow_factory(),
                 ),
-                bot_nick=self._settings.bot_name,
+                bot_nick=bot_name,
             )
 
             shop_command_handler: CommandHandler = ShopCommandHandlerImpl(
@@ -254,7 +249,7 @@ class BotManager:
                 handle_shop_use_case=HandleShopUseCase(
                     unit_of_work_factory=uow_factories.build_shop_uow_factory(),
                 ),
-                bot_nick=self._settings.bot_name,
+                bot_nick=bot_name,
             )
 
             buy_command_handler: CommandHandler = BuyCommandHandlerImpl(
@@ -263,7 +258,7 @@ class BotManager:
                 handle_shop_use_case=HandleShopUseCase(
                     unit_of_work_factory=uow_factories.build_shop_uow_factory(),
                 ),
-                bot_nick=self._settings.bot_name,
+                bot_nick=bot_name,
             )
 
             equipment_command_handler: CommandHandler = EquipmentCommandHandlerImpl(
@@ -273,7 +268,7 @@ class BotManager:
                 handle_equipment_use_case=HandleEquipmentUseCase(
                     unit_of_work_factory=uow_factories.build_equipment_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             top_command_handler: CommandHandler = TopCommandHandlerImpl(
@@ -282,7 +277,7 @@ class BotManager:
                 handle_top_bottom_use_case=HandleTopBottomUseCase(
                     unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             bottom_command_handler: CommandHandler = BottomCommandHandlerImpl(
@@ -291,7 +286,7 @@ class BotManager:
                 handle_top_bottom_use_case=HandleTopBottomUseCase(
                     unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             commands = {
@@ -315,7 +310,7 @@ class BotManager:
                 command_name=self._settings.command_help,
                 handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=uow_factories.build_help_uow_factory()),
                 commands=commands,
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             stats_command_handler: CommandHandler = StatsCommandHandlerImpl(
@@ -324,7 +319,7 @@ class BotManager:
                 handle_stats_use_case=HandleStatsUseCase(
                     stats_uow=uow_factories.build_stats_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             guess_number_command_handler: CommandHandler = GuessNumberCommandHandlerImpl(
@@ -334,7 +329,7 @@ class BotManager:
                     minigame_repository=providers_bundle.minigame_providers.minigame_repository,
                     guess_uow=uow_factories.build_guess_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             guess_letter_command_handler: CommandHandler = GuessLetterCommandHandlerImpl(
@@ -344,7 +339,7 @@ class BotManager:
                     minigame_repository=providers_bundle.minigame_providers.minigame_repository,
                     guess_uow=uow_factories.build_guess_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             guess_word_command_handler: CommandHandler = GuessWordCommandHandlerImpl(
@@ -354,7 +349,7 @@ class BotManager:
                     minigame_repository=providers_bundle.minigame_providers.minigame_repository,
                     guess_uow=uow_factories.build_guess_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             rps_command_handler: CommandHandler = RpsCommandHandlerImpl(
@@ -364,7 +359,7 @@ class BotManager:
                     minigame_repository=providers_bundle.minigame_providers.minigame_repository,
                     rps_uow=uow_factories.build_rps_uow_factory(),
                 ),
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
             )
 
             command_router: CommandRouter = CommandRouterImpl(self._settings.prefix)
@@ -388,14 +383,28 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_guess_word, guess_word_command_handler)
             command_router.register_command_handler(self._settings.command_rps, rps_command_handler)
 
+            handle_chat_message_use_case = HandleChatMessageUseCase(
+                unit_of_work_factory=uow_factories.build_chat_message_uow_factory(),
+                get_intent_from_text_use_case=providers_bundle.ai_providers.get_intent_use_case,
+                prompt_service=providers_bundle.ai_providers.prompt_service,
+                generate_response_use_case=generate_response_use_case,
+            )
+
+            handle_reply_use_case = HandleReplyUseCase(
+                chat_message_uow=uow_factories.build_chat_message_uow_factory(),
+                prompt_service=providers_bundle.ai_providers.prompt_service,
+                generate_response_use_case=generate_response_use_case,
+            )
+
             chat_client: PlatformChatClient = TwitchChatClient(
                 auth=platform_auth,
-                chat_events_handler=chat_events_handler,
+                handle_chat_message_use_case=handle_chat_message_use_case,
+                handle_reply_use_case=handle_reply_use_case,
                 command_router=command_router,
                 channel_name=self._settings.channel_name,
                 command_prefix=self._settings.prefix,
                 bot_id=bot_user_id,
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
                 logger=self._logger,
             )
 
@@ -403,7 +412,7 @@ class BotManager:
                 providers=providers_bundle,
                 uow_factories=uow_factories,
                 settings=self._settings,
-                bot_name=self._settings.bot_name,
+                bot_name=bot_name,
                 chat_summary_state=chat_summary_state,
                 chat_response_use_case=generate_response_use_case,
                 send_channel_message=chat_client.send_channel_message,

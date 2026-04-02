@@ -5,7 +5,6 @@ from dataclasses import dataclass
 class BotSettings:
     group_id: int
     channel_name: str
-    bot_name: str
     prefix: str
     command_roll: str
     command_followage: str
@@ -31,7 +30,6 @@ class BotSettings:
 class DefaultBotSettings(BotSettings):
     group_id: int
     channel_name: str = "artemnefrit"
-    bot_name: str = "gladdi_bot"
     prefix: str = "!"
     command_roll: str = "ставка"
     command_followage: str = "followage"

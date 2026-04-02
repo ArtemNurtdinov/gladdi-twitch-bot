@@ -92,6 +92,39 @@ class PlatformRepositoryImpl(PlatformRepository):
             self._logger.log_error(f"Неожиданная ошибка при получении пользователя {login}: {e}")
             return None
 
+    async def get_authenticated_user(self) -> UserInfoDTO | None:
+        self._logger.log_debug("Получение профиля по токену")
+        try:
+            response = await self._api_client.get(url="/users", params=None)
+            if response.status_code == 401:
+                self._logger.log_error("Ошибка авторизации при получении профиля по токену.")
+                return None
+            if response.status_code != 200:
+                self._logger.log_error(f"API ошибка при получении профиля по токену: {response.status_code}, {response.text}")
+                return None
+
+            try:
+                parsed = UsersResponse.model_validate(response.json_data)
+            except ValidationError as e:
+                self._logger.log_error(f"Валидация профиля по токену не прошла: {e}")
+                return None
+
+            if not parsed.data:
+                self._logger.log_error("Профиль по токену не найден в ответе API")
+                return None
+
+            user_data = parsed.data[0]
+            return UserInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
+        except httpx.TimeoutException:
+            self._logger.log_error("Таймаут при получении профиля по токену")
+            return None
+        except httpx.RequestError as e:
+            self._logger.log_error(f"Ошибка соединения при получении профиля по токену: {e}")
+            return None
+        except Exception as e:
+            self._logger.log_error(f"Неожиданная ошибка при получении профиля по токену: {e}")
+            return None
+
     async def get_stream_status(self, broadcaster_id: str) -> StreamStatusDTO | None:
         try:
             response = await self._api_client.get(url="/streams", params={"user_id": broadcaster_id})

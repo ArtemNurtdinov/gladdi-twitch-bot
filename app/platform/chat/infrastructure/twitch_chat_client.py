@@ -9,7 +9,8 @@ from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.core.logger.domain.logger import Logger
 from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.chat.application.chat_event_handler import ChatEventsHandler
+from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
 from app.platform.command.domain.command_router import CommandRouter
 
@@ -20,7 +21,8 @@ class TwitchChatClient(Client, PlatformChatClient):
     def __init__(
         self,
         auth: PlatformAuth,
-        chat_events_handler: ChatEventsHandler,
+        handle_chat_message_use_case: HandleChatMessageUseCase,
+        handle_reply_use_case: HandleReplyUseCase,
         command_router: CommandRouter,
         channel_name: str,
         command_prefix: str,
@@ -32,11 +34,13 @@ class TwitchChatClient(Client, PlatformChatClient):
         PlatformChatClient.__init__(
             self,
             auth=auth,
-            chat_events_handler=chat_events_handler,
+            handle_chat_message_use_case=handle_chat_message_use_case,
+            handle_reply_use_case=handle_reply_use_case,
             command_router=command_router,
             channel_name=channel_name,
             bot_name=bot_name,
             command_prefix=command_prefix,
+            logger=logger,
         )
 
         self._token_user_id: str | None = None
@@ -186,3 +190,6 @@ class TwitchChatClient(Client, PlatformChatClient):
                 await asyncio.sleep(0.3)
             except Exception:
                 pass
+
+    def is_reply_message(self, message: str) -> bool:
+        return message.lower().startswith(f"@{self.bot_name}")

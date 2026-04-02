@@ -87,6 +87,14 @@ class HandleChatMessageUseCase:
             uow.chat_repo.save(
                 ChatMessage(
                     channel_name=chat_message.channel_name,
+                    user_name=chat_message.user_name,
+                    content=chat_message.message,
+                    created_at=chat_message.occurred_at,
+                )
+            )
+            uow.chat_repo.save(
+                ChatMessage(
+                    channel_name=chat_message.channel_name,
                     user_name=chat_message.bot_name.lower(),
                     content=result,
                     created_at=chat_message.occurred_at,
