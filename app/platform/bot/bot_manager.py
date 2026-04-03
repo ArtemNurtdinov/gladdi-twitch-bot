@@ -411,6 +411,26 @@ class BotManager:
                 logger=self._logger,
             )
 
+            HandleRestoreStreamContextUseCase(
+                restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
+                minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                logger=logger,
+            ).handle(channel_name)
+
+            self._chat_client = chat_client
+
+            try:
+                await user_cache.warmup(channel_name)
+            except Exception:
+                self._logger.log_error("Не удалось прогреть cache")
+
+            self._status = BotStatus.RUNNING
+            self._started_at = datetime.utcnow()
+            self._last_error = None
+
+            self._task = asyncio.create_task(self._chat_client.start_chat())
+            self._task.add_done_callback(self._on_bot_done)
+
             self._background_tasks = build_background_tasks(
                 providers=providers_bundle,
                 uow_factories=uow_factories,
@@ -431,26 +451,6 @@ class BotManager:
                 channel_name=channel_name,
             )
             self._background_tasks.start_all()
-
-            HandleRestoreStreamContextUseCase(
-                restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
-                minigame_repository=providers_bundle.minigame_providers.minigame_repository,
-                logger=logger,
-            ).handle(channel_name)
-
-            self._chat_client = chat_client
-
-            try:
-                await user_cache.warmup(channel_name)
-            except Exception:
-                self._logger.log_error("Не удалось прогреть cache")
-
-            self._status = BotStatus.RUNNING
-            self._started_at = datetime.utcnow()
-            self._last_error = None
-
-            self._task = asyncio.create_task(self._chat_client.start_chat())
-            self._task.add_done_callback(self._on_bot_done)
 
             return BotActionResultResponse(**self.get_status().model_dump(), message="Запуск инициализирован")
 

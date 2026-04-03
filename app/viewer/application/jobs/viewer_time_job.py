@@ -27,10 +27,9 @@ class ViewerTimeJob(BackgroundJob):
                 bot_nick = self._bot_nick.lower()
                 viewer_time_dto = ViewerTimeDTO(bot_nick=bot_nick, channel_name=self._channel_name, occurred_at=datetime.utcnow())
                 await self._handle_viewer_time_use_case.handle(viewer_time=viewer_time_dto)
+                await asyncio.sleep(self.CHECK_VIEWER_INTERVAL_SECONDS)
             except asyncio.CancelledError:
-                self._logger.log_info("ViewerTimeJob cancelled")
                 break
             except Exception as e:
                 self._logger.log_error(f"Ошибка в ViewerTimeJob: {e}")
-
-            await asyncio.sleep(self.CHECK_VIEWER_INTERVAL_SECONDS)
+                await asyncio.sleep(self.CHECK_VIEWER_INTERVAL_SECONDS)

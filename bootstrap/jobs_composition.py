@@ -27,6 +27,7 @@ from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGa
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.notification.di.dependencies import provide_notification_repository, provide_telegram_bot
 from app.platform.auth.application.di.dependencies import provide_handle_token_checker_use_case, provide_token_checker_job
+from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.domain.repository import PlatformRepository
@@ -67,6 +68,11 @@ def build_background_tasks(
     notifications_repository = provide_notification_repository(telegram_bot)
     chat_response_port = GenerateStreamInfoAdapter(chat_response_use_case)
     joke_repository = provide_joke_settings_repository(logger)
+
+    token_checker_job: TokenCheckerJob = provide_token_checker_job(
+        handle_token_checker_use_case=provide_handle_token_checker_use_case(platform_auth, logger), logger=logger
+    )
+
     return BackgroundTasks(
         runner=BackgroundTaskRunner(),
         jobs=[
@@ -88,9 +94,7 @@ def build_background_tasks(
                 bot_name=bot_name,
                 logger=logger,
             ),
-            provide_token_checker_job(
-                handle_token_checker_use_case=provide_handle_token_checker_use_case(platform_auth, logger), logger=logger
-            ),
+            token_checker_job,
             provide_stream_status_job(
                 channel_name=channel_name,
                 handle_stream_status_use_case=provide_handle_stream_status_use_case(
@@ -113,6 +117,7 @@ def build_background_tasks(
                     chat_response_use_case=chat_response_use_case,
                 ),
                 chat_summary_state=chat_summary_state,
+                logger=logger,
             ),
             MinigameTickJob(
                 channel_name=channel_name,
