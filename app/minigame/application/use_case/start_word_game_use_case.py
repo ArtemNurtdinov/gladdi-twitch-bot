@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
+from app.core.logger.domain.logger import Logger
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.domain.model.word_guess import WordGuessGame
@@ -14,7 +15,9 @@ from core.types import SessionFactory
 
 class StartWordGameUseCase:
     WORD_GAME_DURATION_MINUTES = 5
-    WORD_GAME_MAX_PRIZE = 2000
+    WORD_GAME_MAX_PRIZE = 4000
+    _USED_WORDS_LIMIT = 10
+    _CHAT_MESSAGES_LIMIT = 50
 
     def __init__(
         self,
@@ -28,6 +31,7 @@ class StartWordGameUseCase:
         command_guess_letter: str,
         send_channel_message: Callable[[str], Awaitable[None]],
         bot_name: str,
+        logger: Logger,
     ):
         self._minigame_repository = minigame_repository
         self._minigame_uow = minigame_uow
@@ -39,14 +43,15 @@ class StartWordGameUseCase:
         self._command_guess_letter = command_guess_letter
         self._send_channel_message = send_channel_message
         self._bot_name = bot_name
+        self._logger = logger.create_child(__name__)
 
     async def start(self, channel_name: str):
         with self._minigame_uow.create(read_only=True) as uow:
-            used_words = uow.get_used_words_use_case.get_used_words(channel_name, limit=50)
-            last_messages = uow.chat_use_case.get_last_chat_messages(channel_name, limit=50)
+            used_words = uow.get_used_words_use_case.get_used_words(channel_name, limit=self._USED_WORDS_LIMIT)
+            last_messages = uow.chat_use_case.get_last_chat_messages(channel_name, limit=self._CHAT_MESSAGES_LIMIT)
 
         chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
-        avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(sorted(set(used_words))) if used_words else ""
+        avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(used_words) if used_words else ""
 
         prompt = (
             "Проанализируй последние сообщения из чата и выбери (или придумай) существительное (ОДНО слово),"

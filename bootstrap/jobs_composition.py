@@ -42,7 +42,6 @@ from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
 from core.background.task_runner import BackgroundTaskRunner
 from core.background.tasks import BackgroundTasks
-from core.db import db_ro_session
 from core.provider import Provider
 from core.types import SessionFactory
 
@@ -65,6 +64,7 @@ def build_background_tasks(
     chat_use_case_provider: Provider[ChatUseCase],
     tg_bot_token: str,
     channel_name: str,
+    start_word_game_use_case: StartWordGameUseCase,
 ) -> BackgroundTasks:
     telegram_bot = provide_telegram_bot(tg_bot_token)
     notifications_repository = provide_notification_repository(telegram_bot)
@@ -133,18 +133,7 @@ def build_background_tasks(
                 minigame_uow=uow_factories.build_minigame_uow_factory(),
                 bot_name=bot_name.lower(),
             ),
-            start_word_game_use_case=StartWordGameUseCase(
-                minigame_repository=providers.minigame_providers.minigame_repository,
-                prefix=settings.prefix,
-                minigame_uow=uow_factories.build_minigame_uow_factory(),
-                db_ro_session=db_ro_session,
-                system_prompt_repository_provider=providers.ai_providers.system_prompt_repo_provider,
-                llm_repository=providers.ai_providers.llm_repository,
-                command_guess_word=settings.command_guess_word,
-                command_guess_letter=settings.command_guess_letter,
-                send_channel_message=send_channel_message,
-                bot_name=bot_name.lower(),
-            ),
+            start_word_game_use_case=start_word_game_use_case,
             start_rps_game_use_case=StartRpsGameUseCase(
                 minigame_repository=providers.minigame_providers.minigame_repository,
                 prefix=settings.prefix,

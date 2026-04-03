@@ -5,6 +5,7 @@ from app.ai.gen.application.use_cases.generate_response_use_case import Generate
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.core.logger.domain.logger import Logger
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
+from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.application.di.dependencies import provide_platform_auth
 from app.platform.bot.infrastructure.model.response.action import BotActionResultResponse
@@ -431,6 +432,20 @@ class BotManager:
             self._task = asyncio.create_task(self._chat_client.start_chat())
             self._task.add_done_callback(self._on_bot_done)
 
+            start_word_game_use_case = StartWordGameUseCase(
+                minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                prefix=self._settings.prefix,
+                minigame_uow=uow_factories.build_minigame_uow_factory(),
+                db_ro_session=db_ro_session,
+                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
+                llm_repository=providers_bundle.ai_providers.llm_repository,
+                command_guess_word=self._settings.command_guess_word,
+                command_guess_letter=self._settings.command_guess_letter,
+                send_channel_message=chat_client.send_channel_message,
+                bot_name=bot_name.lower(),
+                logger=logger,
+            )
+
             self._background_tasks = build_background_tasks(
                 providers=providers_bundle,
                 uow_factories=uow_factories,
@@ -449,6 +464,7 @@ class BotManager:
                 chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
                 tg_bot_token=tg_bot_token,
                 channel_name=channel_name,
+                start_word_game_use_case=start_word_game_use_case,
             )
             self._background_tasks.start_all()
 
