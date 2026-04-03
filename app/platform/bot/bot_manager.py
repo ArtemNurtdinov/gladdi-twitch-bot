@@ -7,8 +7,10 @@ from app.core.logger.domain.logger import Logger
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.application.di.dependencies import provide_platform_auth
+from app.platform.bot.infrastructure.model.response.action import BotActionResultResponse
+from app.platform.bot.infrastructure.model.response.status import BotStatusResponse
+from app.platform.bot.infrastructure.model.status import BotStatus
 from app.platform.bot.model.bot_settings import BotSettings
-from app.platform.bot.schemas import BotActionResult, BotStatus, BotStatusEnum
 from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
@@ -62,22 +64,22 @@ from core.db import db_ro_session, db_rw_session
 class BotManager:
     def __init__(self, settings: BotSettings, logger: Logger):
         self._settings = settings
+        self._logger = logger.create_child(__name__)
 
-        self._background_tasks: BackgroundTasks | None = None
-
-        self._chat_client: PlatformChatClient | None = None
-        self._task: asyncio.Task | None = None
-        self._status: BotStatusEnum = BotStatusEnum.STOPPED
+        self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
         self._last_error: str | None = None
         self._lock = asyncio.Lock()
-        self._logger = logger.create_child(__name__)
+
+        self._chat_client: PlatformChatClient | None = None
+        self._background_tasks: BackgroundTasks | None = None
+
+        self._task: asyncio.Task | None = None
 
     def _reset_state(self):
         self._background_tasks = None
         self._chat_client = None
         self._task = None
-        self._status = BotStatusEnum.STOPPED
         self._started_at = None
 
     def _on_bot_done(self, task: asyncio.Task) -> None:
@@ -93,9 +95,9 @@ class BotManager:
         finally:
             self._reset_state()
 
-    def get_status(self) -> BotStatus:
+    def get_status(self) -> BotStatusResponse:
         started_at = self._started_at.isoformat() if self._started_at else None
-        return BotStatus(status=self._status, started_at=started_at, last_error=self._last_error)
+        return BotStatusResponse(status=self._status, started_at=started_at, last_error=self._last_error)
 
     def validate_credentials(self, access_token: str, refresh_token: str, client_id: str, client_secret: str) -> None:
         missing = []
@@ -120,11 +122,12 @@ class BotManager:
         intent_detector_host: str,
         client_id: str,
         client_secret: str,
+        channel_name: str,
         logger: Logger,
-    ) -> BotActionResult:
+    ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
-                return BotActionResult(**self.get_status().model_dump(), message="Бот уже запущен")
+                return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже запущен")
 
             self.validate_credentials(access_token, refresh_token, client_id, client_secret)
 
@@ -401,7 +404,7 @@ class BotManager:
                 handle_chat_message_use_case=handle_chat_message_use_case,
                 handle_reply_use_case=handle_reply_use_case,
                 command_router=command_router,
-                channel_name=self._settings.channel_name,
+                channel_name=channel_name,
                 command_prefix=self._settings.prefix,
                 bot_id=bot_user_id,
                 bot_name=bot_name,
@@ -425,6 +428,7 @@ class BotManager:
                 conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
                 chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
                 tg_bot_token=tg_bot_token,
+                channel_name=channel_name,
             )
             self._background_tasks.start_all()
 
@@ -432,46 +436,39 @@ class BotManager:
                 restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
                 minigame_repository=providers_bundle.minigame_providers.minigame_repository,
                 logger=logger,
-            ).handle(self._settings.channel_name)
+            ).handle(channel_name)
 
             self._chat_client = chat_client
 
             try:
-                await user_cache.warmup(self._settings.channel_name)
+                await user_cache.warmup(channel_name)
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
-            self._status = BotStatusEnum.RUNNING
+            self._status = BotStatus.RUNNING
             self._started_at = datetime.utcnow()
             self._last_error = None
 
             self._task = asyncio.create_task(self._chat_client.start_chat())
             self._task.add_done_callback(self._on_bot_done)
 
-            return BotActionResult(**self.get_status().model_dump(), message="Запуск инициализирован")
+            return BotActionResultResponse(**self.get_status().model_dump(), message="Запуск инициализирован")
 
-    async def stop_bot(self) -> BotActionResult:
+    async def stop_bot(self) -> BotActionResultResponse:
         async with self._lock:
             task = self._task
-            platform_api_service = self._streaming_client if self._streaming_client else None
 
             if not isinstance(task, asyncio.Task):
                 self._logger.log_info("Попытка остановки, но бот не запущен")
-                return BotActionResult(**self.get_status().model_dump(), message="Бот уже остановлен")
+                return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже остановлен")
             try:
-                if self._chat_client:
-                    await self._chat_client.start_chat()
-                if platform_api_service:
-                    await platform_api_service.aclose()
-                if self._background_tasks:
-                    await self._background_tasks.stop_all()
-                if task and not task.done():
-                    task.cancel()
-                    try:
-                        await task
-                    except asyncio.CancelledError:
-                        self._logger.log_debug("Задача бота отменена")
-            finally:
-                self._reset_state()
+                self._status: BotStatus = BotStatus.STOPPED
+                await self._streaming_client.aclose()
+                await self._background_tasks.stop_all()
+                await self._chat_client.stop_chat()
+            except asyncio.CancelledError:
+                self._logger.log_debug("Задача бота отменена")
+            except Exception as e:
+                self._logger.log_exception("Error stopping bot", e)
 
-            return BotActionResult(**self.get_status().model_dump(), message="Бот остановлен")
+            return BotActionResultResponse(**self.get_status().model_dump(), message="Бот остановлен")
