@@ -10,8 +10,8 @@ from app.core.logger.domain.logger import Logger
 from app.platform.bot.bot_manager import BotManager
 from app.platform.bot.infrastructure.bot_routes import get_bot_manager
 from app.platform.bot.infrastructure.model.request.start_bot import StartBotRequest
+from app.platform.bot.infrastructure.model.response.action import BotActionResultResponse
 from app.platform.bot.infrastructure.model.response.start_bot import AuthStartResponse
-from app.platform.bot.schemas import BotActionResult
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -44,7 +44,7 @@ async def start_authorization(request: StartBotRequest, config=Depends(load_conf
 @router.get(
     "/callback",
     summary="OAuth callback от Twitch: обменивает code и запускает бота",
-    response_model=BotActionResult,
+    response_model=BotActionResultResponse,
 )
 async def oauth_callback(
     code: str | None = None,
@@ -52,7 +52,7 @@ async def oauth_callback(
     config: Config = Depends(load_config),
     bot_manager: BotManager = Depends(get_bot_manager),
     logger: Logger = Depends(get_logger),
-) -> BotActionResult:
+) -> BotActionResultResponse:
     data = {
         "client_id": config.twitch.client_id,
         "client_secret": config.twitch.client_secret,
@@ -84,8 +84,8 @@ async def oauth_callback(
     )
 
 
-@router.post("/stop", summary="Остановить Twitch бота", response_model=BotActionResult)
-async def stop_bot(bot_manager: BotManager = Depends(get_bot_manager)) -> BotActionResult:
+@router.post("/stop", summary="Остановить Twitch бота", response_model=BotActionResultResponse)
+async def stop_bot(bot_manager: BotManager = Depends(get_bot_manager)) -> BotActionResultResponse:
     try:
         return await bot_manager.stop_bot()
     except Exception as e:

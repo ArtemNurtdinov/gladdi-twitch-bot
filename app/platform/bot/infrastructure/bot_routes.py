@@ -7,8 +7,8 @@ from app.core.config.domain.model.configuration import Config
 from app.core.logger.di.composition import get_logger
 from app.core.logger.domain.logger import Logger
 from app.platform.bot.bot_manager import BotManager
+from app.platform.bot.infrastructure.model.response.status import BotStatusResponse
 from app.platform.bot.model.bot_settings import BotSettings, DefaultBotSettings
-from app.platform.bot.schemas import BotStatus
 
 router = APIRouter()
 
@@ -25,6 +25,6 @@ def get_bot_manager(settings: BotSettings = Depends(get_bot_settings), logger: L
     return BotManager(settings=settings, logger=logger)
 
 
-@router.get("/status", summary="Получить состояние бота", response_model=BotStatus)
-async def get_bot_status(bot_manager: BotManager = Depends(get_bot_manager)) -> BotStatus:
+@router.get("/status", summary="Получить состояние бота", response_model=BotStatusResponse)
+async def get_bot_status(bot_manager: BotManager = Depends(get_bot_manager)) -> BotStatusResponse:
     return bot_manager.get_status()
