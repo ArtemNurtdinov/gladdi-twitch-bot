@@ -120,6 +120,7 @@ class BotManager:
         intent_detector_host: str,
         client_id: str,
         client_secret: str,
+        channel_name: str,
         logger: Logger,
     ) -> BotActionResult:
         async with self._lock:
@@ -401,7 +402,7 @@ class BotManager:
                 handle_chat_message_use_case=handle_chat_message_use_case,
                 handle_reply_use_case=handle_reply_use_case,
                 command_router=command_router,
-                channel_name=self._settings.channel_name,
+                channel_name=channel_name,
                 command_prefix=self._settings.prefix,
                 bot_id=bot_user_id,
                 bot_name=bot_name,
@@ -425,6 +426,7 @@ class BotManager:
                 conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
                 chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
                 tg_bot_token=tg_bot_token,
+                channel_name=channel_name,
             )
             self._background_tasks.start_all()
 
@@ -432,12 +434,12 @@ class BotManager:
                 restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
                 minigame_repository=providers_bundle.minigame_providers.minigame_repository,
                 logger=logger,
-            ).handle(self._settings.channel_name)
+            ).handle(channel_name)
 
             self._chat_client = chat_client
 
             try:
-                await user_cache.warmup(self._settings.channel_name)
+                await user_cache.warmup(channel_name)
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 

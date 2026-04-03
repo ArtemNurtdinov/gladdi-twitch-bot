@@ -61,6 +61,7 @@ def build_background_tasks(
     conversation_service_provider: Provider[ConversationService],
     chat_use_case_provider: Provider[ChatUseCase],
     tg_bot_token: str,
+    channel_name: str,
 ) -> BackgroundTasks:
     telegram_bot = provide_telegram_bot(tg_bot_token)
     notifications_repository = provide_notification_repository(telegram_bot)
@@ -70,7 +71,7 @@ def build_background_tasks(
         runner=BackgroundTaskRunner(),
         jobs=[
             provide_post_joke_job(
-                channel_name=settings.channel_name,
+                channel_name=channel_name,
                 handle_post_joke_use_case=provide_handle_post_joke_use_case(
                     joke_service=provide_joke_service(joke_repository, logger),
                     user_cache=user_cache,
@@ -90,7 +91,7 @@ def build_background_tasks(
                 handle_token_checker_use_case=provide_handle_token_checker_use_case(platform_auth, logger), logger=logger
             ),
             provide_stream_status_job(
-                channel_name=settings.channel_name,
+                channel_name=channel_name,
                 handle_stream_status_use_case=provide_handle_stream_status_use_case(
                     user_cache=user_cache,
                     platform_repository=platform_repository,
@@ -104,7 +105,7 @@ def build_background_tasks(
                 ),
             ),
             ChatSummarizerJob(
-                channel_name=settings.channel_name,
+                channel_name=channel_name,
                 handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
                     unit_of_work_factory=uow_factories.build_chat_summarizer_uow_factory(),
                     chat_response_use_case=chat_response_use_case,
@@ -112,7 +113,7 @@ def build_background_tasks(
                 chat_summary_state=chat_summary_state,
             ),
             MinigameTickJob(
-                channel_name=settings.channel_name,
+                channel_name=channel_name,
                 handle_minigame_tick_use_case=HandleMinigameTickUseCase(
                     minigame_repository=providers.minigame_providers.minigame_repository,
                     minigame_ouw=uow_factories.build_minigame_uow_factory(),
@@ -160,7 +161,7 @@ def build_background_tasks(
                 logger=logger,
             ),
             ViewerTimeJob(
-                channel_name=settings.channel_name,
+                channel_name=channel_name,
                 handle_viewer_time_use_case=RewardViewerTimeUseCase(
                     reward_viewer_time_uow=uow_factories.build_viewer_time_uow_factory(),
                     user_cache=user_cache,
@@ -170,7 +171,7 @@ def build_background_tasks(
                 logger=logger,
             ),
             FollowersSyncJob(
-                channel_name=settings.channel_name,
+                channel_name=channel_name,
                 handle_followers_sync_use_case=HandleFollowersSyncUseCase(
                     platform_repository=platform_repository,
                     sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
