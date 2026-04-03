@@ -8,7 +8,7 @@ from core.background.tasks import BackgroundJob
 
 class StreamStatusJob(BackgroundJob):
     name = "check_stream_status"
-    STREAM_STATUS_INTERVAL = 10
+    STREAM_STATUS_INTERVAL = 120
 
     def __init__(self, channel_name: str, handle_stream_status_use_case: HandleStreamStatusUseCase, logger: Logger):
         self._channel_name = channel_name
