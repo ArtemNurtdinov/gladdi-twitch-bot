@@ -11,6 +11,7 @@ from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleC
 from app.core.logger.domain.logger import Logger
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
+from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.di.dependencies import (
     provide_handle_post_joke_use_case,
     provide_joke_service,
@@ -31,6 +32,7 @@ from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.domain.repository import PlatformRepository
+from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.di.dependencies import provide_handle_stream_status_use_case, provide_stream_status_job
 from app.stream.infrastructure.adapters.generate_stream_info_adapter import GenerateStreamInfoAdapter
 from app.user.application.ports.user_cache_port import UserCachePort
@@ -69,121 +71,125 @@ def build_background_tasks(
     chat_response_port = GenerateStreamInfoAdapter(chat_response_use_case)
     joke_repository = provide_joke_settings_repository(logger)
 
+    port_joke_job: PostJokeJob = provide_post_joke_job(
+        channel_name=channel_name,
+        handle_post_joke_use_case=provide_handle_post_joke_use_case(
+            joke_service=provide_joke_service(joke_repository, logger),
+            user_cache=user_cache,
+            platform_repository=platform_repository,
+            generate_response_use_case=chat_response_use_case,
+            joke_uow_factory=provide_joke_unit_of_work_factory(
+                session_factory_rw=session_factory_rw,
+                session_factory_ro=session_factory_ro,
+                conversation_service_provider=conversation_service_provider,
+                chat_use_case_provider=chat_use_case_provider,
+            ),
+        ),
+        send_channel_message=send_channel_message,
+        bot_name=bot_name,
+        logger=logger,
+    )
+
     token_checker_job: TokenCheckerJob = provide_token_checker_job(
         handle_token_checker_use_case=provide_handle_token_checker_use_case(platform_auth, logger), logger=logger
     )
 
+    stream_status_job: StreamStatusJob = provide_stream_status_job(
+        channel_name=channel_name,
+        handle_stream_status_use_case=provide_handle_stream_status_use_case(
+            user_cache=user_cache,
+            platform_repository=platform_repository,
+            stream_status_uow_factory=uow_factories.build_stream_status_uow_factory(),
+            minigame_repository=providers.minigame_providers.minigame_repository,
+            notification_repository=notifications_repository,
+            notification_group_id=settings.group_id,
+            chat_response_port=chat_response_port,
+            state=chat_summary_state,
+            logger=logger,
+        ),
+        logger=logger,
+    )
+
+    chat_summarizer_job: ChatSummarizerJob = ChatSummarizerJob(
+        channel_name=channel_name,
+        handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
+            unit_of_work_factory=uow_factories.build_chat_summarizer_uow_factory(),
+            chat_response_use_case=chat_response_use_case,
+        ),
+        chat_summary_state=chat_summary_state,
+        logger=logger,
+    )
+
+    minigame_job: MinigameTickJob = MinigameTickJob(
+        channel_name=channel_name,
+        handle_minigame_tick_use_case=HandleMinigameTickUseCase(
+            minigame_repository=providers.minigame_providers.minigame_repository,
+            minigame_ouw=uow_factories.build_minigame_uow_factory(),
+            start_number_guess_game_use_case=StartNumberGuessGameUseCase(
+                minigame_repository=providers.minigame_providers.minigame_repository,
+                prefix=settings.prefix,
+                command_name=settings.command_guess,
+                send_channel_message=send_channel_message,
+                minigame_uow=uow_factories.build_minigame_uow_factory(),
+                bot_name=bot_name.lower(),
+            ),
+            start_word_game_use_case=StartWordGameUseCase(
+                minigame_repository=providers.minigame_providers.minigame_repository,
+                prefix=settings.prefix,
+                minigame_uow=uow_factories.build_minigame_uow_factory(),
+                db_ro_session=db_ro_session,
+                system_prompt_repository_provider=providers.ai_providers.system_prompt_repo_provider,
+                llm_repository=providers.ai_providers.llm_repository,
+                command_guess_word=settings.command_guess_word,
+                command_guess_letter=settings.command_guess_letter,
+                send_channel_message=send_channel_message,
+                bot_name=bot_name.lower(),
+            ),
+            start_rps_game_use_case=StartRpsGameUseCase(
+                minigame_repository=providers.minigame_providers.minigame_repository,
+                prefix=settings.prefix,
+                command_name=settings.command_rps,
+                send_channel_message=send_channel_message,
+                minigame_uow=uow_factories.build_minigame_uow_factory(),
+                bot_name=bot_name.lower(),
+            ),
+            finish_rps_game_use_case=FinishRpsUseCase(
+                minigame_repository=providers.minigame_providers.minigame_repository,
+                minigame_uow=uow_factories.build_minigame_uow_factory(),
+                bot_name=bot_name.lower(),
+                send_channel_message=send_channel_message,
+            ),
+            finish_expired_games_use_case=FinishExpiredGamesUseCase(
+                minigame_repository=providers.minigame_providers.minigame_repository,
+                send_channel_message=send_channel_message,
+                minigame_uow=uow_factories.build_minigame_uow_factory(),
+                bot_name=bot_name.lower(),
+            ),
+        ),
+        logger=logger,
+    )
+
+    viewer_time_job: ViewerTimeJob = ViewerTimeJob(
+        channel_name=channel_name,
+        handle_viewer_time_use_case=RewardViewerTimeUseCase(
+            reward_viewer_time_uow=uow_factories.build_viewer_time_uow_factory(),
+            user_cache=user_cache,
+            platform_repository=platform_repository,
+        ),
+        bot_nick=bot_name,
+        logger=logger,
+    )
+
+    followers_sync_job: FollowersSyncJob = FollowersSyncJob(
+        channel_name=channel_name,
+        handle_followers_sync_use_case=HandleFollowersSyncUseCase(
+            platform_repository=platform_repository,
+            sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
+        ),
+        logger=logger,
+    )
+
     return BackgroundTasks(
         runner=BackgroundTaskRunner(),
-        jobs=[
-            provide_post_joke_job(
-                channel_name=channel_name,
-                handle_post_joke_use_case=provide_handle_post_joke_use_case(
-                    joke_service=provide_joke_service(joke_repository, logger),
-                    user_cache=user_cache,
-                    platform_repository=platform_repository,
-                    generate_response_use_case=chat_response_use_case,
-                    joke_uow_factory=provide_joke_unit_of_work_factory(
-                        session_factory_rw=session_factory_rw,
-                        session_factory_ro=session_factory_ro,
-                        conversation_service_provider=conversation_service_provider,
-                        chat_use_case_provider=chat_use_case_provider,
-                    ),
-                ),
-                send_channel_message=send_channel_message,
-                bot_name=bot_name,
-                logger=logger,
-            ),
-            token_checker_job,
-            provide_stream_status_job(
-                channel_name=channel_name,
-                handle_stream_status_use_case=provide_handle_stream_status_use_case(
-                    user_cache=user_cache,
-                    platform_repository=platform_repository,
-                    stream_status_uow_factory=uow_factories.build_stream_status_uow_factory(),
-                    minigame_repository=providers.minigame_providers.minigame_repository,
-                    notification_repository=notifications_repository,
-                    notification_group_id=settings.group_id,
-                    chat_response_port=chat_response_port,
-                    state=chat_summary_state,
-                    logger=logger,
-                ),
-                logger=logger,
-            ),
-            ChatSummarizerJob(
-                channel_name=channel_name,
-                handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
-                    unit_of_work_factory=uow_factories.build_chat_summarizer_uow_factory(),
-                    chat_response_use_case=chat_response_use_case,
-                ),
-                chat_summary_state=chat_summary_state,
-                logger=logger,
-            ),
-            MinigameTickJob(
-                channel_name=channel_name,
-                handle_minigame_tick_use_case=HandleMinigameTickUseCase(
-                    minigame_repository=providers.minigame_providers.minigame_repository,
-                    minigame_ouw=uow_factories.build_minigame_uow_factory(),
-                    start_number_guess_game_use_case=StartNumberGuessGameUseCase(
-                        minigame_repository=providers.minigame_providers.minigame_repository,
-                        prefix=settings.prefix,
-                        command_name=settings.command_guess,
-                        send_channel_message=send_channel_message,
-                        minigame_uow=uow_factories.build_minigame_uow_factory(),
-                        bot_name=bot_name.lower(),
-                    ),
-                    start_word_game_use_case=StartWordGameUseCase(
-                        minigame_repository=providers.minigame_providers.minigame_repository,
-                        prefix=settings.prefix,
-                        minigame_uow=uow_factories.build_minigame_uow_factory(),
-                        db_ro_session=db_ro_session,
-                        system_prompt_repository_provider=providers.ai_providers.system_prompt_repo_provider,
-                        llm_repository=providers.ai_providers.llm_repository,
-                        command_guess_word=settings.command_guess_word,
-                        command_guess_letter=settings.command_guess_letter,
-                        send_channel_message=send_channel_message,
-                        bot_name=bot_name.lower(),
-                    ),
-                    start_rps_game_use_case=StartRpsGameUseCase(
-                        minigame_repository=providers.minigame_providers.minigame_repository,
-                        prefix=settings.prefix,
-                        command_name=settings.command_rps,
-                        send_channel_message=send_channel_message,
-                        minigame_uow=uow_factories.build_minigame_uow_factory(),
-                        bot_name=bot_name.lower(),
-                    ),
-                    finish_rps_game_use_case=FinishRpsUseCase(
-                        minigame_repository=providers.minigame_providers.minigame_repository,
-                        minigame_uow=uow_factories.build_minigame_uow_factory(),
-                        bot_name=bot_name.lower(),
-                        send_channel_message=send_channel_message,
-                    ),
-                    finish_expired_games_use_case=FinishExpiredGamesUseCase(
-                        minigame_repository=providers.minigame_providers.minigame_repository,
-                        send_channel_message=send_channel_message,
-                        minigame_uow=uow_factories.build_minigame_uow_factory(),
-                        bot_name=bot_name.lower(),
-                    ),
-                ),
-                logger=logger,
-            ),
-            ViewerTimeJob(
-                channel_name=channel_name,
-                handle_viewer_time_use_case=RewardViewerTimeUseCase(
-                    reward_viewer_time_uow=uow_factories.build_viewer_time_uow_factory(),
-                    user_cache=user_cache,
-                    platform_repository=platform_repository,
-                ),
-                bot_nick=bot_name,
-                logger=logger,
-            ),
-            FollowersSyncJob(
-                channel_name=channel_name,
-                handle_followers_sync_use_case=HandleFollowersSyncUseCase(
-                    platform_repository=platform_repository,
-                    sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
-                ),
-                logger=logger,
-            ),
-        ],
+        jobs=[port_joke_job, token_checker_job, stream_status_job, chat_summarizer_job, minigame_job, viewer_time_job, followers_sync_job],
     )
