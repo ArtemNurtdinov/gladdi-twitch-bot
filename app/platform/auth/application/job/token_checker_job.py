@@ -23,7 +23,6 @@ class TokenCheckerJob(BackgroundJob):
                 await asyncio.sleep(self.CHECK_INTERVAL_SECONDS)
                 await self._handle_token_checker_use_case.handle()
             except asyncio.CancelledError:
-                self._logger.log_info("TokenCheckerJob cancelled")
                 break
             except Exception as e:
                 self._logger.log_exception("Ошибка в TokenCheckerJob:", e)

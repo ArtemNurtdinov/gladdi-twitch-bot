@@ -86,6 +86,7 @@ def build_background_tasks(
                 ),
                 send_channel_message=send_channel_message,
                 bot_name=bot_name,
+                logger=logger,
             ),
             provide_token_checker_job(
                 handle_token_checker_use_case=provide_handle_token_checker_use_case(platform_auth, logger), logger=logger
@@ -103,6 +104,7 @@ def build_background_tasks(
                     state=chat_summary_state,
                     logger=logger,
                 ),
+                logger=logger,
             ),
             ChatSummarizerJob(
                 channel_name=channel_name,

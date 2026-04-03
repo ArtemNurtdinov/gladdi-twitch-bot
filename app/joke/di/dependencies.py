@@ -65,10 +65,12 @@ def provide_post_joke_job(
     handle_post_joke_use_case: HandlePostJokeUseCase,
     send_channel_message: Callable[[str], Awaitable[None]],
     bot_name: str,
+    logger: Logger,
 ) -> PostJokeJob:
     return PostJokeJob(
         channel_name=channel_name,
         handle_post_joke_use_case=handle_post_joke_use_case,
         send_channel_message=send_channel_message,
         bot_name=bot_name,
+        logger=logger,
     )

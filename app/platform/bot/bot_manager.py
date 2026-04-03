@@ -80,7 +80,6 @@ class BotManager:
         self._background_tasks = None
         self._chat_client = None
         self._task = None
-        self._status = BotStatus.STOPPED
         self._started_at = None
 
     def _on_bot_done(self, task: asyncio.Task) -> None:
@@ -463,16 +462,13 @@ class BotManager:
                 self._logger.log_info("Попытка остановки, но бот не запущен")
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже остановлен")
             try:
-                await self._chat_client.stop_chat()
+                self._status: BotStatus = BotStatus.STOPPED
                 await self._streaming_client.aclose()
                 await self._background_tasks.stop_all()
-                if task and not task.done():
-                    task.cancel()
-                    try:
-                        await task
-                    except asyncio.CancelledError:
-                        self._logger.log_debug("Задача бота отменена")
-            finally:
-                self._reset_state()
+                await self._chat_client.stop_chat()
+            except asyncio.CancelledError:
+                self._logger.log_debug("Задача бота отменена")
+            except Exception as e:
+                self._logger.log_exception("Error stopping bot", e)
 
             return BotActionResultResponse(**self.get_status().model_dump(), message="Бот остановлен")
