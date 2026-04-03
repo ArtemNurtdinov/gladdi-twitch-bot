@@ -10,9 +10,9 @@ from app.core.logger.di.composition import get_logger
 from app.core.logger.domain.logger import Logger
 from app.platform.bot.bot_manager import BotManager
 from app.platform.bot.infrastructure.model.request.start_bot import StartBotRequest
+from app.platform.bot.infrastructure.model.response.start_bot import AuthStartResponse
 from app.platform.bot.model.bot_settings import BotSettings, DefaultBotSettings
 from app.platform.bot.schemas import BotActionResult, BotStatus
-from app.twitch.presentation.twitch_schemas import AuthStartResponse
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
