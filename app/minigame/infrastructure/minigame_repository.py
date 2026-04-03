@@ -10,7 +10,7 @@ RPS_CHOICES = ("камень", "ножницы", "бумага")
 
 
 class MinigameRepositoryImpl(MinigameRepository):
-    RPS_ENTRY_FEE_PER_USER = 100
+    RPS_ENTRY_FEE_PER_USER = 500
 
     def __init__(self, logger: Logger):
         self.active_guess_games: dict[str, GuessNumberGame] = {}

@@ -9,7 +9,8 @@ from app.economy.domain.models import (
     UserBalanceInfo,
 )
 from app.economy.domain.repo import EconomyRepository
-from app.shop.domain.models import DailyBonusMultiplierEffect, OwnedShopItem, ShopItemType
+from app.equipment.domain.models import UserEquipmentItem
+from app.shop.domain.model.effect import DailyBonusMultiplierEffect
 
 
 class EconomyPolicy:
@@ -210,7 +211,7 @@ class EconomyPolicy:
         return TransferResult.success_result()
 
     def claim_daily_bonus(
-        self, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[OwnedShopItem] = None
+        self, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None
     ) -> DailyBonusResult:
         user_balance = self.get_user_balance(channel_name, user_name)
 
@@ -227,11 +228,7 @@ class EconomyPolicy:
                 if isinstance(effect, DailyBonusMultiplierEffect):
                     special_items.append(item.shop_item.name)
                     total_multiplier *= effect.multiplier
-
-                    if item.item_type == ShopItemType.FREEZER_DUMPLINGS:
-                        bonus_messages.append("Нашелся счастливый пельмень, который увеличил бонус!")
-                    elif item.item_type == ShopItemType.MAEL_EXPEDITION:
-                        bonus_messages.append('Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет "Алиииинаааа аииииии"...')
+                    bonus_messages.append(effect.message)
 
         bonus_amount = int(self.DAILY_BONUS * total_multiplier)
 

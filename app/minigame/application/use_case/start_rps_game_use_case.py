@@ -9,7 +9,7 @@ from app.minigame.infrastructure.minigame_repository import MinigameRepositoryIm
 
 class StartRpsGameUseCase:
     RPS_GAME_DURATION_MINUTES = 2
-    RPS_BASE_BANK = 1500
+    RPS_BASE_BANK = 2500
 
     def __init__(
         self,

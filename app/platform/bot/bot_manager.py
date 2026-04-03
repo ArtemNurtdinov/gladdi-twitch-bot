@@ -5,6 +5,7 @@ from app.ai.gen.application.use_cases.generate_response_use_case import Generate
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.core.logger.domain.logger import Logger
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
+from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.application.di.dependencies import provide_platform_auth
 from app.platform.bot.infrastructure.model.response.action import BotActionResultResponse
@@ -250,7 +251,7 @@ class BotManager:
                 command_shop_name=self._settings.command_shop,
                 command_buy_name=self._settings.command_buy,
                 handle_shop_use_case=HandleShopUseCase(
-                    unit_of_work_factory=uow_factories.build_shop_uow_factory(),
+                    shop_uow=uow_factories.build_shop_uow_factory(),
                 ),
                 bot_nick=bot_name,
             )
@@ -259,7 +260,7 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_buy_name=self._settings.command_buy,
                 handle_shop_use_case=HandleShopUseCase(
-                    unit_of_work_factory=uow_factories.build_shop_uow_factory(),
+                    shop_uow=uow_factories.build_shop_uow_factory(),
                 ),
                 bot_nick=bot_name,
             )
@@ -411,27 +412,6 @@ class BotManager:
                 logger=self._logger,
             )
 
-            self._background_tasks = build_background_tasks(
-                providers=providers_bundle,
-                uow_factories=uow_factories,
-                settings=self._settings,
-                bot_name=bot_name,
-                chat_summary_state=chat_summary_state,
-                chat_response_use_case=generate_response_use_case,
-                send_channel_message=chat_client.send_channel_message,
-                platform_auth=platform_auth,
-                platform_repository=platform_repository,
-                logger=self._logger,
-                user_cache=user_cache,
-                session_factory_rw=db_rw_session,
-                session_factory_ro=db_ro_session,
-                conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
-                chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
-                tg_bot_token=tg_bot_token,
-                channel_name=channel_name,
-            )
-            self._background_tasks.start_all()
-
             HandleRestoreStreamContextUseCase(
                 restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
                 minigame_repository=providers_bundle.minigame_providers.minigame_repository,
@@ -451,6 +431,42 @@ class BotManager:
 
             self._task = asyncio.create_task(self._chat_client.start_chat())
             self._task.add_done_callback(self._on_bot_done)
+
+            start_word_game_use_case = StartWordGameUseCase(
+                minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                prefix=self._settings.prefix,
+                minigame_uow=uow_factories.build_minigame_uow_factory(),
+                db_ro_session=db_ro_session,
+                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
+                llm_repository=providers_bundle.ai_providers.llm_repository,
+                command_guess_word=self._settings.command_guess_word,
+                command_guess_letter=self._settings.command_guess_letter,
+                send_channel_message=chat_client.send_channel_message,
+                bot_name=bot_name.lower(),
+                logger=logger,
+            )
+
+            self._background_tasks = build_background_tasks(
+                providers=providers_bundle,
+                uow_factories=uow_factories,
+                settings=self._settings,
+                bot_name=bot_name,
+                chat_summary_state=chat_summary_state,
+                chat_response_use_case=generate_response_use_case,
+                send_channel_message=chat_client.send_channel_message,
+                platform_auth=platform_auth,
+                platform_repository=platform_repository,
+                logger=self._logger,
+                user_cache=user_cache,
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
+                chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
+                tg_bot_token=tg_bot_token,
+                channel_name=channel_name,
+                start_word_game_use_case=start_word_game_use_case,
+            )
+            self._background_tasks.start_all()
 
             return BotActionResultResponse(**self.get_status().model_dump(), message="Запуск инициализирован")
 

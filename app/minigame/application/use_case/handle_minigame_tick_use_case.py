@@ -11,10 +11,10 @@ from app.minigame.domain.minigame_repository import MinigameRepository
 
 
 class HandleMinigameTickUseCase:
-    FIRST_GAME_START_MIN = 15
-    FIRST_GAME_START_MAX = 30
-    GAME_START_INTERVAL_MIN = 30
-    GAME_START_INTERVAL_MAX = 60
+    FIRST_GAME_START_MIN = 10
+    FIRST_GAME_START_MAX = 15
+    GAME_START_INTERVAL_MIN = 20
+    GAME_START_INTERVAL_MAX = 40
 
     def __init__(
         self,

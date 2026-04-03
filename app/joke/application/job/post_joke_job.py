@@ -49,5 +49,6 @@ class PostJokeJob(BackgroundJob):
                 await self._send_channel_message(result)
             except asyncio.CancelledError:
                 break
-            except Exception:
+            except Exception as e:
+                self._logger.log_exception("error while running", e)
                 await asyncio.sleep(self._INTERVAL_DEFAULT)

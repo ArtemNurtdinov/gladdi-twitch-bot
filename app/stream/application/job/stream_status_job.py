@@ -27,4 +27,4 @@ class StreamStatusJob(BackgroundJob):
                 break
             except Exception as e:
                 self._logger.log_exception("error while running", e)
-                pass
+                await asyncio.sleep(self.STREAM_STATUS_INTERVAL)

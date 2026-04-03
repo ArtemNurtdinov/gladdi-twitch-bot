@@ -6,6 +6,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.application.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
+from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.stream.domain.stream_service import StreamService
@@ -29,6 +30,9 @@ class MinigameUnitOfWork(UnitOfWork, Protocol):
 
     @property
     def conversation_service(self) -> ConversationService: ...
+
+    @property
+    def get_user_equipment_use_case(self) -> GetUserEquipmentUseCase: ...
 
 
 class MinigameUnitOfWorkFactory(UnitOfWorkFactory[MinigameUnitOfWork], Protocol):

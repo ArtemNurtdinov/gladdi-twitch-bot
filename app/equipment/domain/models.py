@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.shop.domain.models import ShopItem, ShopItemType
+from app.shop.domain.model.shop_item import ShopItem
 
 
 @dataclass
 class UserEquipmentItem:
-    item_type: ShopItemType
     shop_item: ShopItem
     expires_at: datetime
