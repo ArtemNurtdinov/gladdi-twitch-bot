@@ -9,7 +9,7 @@ from app.core.config.di.composition import load_config
 from app.core.logger.di.composition import get_logger
 from app.follow.presentation import followers_routes
 from app.joke.presentation import joke_routes
-from app.platform.bot.infrastructure import bot_routes
+from app.platform.bot.infrastructure import bot_routes, bot_twitch_routes
 from app.stream.presentation import stream_routes
 from app.user.presentation import user_routes
 from core.db import init_db
@@ -34,7 +34,8 @@ app.include_router(auth_routes.router, prefix="/api/v1/auth", tags=["Authenticat
 app.include_router(auth_routes.admin_router, prefix="/api/v1/admin", tags=["Administration"])
 app.include_router(system_prompt_routes.admin_router, prefix="/api/v1/ai", tags=["System Prompt"])
 app.include_router(chat_routes.router, prefix="/api/v1/messages", tags=["Chat"])
-app.include_router(bot_routes.router, prefix="/api/v1/bot", tags=["Twitch Bot"])
+app.include_router(bot_routes.router, prefix="/api/v1/bot", tags=["Bot Manager"])
+app.include_router(bot_twitch_routes.router, prefix="/api/v1/bot", tags=["Twitch Bot"])
 app.include_router(joke_routes.router, prefix="/api/v1/jokes", tags=["Jokes"])
 app.include_router(stream_routes.router, prefix="/api/v1/streams", tags=["Streams"])
 app.include_router(followers_routes.router, prefix="/api/v1/followers", tags=["Followers"])
