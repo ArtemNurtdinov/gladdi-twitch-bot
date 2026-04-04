@@ -12,6 +12,7 @@ class AddEquipmentUseCase:
 
     def add(self, channel_name: str, user_name: str, item_type: ShopItemType):
         expires_at = datetime.utcnow() + timedelta(days=90)
-        item = UserEquipmentItem(item_type=item_type, shop_item=ShopItems.get_item(item_type), expires_at=expires_at)
+        shop_item = ShopItems.ITEMS[item_type]
+        item = UserEquipmentItem(item_type=item_type, shop_item=shop_item, expires_at=expires_at)
         with self._unit_of_work_factory.create() as uow:
             uow.equipment_repo.add_equipment(channel_name, user_name, item)

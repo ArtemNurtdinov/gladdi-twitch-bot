@@ -11,7 +11,7 @@ from app.shop.domain.models import ShopItems
 
 
 def _to_domain_item(row: OrmUserEquipment) -> UserEquipmentItem:
-    shop_item = ShopItems.get_item(row.item_type)
+    shop_item = ShopItems.ITEMS[row.item_type]
     return UserEquipmentItem(item_type=row.item_type, shop_item=shop_item, expires_at=row.expires_at)
 
 

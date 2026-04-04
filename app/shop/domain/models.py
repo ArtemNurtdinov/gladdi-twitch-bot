@@ -53,18 +53,6 @@ class ShopItems:
         ),
     }
 
-    @classmethod
-    def get_item(cls, item_type: ShopItemType) -> ShopItem:
-        return cls.ITEMS[item_type]
-
-    @classmethod
-    def get_all_items(cls) -> dict[ShopItemType, ShopItem]:
-        return cls.ITEMS.copy()
-
-    @classmethod
-    def get_total_items_count(cls) -> int:
-        return len(cls.ITEMS)
-
 
 class OwnedShopItem(Protocol):
     item_type: ShopItemType
