@@ -1,7 +1,7 @@
 from typing import Protocol
 
 from app.equipment.domain.models import UserEquipmentItem
-from app.shop.domain.models import ShopItemType
+from app.shop.domain.model.type import ShopItemType
 
 
 class EquipmentRepository(Protocol):

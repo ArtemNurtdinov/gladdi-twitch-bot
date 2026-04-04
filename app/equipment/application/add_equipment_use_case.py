@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 
 from app.equipment.application.equipment_use_case_uow import EquipmentUseCaseUnitOfWorkFactory
 from app.equipment.domain.models import UserEquipmentItem
-from app.shop.domain.models import ShopItems, ShopItemType
+from app.shop.domain.model.type import ShopItemType
+from app.shop.domain.models import ShopItems
 
 
 class AddEquipmentUseCase:

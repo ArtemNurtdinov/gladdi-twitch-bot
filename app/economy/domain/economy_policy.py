@@ -9,7 +9,9 @@ from app.economy.domain.models import (
     UserBalanceInfo,
 )
 from app.economy.domain.repo import EconomyRepository
-from app.shop.domain.models import DailyBonusMultiplierEffect, OwnedShopItem, ShopItemType
+from app.shop.domain.model.effect import DailyBonusMultiplierEffect
+from app.shop.domain.model.type import ShopItemType
+from app.shop.domain.models import OwnedShopItem
 
 
 class EconomyPolicy:

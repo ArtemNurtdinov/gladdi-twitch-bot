@@ -1,5 +1,5 @@
 from app.equipment.domain.models import UserEquipmentItem
-from app.shop.domain.models import RollCooldownOverrideEffect
+from app.shop.domain.model.effect import RollCooldownOverrideEffect
 
 
 class RollCooldownUseCase:

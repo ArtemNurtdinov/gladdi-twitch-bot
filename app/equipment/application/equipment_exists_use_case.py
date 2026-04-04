@@ -1,5 +1,5 @@
 from app.equipment.application.equipment_use_case_uow import EquipmentUseCaseUnitOfWorkFactory
-from app.shop.domain.models import ShopItemType
+from app.shop.domain.model.type import ShopItemType
 
 
 class EquipmentExistsUseCase:

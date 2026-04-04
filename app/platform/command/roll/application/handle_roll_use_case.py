@@ -10,9 +10,7 @@ from app.equipment.application.defense.roll_cooldown_use_case import RollCooldow
 from app.equipment.domain.models import UserEquipmentItem
 from app.platform.command.roll.application.model import RollDTO, RollTimeoutAction, RollUseCaseResult
 from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
-from app.shop.domain.models import (
-    MaxBetIncreaseEffect,
-)
+from app.shop.domain.model.effect import MaxBetIncreaseEffect
 from core.provider import SingletonProvider
 
 

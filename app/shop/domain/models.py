@@ -1,47 +1,15 @@
-from abc import ABC
 from dataclasses import dataclass
-from enum import Enum
 from typing import Protocol
 
-
-class ShopItemType(Enum):
-    FREEZER_DUMPLINGS = "freezer_dumplings"
-    OCTOPUSES = "octopuses"
-    MAEL_EXPEDITION = "mael_expedition"
-    COMMUNIST_PARTY = "communist_party"
-    BONFIRE = "bonfire"
-    CHAIR = "chair"
-    GAMBLER_AMULET = "gambler_amulet"
-
-
-@dataclass
-class ItemEffect(ABC):
-    pass
-
-
-@dataclass
-class DailyBonusMultiplierEffect(ItemEffect):
-    multiplier: float
-
-
-@dataclass
-class TimeoutProtectionEffect(ItemEffect):
-    pass
-
-
-@dataclass
-class TimeoutReductionEffect(ItemEffect):
-    reduction_factor: float
-
-
-@dataclass
-class RollCooldownOverrideEffect(ItemEffect):
-    cooldown_seconds: int
-
-
-@dataclass
-class MaxBetIncreaseEffect(ItemEffect):
-    max_bet_amount: int
+from app.shop.domain.model.effect import (
+    DailyBonusMultiplierEffect,
+    ItemEffect,
+    MaxBetIncreaseEffect,
+    RollCooldownOverrideEffect,
+    TimeoutProtectionEffect,
+    TimeoutReductionEffect,
+)
+from app.shop.domain.model.type import ShopItemType
 
 
 @dataclass

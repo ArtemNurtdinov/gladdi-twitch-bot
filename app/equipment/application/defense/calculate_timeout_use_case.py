@@ -1,5 +1,6 @@
 from app.equipment.domain.models import UserEquipmentItem
-from app.shop.domain.models import ShopItemType, TimeoutProtectionEffect, TimeoutReductionEffect
+from app.shop.domain.model.effect import TimeoutProtectionEffect, TimeoutReductionEffect
+from app.shop.domain.model.type import ShopItemType
 
 
 class CalculateTimeoutUseCase:
