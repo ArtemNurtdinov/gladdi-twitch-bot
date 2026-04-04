@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from app.shop.domain.model.shop_item import ShopItem
 from app.shop.domain.model.type import ShopItemType
-from app.shop.domain.models import ShopItem
 
 
 @dataclass

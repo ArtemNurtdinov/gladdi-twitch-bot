@@ -1,24 +1,14 @@
-from dataclasses import dataclass
 from typing import Protocol
 
 from app.shop.domain.model.effect import (
     DailyBonusMultiplierEffect,
-    ItemEffect,
     MaxBetIncreaseEffect,
     RollCooldownOverrideEffect,
     TimeoutProtectionEffect,
     TimeoutReductionEffect,
 )
+from app.shop.domain.model.shop_item import ShopItem
 from app.shop.domain.model.type import ShopItemType
-
-
-@dataclass
-class ShopItem:
-    name: str
-    description: str
-    price: int
-    emoji: str
-    effects: list[ItemEffect]
 
 
 class ShopItems:
@@ -28,21 +18,30 @@ class ShopItems:
             description="Надёжная опора artemn3STUL",
             price=10000,
             emoji="🪑",
-            effects=[TimeoutReductionEffect(reduction_factor=0.5)],
+            effects=[
+                TimeoutReductionEffect(reduction_factor=0.5, timeout_reduct_message="🪑 Стул обеспечил надёжную опору и снизил таймаут!")
+            ],
         ),
         ShopItemType.FREEZER_DUMPLINGS: ShopItem(
             name="пельмени",
             description="Холодная сила сибирских пельменей. Дает бафф к размеру живота",
             price=15000,
             emoji="🥟",
-            effects=[DailyBonusMultiplierEffect(multiplier=1.25)],
+            effects=[DailyBonusMultiplierEffect(multiplier=1.25, message="Нашелся счастливый пельмень, который увеличил бонус!")],
         ),
         ShopItemType.MAEL_EXPEDITION: ShopItem(
             name="маэль",
-            description='Умеет рисовать, может перерисовывать судьбы и жизни. Фоном играет песня "Алиииинаааа аииииии"',
+            description="Умеет рисовать, может перерисовывать судьбы и жизни.",
             price=33333,
             emoji="⚔️",
-            effects=[DailyBonusMultiplierEffect(multiplier=2), TimeoutProtectionEffect()],
+            effects=[
+                DailyBonusMultiplierEffect(
+                    multiplier=2, message='Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет "Алиииинаааа аииииии"...'
+                ),
+                TimeoutProtectionEffect(
+                    timeout_protect_message='⚔️ Маэль перерисовала судьбу и спасла от таймаута! Фоном играет "Алиииинаааа аииииии"...'
+                ),
+            ],
         ),
         ShopItemType.GAMBLER_AMULET: ShopItem(
             name="амулет лудомана",
@@ -51,7 +50,7 @@ class ShopItems:
             emoji="🎰",
             effects=[
                 DailyBonusMultiplierEffect(multiplier=3.0),
-                TimeoutProtectionEffect(),
+                TimeoutProtectionEffect(timeout_protect_message="🎰 Амулет лудомана защитил от таймаута!"),
                 RollCooldownOverrideEffect(cooldown_seconds=5),
                 MaxBetIncreaseEffect(max_bet_amount=1_000_000),
             ],

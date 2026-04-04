@@ -1,6 +1,5 @@
 from app.equipment.domain.models import UserEquipmentItem
 from app.shop.domain.model.effect import TimeoutProtectionEffect, TimeoutReductionEffect
-from app.shop.domain.model.type import ShopItemType
 
 
 class CalculateTimeoutUseCase:
@@ -14,14 +13,7 @@ class CalculateTimeoutUseCase:
         for item in equipment:
             for effect in item.shop_item.effects:
                 if isinstance(effect, TimeoutProtectionEffect):
-                    if item.item_type == ShopItemType.MAEL_EXPEDITION:
-                        return 0, '⚔️ Маэль перерисовала судьбу и спасла от таймаута! Фоном играет "Алиииинаааа аииииии"...'
-                    elif item.item_type == ShopItemType.COMMUNIST_PARTY:
-                        return 0, "☭ Партия коммунистов защитила товарища! Единство спасло от таймаута!"
-                    elif item.item_type == ShopItemType.GAMBLER_AMULET:
-                        return 0, "🎰 Амулет лудомана защитил от таймаута!"
-                    else:
-                        return 0, f"{item.shop_item.emoji} {item.shop_item.name} спас от таймаута!"
+                    return 0, effect.timeout_protect_message
 
         reduction_items = []
         cumulative_reduction = 1.0
@@ -32,13 +24,7 @@ class CalculateTimeoutUseCase:
                 if isinstance(effect, TimeoutReductionEffect):
                     reduction_items.append(item)
                     cumulative_reduction *= effect.reduction_factor
-
-                    if item.item_type == ShopItemType.CHAIR:
-                        timeout_messages.append("🪑 Стул обеспечил надёжную опору и снизил таймаут!")
-                    elif item.item_type == ShopItemType.BONFIRE:
-                        timeout_messages.append("🔥 Костёр согрел душу и стал чекпоинтом, снизив таймаут!")
-                    else:
-                        timeout_messages.append(f"{item.shop_item.emoji} {item.shop_item.name} снизил таймаут!")
+                    timeout_messages.append(effect.timeout_reduct_message)
 
         if reduction_items:
             reduced_timeout = int(base_timeout_seconds * cumulative_reduction)

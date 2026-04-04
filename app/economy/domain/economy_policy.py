@@ -10,7 +10,6 @@ from app.economy.domain.models import (
 )
 from app.economy.domain.repo import EconomyRepository
 from app.shop.domain.model.effect import DailyBonusMultiplierEffect
-from app.shop.domain.model.type import ShopItemType
 from app.shop.domain.models import OwnedShopItem
 
 
@@ -229,11 +228,7 @@ class EconomyPolicy:
                 if isinstance(effect, DailyBonusMultiplierEffect):
                     special_items.append(item.shop_item.name)
                     total_multiplier *= effect.multiplier
-
-                    if item.item_type == ShopItemType.FREEZER_DUMPLINGS:
-                        bonus_messages.append("Нашелся счастливый пельмень, который увеличил бонус!")
-                    elif item.item_type == ShopItemType.MAEL_EXPEDITION:
-                        bonus_messages.append('Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет "Алиииинаааа аииииии"...')
+                    bonus_messages.append(effect.message)
 
         bonus_amount = int(self.DAILY_BONUS * total_multiplier)
 

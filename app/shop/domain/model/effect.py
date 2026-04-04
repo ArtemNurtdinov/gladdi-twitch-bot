@@ -10,16 +10,19 @@ class ItemEffect(ABC):
 @dataclass
 class DailyBonusMultiplierEffect(ItemEffect):
     multiplier: float
+    message: str
 
 
 @dataclass
 class TimeoutProtectionEffect(ItemEffect):
+    timeout_protect_message: str
     pass
 
 
 @dataclass
 class TimeoutReductionEffect(ItemEffect):
     reduction_factor: float
+    timeout_reduct_message: str
 
 
 @dataclass
