@@ -35,12 +35,8 @@ class ShopItems:
             price=33333,
             emoji="⚔️",
             effects=[
-                DailyBonusMultiplierEffect(
-                    multiplier=2, message='Маэль перерисовала твою судьбу и увеличила бонус! Фоном играет "Алиииинаааа аииииии"...'
-                ),
-                TimeoutProtectionEffect(
-                    timeout_protect_message='⚔️ Маэль перерисовала судьбу и спасла от таймаута! Фоном играет "Алиииинаааа аииииии"...'
-                ),
+                DailyBonusMultiplierEffect(multiplier=2, message="Маэль перерисовала судьбу и увеличила бонус! Алиииинаааа аииииии..."),
+                TimeoutProtectionEffect(timeout_protect_message="⚔️ Маэль перерисовала судьбу и спасла от таймаута! Алиииинаааа аииииии..."),
             ],
         ),
         ShopItemType.GAMBLER_AMULET: ShopItem(
@@ -49,7 +45,7 @@ class ShopItems:
             price=66666,
             emoji="🎰",
             effects=[
-                DailyBonusMultiplierEffect(multiplier=3.0),
+                DailyBonusMultiplierEffect(multiplier=3.0, message="Амулет лудомана увеличил бонус!"),
                 TimeoutProtectionEffect(timeout_protect_message="🎰 Амулет лудомана защитил от таймаута!"),
                 RollCooldownOverrideEffect(cooldown_seconds=5),
                 MaxBetIncreaseEffect(max_bet_amount=1_000_000),
@@ -64,14 +60,6 @@ class ShopItems:
     @classmethod
     def get_all_items(cls) -> dict[ShopItemType, ShopItem]:
         return cls.ITEMS.copy()
-
-    @classmethod
-    def find_item_by_name(cls, name: str) -> ShopItemType:
-        name_lower = name.lower().strip()
-        for item_type, item in cls.ITEMS.items():
-            if item.name.lower() == name_lower:
-                return item_type
-        raise ValueError(f"Предмет '{name}' не найден")
 
     @classmethod
     def get_total_items_count(cls) -> int:

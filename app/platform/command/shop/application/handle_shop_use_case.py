@@ -1,6 +1,7 @@
 from app.economy.domain.models import TransactionType
 from app.platform.command.shop.application.model import CommandBuyDTO, CommandShopDTO
 from app.platform.command.shop.application.shop_uow import ShopUnitOfWorkFactory
+from app.shop.domain.model.type import ShopItemType
 from app.shop.domain.models import ShopItems
 
 
@@ -65,7 +66,7 @@ class HandleShopUseCase:
             return result
 
         try:
-            item_type = ShopItems.find_item_by_name(command_buy.item_name_input)
+            item_type = self._find_item(command_buy.item_name_input.lower().strip())
         except ValueError as e:
             result = str(e)
             with self._unit_of_work_factory.create() as uow:
@@ -150,3 +151,10 @@ class HandleShopUseCase:
                 channel_name=command_buy.channel_name, user_name=command_buy.bot_nick, content=result, current_time=command_buy.occurred_at
             )
         return result
+
+    def _find_item(self, name: str) -> ShopItemType:
+        items = ShopItems.ITEMS
+        for item_type, item in items:
+            if item.name.lower() == name:
+                return item_type
+        raise ValueError(f"Предмет '{name}' не найден")
