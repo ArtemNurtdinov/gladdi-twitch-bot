@@ -9,8 +9,8 @@ from app.economy.domain.models import (
     UserBalanceInfo,
 )
 from app.economy.domain.repo import EconomyRepository
+from app.equipment.domain.models import UserEquipmentItem
 from app.shop.domain.model.effect import DailyBonusMultiplierEffect
-from app.shop.domain.models import OwnedShopItem
 
 
 class EconomyPolicy:
@@ -211,7 +211,7 @@ class EconomyPolicy:
         return TransferResult.success_result()
 
     def claim_daily_bonus(
-        self, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[OwnedShopItem] = None
+        self, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None
     ) -> DailyBonusResult:
         user_balance = self.get_user_balance(channel_name, user_name)
 

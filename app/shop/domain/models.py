@@ -1,5 +1,3 @@
-from typing import Protocol
-
 from app.shop.domain.model.effect import (
     DailyBonusMultiplierEffect,
     MaxBetIncreaseEffect,
@@ -52,8 +50,3 @@ class ShopItems:
             ],
         ),
     }
-
-
-class OwnedShopItem(Protocol):
-    item_type: ShopItemType
-    shop_item: ShopItem
