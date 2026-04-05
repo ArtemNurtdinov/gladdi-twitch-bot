@@ -251,7 +251,7 @@ class BotManager:
                 command_shop_name=self._settings.command_shop,
                 command_buy_name=self._settings.command_buy,
                 handle_shop_use_case=HandleShopUseCase(
-                    unit_of_work_factory=uow_factories.build_shop_uow_factory(),
+                    shop_uow=uow_factories.build_shop_uow_factory(),
                 ),
                 bot_nick=bot_name,
             )
@@ -260,7 +260,7 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_buy_name=self._settings.command_buy,
                 handle_shop_use_case=HandleShopUseCase(
-                    unit_of_work_factory=uow_factories.build_shop_uow_factory(),
+                    shop_uow=uow_factories.build_shop_uow_factory(),
                 ),
                 bot_nick=bot_name,
             )
