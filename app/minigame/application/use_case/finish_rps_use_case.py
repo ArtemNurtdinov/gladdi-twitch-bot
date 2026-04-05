@@ -6,6 +6,7 @@ from app.economy.domain.models import TransactionType
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.infrastructure.minigame_repository import RPS_CHOICES
+from app.shop.domain.model.effect import MinigamePrizeMultiplierEffect
 
 
 class FinishRpsUseCase:
@@ -39,20 +40,34 @@ class FinishRpsUseCase:
 
         if winners:
             share = max(1, game.bank // len(winners))
+            messages = []
             with self._minigame_uow.create() as uow:
                 for winner in winners:
+                    messages.append(f"Победитель @{winner}.")
+
+                    multiplier = 1.0
+
+                    user_equipment = uow.get_user_equipment_use_case.get_user_equipment(channel_name, winner)
+
+                    for equipment in user_equipment:
+                        for effect in equipment.shop_item.effects:
+                            if isinstance(effect, MinigamePrizeMultiplierEffect):
+                                multiplier *= effect.multiplier
+                                messages.append(effect.message)
+
+                    prize = int(share * multiplier)
+
+                    messages.append(f"Сумма выигрыша {prize}.")
+
                     uow.economy_policy.add_balance(
                         channel_name=channel_name,
                         user_name=winner,
-                        amount=share,
+                        amount=prize,
                         transaction_type=TransactionType.MINIGAME_WIN,
                         description=f"Победа в КНБ ({winning_choice})",
                     )
-            winners_display = ", ".join(f"@{winner}" for winner in winners)
-            message = (
-                f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. "
-                f"Победители: {winners_display}. Банк: {game.bank} монет, каждому по {share}."
-            )
+
+            message = f"Выбор бота: {bot_choice}. Банк: {game.bank}. Побеждает вариант: {winning_choice}. {' '.join(messages)}"
         else:
             message = f"Выбор бота: {bot_choice}. Побеждает вариант: {winning_choice}. Победителей нет. Банк {game.bank} монет сгорает."
 

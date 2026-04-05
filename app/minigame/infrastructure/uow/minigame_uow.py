@@ -6,6 +6,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
+from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWork, MinigameUnitOfWorkFactory
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
@@ -24,6 +25,7 @@ class SqlAlchemyMinigameUnitOfWork(SqlAlchemyUnitOfWorkBase, MinigameUnitOfWork)
         get_used_words_use_case: GetUsedWordsUseCase,
         add_used_words_use_case: AddUsedWordsUseCase,
         conversation_service: ConversationService,
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
         read_only: bool,
     ):
         super().__init__(session=session, read_only=read_only)
@@ -33,6 +35,7 @@ class SqlAlchemyMinigameUnitOfWork(SqlAlchemyUnitOfWorkBase, MinigameUnitOfWork)
         self._get_used_words_use_case = get_used_words_use_case
         self._add_used_words_use_case = add_used_words_use_case
         self._conversation_service = conversation_service
+        self._get_user_equipment_use_case = get_user_equipment_use_case
 
     @property
     def economy_policy(self) -> EconomyPolicy:
@@ -58,6 +61,10 @@ class SqlAlchemyMinigameUnitOfWork(SqlAlchemyUnitOfWorkBase, MinigameUnitOfWork)
     def conversation_service(self) -> ConversationService:
         return self._conversation_service
 
+    @property
+    def get_user_equipment_use_case(self) -> GetUserEquipmentUseCase:
+        return self._get_user_equipment_use_case
+
 
 class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUnitOfWork], MinigameUnitOfWorkFactory):
     def __init__(
@@ -70,6 +77,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
         get_used_words_use_case_provider: Provider[GetUsedWordsUseCase],
         add_used_words_use_case_provider: Provider[AddUsedWordsUseCase],
         conversation_service_provider: Provider[ConversationService],
+        get_user_equipment_use_case: Provider[GetUserEquipmentUseCase],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -82,6 +90,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
         self._get_used_words_use_case_provider = get_used_words_use_case_provider
         self._add_used_words_use_case_provider = add_used_words_use_case_provider
         self._conversation_service_provider = conversation_service_provider
+        self._get_user_equipment_use_case = get_user_equipment_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> MinigameUnitOfWork:
         return SqlAlchemyMinigameUnitOfWork(
@@ -92,5 +101,6 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
             get_used_words_use_case=self._get_used_words_use_case_provider.get(db),
             add_used_words_use_case=self._add_used_words_use_case_provider.get(db),
             conversation_service=self._conversation_service_provider.get(db),
+            get_user_equipment_use_case=self._get_user_equipment_use_case.get(db),
             read_only=read_only,
         )

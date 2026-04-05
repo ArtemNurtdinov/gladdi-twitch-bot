@@ -4,6 +4,7 @@ from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.platform.command.guess.application.guess_uow import GuessUnitOfWorkFactory
 from app.platform.command.guess.application.model import GuessLetterDTO, GuessNumberDTO, GuessWordDTO
+from app.shop.domain.model.effect import MinigamePrizeMultiplierEffect
 
 
 class HandleGuessUseCase:
@@ -132,13 +133,32 @@ class HandleGuessUseCase:
             game.winning_time = datetime.utcnow()
             self._minigame_repository.delete_guess_number_game(guess_number.channel_name)
 
-            message = f"ПОЗДРАВЛЯЕМ! @{guess_number.display_name} угадал число {guess} и выиграл {game.prize_amount} монет!"
+            multiplier = 1.0
+            messages = []
+
+            with self._guess_uow.create(read_only=True) as ouw:
+                user_equipment = ouw.get_user_equipment_use_case.get_user_equipment(guess_number.channel_name, guess_number.user_name)
+
+            for equipment in user_equipment:
+                for effect in equipment.shop_item.effects:
+                    if isinstance(effect, MinigamePrizeMultiplierEffect):
+                        multiplier *= effect.multiplier
+                        messages.append(effect.message)
+
+            prize = int(game.prize_amount * multiplier)
+
+            base_message = f"ПОЗДРАВЛЯЕМ! @{guess_number.display_name} угадал число {guess} и выиграл {prize} монет!"
+
+            if messages:
+                message = f"{base_message} {' + '.join(messages)}"
+            else:
+                message = base_message
 
             with self._guess_uow.create() as uow:
                 uow.economy_policy.add_balance(
                     channel_name=guess_number.channel_name,
                     user_name=guess_number.user_name,
-                    amount=game.prize_amount,
+                    amount=prize,
                     transaction_type=TransactionType.MINIGAME_WIN,
                     description=f"Победа в игре 'угадай число': {guess}",
                 )
@@ -201,9 +221,7 @@ class HandleGuessUseCase:
                 message = f"Время игры 'поле чудес' истекло! Слово было '{game.target_word}'. Никто не выиграл."
                 self._minigame_repository.delete_word_guess_game(guess_letter.channel_name)
             else:
-                if game.winner:
-                    message = f"Слово '{game.target_word}' угадал @{game.winner}! Выигрыш: {game.prize_amount} монет"
-                elif not game.is_active:
+                if not game.is_active:
                     message = f"Время истекло! Слово было '{game.target_word}'"
                 else:
                     letters_count = sum(1 for ch in game.target_word if ch.isalpha())
@@ -280,14 +298,32 @@ class HandleGuessUseCase:
             letters_in_word = {ch for ch in game.target_word if ch.isalpha()}
             all_letters_revealed = letters_in_word.issubset(game.guessed_letters)
             if all_letters_revealed:
-                message = (
-                    f"ПОЗДРАВЛЯЕМ! @{guess_letter.display_name} угадал слово '{game.target_word}' и выиграл {game.prize_amount} монет!"
-                )
+                multiplier = 1.0
+                messages = []
+
+                with self._guess_uow.create(read_only=True) as ouw:
+                    user_equipment = ouw.get_user_equipment_use_case.get_user_equipment(guess_letter.channel_name, guess_letter.user_name)
+
+                for equipment in user_equipment:
+                    for effect in equipment.shop_item.effects:
+                        if isinstance(effect, MinigamePrizeMultiplierEffect):
+                            multiplier *= effect.multiplier
+                            messages.append(effect.message)
+
+                prize = int(game.prize_amount * multiplier)
+
+                base_message = f"ПОЗДРАВЛЯЕМ! @{guess_letter.display_name} угадал слово '{game.target_word}' и выиграл {prize} монет!"
+
+                if messages:
+                    message = f"{base_message} {' + '.join(messages)}"
+                else:
+                    message = base_message
+
                 with self._guess_uow.create() as uow:
                     uow.economy_policy.add_balance(
                         channel_name=guess_letter.channel_name,
                         user_name=guess_letter.user_name,
-                        amount=game.prize_amount,
+                        amount=prize,
                         transaction_type=TransactionType.MINIGAME_WIN,
                         description="Победа в игре 'поле чудес'",
                     )
@@ -367,9 +403,7 @@ class HandleGuessUseCase:
                 game.is_active = False
                 self._minigame_repository.delete_word_guess_game(guess_word.channel_name)
             else:
-                if game.winner:
-                    message = f"Слово '{game.target_word}' угадал @{game.winner}! Выигрыш: {game.prize_amount} монет"
-                elif not game.is_active:
+                if not game.is_active:
                     message = f"Время истекло! Слово было '{game.target_word}'"
                 else:
                     letters_count = sum(1 for ch in game.target_word if ch.isalpha())
@@ -416,13 +450,32 @@ class HandleGuessUseCase:
 
             self._minigame_repository.delete_word_guess_game(guess_word.channel_name)
 
-            message = f"ПОЗДРАВЛЯЕМ! @{guess_word.display_name} угадал слово '{game.target_word}' и выиграл {game.prize_amount} монет!"
+            multiplier = 1.0
+            messages = []
+
+            with self._guess_uow.create(read_only=True) as ouw:
+                user_equipment = ouw.get_user_equipment_use_case.get_user_equipment(guess_word.channel_name, guess_word.user_name)
+
+            for equipment in user_equipment:
+                for effect in equipment.shop_item.effects:
+                    if isinstance(effect, MinigamePrizeMultiplierEffect):
+                        multiplier *= effect.multiplier
+                        messages.append(effect.message)
+
+            prize = int(game.prize_amount * multiplier)
+
+            base_message = f"ПОЗДРАВЛЯЕМ! @{guess_word.display_name} угадал слово '{game.target_word}' и выиграл {prize} монет!"
+
+            if messages:
+                message = f"{base_message} {' + '.join(messages)}"
+            else:
+                message = base_message
 
             with self._guess_uow.create() as uow:
                 uow.economy_policy.add_balance(
                     channel_name=guess_word.channel_name,
                     user_name=guess_word.user_name,
-                    amount=game.prize_amount,
+                    amount=prize,
                     transaction_type=TransactionType.MINIGAME_WIN,
                     description="Победа в игре 'поле чудес'",
                 )

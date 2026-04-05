@@ -1,6 +1,7 @@
 from app.shop.domain.model.effect import (
     DailyBonusMultiplierEffect,
     MaxBetIncreaseEffect,
+    MinigamePrizeMultiplierEffect,
     RollCooldownOverrideEffect,
     TimeoutProtectionEffect,
     TimeoutReductionEffect,
@@ -25,7 +26,10 @@ class ShopItems:
             description="Холодная сила сибирских пельменей. Дает бафф к размеру живота",
             price=15000,
             emoji="🥟",
-            effects=[DailyBonusMultiplierEffect(multiplier=1.25, message="Нашелся счастливый пельмень, который увеличил бонус!")],
+            effects=[
+                DailyBonusMultiplierEffect(multiplier=1.25, message="Нашелся счастливый пельмень, который увеличил бонус!"),
+                MinigamePrizeMultiplierEffect(multiplier=2, message="Счастливый пельмень увеличил бонус за победу!"),
+            ],
         ),
         ShopItemType.MAEL_EXPEDITION: ShopItem(
             name="маэль",
@@ -33,8 +37,9 @@ class ShopItems:
             price=33333,
             emoji="⚔️",
             effects=[
-                DailyBonusMultiplierEffect(multiplier=2, message="Маэль перерисовала судьбу и увеличила бонус! Алиииинаааа аииииии..."),
-                TimeoutProtectionEffect(timeout_protect_message="⚔️ Маэль перерисовала судьбу и спасла от таймаута! Алиииинаааа аииииии..."),
+                DailyBonusMultiplierEffect(multiplier=2, message="Маэль перерисовала судьбу и увеличила бонус! Алииинаааа аиииии..."),
+                TimeoutProtectionEffect(timeout_protect_message="⚔️ Маэль перерисовала судьбу и спасла от таймаута! Алииинаааа аиииии..."),
+                MinigamePrizeMultiplierEffect(multiplier=2.5, message="Маэль перерисовала призовые!"),
             ],
         ),
         ShopItemType.GAMBLER_AMULET: ShopItem(
@@ -45,6 +50,7 @@ class ShopItems:
             effects=[
                 DailyBonusMultiplierEffect(multiplier=3.0, message="Амулет лудомана увеличил бонус!"),
                 TimeoutProtectionEffect(timeout_protect_message="🎰 Амулет лудомана защитил от таймаута!"),
+                MinigamePrizeMultiplierEffect(multiplier=3, message="Амулет лудомана увеличил бонус!"),
                 RollCooldownOverrideEffect(cooldown_seconds=5),
                 MaxBetIncreaseEffect(max_bet_amount=1_000_000),
             ],

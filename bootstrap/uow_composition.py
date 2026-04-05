@@ -152,6 +152,7 @@ def create_uow_factories(
             session_factory_ro=session_factory_ro,
             economy_policy_provider=economy_providers.economy_policy_provider,
             chat_use_case_provider=chat_providers.chat_use_case_provider,
+            get_user_equipment_use_case=equipment_providers.get_user_equipment_use_case_provider,
         )
 
     def build_help_uow_factory() -> SqlAlchemyHelpUnitOfWorkFactory:
@@ -217,6 +218,7 @@ def create_uow_factories(
             get_used_words_use_case_provider=minigame_providers.get_used_words_use_case_provider,
             add_used_words_use_case_provider=minigame_providers.add_used_words_use_case_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
+            get_user_equipment_use_case=equipment_providers.get_user_equipment_use_case_provider,
         )
 
     def build_rps_uow_factory() -> SqlAlchemyRpsUnitOfWorkFactory:

@@ -14,6 +14,12 @@ class DailyBonusMultiplierEffect(ItemEffect):
 
 
 @dataclass
+class MinigamePrizeMultiplierEffect(ItemEffect):
+    multiplier: float
+    message: str
+
+
+@dataclass
 class TimeoutProtectionEffect(ItemEffect):
     timeout_protect_message: str
     pass
