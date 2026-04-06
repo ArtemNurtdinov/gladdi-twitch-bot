@@ -8,6 +8,9 @@ class ShopItemRepository(ABC):
     def get_all_items(self) -> list[ShopItem]: ...
 
     @abstractmethod
+    async def get_item_by_id(self, shop_item_id: int) -> ShopItem | None: ...
+
+    @abstractmethod
     def get_active_items(self) -> list[ShopItem]: ...
 
     @abstractmethod

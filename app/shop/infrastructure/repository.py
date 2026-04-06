@@ -17,6 +17,11 @@ class ShopItemRepositoryImpl(ShopItemRepository):
         orm_items = self._db.execute(stmt).scalars().all()
         return [self._mapper.map_to_domain(item) for item in orm_items]
 
+    async def get_item_by_id(self, shop_item_id: int) -> ShopItem | None:
+        stmt = select(ShopItemORM).where(ShopItemORM.id == shop_item_id)
+        orm_item = self._db.execute(stmt).scalars().first()
+        return self._mapper.map_to_domain(orm_item) if orm_item else None
+
     def get_active_items(self) -> list[ShopItem]:
         stmt = select(ShopItemORM).where(ShopItemORM.is_active)
         orm_items = self._db.execute(stmt).scalars().all()

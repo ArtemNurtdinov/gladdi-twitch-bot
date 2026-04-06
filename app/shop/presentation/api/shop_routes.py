@@ -1,19 +1,22 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.network.api.model.base_response import BaseResponse
 from app.shop.application.usecase.create_shop_item_use_case import CreateShopItemUseCase
 from app.shop.application.usecase.delete_shop_item_use_case import DeleteShopItemUseCase
 from app.shop.application.usecase.get_all_shop_items_use_case import GetAllShopItemsUseCase
+from app.shop.application.usecase.get_shop_item_use_case import GetShopItemUseCase
 from app.shop.di.composition import (
     get_all_shop_items_use_case,
     get_create_shop_item_use_case,
     get_delete_shop_item_use_case,
     get_shop_item_schema_mapper,
+    get_shop_item_use_case,
 )
 from app.shop.presentation.api.mapper.shop_item_schema_mapper import ShopItemSchemaMapper
 from app.shop.presentation.api.model.request.create_shop_item_request import CreateShopItemRequest
 from app.shop.presentation.api.model.response.all_shop_items_response import AllItemsResponse
 from app.shop.presentation.api.model.response.create_shop_item_response import CreateShopItemResponse
+from app.shop.presentation.api.model.shop_item_schema import ShopItemSchema
 from core.db import db_ro_session, db_rw_session
 
 router = APIRouter()
@@ -41,6 +44,18 @@ async def create_item(
 
     shop_item = shop_item_schema_mapper.map_to_schema(created_item)
     return CreateShopItemResponse(shop_item=shop_item)
+
+
+@router.get("/items/{shop_item_id}", summary="Получить предмет по айди", response_model=ShopItemSchema)
+async def get_shop_item(
+    shop_item_id: int, shop_item_schema_mapper: ShopItemSchemaMapper = Depends(get_shop_item_schema_mapper)
+) -> ShopItemSchema:
+    with db_ro_session() as session:
+        shop_item_use_case: GetShopItemUseCase = get_shop_item_use_case(session)
+        shop_item = await shop_item_use_case.get_shop_item(shop_item_id)
+    if shop_item is None:
+        raise HTTPException(status_code=404, detail="Предмет в магазине не найден")
+    return shop_item_schema_mapper.map_to_schema(shop_item)
 
 
 @router.delete("/items/{shop_item_id}", summary="Удаление предмета из магазина", response_model=BaseResponse)
