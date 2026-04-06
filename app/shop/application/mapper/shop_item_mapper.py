@@ -1,6 +1,8 @@
 from app.shop.application.mapper.effect_mapper import EffectMapper
 from app.shop.application.model.shop_item import ShopItemDTO
-from app.shop.domain.model.shop_item import ShopItem
+from app.shop.application.model.shop_item_create import CreateShopItemDTO
+from app.shop.application.model.shop_item_patch import PatchShopItemDTO
+from app.shop.domain.model.shop_item import ShopItem, ShopItemCreate, ShopItemPatch
 
 
 class ShopItemMapper:
@@ -29,4 +31,31 @@ class ShopItemMapper:
             emoji=dto.emoji,
             effects=[self._effect_mapper.map_effect_to_domain(effect) for effect in dto.effects],
             is_active=dto.is_active,
+        )
+
+    def map_create_shop_item_to_domain(self, shop_item_create: CreateShopItemDTO) -> ShopItemCreate:
+        effects = [self._effect_mapper.map_effect_to_domain(effect) for effect in shop_item_create.effects]
+        return ShopItemCreate(
+            channel_name=shop_item_create.channel_name,
+            name=shop_item_create.name,
+            description=shop_item_create.description,
+            price=shop_item_create.price,
+            emoji=shop_item_create.emoji,
+            is_active=shop_item_create.is_active,
+            effects=effects,
+        )
+
+    def map_patch_shop_item_to_domain(self, shop_item_patch: PatchShopItemDTO) -> ShopItemPatch:
+        effects = (
+            [self._effect_mapper.map_effect_to_domain(effect) for effect in shop_item_patch.effects] if shop_item_patch.effects else None
+        )
+        return ShopItemPatch(
+            id=shop_item_patch.id,
+            channel_name=shop_item_patch.channel_name,
+            name=shop_item_patch.name,
+            description=shop_item_patch.description,
+            price=shop_item_patch.price,
+            emoji=shop_item_patch.emoji,
+            is_active=shop_item_patch.is_active,
+            effects=effects,
         )

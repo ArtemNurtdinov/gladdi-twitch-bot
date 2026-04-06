@@ -4,8 +4,7 @@ from app.shop.application.model.effect import ItemEffectDTO
 
 
 @dataclass(frozen=True)
-class ShopItemDTO:
-    id: int
+class CreateShopItemDTO:
     channel_name: str
     name: str
     description: str
