@@ -35,3 +35,18 @@ class ShopItemEffectSchemaMapper:
         elif isinstance(effect, MaxBetIncreaseEffectDTO):
             return MaxBetIncreaseEffectSchema(max_bet_amount=effect.max_bet_amount)
         raise TypeError(f"Unknown effect type: {type(effect)}")
+
+    def map_schema_to_dto(self, effect: ItemEffectSchema) -> ItemEffectDTO:
+        if isinstance(effect, DailyBonusMultiplierEffectSchema):
+            return DailyBonusMultiplierEffectDTO(multiplier=effect.multiplier, message=effect.message)
+        elif isinstance(effect, MinigamePrizeMultiplierEffectSchema):
+            return MinigamePrizeMultiplierEffectDTO(multiplier=effect.multiplier, message=effect.message)
+        elif isinstance(effect, TimeoutProtectionEffectSchema):
+            return TimeoutProtectionEffectDTO(timeout_protect_message=effect.timeout_protect_message)
+        elif isinstance(effect, TimeoutReductionEffectSchema):
+            return TimeoutReductionEffectDTO(reduction_factor=effect.reduction_factor, timeout_reduct_message=effect.timeout_reduct_message)
+        elif isinstance(effect, RollCooldownOverrideEffectSchema):
+            return RollCooldownOverrideEffectDTO(cooldown_seconds=effect.cooldown_seconds)
+        elif isinstance(effect, MaxBetIncreaseEffectSchema):
+            return MaxBetIncreaseEffectDTO(max_bet_amount=effect.max_bet_amount)
+        raise TypeError(f"Unknown effect type: {type(effect)}")

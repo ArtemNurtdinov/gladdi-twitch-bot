@@ -27,8 +27,8 @@ class ShopItemRepositoryImpl(ShopItemRepository):
         orm_item = self._db.execute(stmt).scalars().first()
         return self._mapper.map_to_domain(orm_item) if orm_item else None
 
-    def create_item(self, shop_item: ShopItemCreate, is_active: bool):
-        shop_item_db = self._mapper.map_create_to_db(shop_item, is_active)
+    async def create_item(self, shop_item: ShopItemCreate) -> ShopItem:
+        shop_item_db = self._mapper.map_create_to_db(shop_item)
         self._db.add(shop_item_db)
         self._db.flush()
         return self._mapper.map_to_domain(shop_item_db)

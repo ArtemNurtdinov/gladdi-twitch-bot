@@ -22,4 +22,5 @@ class ShopItemCreate:
     description: str
     price: int
     emoji: str
+    is_active: bool
     effects: list[ItemEffect]

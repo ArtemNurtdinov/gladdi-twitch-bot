@@ -28,7 +28,7 @@ class ShopItemMapper:
             effects=effects,
         )
 
-    def map_create_to_db(self, shop_item: ShopItemCreate, is_active: bool) -> ShopItemORM:
+    def map_create_to_db(self, shop_item: ShopItemCreate) -> ShopItemORM:
         effects_json = [self.map_effect_to_db(effect) for effect in shop_item.effects]
         return ShopItemORM(
             name=shop_item.name,
@@ -37,7 +37,7 @@ class ShopItemMapper:
             price=shop_item.price,
             emoji=shop_item.emoji,
             effects=effects_json,
-            is_active=is_active,
+            is_active=shop_item.is_active,
         )
 
     def map_effect_to_domain(self, effect_dict: dict[str, Any]) -> ItemEffect:
