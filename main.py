@@ -41,7 +41,7 @@ app.include_router(joke_routes.router, prefix="/api/v1/jokes", tags=["Jokes"])
 app.include_router(stream_routes.router, prefix="/api/v1/streams", tags=["Streams"])
 app.include_router(followers_routes.router, prefix="/api/v1/followers", tags=["Followers"])
 app.include_router(user_routes.router, prefix="/api/v1", tags=["Users"])
-app.include_router(shop_routes.router, prefix="api/v1/shop", tags=["Shop"])
+app.include_router(shop_routes.router, prefix="/api/v1/shop", tags=["Shop"])
 
 
 @app.get("/", tags=["Health"])

@@ -6,6 +6,8 @@ from app.shop.application.usecase.get_all_shop_items_use_case import GetAllShopI
 from app.shop.domain.repository import ShopItemRepository
 from app.shop.infrastructure.mapper.shop_item_mapper import ShopItemMapper
 from app.shop.infrastructure.repository import ShopItemRepositoryImpl
+from app.shop.presentation.api.mapper.shop_item_effect_schema_mapper import ShopItemEffectSchemaMapper
+from app.shop.presentation.api.mapper.shop_item_schema_mapper import ShopItemSchemaMapper
 
 
 def provide_shop_item_mapper() -> ShopItemMapper:
@@ -29,3 +31,11 @@ def provide_get_all_shop_items_use_case(
     shop_item_mapper: ShopItemDTOMapper,
 ) -> GetAllShopItemsUseCase:
     return GetAllShopItemsUseCase(shop_item_repository, shop_item_mapper)
+
+
+def provide_shop_item_effect_schema_mapper() -> ShopItemEffectSchemaMapper:
+    return ShopItemEffectSchemaMapper()
+
+
+def provide_shop_item_schema_mapper(effect_schema_mapper: ShopItemEffectSchemaMapper) -> ShopItemSchemaMapper:
+    return ShopItemSchemaMapper(effect_schema_mapper)
