@@ -7,6 +7,7 @@ from app.common.application.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
+from app.shop.domain.repository import ShopItemRepository
 
 
 class ShopUnitOfWork(UnitOfWork, Protocol):
@@ -21,6 +22,9 @@ class ShopUnitOfWork(UnitOfWork, Protocol):
 
     @property
     def chat_use_case(self) -> ChatUseCase: ...
+
+    @property
+    def shop_item_repository(self) -> ShopItemRepository: ...
 
 
 class ShopUnitOfWorkFactory(UnitOfWorkFactory[ShopUnitOfWork], Protocol):

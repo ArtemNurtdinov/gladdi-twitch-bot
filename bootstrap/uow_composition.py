@@ -180,6 +180,7 @@ def create_uow_factories(
             add_equipment_use_case_provider=equipment_providers.add_equipment_use_case_provider,
             equipment_exists_use_case_provider=equipment_providers.equipment_exists_use_case_provider,
             chat_use_case_provider=chat_providers.chat_use_case_provider,
+            shop_item_repository_provider=equipment_providers.shop_item_repository_provider,
         )
 
     def build_stats_uow_factory() -> SqlAlchemyStatsUnitOfWorkFactory:

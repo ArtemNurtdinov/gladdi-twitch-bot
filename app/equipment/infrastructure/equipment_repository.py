@@ -3,23 +3,18 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.equipment.domain.models import UserEquipmentItem
+from app.equipment.domain.model.user_equipment import UserEquipment
 from app.equipment.domain.repo import EquipmentRepository
 from app.equipment.infrastructure.db.user_equipment import UserEquipment as OrmUserEquipment
-from app.shop.domain.model.type import ShopItemType
-from app.shop.domain.models import ShopItems
-
-
-def _to_domain_item(row: OrmUserEquipment) -> UserEquipmentItem:
-    shop_item = ShopItems.ITEMS[row.item_type]
-    return UserEquipmentItem(item_type=row.item_type, shop_item=shop_item, expires_at=row.expires_at)
+from app.equipment.infrastructure.mapper.user_equipment_mapper import UserEquipmentMapper
 
 
 class EquipmentRepositoryImpl(EquipmentRepository):
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, mapper: UserEquipmentMapper):
         self._db = db
+        self._mapper = mapper
 
-    def list_user_equipment(self, channel_name: str, user_name: str) -> list[UserEquipmentItem]:
+    def list_user_equipment(self, channel_name: str, user_name: str) -> list[UserEquipment]:
         stmt = (
             select(OrmUserEquipment)
             .where(OrmUserEquipment.channel_name == channel_name)
@@ -27,23 +22,23 @@ class EquipmentRepositoryImpl(EquipmentRepository):
             .where(OrmUserEquipment.expires_at > datetime.utcnow())
         )
         rows = self._db.execute(stmt).scalars().all()
-        return [_to_domain_item(r) for r in rows]
+        return [self._mapper.map_to_domain(item) for item in rows]
 
-    def add_equipment(self, channel_name: str, user_name: str, item: UserEquipmentItem) -> None:
+    def add_equipment(self, channel_name: str, user_name: str, shop_item_id: int, expires_at: datetime) -> None:
         orm = OrmUserEquipment(
             channel_name=channel_name,
             user_name=user_name,
-            item_type=item.item_type,
-            expires_at=item.expires_at,
+            shop_item_id=shop_item_id,
+            expires_at=expires_at,
         )
         self._db.add(orm)
 
-    def equipment_exists(self, channel_name: str, user_name: str, item_type: ShopItemType) -> bool:
+    def equipment_exists(self, channel_name: str, user_name: str, shop_item_id: int) -> bool:
         stmt = (
             select(OrmUserEquipment)
             .where(OrmUserEquipment.channel_name == channel_name)
             .where(OrmUserEquipment.user_name == user_name)
-            .where(OrmUserEquipment.item_type == item_type)
+            .where(OrmUserEquipment.shop_item_id == shop_item_id)
             .where(OrmUserEquipment.expires_at > datetime.utcnow())
         )
         existing_item = self._db.execute(stmt).scalars().first()

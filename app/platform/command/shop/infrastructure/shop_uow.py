@@ -8,6 +8,7 @@ from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.platform.command.shop.application.shop_uow import ShopUnitOfWork, ShopUnitOfWorkFactory
+from app.shop.domain.repository import ShopItemRepository
 from core.provider import Provider
 from core.types import SessionFactory
 
@@ -20,6 +21,7 @@ class SqlAlchemyShopUnitOfWork(SqlAlchemyUnitOfWorkBase, ShopUnitOfWork):
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
+        shop_item_repository: ShopItemRepository,
         read_only: bool,
     ):
         super().__init__(session=session, read_only=read_only)
@@ -27,6 +29,7 @@ class SqlAlchemyShopUnitOfWork(SqlAlchemyUnitOfWorkBase, ShopUnitOfWork):
         self._add_equipment_use_case = add_equipment_use_case
         self._equipment_exists_use_case = equipment_exists_use_case
         self._chat_use_case = chat_use_case
+        self._shop_item_repository = shop_item_repository
 
     @property
     def economy_policy(self) -> EconomyPolicy:
@@ -44,6 +47,10 @@ class SqlAlchemyShopUnitOfWork(SqlAlchemyUnitOfWorkBase, ShopUnitOfWork):
     def chat_use_case(self) -> ChatUseCase:
         return self._chat_use_case
 
+    @property
+    def shop_item_repository(self) -> ShopItemRepository:
+        return self._shop_item_repository
+
 
 class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork], ShopUnitOfWorkFactory):
     def __init__(
@@ -54,6 +61,7 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
         add_equipment_use_case_provider: Provider[AddEquipmentUseCase],
         equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase],
         chat_use_case_provider: Provider[ChatUseCase],
+        shop_item_repository_provider: Provider[ShopItemRepository],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -64,6 +72,7 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
         self._add_equipment_use_case_provider = add_equipment_use_case_provider
         self._equipment_exists_use_case_provider = equipment_exists_use_case_provider
         self._chat_use_case_provider = chat_use_case_provider
+        self._shop_item_repository_provider = shop_item_repository_provider
 
     def _build_uow(self, db: Session, read_only: bool) -> ShopUnitOfWork:
         return SqlAlchemyShopUnitOfWork(
@@ -72,5 +81,6 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
             add_equipment_use_case=self._add_equipment_use_case_provider.get(db),
             equipment_exists_use_case=self._equipment_exists_use_case_provider.get(db),
             chat_use_case=self._chat_use_case_provider.get(db),
+            shop_item_repository=self._shop_item_repository_provider.get(db),
             read_only=read_only,
         )

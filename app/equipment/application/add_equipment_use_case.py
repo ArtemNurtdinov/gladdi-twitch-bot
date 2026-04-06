@@ -1,18 +1,18 @@
 from datetime import datetime, timedelta
 
 from app.equipment.application.equipment_use_case_uow import EquipmentUseCaseUnitOfWorkFactory
-from app.equipment.domain.models import UserEquipmentItem
-from app.shop.domain.model.type import ShopItemType
-from app.shop.domain.models import ShopItems
 
 
 class AddEquipmentUseCase:
+    _DURATION_DAYS = 90
+
     def __init__(self, unit_of_work_factory: EquipmentUseCaseUnitOfWorkFactory):
         self._unit_of_work_factory = unit_of_work_factory
 
-    def add(self, channel_name: str, user_name: str, item_type: ShopItemType):
-        expires_at = datetime.utcnow() + timedelta(days=90)
-        shop_item = ShopItems.ITEMS[item_type]
-        item = UserEquipmentItem(item_type=item_type, shop_item=shop_item, expires_at=expires_at)
+    def add(self, channel_name: str, user_name: str, shop_item_id: int) -> None:
+        expires_at = datetime.utcnow() + timedelta(days=self._DURATION_DAYS)
+
         with self._unit_of_work_factory.create() as uow:
-            uow.equipment_repo.add_equipment(channel_name, user_name, item)
+            uow.equipment_repo.add_equipment(
+                channel_name=channel_name, user_name=user_name, shop_item_id=shop_item_id, expires_at=expires_at
+            )

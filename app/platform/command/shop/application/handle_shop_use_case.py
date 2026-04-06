@@ -1,8 +1,6 @@
 from app.economy.domain.models import TransactionType
 from app.platform.command.shop.application.model import CommandBuyDTO, CommandShopDTO
 from app.platform.command.shop.application.shop_uow import ShopUnitOfWorkFactory
-from app.shop.domain.model.type import ShopItemType
-from app.shop.domain.models import ShopItems
 
 
 class HandleShopUseCase:
@@ -11,8 +9,15 @@ class HandleShopUseCase:
 
     async def handle_shop(self, command_shop: CommandShopDTO) -> str:
         result_parts = ["МАГАЗИН АРТЕФАКТОВ:"]
-        for _, item in ShopItems.ITEMS:
-            result_parts.append(f"{item.emoji} {item.name} - {item.price} монет.")
+
+        with self._shop_uow.create(read_only=True) as uow:
+            items = uow.shop_item_repository.get_active_items()
+
+            if not items:
+                result_parts.append("В магазине пока нет товаров 😢")
+            else:
+                for item in items:
+                    result_parts.append(f"{item.emoji} {item.name} - {item.price} монет.")
 
         result_parts.append(
             f"Используй: {command_shop.command_prefix}{command_shop.command_buy_name} [название предмета]. "
@@ -59,10 +64,12 @@ class HandleShopUseCase:
                 )
             return result
 
-        try:
-            item_type = self._find_item(command_buy.item_name_input.lower().strip())
-        except ValueError as e:
-            result = str(e)
+        item_name = command_buy.item_name_input.lower().strip()
+        with self._shop_uow.create(read_only=True) as uow:
+            item = uow.shop_item_repository.get_active_item_by_name(item_name)
+
+        if not item:
+            result = f"Предмет '{command_buy.item_name_input}' не найден"
             with self._shop_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_buy.channel_name,
@@ -78,11 +85,11 @@ class HandleShopUseCase:
                 )
             return result
 
-        item = ShopItems.ITEMS[item_type]
-
         with self._shop_uow.create(read_only=True) as uow:
             equipment_exists = uow.equipment_exists_use_case.check_equipment_exists(
-                channel_name=command_buy.channel_name, user_name=user_name, item_type=item_type
+                channel_name=command_buy.channel_name,
+                user_name=user_name,
+                shop_item_id=item.id,
             )
 
         if equipment_exists:
@@ -130,7 +137,11 @@ class HandleShopUseCase:
                 transaction_type=TransactionType.SHOP_PURCHASE,
                 description=f"Покупка '{item.name}'",
             )
-            uow.add_equipment_use_case.add(channel_name=command_buy.channel_name, user_name=user_name, item_type=item_type)
+            uow.add_equipment_use_case.add(
+                channel_name=command_buy.channel_name,
+                user_name=user_name,
+                shop_item_id=item.id,
+            )
 
         result = f"@{command_buy.display_name} купил {item.emoji} '{item.name}' за {item.price} монет!"
 
@@ -145,10 +156,3 @@ class HandleShopUseCase:
                 channel_name=command_buy.channel_name, user_name=command_buy.bot_nick, content=result, current_time=command_buy.occurred_at
             )
         return result
-
-    def _find_item(self, name: str) -> ShopItemType:
-        items = ShopItems.ITEMS
-        for item_type, item in items:
-            if item.name.lower() == name:
-                return item_type
-        raise ValueError(f"Предмет '{name}' не найден")

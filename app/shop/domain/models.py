@@ -13,6 +13,8 @@ from app.shop.domain.model.type import ShopItemType
 class ShopItems:
     ITEMS: dict[ShopItemType, ShopItem] = {
         ShopItemType.CHAIR: ShopItem(
+            id=0,
+            channel_name="artemnefrit",
             name="стул",
             description="Надёжная опора artemn3STUL",
             price=10000,
@@ -22,6 +24,8 @@ class ShopItems:
             ],
         ),
         ShopItemType.FREEZER_DUMPLINGS: ShopItem(
+            id=0,
+            channel_name="artemnefrit",
             name="пельмени",
             description="Холодная сила сибирских пельменей. Дает бафф к размеру живота",
             price=15000,
@@ -32,6 +36,8 @@ class ShopItems:
             ],
         ),
         ShopItemType.MAEL_EXPEDITION: ShopItem(
+            id=0,
+            channel_name="artemnefrit",
             name="маэль",
             description="Умеет рисовать, может перерисовывать судьбы и жизни.",
             price=33333,
@@ -43,6 +49,8 @@ class ShopItems:
             ],
         ),
         ShopItemType.GAMBLER_AMULET: ShopItem(
+            id=0,
+            channel_name="artemnefrit",
             name="амулет лудомана",
             description="Снимает ограничения на ставки",
             price=66666,
