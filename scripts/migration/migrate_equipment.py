@@ -1,5 +1,3 @@
-import asyncio
-
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError
 
@@ -12,16 +10,17 @@ from app.shop.infrastructure.repository import ShopItemRepositoryImpl
 from core.db import Base, get_session_local, init_db
 
 
-async def run_migration():
+def run_migration():
     config = load_config()
     init_db(config.db)
 
-    async with get_session_local()() as session:
+    with get_session_local()() as session:  # Убрали async with, используем синхронный with
         mapper = ShopItemMapper()
         repo = ShopItemRepositoryImpl(session, mapper)
 
         inspector = inspect(session.bind)
 
+        # 1. Создаём таблицу shop_items
         if not inspector.has_table("shop_items"):
             print("📦 Создаём таблицу shop_items...")
             Base.metadata.create_all(session.bind, tables=[ShopItemORM.__table__])
@@ -29,9 +28,10 @@ async def run_migration():
         else:
             print("⚠️ Таблица shop_items уже существует")
 
+        # 2. Заполняем предметами из хардкода
         print("📝 Заполняем предметами...")
 
-        default_channel_name = "artemnefrit"
+        default_channel_name = "artemnefrit"  # Используем твой channel_name
 
         for item_type, shop_item in ShopItems.ITEMS.items():
             existing = repo.get_active_item_by_name(shop_item.name)
@@ -50,8 +50,9 @@ async def run_migration():
             else:
                 print(f"  ⏭️ Предмет уже существует: {existing.name} (id={existing.id})")
 
+        # 3. Добавляем колонку shop_item_id в user_equipment
         try:
-            result = await session.execute(
+            result = session.execute(
                 text("""
                     SELECT column_name 
                     FROM information_schema.columns 
@@ -61,7 +62,7 @@ async def run_migration():
             column_exists = result.fetchone()
 
             if not column_exists:
-                await session.execute(text("ALTER TABLE user_equipment ADD COLUMN shop_item_id INTEGER"))
+                session.execute(text("ALTER TABLE user_equipment ADD COLUMN shop_item_id INTEGER"))
                 print("✅ Добавлена колонка shop_item_id")
             else:
                 print("⚠️ Колонка shop_item_id уже существует")
@@ -69,9 +70,10 @@ async def run_migration():
             print(f"❌ Ошибка при добавлении колонки: {e}")
             raise
 
+        # 4. Переносим данные из item_type в shop_item_id
         print("🔄 Переносим данные...")
 
-        result = await session.execute(
+        result = session.execute(
             text("""
                 SELECT column_name 
                 FROM information_schema.columns 
@@ -89,7 +91,7 @@ async def run_migration():
             }
 
             for old_type, item_name in type_to_name.items():
-                result = await session.execute(
+                result = session.execute(
                     text("""
                         UPDATE user_equipment ue
                         SET shop_item_id = (
@@ -101,14 +103,32 @@ async def run_migration():
                     {"item_name": item_name, "old_type": old_type},
                 )
                 print(f"  Обновлено записей для {old_type}: {result.rowcount}")
+
+            # Проверяем, остались ли NULL значения
+            result = session.execute(text("SELECT COUNT(*) FROM user_equipment WHERE shop_item_id IS NULL"))
+            null_count = result.scalar()
+
+            if null_count > 0:
+                print(f"⚠️ Найдено {null_count} записей с NULL shop_item_id")
+                print("  Удаляем проблемные записи...")
+                session.execute(text("DELETE FROM user_equipment WHERE shop_item_id IS NULL"))
         else:
             print("⚠️ Колонка item_type не существует, пропускаем перенос данных")
 
-        await session.execute(text("ALTER TABLE user_equipment ALTER COLUMN shop_item_id SET NOT NULL"))
-        print("✅ Колонка shop_item_id теперь NOT NULL")
+        # 5. Делаем колонку NOT NULL (только если нет NULL значений)
+        result = session.execute(text("SELECT COUNT(*) FROM user_equipment WHERE shop_item_id IS NULL"))
+        null_count = result.scalar()
 
+        if null_count == 0:
+            session.execute(text("ALTER TABLE user_equipment ALTER COLUMN shop_item_id SET NOT NULL"))
+            print("✅ Колонка shop_item_id теперь NOT NULL")
+        else:
+            print(f"❌ Невозможно установить NOT NULL: осталось {null_count} записей с NULL")
+            raise Exception(f"Cannot set NOT NULL: {null_count} rows have NULL shop_item_id")
+
+        # 6. Добавляем внешний ключ
         try:
-            result = await session.execute(
+            result = session.execute(
                 text("""
                     SELECT constraint_name
                     FROM information_schema.table_constraints
@@ -120,7 +140,7 @@ async def run_migration():
             fk_exists = result.fetchone()
 
             if not fk_exists:
-                await session.execute(
+                session.execute(
                     text("""
                         ALTER TABLE user_equipment
                         ADD CONSTRAINT fk_user_equipment_shop_item_id
@@ -139,9 +159,10 @@ async def run_migration():
                 print(f"❌ Ошибка при добавлении внешнего ключа: {e}")
                 raise
 
+        # 7. Удаляем старую колонку item_type
         if item_type_exists:
             try:
-                await session.execute(text("ALTER TABLE user_equipment DROP COLUMN item_type"))
+                session.execute(text("ALTER TABLE user_equipment DROP COLUMN item_type"))
                 print("✅ Удалена колонка item_type")
             except OperationalError as e:
                 if "does not exist" in str(e):
@@ -152,8 +173,9 @@ async def run_migration():
         else:
             print("⚠️ Колонка item_type не существует, пропускаем удаление")
 
+        # 8. Удаляем enum тип (для PostgreSQL)
         try:
-            result = await session.execute(
+            result = session.execute(
                 text("""
                     SELECT EXISTS (
                         SELECT 1 FROM pg_type WHERE typname = 'shopitemtype'
@@ -163,20 +185,16 @@ async def run_migration():
             type_exists = result.scalar()
 
             if type_exists:
-                await session.execute(text("DROP TYPE shopitemtype"))
+                session.execute(text("DROP TYPE shopitemtype"))
                 print("✅ Удалён тип shopitemtype")
             else:
                 print("⚠️ Тип shopitemtype не существует")
         except OperationalError as e:
             print(f"⚠️ Не удалось удалить тип shopitemtype: {e}")
 
-        await session.commit()
+        session.commit()
         print("🎉 Миграция успешно завершена!")
 
 
-def run_sync():
-    asyncio.run(run_migration())
-
-
 if __name__ == "__main__":
-    run_sync()
+    run_migration()

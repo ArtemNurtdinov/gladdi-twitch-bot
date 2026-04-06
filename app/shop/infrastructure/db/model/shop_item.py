@@ -20,4 +20,4 @@ class ShopItem(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    __table_args__ = UniqueConstraint("channel_name", "name", name="uq_shop_item_channel_name")
+    __table_args__ = (UniqueConstraint("channel_name", "name", name="uq_shop_item_channel_name"),)
