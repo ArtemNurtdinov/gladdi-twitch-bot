@@ -5,15 +5,18 @@ from app.shop.application.usecase.create_shop_item_use_case import CreateShopIte
 from app.shop.application.usecase.delete_shop_item_use_case import DeleteShopItemUseCase
 from app.shop.application.usecase.get_all_shop_items_use_case import GetAllShopItemsUseCase
 from app.shop.application.usecase.get_shop_item_use_case import GetShopItemUseCase
+from app.shop.application.usecase.patch_shop_item_use_case import PatchShopItemUseCase
 from app.shop.di.composition import (
     get_all_shop_items_use_case,
     get_create_shop_item_use_case,
     get_delete_shop_item_use_case,
+    get_patch_shop_item_use_case,
     get_shop_item_schema_mapper,
     get_shop_item_use_case,
 )
 from app.shop.presentation.api.mapper.shop_item_schema_mapper import ShopItemSchemaMapper
 from app.shop.presentation.api.model.request.create_shop_item_request import CreateShopItemRequest
+from app.shop.presentation.api.model.request.patch_shop_item_request import PatchShopItemRequest
 from app.shop.presentation.api.model.response.all_shop_items_response import AllItemsResponse
 from app.shop.presentation.api.model.response.create_shop_item_response import CreateShopItemResponse
 from app.shop.presentation.api.model.shop_item_schema import ShopItemSchema
@@ -43,6 +46,23 @@ async def create_item(
         created_item = await create_shop_item_use_case.create(shop_item_create)
 
     shop_item = shop_item_schema_mapper.map_to_schema(created_item)
+    return CreateShopItemResponse(shop_item=shop_item)
+
+
+@router.patch("/items/{shop_item_id}", summary="Отредактировать предмет", response_model=CreateShopItemResponse)
+async def patch_item(
+    body: PatchShopItemRequest, shop_item_schema_mapper: ShopItemSchemaMapper = Depends(get_shop_item_schema_mapper)
+) -> CreateShopItemResponse:
+    shop_item_patch = shop_item_schema_mapper.map_patch_to_dto(body)
+
+    with db_rw_session() as session:
+        patch_shop_item_use_case: PatchShopItemUseCase = get_patch_shop_item_use_case(session)
+        updated_item = await patch_shop_item_use_case.patch_shop_item(shop_item_patch)
+
+    if updated_item is None:
+        raise HTTPException(status_code=404, detail="Предмет в магазине не найден")
+
+    shop_item = shop_item_schema_mapper.map_to_schema(updated_item)
     return CreateShopItemResponse(shop_item=shop_item)
 
 

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from app.shop.domain.model.shop_item import ShopItem, ShopItemCreate
+from app.shop.domain.model.shop_item import ShopItem, ShopItemCreate, ShopItemPatch
 
 
 class ShopItemRepository(ABC):
@@ -24,3 +24,6 @@ class ShopItemRepository(ABC):
 
     @abstractmethod
     async def delete_item(self, item_id: int) -> None: ...
+
+    @abstractmethod
+    async def patch_shop_item(self, shop_item: ShopItemPatch) -> ShopItem | None: ...

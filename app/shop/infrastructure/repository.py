@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.shop.domain.model.shop_item import ShopItem, ShopItemCreate
+from app.shop.domain.model.shop_item import ShopItem, ShopItemCreate, ShopItemPatch
 from app.shop.domain.repository import ShopItemRepository
 from app.shop.infrastructure.db.model.shop_item import ShopItem as ShopItemORM
 from app.shop.infrastructure.mapper.shop_item_mapper import ShopItemMapper
@@ -47,3 +47,34 @@ class ShopItemRepositoryImpl(ShopItemRepository):
         orm_item = self._db.get(ShopItemORM, item_id)
         if orm_item:
             self._db.delete(orm_item)
+
+    async def patch_shop_item(self, shop_item: ShopItemPatch) -> ShopItem | None:
+        orm_item: ShopItemORM | None = self._db.get(ShopItemORM, shop_item.id)
+
+        if not orm_item:
+            return None
+
+        if shop_item.channel_name is not None:
+            orm_item.channel_name = shop_item.channel_name
+
+        if shop_item.name is not None:
+            orm_item.name = shop_item.name
+
+        if shop_item.description is not None:
+            orm_item.description = shop_item.description
+
+        if shop_item.price is not None:
+            orm_item.price = shop_item.price
+
+        if shop_item.emoji is not None:
+            orm_item.emoji = shop_item.emoji
+
+        if shop_item.is_active is not None:
+            orm_item.is_active = shop_item.is_active
+
+        if shop_item.effects is not None:
+            orm_item.effects = [self._mapper.map_effect_to_db(effect) for effect in shop_item.effects]
+
+        self._db.flush()
+
+        return self._mapper.map_to_domain(orm_item)

@@ -9,7 +9,7 @@ from app.shop.domain.model.effect import (
     TimeoutProtectionEffect,
     TimeoutReductionEffect,
 )
-from app.shop.domain.model.shop_item import ShopItem, ShopItemCreate
+from app.shop.domain.model.shop_item import ShopItem, ShopItemCreate, ShopItemPatch
 from app.shop.infrastructure.db.model.shop_item import ShopItem as ShopItemORM
 
 
@@ -31,6 +31,19 @@ class ShopItemMapper:
     def map_create_to_db(self, shop_item: ShopItemCreate) -> ShopItemORM:
         effects_json = [self.map_effect_to_db(effect) for effect in shop_item.effects]
         return ShopItemORM(
+            name=shop_item.name,
+            channel_name=shop_item.channel_name,
+            description=shop_item.description,
+            price=shop_item.price,
+            emoji=shop_item.emoji,
+            effects=effects_json,
+            is_active=shop_item.is_active,
+        )
+
+    def map_patch_to_db(self, shop_item: ShopItemPatch) -> ShopItemORM:
+        effects_json = [self.map_effect_to_db(effect) for effect in shop_item.effects]
+        return ShopItemORM(
+            id=id,
             name=shop_item.name,
             channel_name=shop_item.channel_name,
             description=shop_item.description,

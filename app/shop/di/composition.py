@@ -4,12 +4,14 @@ from app.shop.application.usecase.create_shop_item_use_case import CreateShopIte
 from app.shop.application.usecase.delete_shop_item_use_case import DeleteShopItemUseCase
 from app.shop.application.usecase.get_all_shop_items_use_case import GetAllShopItemsUseCase
 from app.shop.application.usecase.get_shop_item_use_case import GetShopItemUseCase
+from app.shop.application.usecase.patch_shop_item_use_case import PatchShopItemUseCase
 from app.shop.di.dependencies import (
     provide_create_shop_item_use_case,
     provide_delete_shop_item_use_case,
     provide_get_all_shop_items_use_case,
     provide_get_shop_item_use_case,
     provide_item_effect_mapper,
+    provide_patch_shop_item_use_case,
     provide_shop_item_effect_schema_mapper,
     provide_shop_item_mapper,
     provide_shop_item_mapper_dto,
@@ -56,3 +58,12 @@ def get_shop_item_use_case(session: Session) -> GetShopItemUseCase:
     shop_item_repository = provide_shop_item_repository(session, shop_item_mapper)
     create_shop_item_use_case = provide_get_shop_item_use_case(shop_item_repository, shop_item_dto_mapper)
     return create_shop_item_use_case
+
+
+def get_patch_shop_item_use_case(session: Session) -> PatchShopItemUseCase:
+    shop_item_mapper = provide_shop_item_mapper()
+    effect_mapper = provide_item_effect_mapper()
+    shop_item_dto_mapper = provide_shop_item_mapper_dto(effect_mapper)
+    shop_item_repository = provide_shop_item_repository(session, shop_item_mapper)
+    patch_shop_item_use_case: PatchShopItemUseCase = provide_patch_shop_item_use_case(shop_item_repository, shop_item_dto_mapper)
+    return patch_shop_item_use_case
