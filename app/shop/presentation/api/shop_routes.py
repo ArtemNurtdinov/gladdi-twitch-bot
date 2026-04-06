@@ -1,8 +1,15 @@
 from fastapi import APIRouter, Depends
 
+from app.core.network.api.model.base_response import BaseResponse
 from app.shop.application.usecase.create_shop_item_use_case import CreateShopItemUseCase
+from app.shop.application.usecase.delete_shop_item_use_case import DeleteShopItemUseCase
 from app.shop.application.usecase.get_all_shop_items_use_case import GetAllShopItemsUseCase
-from app.shop.di.composition import get_all_shop_items_use_case, get_create_shop_item_use_case, get_shop_item_schema_mapper
+from app.shop.di.composition import (
+    get_all_shop_items_use_case,
+    get_create_shop_item_use_case,
+    get_delete_shop_item_use_case,
+    get_shop_item_schema_mapper,
+)
 from app.shop.presentation.api.mapper.shop_item_schema_mapper import ShopItemSchemaMapper
 from app.shop.presentation.api.model.request.create_shop_item_request import CreateShopItemRequest
 from app.shop.presentation.api.model.response.all_shop_items_response import AllItemsResponse
@@ -34,3 +41,13 @@ async def create_item(
 
     shop_item = shop_item_schema_mapper.map_to_schema(created_item)
     return CreateShopItemResponse(shop_item=shop_item)
+
+
+@router.delete("/items/{shop_item_id}", summary="Удаление предмета из магазина", response_model=BaseResponse)
+async def delete_item(
+    shop_item_id: int,
+) -> BaseResponse:
+    with db_rw_session() as session:
+        delete_shop_item_use_case: DeleteShopItemUseCase = get_delete_shop_item_use_case(session)
+        await delete_shop_item_use_case.execute(shop_item_id)
+    return BaseResponse(message="Предмет успешно удалён")

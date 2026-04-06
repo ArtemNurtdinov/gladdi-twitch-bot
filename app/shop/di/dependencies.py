@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.shop.application.mapper.effect_mapper import EffectMapper
 from app.shop.application.mapper.shop_item_mapper import ShopItemMapper as ShopItemDTOMapper
 from app.shop.application.usecase.create_shop_item_use_case import CreateShopItemUseCase
+from app.shop.application.usecase.delete_shop_item_use_case import DeleteShopItemUseCase
 from app.shop.application.usecase.get_all_shop_items_use_case import GetAllShopItemsUseCase
 from app.shop.domain.repository import ShopItemRepository
 from app.shop.infrastructure.mapper.shop_item_mapper import ShopItemMapper
@@ -47,3 +48,9 @@ def provide_create_shop_item_use_case(
     shop_item_mapper: ShopItemDTOMapper,
 ) -> CreateShopItemUseCase:
     return CreateShopItemUseCase(shop_item_repository=shop_item_repository, mapper=shop_item_mapper)
+
+
+def provide_delete_shop_item_use_case(
+    shop_item_repository: ShopItemRepository,
+) -> DeleteShopItemUseCase:
+    return DeleteShopItemUseCase(shop_item_repository=shop_item_repository)

@@ -37,3 +37,8 @@ class ShopItemRepositoryImpl(ShopItemRepository):
         orm_item = self._db.get(ShopItemORM, item_id)
         if orm_item:
             orm_item.is_active = False
+
+    async def delete_item(self, item_id: int) -> None:
+        orm_item = self._db.get(ShopItemORM, item_id)
+        if orm_item:
+            self._db.delete(orm_item)

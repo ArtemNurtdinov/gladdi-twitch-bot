@@ -18,3 +18,6 @@ class ShopItemRepository(ABC):
 
     @abstractmethod
     def deactivate_item(self, item_id: int) -> None: ...
+
+    @abstractmethod
+    async def delete_item(self, item_id: int) -> None: ...
