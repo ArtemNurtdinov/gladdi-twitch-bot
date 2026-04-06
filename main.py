@@ -10,6 +10,7 @@ from app.core.logger.di.composition import get_logger
 from app.follow.presentation import followers_routes
 from app.joke.presentation import joke_routes
 from app.platform.bot.infrastructure import bot_routes, bot_twitch_routes
+from app.shop.presentation.api import shop_routes
 from app.stream.presentation import stream_routes
 from app.user.presentation import user_routes
 from core.db import init_db
@@ -40,6 +41,7 @@ app.include_router(joke_routes.router, prefix="/api/v1/jokes", tags=["Jokes"])
 app.include_router(stream_routes.router, prefix="/api/v1/streams", tags=["Streams"])
 app.include_router(followers_routes.router, prefix="/api/v1/followers", tags=["Followers"])
 app.include_router(user_routes.router, prefix="/api/v1", tags=["Users"])
+app.include_router(shop_routes.router, prefix="api/v1/shop", tags=["Shop"])
 
 
 @app.get("/", tags=["Health"])

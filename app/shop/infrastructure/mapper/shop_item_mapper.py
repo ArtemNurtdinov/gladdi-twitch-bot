@@ -24,6 +24,7 @@ class ShopItemMapper:
             description=shop_item.description,
             price=shop_item.price,
             emoji=shop_item.emoji,
+            is_active=shop_item.is_active,
             effects=effects,
         )
 

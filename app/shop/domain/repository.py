@@ -5,6 +5,9 @@ from app.shop.domain.model.shop_item import ShopItem, ShopItemCreate
 
 class ShopItemRepository(ABC):
     @abstractmethod
+    def get_all_items(self) -> list[ShopItem]: ...
+
+    @abstractmethod
     def get_active_items(self) -> list[ShopItem]: ...
 
     @abstractmethod
