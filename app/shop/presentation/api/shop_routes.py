@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.network.api.model.base_response import BaseResponse
 from app.shop.application.usecase.create_shop_item_use_case import CreateShopItemUseCase
@@ -26,10 +26,16 @@ router = APIRouter()
 
 
 @router.get("/items", summary="Получение всех предметов магазина", response_model=AllItemsResponse)
-async def get_all_shop_items(shop_item_schema_mapper: ShopItemSchemaMapper = Depends(get_shop_item_schema_mapper)) -> AllItemsResponse:
+async def get_all_shop_items(
+    channel_name: str = Query(None),
+    shop_item_schema_mapper: ShopItemSchemaMapper = Depends(get_shop_item_schema_mapper),
+) -> AllItemsResponse:
+    if channel_name is None:
+        raise HTTPException(status_code=400, detail="Необходим query параметр channel_name")
+
     with db_ro_session() as session:
         all_shop_items_use_case: GetAllShopItemsUseCase = get_all_shop_items_use_case(session)
-        shop_items = await all_shop_items_use_case.get_all_items()
+        shop_items = await all_shop_items_use_case.get_all_items(channel_name)
 
     items = [shop_item_schema_mapper.map_to_schema(item) for item in shop_items]
     return AllItemsResponse(shop_items=items)

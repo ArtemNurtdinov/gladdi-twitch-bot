@@ -12,8 +12,8 @@ class ShopItemRepositoryImpl(ShopItemRepository):
         self._db = db
         self._mapper = mapper
 
-    def get_all_items(self) -> list[ShopItem]:
-        stmt = select(ShopItemORM)
+    def get_all_items(self, channel_name: str) -> list[ShopItem]:
+        stmt = select(ShopItemORM).where(ShopItemORM.channel_name == channel_name)
         orm_items = self._db.execute(stmt).scalars().all()
         return [self._mapper.map_to_domain(item) for item in orm_items]
 
