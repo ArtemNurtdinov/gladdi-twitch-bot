@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Protocol
 
-from app.stream.domain.models import StreamInfo, StreamViewerSessionInfo
+from app.stream.domain.model.info import StreamInfo
+from app.stream.domain.models import StreamViewerSessionInfo
 
 
 class StreamRepository(Protocol):
@@ -17,8 +18,6 @@ class StreamRepository(Protocol):
 
     def update_max_concurrent_viewers_count(self, active_stream_id: int, viewers_count: int) -> None: ...
 
-    def list_streams(
-        self, skip: int, limit: int, date_from: datetime | None, date_to: datetime | None
-    ) -> tuple[list[StreamInfo], int]: ...
+    def list_streams(self, skip: int, limit: int, date_from: datetime | None, date_to: datetime | None) -> tuple[list[StreamInfo], int]: ...
 
     def get_stream_with_sessions(self, stream_id: int) -> tuple[StreamInfo, list[StreamViewerSessionInfo]] | None: ...

@@ -1,4 +1,4 @@
-from app.stream.domain.models import StreamInfo
+from app.stream.domain.model.info import StreamInfo
 from app.viewer.application.models.viewer_session import StreamInfoDTO, ViewerSessionDTO
 from app.viewer.domain.models import ViewerSession
 from app.viewer.domain.repo import ViewerRepository

@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from app.stream.domain.models import StreamDetail, StreamInfo
+from app.stream.domain.model.info import StreamInfo
+from app.stream.domain.models import StreamDetail
 from app.stream.domain.repo import StreamRepository
 
 

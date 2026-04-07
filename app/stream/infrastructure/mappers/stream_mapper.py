@@ -1,4 +1,4 @@
-from app.stream.domain.models import StreamInfo
+from app.stream.domain.model.info import StreamInfo
 from app.stream.infrastructure.db.stream import Stream
 
 

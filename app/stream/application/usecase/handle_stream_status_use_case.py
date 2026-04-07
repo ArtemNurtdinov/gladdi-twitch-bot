@@ -9,7 +9,8 @@ from app.minigame.domain.minigame_repository import MinigameRepository
 from app.notification.domain.repository import NotificationRepository
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
-from app.stream.domain.models import StreamInfo, StreamStatistics
+from app.stream.domain.model.info import StreamInfo
+from app.stream.domain.model.stat import StreamStatistics
 from app.user.application.ports.user_cache_port import UserCachePort
 
 
