@@ -30,9 +30,6 @@ async def get_all_shop_items(
     channel_name: str = Query(..., description="Имя канала"),
     shop_item_schema_mapper: ShopItemSchemaMapper = Depends(get_shop_item_schema_mapper),
 ) -> AllItemsResponse:
-    if channel_name is None:
-        raise HTTPException(status_code=400, detail="Необходим query параметр channel_name")
-
     with db_ro_session() as session:
         all_shop_items_use_case: GetAllShopItemsUseCase = get_all_shop_items_use_case(session)
         shop_items = await all_shop_items_use_case.get_all_items(channel_name)

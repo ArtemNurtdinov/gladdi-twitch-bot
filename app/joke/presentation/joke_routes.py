@@ -1,18 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.joke.application.dto import JokeIntervalDto, JokesIntervalResultDto, JokesResponseDto, JokesStatusDto, NextJokeDto
 from app.joke.application.usecase.joke_use_case import JokeUseCase
-from app.joke.di.composition import get_joke_use_case
-from app.joke.presentation.joke_schemas import (
-    JokesResponse,
-)
+from app.joke.di.composition import get_joke_use_case, get_jokes_configuration_use_case
+from app.joke.di.dependencies import provide_jokes_configuration_mapper_schema
+from app.joke.presentation.api.mapper.jokes_configuration_mapper import JokesConfigurationMapper
+from app.joke.presentation.api.model.response.configuration import JokesConfigurationResponse
 from app.joke.presentation.model.interval import JokeIntervalSchema
 from app.joke.presentation.model.next_joke import NextJokeSchema
 from app.joke.presentation.model.request.interval import JokesIntervalRequest
 from app.joke.presentation.model.response.interval import JokesIntervalResponse
+from app.joke.presentation.model.response.jokes import JokesResponse
 from app.joke.presentation.model.response.status import JokesStatusResponse
+from core.db import db_ro_session
 
 router = APIRouter()
+
+
+@router.get("/configuration", summary="Конфигурация анекдотов", response_model=JokesConfigurationResponse)
+async def get_configuration(
+    channel_name: str = Query(..., description="Имя канала"),
+    mapper: JokesConfigurationMapper = Depends(provide_jokes_configuration_mapper_schema),
+) -> JokesConfigurationResponse:
+    with db_ro_session() as session:
+        jokes_configuration_use_case = get_jokes_configuration_use_case(session)
+        configuration = jokes_configuration_use_case.get_configuration(channel_name=channel_name)
+    configuration_schema = mapper.map_to_schema(configuration)
+    return JokesConfigurationResponse(jokes_configuration=configuration_schema)
 
 
 def _to_next_joke_model(dto_next: NextJokeDto | None) -> NextJokeSchema | None:
@@ -46,8 +60,8 @@ async def get_jokes_status(joke_service: JokeUseCase = Depends(get_joke_use_case
 @router.post("/enable", summary="Включить анекдоты", response_model=JokesResponse)
 async def enable_jokes(joke_service: JokeUseCase = Depends(get_joke_use_case)) -> JokesResponse:
     try:
-        dto: JokesResponseDto = joke_service.enable_jokes()
-        return JokesResponse(success=dto.success, message=dto.message)
+        jokes: JokesResponseDto = joke_service.enable_jokes()
+        return JokesResponse(success=jokes.success, message=jokes.message)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка включения анекдотов: {str(e)}")
 
