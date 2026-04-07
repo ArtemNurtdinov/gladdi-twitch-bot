@@ -12,6 +12,7 @@ from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.application.usecase.get_jokes_configuration_use_case import GetJokesConfigurationUseCase
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
 from app.joke.application.usecase.joke_use_case import JokeUseCase
+from app.joke.application.usecase.save_jokes_configuration_use_case import SaveJokesConfigurationUseCase
 from app.joke.domain.joke_service import JokeService
 from app.joke.domain.repo import JokeSettingsRepository
 from app.joke.domain.repository import JokesConfigurationRepository
@@ -100,6 +101,12 @@ def provide_get_jokes_configuration_use_case(
     jokes_configuration_repository: JokesConfigurationRepository, mapper: JokesConfigurationMapperDTO
 ) -> GetJokesConfigurationUseCase:
     return GetJokesConfigurationUseCase(jokes_configuration_repository, mapper)
+
+
+def provide_save_jokes_configuration_use_case(
+    jokes_configuration_repository: JokesConfigurationRepository, mapper: JokesConfigurationMapperDTO
+) -> SaveJokesConfigurationUseCase:
+    return SaveJokesConfigurationUseCase(jokes_configuration_repository, mapper)
 
 
 def provide_jokes_configuration_mapper_schema() -> JokesConfigurationMapperSchema:

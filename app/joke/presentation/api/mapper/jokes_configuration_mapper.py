@@ -12,3 +12,13 @@ class JokesConfigurationMapper:
             next_joke_time=configuration.next_joke_time,
             is_enabled=configuration.is_enabled,
         )
+
+    def map_to_dto(self, schema: JokesConfigurationSchema) -> JokesConfigurationDTO:
+        return JokesConfigurationDTO(
+            channel_name=schema.channel_name,
+            interval_min=schema.interval_min,
+            interval_max=schema.interval_max,
+            last_joke_time=schema.last_joke_time,
+            next_joke_time=schema.next_joke_time,
+            is_enabled=schema.is_enabled,
+        )

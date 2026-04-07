@@ -11,7 +11,7 @@ class JokesConfigurationRepositoryImpl(JokesConfigurationRepository):
         self._session = session
         self._mapper = mapper
 
-    def get_current_configuration(self, channel_name: str) -> JokesConfiguration | None:
+    async def get_current_configuration(self, channel_name: str) -> JokesConfiguration | None:
         row = self._session.query(JokesConfigurationRow).filter(JokesConfigurationRow.channel_name == channel_name).first()
 
         if row is None:
@@ -19,7 +19,7 @@ class JokesConfigurationRepositoryImpl(JokesConfigurationRepository):
 
         return self._mapper.map_to_domain(row)
 
-    def save_configuration(self, configuration: JokesConfiguration) -> None:
+    async def save_configuration(self, configuration: JokesConfiguration) -> None:
         row = self._session.query(JokesConfigurationRow).filter(JokesConfigurationRow.channel_name == configuration.channel_name).first()
 
         if row is None:

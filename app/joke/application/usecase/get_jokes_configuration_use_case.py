@@ -8,8 +8,8 @@ class GetJokesConfigurationUseCase:
         self._jokes_configuration_repository = jokes_configuration_repository
         self._mapper = mapper
 
-    def get_configuration(self, channel_name: str) -> JokesConfigurationDTO:
-        configuration = self._jokes_configuration_repository.get_current_configuration(channel_name)
+    async def get_configuration(self, channel_name: str) -> JokesConfigurationDTO:
+        configuration = await self._jokes_configuration_repository.get_current_configuration(channel_name)
 
         if configuration is None:
             return JokesConfigurationDTO(
