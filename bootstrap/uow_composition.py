@@ -105,7 +105,7 @@ def create_uow_factories(
         return SqlAlchemyChatSummarizerUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            stream_service_provider=stream_providers.stream_service_provider,
+            stream_repository_provider=stream_providers.stream_repo_provider,
             chat_use_case_provider=chat_providers.chat_use_case_provider,
         )
 

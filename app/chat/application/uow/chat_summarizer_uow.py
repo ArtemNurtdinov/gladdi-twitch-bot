@@ -4,12 +4,12 @@ from typing import Protocol
 
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.application.unit_of_work import UnitOfWork, UnitOfWorkFactory
-from app.stream.domain.stream_service import StreamService
+from app.stream.domain.repo import StreamRepository
 
 
 class ChatSummarizerUnitOfWork(UnitOfWork, Protocol):
     @property
-    def stream_service(self) -> StreamService: ...
+    def stream_repository(self) -> StreamRepository: ...
 
     @property
     def chat_use_case(self) -> ChatUseCase: ...

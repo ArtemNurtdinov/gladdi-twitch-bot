@@ -19,7 +19,7 @@ class HandleChatSummarizerUseCase:
         summarizer_job: SummarizerJobDTO,
     ) -> str | None:
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            active_stream = uow.stream_service.get_active_stream(summarizer_job.channel_name)
+            active_stream = uow.stream_repository.get_active_stream(summarizer_job.channel_name)
             if not active_stream:
                 return None
 

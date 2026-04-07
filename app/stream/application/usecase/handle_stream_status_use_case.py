@@ -53,7 +53,7 @@ class HandleStreamStatusUseCase:
         title = stream_status.stream_data.title if stream_status.is_online and stream_status.stream_data else None
 
         with self._stream_status_uow.create(read_only=True) as uow:
-            active_stream = uow.stream_service.get_active_stream(channel_name)
+            active_stream = uow.stream_repository.get_active_stream(channel_name)
 
         if stream_status.is_online and active_stream is None:
             self._logger.log_info(f"Стрим начался: {game_name} - {title}")
@@ -65,7 +65,7 @@ class HandleStreamStatusUseCase:
         elif stream_status.is_online and active_stream:
             if active_stream.game_name != game_name or active_stream.title != title:
                 with self._stream_status_uow.create() as uow:
-                    uow.stream_service.update_stream_metadata(active_stream.id, game_name, title)
+                    uow.stream_repository.update_stream_metadata(active_stream.id, game_name, title)
                 self._logger.log_info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
     async def _handle_stream_start(self, channel_name: str, game_name: str | None, title: str | None):
@@ -84,7 +84,7 @@ class HandleStreamStatusUseCase:
         finish_time = datetime.utcnow()
         self._logger.log_info("Стрим завершён")
         with self._stream_status_uow.create() as uow:
-            uow.stream_service.end_stream(active_stream.id, finish_time)
+            uow.stream_repository.end_stream(active_stream.id, finish_time)
 
             active_sessions = uow.viewer_repository.get_active_sessions(active_stream.id)
 
@@ -95,7 +95,7 @@ class HandleStreamStatusUseCase:
                 uow.viewer_repository.finish_session(active_stream.id, session.channel_name, session.user_name, total_minutes, finish_time)
 
             total_viewers = uow.viewer_repository.get_unique_viewers_count(active_stream.id)
-            uow.stream_service.update_stream_total_viewers(active_stream.id, total_viewers)
+            uow.stream_repository.update_stream_total_viewers(active_stream.id, total_viewers)
             self._logger.log_info(f"Стрим завершен в БД: ID {active_stream.id}")
 
         self._minigame_repository.reset_stream_state(channel_name)
