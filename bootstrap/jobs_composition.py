@@ -34,7 +34,6 @@ from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.di.dependencies import provide_handle_stream_status_use_case, provide_stream_status_job
-from app.stream.infrastructure.adapters.generate_stream_info_adapter import GenerateStreamInfoAdapter
 from app.user.application.ports.user_cache_port import UserCachePort
 from app.viewer.application.jobs.viewer_time_job import ViewerTimeJob
 from app.viewer.application.usecases.reward_viewer_time_use_case import RewardViewerTimeUseCase
@@ -68,7 +67,6 @@ def build_background_tasks(
 ) -> BackgroundTasks:
     telegram_bot = provide_telegram_bot(tg_bot_token)
     notifications_repository = provide_notification_repository(telegram_bot)
-    chat_response_port = GenerateStreamInfoAdapter(chat_response_use_case)
     joke_repository = provide_joke_settings_repository(logger)
 
     port_joke_job: PostJokeJob = provide_post_joke_job(
@@ -103,7 +101,7 @@ def build_background_tasks(
             minigame_repository=providers.minigame_providers.minigame_repository,
             notification_repository=notifications_repository,
             notification_group_id=settings.group_id,
-            chat_response_port=chat_response_port,
+            generate_response_use_case=chat_response_use_case,
             state=chat_summary_state,
             logger=logger,
         ),

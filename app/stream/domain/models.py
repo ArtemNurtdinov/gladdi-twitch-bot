@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 
-@dataclass
+@dataclass(frozen=True)
 class StreamStatistics:
     total_messages: int
     unique_users: int
@@ -11,7 +11,7 @@ class StreamStatistics:
     top_winner: str | None
 
 
-@dataclass
+@dataclass(frozen=True)
 class StreamInfo:
     id: int
     channel_name: str
@@ -26,7 +26,7 @@ class StreamInfo:
     updated_at: datetime
 
 
-@dataclass
+@dataclass(frozen=True)
 class StreamViewerSessionInfo:
     id: int
     stream_id: int
@@ -43,7 +43,7 @@ class StreamViewerSessionInfo:
     updated_at: datetime
 
 
-@dataclass
+@dataclass(frozen=True)
 class StreamDetail:
     stream: StreamInfo
     sessions: list[StreamViewerSessionInfo]
