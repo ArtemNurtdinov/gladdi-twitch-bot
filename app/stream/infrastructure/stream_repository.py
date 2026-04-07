@@ -4,7 +4,7 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from app.stream.domain.model.info import StreamInfo
-from app.stream.domain.models import StreamViewerSessionInfo
+from app.stream.domain.model.session import StreamViewerSessionInfo
 from app.stream.domain.repo import StreamRepository
 from app.stream.infrastructure.db.stream import Stream
 from app.stream.infrastructure.mappers.stream_mapper import map_stream_row

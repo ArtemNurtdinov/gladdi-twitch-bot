@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 
 from app.chat.domain.repo import ChatRepository
+from app.stream.domain.model.detail import StreamDetail
 from app.stream.domain.model.info import StreamInfo
-from app.stream.domain.models import StreamDetail
 from app.stream.domain.repo import StreamRepository
 
 

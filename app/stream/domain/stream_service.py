@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from app.stream.domain.model.info import StreamInfo
-from app.stream.domain.models import StreamDetail
 from app.stream.domain.repo import StreamRepository
 
 
@@ -23,15 +22,3 @@ class StreamService:
 
     def update_max_concurrent_viewers_count(self, active_stream_id: int, viewers_count: int):
         self._repo.update_max_concurrent_viewers_count(active_stream_id, viewers_count)
-
-    def get_streams(
-        self, skip: int, limit: int, date_from: datetime | None = None, date_to: datetime | None = None
-    ) -> tuple[list[StreamInfo], int]:
-        return self._repo.list_streams(skip, limit, date_from, date_to)
-
-    def get_stream_detail(self, stream_id: int) -> StreamDetail | None:
-        result = self._repo.get_stream_with_sessions(stream_id)
-        if not result:
-            return None
-        stream_info, sessions = result
-        return StreamDetail(stream=stream_info, sessions=sessions)

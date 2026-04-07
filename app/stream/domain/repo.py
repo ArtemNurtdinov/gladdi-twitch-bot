@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Protocol
 
 from app.stream.domain.model.info import StreamInfo
-from app.stream.domain.models import StreamViewerSessionInfo
+from app.stream.domain.model.session import StreamViewerSessionInfo
 
 
 class StreamRepository(Protocol):

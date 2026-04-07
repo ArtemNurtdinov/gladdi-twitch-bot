@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.stream.domain.model.info import StreamInfo
-
 
 @dataclass(frozen=True)
 class StreamViewerSessionInfo:
@@ -19,11 +17,3 @@ class StreamViewerSessionInfo:
     last_reward_claimed: datetime | None
     created_at: datetime
     updated_at: datetime
-
-
-@dataclass(frozen=True)
-class StreamDetail:
-    stream: StreamInfo
-    sessions: list[StreamViewerSessionInfo]
-    total_watch_minutes: int
-    total_messages: int

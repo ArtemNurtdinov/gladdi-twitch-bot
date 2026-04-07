@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.stream.domain.models import StreamInfo
+from app.stream.domain.model.info import StreamInfo
 
 
 @dataclass
