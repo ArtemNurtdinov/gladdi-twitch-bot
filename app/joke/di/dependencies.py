@@ -11,7 +11,6 @@ from app.joke.application.mapper.jokes_configuration_mapper import JokesConfigur
 from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.application.usecase.get_jokes_configuration_use_case import GetJokesConfigurationUseCase
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
-from app.joke.application.usecase.joke_use_case import JokeUseCase
 from app.joke.application.usecase.save_jokes_configuration_use_case import SaveJokesConfigurationUseCase
 from app.joke.domain.joke_service import JokeService
 from app.joke.domain.repo import JokeSettingsRepository
@@ -63,10 +62,6 @@ def provide_handle_post_joke_use_case(
         chat_response_use_case=generate_response_use_case,
         unit_of_work_factory=joke_uow_factory,
     )
-
-
-def provide_joke_use_case(joke_service: JokeService) -> JokeUseCase:
-    return JokeUseCase(joke_service)
 
 
 def provide_post_joke_job(

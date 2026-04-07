@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta
-from random import randint
+from datetime import datetime
 
 from app.joke.domain.model.joke_settings import JokesSettings
 
@@ -11,12 +10,6 @@ def validate_interval(interval_min: int, interval_max: int) -> None:
         raise ValueError("jokes_interval_max должен быть в диапазоне 1-300 минут")
     if interval_min > interval_max:
         raise ValueError(f"Минимальный интервал ({interval_min}) не может быть больше максимального ({interval_max})")
-
-
-def plan_next_joke_time(settings: JokesSettings, now: datetime | None = None) -> str:
-    now = now or datetime.now()
-    interval_minutes = randint(settings.jokes_interval_min, settings.jokes_interval_max)
-    return (now + timedelta(minutes=interval_minutes)).isoformat()
 
 
 def should_generate_now(settings: JokesSettings, now: datetime | None = None) -> bool:
