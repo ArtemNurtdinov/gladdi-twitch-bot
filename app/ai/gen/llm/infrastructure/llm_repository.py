@@ -1,19 +1,26 @@
+from datetime import UTC, datetime
+
 import httpx
 from pydantic import ValidationError
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.models import AIAssistantResponse, AIMessage, Usage
 from app.ai.gen.llm.domain.exceptions.llm_exceptions import LLMClientError, LLMResponseFormatError
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
-from app.ai.gen.llm.infrastructure.llm_schemas import AIResponseSchema
+from app.ai.gen.llm.domain.model.assistant import AIAssistant
+from app.ai.gen.llm.infrastructure.db.assistant import AssistantRow
+from app.ai.gen.llm.infrastructure.model.response.llm import AIResponseSchema
 
 
 class LLMRepositoryImpl(LLMRepository):
-    def __init__(self, llmbox_host: str):
+    def __init__(self, llmbox_host: str, session: Session):
         self._llmbox_host = llmbox_host
+        self._session = session
 
-    async def generate_ai_response(self, user_messages: list[AIMessage]) -> AIAssistantResponse:
+    async def generate_ai_response(self, assistant: AIAssistant, user_messages: list[AIMessage]) -> AIAssistantResponse:
         messages = [{"role": message.role.value, "content": message.content} for message in user_messages]
-        payload = {"messages": messages, "assistant": "qwen3_235b"}
+        payload = {"messages": messages, "assistant": assistant}
         api_url = f"{self._llmbox_host}/generate-ai-response"
 
         try:
@@ -43,3 +50,19 @@ class LLMRepositoryImpl(LLMRepository):
         )
 
         return AIAssistantResponse(message=validated.assistant_message, usage=usage)
+
+    async def get_assistant(self, channel_name: str) -> AIAssistant | None:
+        statement = select(AssistantRow).where(AssistantRow.channel_name == channel_name)
+        row: AssistantRow | None = self._session.execute(statement).scalar_one_or_none()
+
+        if row is None:
+            return None
+
+        return AIAssistant(row.assistant)
+
+    async def save_assistant(self, channel_name: str, assistant: AIAssistant) -> None:
+        row = self._session.execute(select(AssistantRow).where(AssistantRow.channel_name == channel_name)).scalars().first()
+        if row:
+            row.assistant = assistant.value
+        else:
+            self._session.add(AssistantRow(channel_name=channel_name, assistant=assistant.value, updated_at=datetime.now(UTC)))

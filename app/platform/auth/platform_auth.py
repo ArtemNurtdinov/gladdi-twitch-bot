@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 
 
 class PlatformAuth(ABC):
-    def __init__(self, access_token: str, refresh_token: str, client_id: str, client_secret: str):
-        self.access_token = access_token
-        self.refresh_token = refresh_token
+    def __init__(self, client_id: str, client_secret: str):
         self.client_id = client_id
         self.client_secret = client_secret
+        self.access_token: str | None = None
+        self.refresh_token: str | None = None
 
     def update_tokens(self, access_token: str, refresh_token: str):
         self.access_token = access_token

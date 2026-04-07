@@ -10,5 +10,4 @@ def map_bet_history(row: BetHistory) -> Bet:
         slot_result=row.slot_result,
         result_type=row.result_type,
         rarity_level=row.rarity_level,
-        created_at=row.created_at,
     )

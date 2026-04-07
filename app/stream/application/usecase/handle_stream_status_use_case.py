@@ -1,29 +1,33 @@
 from collections import Counter
-from datetime import datetime
+from datetime import UTC, datetime
 
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.logger.domain.logger import Logger
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.notification.domain.repository import NotificationRepository
 from app.platform.domain.repository import PlatformRepository
-from app.stream.application.port.generate_stream_info_port import GenerateStreamInfoPort
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
-from app.stream.domain.models import StreamInfo, StreamStatistics
-from app.user.application.ports.user_cache_port import UserCachePort
+from app.stream.domain.model.info import StreamInfo
+from app.stream.domain.model.stat import StreamStatistics
+from app.viewer.application.port.viewer_cache_port import ViewerCachePort
+from core.types import SessionFactory
 
 
 class HandleStreamStatusUseCase:
     def __init__(
         self,
-        user_cache: UserCachePort,
+        user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
         stream_status_uow: StreamStatusUnitOfWorkFactory,
         minigame_repository: MinigameRepository,
         notification_repository: NotificationRepository,
         notification_group_id: int,
-        chat_response_port: GenerateStreamInfoPort,
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         state: ChatSummaryState,
+        session_ro_factory: SessionFactory,
         logger: Logger,
     ):
         self._user_cache = user_cache
@@ -32,18 +36,20 @@ class HandleStreamStatusUseCase:
         self._minigame_repository = minigame_repository
         self._notification_repository = notification_repository
         self._notification_group_id = notification_group_id
-        self._chat_response_port = chat_response_port
+        self._generate_response_use_case_factory = generate_response_use_case_factory
         self._state = state
+        self._session_ro = session_ro_factory
         self._logger = logger.create_child(__name__)
 
     async def handle(self, channel_name: str):
-        broadcaster_id = await self._user_cache.get_user_id(channel_name)
+        broadcaster_id = await self._user_cache.get_viewer_id(channel_name)
 
         if not broadcaster_id:
             self._logger.log_error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")
             return
 
         stream_status = await self._platform_repository.get_stream_status(broadcaster_id)
+
         if stream_status is None:
             self._logger.log_error(f"Не удалось получить статус стрима для канала {channel_name}")
             return
@@ -52,7 +58,7 @@ class HandleStreamStatusUseCase:
         title = stream_status.stream_data.title if stream_status.is_online and stream_status.stream_data else None
 
         with self._stream_status_uow.create(read_only=True) as uow:
-            active_stream = uow.stream_service.get_active_stream(channel_name)
+            active_stream = uow.stream_repository.get_active_stream(channel_name)
 
         if stream_status.is_online and active_stream is None:
             self._logger.log_info(f"Стрим начался: {game_name} - {title}")
@@ -64,11 +70,11 @@ class HandleStreamStatusUseCase:
         elif stream_status.is_online and active_stream:
             if active_stream.game_name != game_name or active_stream.title != title:
                 with self._stream_status_uow.create() as uow:
-                    uow.stream_service.update_stream_metadata(active_stream.id, game_name, title)
+                    uow.stream_repository.update_stream_metadata(active_stream.id, game_name, title)
                 self._logger.log_info(f"Обновлены метаданные стрима: игра='{game_name}', название='{title}'")
 
     async def _handle_stream_start(self, channel_name: str, game_name: str | None, title: str | None):
-        started_at = datetime.utcnow()
+        started_at = datetime.now(UTC)
         try:
             with self._stream_status_uow.create() as uow:
                 uow.stream_repository.start_new_stream(channel_name, started_at, game_name, title)
@@ -80,10 +86,10 @@ class HandleStreamStatusUseCase:
             self._logger.log_exception("Ошибка при создании стрима:", e)
 
     async def _handle_stream_end(self, channel_name: str, active_stream: StreamInfo):
-        finish_time = datetime.utcnow()
+        finish_time = datetime.now(UTC)
         self._logger.log_info("Стрим завершён")
         with self._stream_status_uow.create() as uow:
-            uow.stream_service.end_stream(active_stream.id, finish_time)
+            uow.stream_repository.end_stream(active_stream.id, finish_time)
 
             active_sessions = uow.viewer_repository.get_active_sessions(active_stream.id)
 
@@ -94,7 +100,7 @@ class HandleStreamStatusUseCase:
                 uow.viewer_repository.finish_session(active_stream.id, session.channel_name, session.user_name, total_minutes, finish_time)
 
             total_viewers = uow.viewer_repository.get_unique_viewers_count(active_stream.id)
-            uow.stream_service.update_stream_total_viewers(active_stream.id, total_viewers)
+            uow.stream_repository.update_stream_total_viewers(active_stream.id, total_viewers)
             self._logger.log_info(f"Стрим завершен в БД: ID {active_stream.id}")
 
         self._minigame_repository.reset_stream_state(channel_name)
@@ -139,7 +145,8 @@ class HandleStreamStatusUseCase:
             f"Начался стрим. Категория: {game_name}, название: {title}. "
             f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
         )
-        result = await self._chat_response_port.generate(prompt, channel_name)
+        with self._session_ro() as session:
+            result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
         try:
             await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
         except Exception as e:
@@ -163,14 +170,16 @@ class HandleStreamStatusUseCase:
                 from_time=self._state.last_chat_summary_time,
                 to_time=stream_end_dt,
             )
-            if last_messages:
-                chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
-                prompt = (
-                    f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-                    f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
-                )
-                result = await self._chat_response_port.generate(prompt, channel_name)
-                self._state.current_stream_summaries.append(result)
+
+        if last_messages:
+            chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
+            prompt = (
+                f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
+                f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
+            )
+            with self._session_ro() as session:
+                result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
+            self._state.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
         hours, remainder = divmod(int(duration.total_seconds()), 3600)
@@ -208,7 +217,8 @@ class HandleStreamStatusUseCase:
             prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
 
         prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции"
-        result = await self._chat_response_port.generate(prompt, channel_name)
+        with self._session_ro() as session:
+            result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
 
         with self._stream_status_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(channel_name, prompt, result)

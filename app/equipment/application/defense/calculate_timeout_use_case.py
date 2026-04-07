@@ -1,9 +1,9 @@
-from app.equipment.domain.models import UserEquipmentItem
+from app.equipment.domain.model.user_equipment import UserEquipment
 from app.shop.domain.model.effect import TimeoutProtectionEffect, TimeoutReductionEffect
 
 
 class CalculateTimeoutUseCase:
-    def calculate_timeout_with_equipment(self, base_timeout_seconds: int, equipment: list[UserEquipmentItem]) -> tuple[int, str]:
+    def calculate_timeout_with_equipment(self, base_timeout_seconds: int, equipment: list[UserEquipment]) -> tuple[int, str]:
         if base_timeout_seconds <= 0:
             return 0, ""
 

@@ -17,7 +17,7 @@ class ConversationRepositoryImpl(ConversationRepository):
             .where(AIDbMessage.channel_name == channel_name)
             .where(AIDbMessage.role != Role.SYSTEM)
             .order_by(AIDbMessage.created_at.desc(), role_order)
-            .limit(50)
+            .limit(40)
         )
         rows = self._db.execute(stmt).scalars().all()
         return [AIMessage(role=r.role, content=r.content) for r in rows]

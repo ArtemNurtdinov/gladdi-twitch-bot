@@ -1,27 +1,34 @@
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
 from app.chat.domain.model.chat_message import ChatMessage
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.platform.command.ask.application.ask_uow import AskUnitOfWorkFactory
 from app.platform.command.ask.application.model import AskCommandDTO
+from core.types import SessionFactory
 
 
 class HandleAskUseCase:
     def __init__(
         self,
-        get_intent_from_text_use_case: GetIntentFromTextUseCase,
+        get_intent_from_text_use_case_factory: SessionScopedFactory[GetIntentFromTextUseCase],
         prompt_service: PromptService,
-        unit_of_work_factory: AskUnitOfWorkFactory,
-        chat_response_use_case: GenerateResponseUseCase,
+        ask_uow_factory: AskUnitOfWorkFactory,
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
+        session_factory_ro: SessionFactory,
     ):
-        self._get_intent_from_text_use_case = get_intent_from_text_use_case
+        self._get_intent_from_text_use_case_factory = get_intent_from_text_use_case_factory
         self._prompt_service = prompt_service
-        self._unit_of_work_factory = unit_of_work_factory
-        self._chat_response_use_case = chat_response_use_case
+        self._ask_uow_factory = ask_uow_factory
+        self._generate_response_use_case_factory = generate_response_use_case_factory
+        self._db_ro_session = session_factory_ro
 
     async def handle(self, command_ask: AskCommandDTO) -> str:
-        intent = await self._get_intent_from_text_use_case.get_intent_from_text(command_ask.message)
+        with self._db_ro_session() as session:
+            intent = await self._get_intent_from_text_use_case_factory.get(session).get_intent_from_text(
+                command_ask.channel_name, command_ask.message
+            )
 
         if intent == Intent.JACKBOX:
             prompt = self._prompt_service.get_jackbox_prompt(command_ask.display_name, command_ask.message)
@@ -34,16 +41,12 @@ class HandleAskUseCase:
         else:
             prompt = self._prompt_service.get_reply_prompt(command_ask.display_name, command_ask.message)
 
-        with self._unit_of_work_factory.create(read_only=True) as uow:
-            system_prompt = uow.system_prompt_repository.get_system_prompt(command_ask.channel_name)
-            history = uow.conversation_service.get_last_messages(
-                channel_name=command_ask.channel_name,
-                system_prompt=system_prompt.prompt,
+        with self._db_ro_session() as session:
+            assistant_message = await self._generate_response_use_case_factory.get(session).generate_response(
+                prompt=prompt, channel_name=command_ask.channel_name
             )
 
-        assistant_message = await self._chat_response_use_case.generate_response_from_history(history=history, prompt=prompt)
-
-        with self._unit_of_work_factory.create() as uow:
+        with self._ask_uow_factory.create() as uow:
             uow.conversation_service.save_conversation_to_db(
                 channel_name=command_ask.channel_name,
                 user_message=prompt,

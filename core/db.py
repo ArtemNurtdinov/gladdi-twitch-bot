@@ -18,6 +18,12 @@ def init_db(config: DatabaseConfig):
     _SessionLocal = sessionmaker(autocommit=False, autoflush=True, bind=_engine)
 
 
+def get_engine():
+    if _engine is None:
+        raise RuntimeError("Database not initialized. Call init_db first")
+    return _engine
+
+
 def get_session_local():
     if _SessionLocal is None:
         raise RuntimeError("Database not initialized. Call init_db first")

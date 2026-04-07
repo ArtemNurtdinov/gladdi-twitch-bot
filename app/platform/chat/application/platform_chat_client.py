@@ -1,45 +1,52 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.core.logger.domain.logger import Logger
-from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
-from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
-from app.platform.chat.application.model import ChatMessageDTO
+from app.platform.chat.application.model.message import ChatMessageDTO
+from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
+from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 
 
 class PlatformChatClient(ABC):
     def __init__(
         self,
-        auth: PlatformAuth,
         handle_chat_message_use_case: HandleChatMessageUseCase,
         handle_reply_use_case: HandleReplyUseCase,
         command_router: CommandRouter,
-        channel_name: str,
-        bot_name: str,
         command_prefix: str,
+        help_command_handler: CommandHandler,
         logger: Logger,
     ):
-        self.auth = auth
         self._handle_chat_message_use_case = handle_chat_message_use_case
         self._handle_reply_use_case = handle_reply_use_case
         self._command_router = command_router
+        self._command_prefix = command_prefix
+        self._help_command_handler = help_command_handler
+        self.channel_name: str | None = None
+        self.bot_name: str | None = None
+        self.logger = logger.create_child(__name__)
+
+    def init(self, channel_name: str, bot_name: str):
         self.channel_name = channel_name
         self.bot_name = bot_name
-        self.command_prefix = command_prefix
-        self._logger = logger.create_child(__name__)
+        self._command_router.apply_bot_name(bot_name)
 
     async def handle_message(self, user_name: str, message: str):
-        if await self._command_handled(user_name, message):
+        if message.startswith(self._command_prefix):
+            command_handler = self._command_router.get_command_handler(message)
+            if command_handler:
+                result = await command_handler.handle(self.channel_name, user_name, message)
+                await self.send_channel_message(result)
+            else:
+                result = await self._help_command_handler.handle(self.channel_name, user_name, message)
+                await self.send_channel_message(result)
             return
 
         if self._is_self_message(user_name):
-            return
-
-        if message.startswith(self.command_prefix):
             return
 
         chat_message = ChatMessageDTO(
@@ -48,33 +55,18 @@ class PlatformChatClient(ABC):
             user_name=user_name.lower(),
             message=message,
             bot_name=self.bot_name,
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
         )
 
-        try:
-            if self.is_reply_message(message):
-                result = await self._handle_reply_use_case.handle(chat_message)
-                await self.send_channel_message(result)
-                return
-            result = await self._handle_chat_message_use_case.handle(chat_message)
-            if result:
-                await self.send_channel_message(result)
-        except Exception as e:
-            self._logger.log_exception("message handling error:", e)
-            pass
-
-    async def _command_handled(self, user_name: str, message: str) -> bool:
-        command_handler = self._command_router.get_command_handler(message)
-        if command_handler is None:
-            return False
-        try:
-            result = await command_handler.handle(self.channel_name, user_name, message)
+        if self.is_reply_message(message):
+            result = await self._handle_reply_use_case.handle(chat_message)
             await self.send_channel_message(result)
-            return True
-        except Exception as e:
-            self._logger.log_exception("_command_handled error:", e)
-            pass
-        return False
+            return
+
+        result = await self._handle_chat_message_use_case.handle(chat_message)
+
+        if result:
+            await self.send_channel_message(result)
 
     def _is_self_message(self, user_name: str) -> bool:
         if user_name.lower() == self.bot_name.lower():

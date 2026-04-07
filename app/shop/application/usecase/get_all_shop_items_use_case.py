@@ -8,6 +8,6 @@ class GetAllShopItemsUseCase:
         self._shop_item_repository = shop_item_repository
         self._mapper = mapper
 
-    async def get_all_items(self) -> list[ShopItemDTO]:
-        items = self._shop_item_repository.get_all_items()
+    async def get_all_items(self, channel_name: str) -> list[ShopItemDTO]:
+        items = self._shop_item_repository.get_all_items(channel_name)
         return [self._mapper.to_dto(item) for item in items]

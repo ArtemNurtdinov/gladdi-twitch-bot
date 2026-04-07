@@ -1,23 +1,23 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.platform.command.equipment.application.model import EquipmentDTO
 
 
-class EquipmentCommandHandlerImpl(CommandHandler):
+class EquipmentCommandHandler(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
-        command_name: str,
         command_shop: str,
         handle_equipment_use_case: HandleEquipmentUseCase,
-        bot_name: str,
     ):
         self._handle_equipment_use_case = handle_equipment_use_case
-        self.command_name = command_name
         self.command_shop = command_shop
         self.command_prefix = command_prefix
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:
@@ -27,7 +27,7 @@ class EquipmentCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_name=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             command_shop=self.command_shop,
             message=message,
         )

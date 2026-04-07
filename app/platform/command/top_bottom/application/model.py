@@ -8,7 +8,6 @@ class TopDTO:
     user_name: str
     bot_nick: str
     occurred_at: datetime
-    limit: int
     message: str
 
 
@@ -18,5 +17,4 @@ class BottomDTO:
     user_name: str
     bot_nick: str
     occurred_at: datetime
-    limit: int
     message: str

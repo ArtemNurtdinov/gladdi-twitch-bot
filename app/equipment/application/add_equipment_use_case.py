@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.equipment.application.equipment_use_case_uow import EquipmentUseCaseUnitOfWorkFactory
 
@@ -10,7 +10,7 @@ class AddEquipmentUseCase:
         self._unit_of_work_factory = unit_of_work_factory
 
     def add(self, channel_name: str, user_name: str, shop_item_id: int) -> None:
-        expires_at = datetime.utcnow() + timedelta(days=self._DURATION_DAYS)
+        expires_at = datetime.now(UTC) + timedelta(days=self._DURATION_DAYS)
 
         with self._unit_of_work_factory.create() as uow:
             uow.equipment_repo.add_equipment(

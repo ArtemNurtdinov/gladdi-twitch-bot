@@ -9,6 +9,10 @@ class CommandRouterImpl(CommandRouter):
         self._prefix = prefix
         self._handlers: dict[str, CommandHandler] = {}
 
+    def apply_bot_name(self, bot_name: str) -> None:
+        for handler in self._handlers.values():
+            handler.apply_bot_name(bot_name)
+
     def register_command_handler(self, name: str, handler: CommandHandler) -> None:
         self._handlers[name.lower()] = handler
 

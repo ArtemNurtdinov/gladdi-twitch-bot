@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.platform.command.help.application.help_uow import HelpUnitOfWork, HelpUnitOfWorkFactory
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -24,18 +23,18 @@ class SqlAlchemyHelpUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[HelpUnitOfWork
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        chat_use_case_provider: Provider[ChatUseCase],
+        chat_use_case: ChatUseCase,
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._chat_use_case_provider = chat_use_case_provider
+        self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> HelpUnitOfWork:
         return SqlAlchemyHelpUnitOfWork(
             session=db,
-            chat_use_case=self._chat_use_case_provider.get(db),
+            chat_use_case=self._chat_use_case,
             read_only=read_only,
         )

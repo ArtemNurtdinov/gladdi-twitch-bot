@@ -6,4 +6,3 @@ from datetime import datetime
 class SummarizerJobDTO:
     channel_name: str
     occurred_at: datetime
-    interval_minutes: int

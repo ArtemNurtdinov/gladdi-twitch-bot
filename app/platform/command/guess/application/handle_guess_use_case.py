@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_repository import MinigameRepository
@@ -74,7 +74,7 @@ class HandleGuessUseCase:
                 )
             return result
 
-        if datetime.utcnow() > game.end_time:
+        if datetime.now(UTC) > game.end_time:
             game.is_active = False
             self._minigame_repository.delete_guess_game(guess_number.channel_name)
             result = f"Время игры истекло! Загаданное число было {game.target_number}"
@@ -130,7 +130,7 @@ class HandleGuessUseCase:
         if guess == game.target_number:
             game.is_active = False
             game.winner = guess_number.display_name
-            game.winning_time = datetime.utcnow()
+            game.winning_time = datetime.now(UTC)
             self._minigame_repository.delete_guess_number_game(guess_number.channel_name)
 
             multiplier = 1.0
@@ -216,7 +216,7 @@ class HandleGuessUseCase:
             return message
 
         if not guess_letter.letter_input:
-            if datetime.utcnow() > game.end_time:
+            if datetime.now(UTC) > game.end_time:
                 game.is_active = False
                 message = f"Время игры 'поле чудес' истекло! Слово было '{game.target_word}'. Никто не выиграл."
                 self._minigame_repository.delete_word_guess_game(guess_letter.channel_name)
@@ -243,7 +243,7 @@ class HandleGuessUseCase:
 
             return message
 
-        if datetime.utcnow() > game.end_time:
+        if datetime.now(UTC) > game.end_time:
             game.is_active = False
             self._minigame_repository.delete_word_guess_game(guess_letter.channel_name)
             message = f"Время игры истекло! Слово было '{game.target_word}'"
@@ -341,7 +341,7 @@ class HandleGuessUseCase:
                     )
                 game.is_active = False
                 game.winner = guess_letter.display_name
-                game.winning_time = datetime.utcnow()
+                game.winning_time = datetime.now(UTC)
 
                 self._minigame_repository.delete_word_guess_game(guess_letter.channel_name)
             else:
@@ -398,7 +398,7 @@ class HandleGuessUseCase:
             return message
 
         if not guess_word.word_input:
-            if datetime.utcnow() > game.end_time:
+            if datetime.now(UTC) > game.end_time:
                 message = f"Время игры 'поле чудес' истекло! Слово было '{game.target_word}'. Никто не выиграл."
                 game.is_active = False
                 self._minigame_repository.delete_word_guess_game(guess_word.channel_name)
@@ -424,7 +424,7 @@ class HandleGuessUseCase:
                 )
             return message
 
-        if datetime.utcnow() > game.end_time:
+        if datetime.now(UTC) > game.end_time:
             game.is_active = False
             self._minigame_repository.delete_word_guess_game(guess_word.channel_name)
             message = f"Время игры истекло! Слово было '{game.target_word}'"
@@ -446,7 +446,7 @@ class HandleGuessUseCase:
         if guess_word.word_input.strip().lower() == game.target_word:
             game.is_active = False
             game.winner = guess_word.display_name
-            game.winning_time = datetime.utcnow()
+            game.winning_time = datetime.now(UTC)
 
             self._minigame_repository.delete_word_guess_game(guess_word.channel_name)
 

@@ -7,14 +7,13 @@ from app.betting.domain.models import EmojiConfig
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
-from app.equipment.domain.models import UserEquipmentItem
+from app.equipment.domain.model.user_equipment import UserEquipment
 from app.platform.command.roll.application.model import RollDTO, RollTimeoutAction, RollUseCaseResult
 from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
 from app.shop.domain.model.effect import MaxBetIncreaseEffect
-from core.provider import SingletonProvider
 
 
-def _get_max_bet_amount(equipment: list[UserEquipmentItem]) -> int:
+def _get_max_bet_amount(equipment: list[UserEquipment]) -> int:
     result = BettingService.MAX_BET_AMOUNT
     for item in equipment:
         for effect in item.shop_item.effects:
@@ -29,11 +28,11 @@ class HandleRollUseCase:
     def __init__(
         self,
         unit_of_work_factory: RollUnitOfWorkFactory,
-        roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase],
+        roll_cooldown_use_case: RollCooldownUseCase,
         calculate_timeout_use_case: CalculateTimeoutUseCase,
     ):
         self._unit_of_work_factory = unit_of_work_factory
-        self._roll_cooldown_use_case_provider = roll_cooldown_use_case_provider
+        self._roll_cooldown_use_case = roll_cooldown_use_case
         self._calculate_timeout_use_case = calculate_timeout_use_case
 
     async def handle(self, command_roll: RollDTO) -> RollUseCaseResult:
@@ -45,7 +44,7 @@ class HandleRollUseCase:
             equipment = uow.get_user_equipment_use_case.get_user_equipment(
                 channel_name=command_roll.channel_name, user_name=command_roll.user_name
             )
-            cooldown_seconds = self._roll_cooldown_use_case_provider.get().calc_seconds(
+            cooldown_seconds = self._roll_cooldown_use_case.calc_seconds(
                 default_cooldown_seconds=HandleRollUseCase.DEFAULT_COOLDOWN_SECONDS, equipment=equipment
             )
 
@@ -260,7 +259,7 @@ class HandleRollUseCase:
                     )
                 messages.append(no_timeout_message)
             else:
-                reason = f"Промах в слот-машине! Время на размышления: {final_timeout} сек ⏰"
+                reason = f"Промах! Поразмышляй {final_timeout} сек ⏰"
 
                 if protection_message:
                     reason += f" {protection_message}"

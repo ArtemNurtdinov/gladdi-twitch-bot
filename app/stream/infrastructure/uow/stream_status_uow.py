@@ -6,12 +6,11 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWork, StreamStatusUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
-from app.stream.domain.stream_service import StreamService
-from app.viewer.domain.repo import ViewerRepository
-from core.provider import Provider
+from app.viewer.session.domain.repository import ViewerRepository
 from core.types import SessionFactory
 
 
@@ -19,7 +18,6 @@ class SqlAlchemyStreamStatusUnitOfWork(SqlAlchemyUnitOfWorkBase, StreamStatusUni
     def __init__(
         self,
         session: Session,
-        stream_service: StreamService,
         stream_repository: StreamRepository,
         viewer_repository: ViewerRepository,
         battle_use_case: BattleUseCase,
@@ -29,17 +27,12 @@ class SqlAlchemyStreamStatusUnitOfWork(SqlAlchemyUnitOfWorkBase, StreamStatusUni
         read_only: bool,
     ):
         super().__init__(session=session, read_only=read_only)
-        self._stream_service = stream_service
         self._stream_repository = stream_repository
         self._viewer_repository = viewer_repository
         self._battle_use_case = battle_use_case
         self._economy_policy = economy_policy
         self._chat_use_case = chat_use_case
         self._conversation_service = conversation_service
-
-    @property
-    def stream_service(self) -> StreamService:
-        return self._stream_service
 
     @property
     def stream_repository(self) -> StreamRepository:
@@ -71,36 +64,33 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        stream_service_provider: Provider[StreamService],
-        stream_repository_provider: Provider[StreamRepository],
-        viewer_repository_provider: Provider[ViewerRepository],
-        battle_use_case_provider: Provider[BattleUseCase],
-        economy_policy_provider: Provider[EconomyPolicy],
-        chat_use_case_provider: Provider[ChatUseCase],
-        conversation_service_provider: Provider[ConversationService],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
+        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
+        battle_use_case: BattleUseCase,
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        chat_use_case: ChatUseCase,
+        conversation_service_factory: SessionScopedFactory[ConversationService],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._stream_service_provider = stream_service_provider
-        self._stream_repository_provider = stream_repository_provider
-        self._viewer_repository_provider = viewer_repository_provider
-        self._battle_use_case_provider = battle_use_case_provider
-        self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
-        self._conversation_service_provider = conversation_service_provider
+        self._stream_repository_factory = stream_repository_factory
+        self._viewer_repository_factory = viewer_repository_factory
+        self._battle_use_case = battle_use_case
+        self._economy_policy_factory = economy_policy_factory
+        self._chat_use_case = chat_use_case
+        self._conversation_service_factory = conversation_service_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> StreamStatusUnitOfWork:
         return SqlAlchemyStreamStatusUnitOfWork(
             session=db,
-            stream_service=self._stream_service_provider.get(db),
-            stream_repository=self._stream_repository_provider.get(db),
-            viewer_repository=self._viewer_repository_provider.get(db),
-            battle_use_case=self._battle_use_case_provider.get(db),
-            economy_policy=self._economy_policy_provider.get(db),
-            chat_use_case=self._chat_use_case_provider.get(db),
-            conversation_service=self._conversation_service_provider.get(db),
+            stream_repository=self._stream_repository_factory.get(db),
+            viewer_repository=self._viewer_repository_factory.get(db),
+            battle_use_case=self._battle_use_case,
+            economy_policy=self._economy_policy_factory.get(db),
+            chat_use_case=self._chat_use_case,
+            conversation_service=self._conversation_service_factory.get(db),
             read_only=read_only,
         )

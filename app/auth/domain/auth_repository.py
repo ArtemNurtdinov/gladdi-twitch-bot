@@ -1,33 +1,24 @@
+from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Protocol
 from uuid import UUID
 
 from app.auth.domain.model.access_token import AccessToken
 from app.auth.domain.model.user import User
-from app.auth.domain.models import UserCreateData, UserUpdateData
+from app.auth.domain.models import UserCreateData
 
 
-class AuthRepository(Protocol):
+class AuthRepository(ABC):
+    @abstractmethod
     def get_user_by_email(self, email: str) -> User | None: ...
 
+    @abstractmethod
     def get_user_by_id(self, user_id: UUID) -> User | None: ...
 
-    def list_users(self, skip: int, limit: int) -> list[User]: ...
-
+    @abstractmethod
     def create_user(self, data: UserCreateData, hashed_password: str) -> User: ...
 
-    def update_user(self, user_id: UUID, updates: UserUpdateData) -> User | None: ...
-
-    def delete_user(self, user_id: UUID) -> bool: ...
-
+    @abstractmethod
     def create_token(self, user_id: UUID, token: str, expires_at: datetime) -> AccessToken: ...
 
-    def list_tokens(self, skip: int, limit: int) -> list[AccessToken]: ...
-
-    def get_token_by_id(self, token_id: UUID) -> AccessToken | None: ...
-
+    @abstractmethod
     def find_active_token(self, token: str, current_time: datetime) -> AccessToken | None: ...
-
-    def deactivate_token(self, token_id: UUID) -> bool: ...
-
-    def delete_token(self, token_id: UUID) -> bool: ...

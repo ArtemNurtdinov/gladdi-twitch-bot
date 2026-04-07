@@ -1,23 +1,27 @@
 import random
 
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.platform.command.battle.application.battle_uow import BattleUnitOfWorkFactory
 from app.platform.command.battle.application.model import BattleDTO, BattleTimeoutAction, BattleUseCaseResult
+from core.types import SessionFactory
 
 
 class HandleBattleUseCase:
     def __init__(
         self,
         battle_uow: BattleUnitOfWorkFactory,
-        chat_response_use_case: GenerateResponseUseCase,
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         calculate_timeout_use_case: CalculateTimeoutUseCase,
+        db_ro_session: SessionFactory,
     ):
         self._battle_uow = battle_uow
-        self._chat_response_use_case = chat_response_use_case
+        self._generate_response_use_case_factory = generate_response_use_case_factory
         self._calculate_timeout_use_case = calculate_timeout_use_case
+        self._db_ro_session = db_ro_session
 
     async def handle(self, command_battle: BattleDTO) -> BattleUseCaseResult:
         challenger_display = command_battle.display_name
@@ -161,13 +165,14 @@ class HandleBattleUseCase:
 
         prompt = (
             f"На арене сражаются два героя: {opponent_display} и {challenger_display}."
-            "\nСимулируй юмористическую и эпичную битву между ними, с абсурдом и неожиданными поворотами."
-            "\nБитва должна быть короткой, но эпичной и красочной."
+            "\nСимулируй абсурдную и эпическую битву между ними в одно предложение."
             f"\nПобедить в битве должен {winner}, проигравший: {loser}"
-            f"\n\nПроигравший получит таймаут! Победитель получит {EconomyPolicy.BATTLE_WINNER_PRIZE} монет!"
         )
 
-        result_story = await self._chat_response_use_case.generate_response(prompt, command_battle.channel_name)
+        with self._db_ro_session() as session:
+            result_story = await self._generate_response_use_case_factory.get(session).generate_response(
+                prompt, command_battle.channel_name
+            )
 
         winner_amount = EconomyPolicy.BATTLE_WINNER_PRIZE
         with self._battle_uow.create() as uow:

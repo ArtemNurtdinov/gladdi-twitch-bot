@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from jose import jwt
 
@@ -20,7 +20,7 @@ class CreateAccessTokenUseCase:
         self._token_mapper = token_mapper
 
     def create_access_token(self, user: User) -> TokenDTO:
-        issued_at_utc = datetime.utcnow()
+        issued_at_utc = datetime.now(UTC)
         expires_at_utc = issued_at_utc + timedelta(minutes=self._access_token_expires_minutes)
 
         issued_at_timestamp = calendar.timegm(issued_at_utc.timetuple())

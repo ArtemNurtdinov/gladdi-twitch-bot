@@ -1,16 +1,19 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.platform.command.top_bottom.application.model import BottomDTO, TopDTO
 from app.platform.command.top_bottom.application.top_bottom_uow import TopBottomUnitOfWorkFactory
 
 
 class HandleTopBottomUseCase:
+    _TOP_LIMIT = 5
+    _BOTTOM_LIMIT = 5
+
     def __init__(self, unit_of_work_factory: TopBottomUnitOfWorkFactory):
         self._unit_of_work_factory = unit_of_work_factory
 
     async def handle_top(self, command_top: TopDTO) -> str:
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            top_users = uow.economy_policy.get_top_users(command_top.channel_name, limit=command_top.limit)
+            top_users = uow.economy_policy.get_top_users(command_top.channel_name, limit=self._TOP_LIMIT)
 
         if not top_users:
             result = "Нет данных для отображения топа."
@@ -38,9 +41,9 @@ class HandleTopBottomUseCase:
 
     async def handle_bottom(self, command_bottom: BottomDTO) -> str:
         with self._unit_of_work_factory.create(read_only=True) as uow:
-            active_since = datetime.utcnow() - timedelta(days=30)
+            active_since = datetime.now(UTC) - timedelta(days=30)
             bottom_users = uow.economy_policy.get_bottom_users(
-                channel_name=command_bottom.channel_name, limit=command_bottom.limit, active_since=active_since
+                channel_name=command_bottom.channel_name, limit=self._BOTTOM_LIMIT, active_since=active_since
             )
 
         if not bottom_users:

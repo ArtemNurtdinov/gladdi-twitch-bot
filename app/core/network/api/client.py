@@ -9,14 +9,14 @@ from app.core.network.api.model.response import ApiResponse
 class ApiClient(ABC):
     _TIMEOUT_SECONDS_DEFAULT = 10.0
     _MAX_CONNECTIONS_DEFAULT = 20
-    _MAX_KEEP_ALIVIE_CONNECTIONS_DEFAULT = 10
+    _MAX_KEEP_ALIVE_CONNECTIONS_DEFAULT = 10
 
     def __init__(self, base_url: str):
         self._client = httpx.AsyncClient(
             base_url=base_url,
             timeout=httpx.Timeout(self._TIMEOUT_SECONDS_DEFAULT),
             limits=httpx.Limits(
-                max_connections=self._MAX_CONNECTIONS_DEFAULT, max_keepalive_connections=self._MAX_KEEP_ALIVIE_CONNECTIONS_DEFAULT
+                max_connections=self._MAX_CONNECTIONS_DEFAULT, max_keepalive_connections=self._MAX_KEEP_ALIVE_CONNECTIONS_DEFAULT
             ),
         )
 
@@ -37,5 +37,5 @@ class ApiClient(ABC):
         response = await self._client.post(url, params=params, headers=merged_headers, json=data)
         return ApiResponse(status_code=response.status_code, text=response.text, json_data=response.json())
 
-    async def aclose(self) -> None:
+    async def close(self) -> None:
         await self._client.aclose()

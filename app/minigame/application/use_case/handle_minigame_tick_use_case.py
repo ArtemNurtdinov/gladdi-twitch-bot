@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
@@ -34,18 +34,18 @@ class HandleMinigameTickUseCase:
         self._finish_rps_game_use_case = finish_rps_game_use_case
         self._finish_expired_games_use_case = finish_expired_games_use_case
 
-    async def handle(self, channel_name: str):
-        current_time = datetime.utcnow()
+    async def handle(self, channel_name: str, bot_name: str):
+        current_time = datetime.now(UTC)
         active_rps_game = self._minigame_repository.get_active_rps_game(channel_name)
 
         if active_rps_game and active_rps_game.is_active and current_time > active_rps_game.end_time:
-            await self._finish_rps_game_use_case.finish(channel_name)
+            await self._finish_rps_game_use_case.finish(channel_name, bot_name)
             return
 
-        await self._finish_expired_games_use_case.finish(channel_name)
+        await self._finish_expired_games_use_case.finish(channel_name, bot_name)
 
         with self._minigame_ouw.create(read_only=True) as uow:
-            active_stream = uow.stream_service.get_active_stream(channel_name)
+            active_stream = uow.stream_repository.get_active_stream(channel_name)
 
         if not active_stream:
             return
@@ -57,7 +57,6 @@ class HandleMinigameTickUseCase:
         if guess_game or word_game or rps_game:
             return
 
-        current_time = datetime.utcnow()
         last_game_time = self._minigame_repository.get_last_game_time(channel_name)
 
         if last_game_time:
@@ -80,8 +79,8 @@ class HandleMinigameTickUseCase:
         choice = random.choice(["number", "word", "rps"])
 
         if choice == "word":
-            await self._start_word_game_use_case.start(channel_name)
+            await self._start_word_game_use_case.start(channel_name, bot_name)
         elif choice == "number":
-            await self._start_number_guess_game_use_case.start(channel_name)
+            await self._start_number_guess_game_use_case.start(channel_name, bot_name)
         else:
-            await self._start_rps_game_use_case.start(channel_name)
+            await self._start_rps_game_use_case.start(channel_name, bot_name)

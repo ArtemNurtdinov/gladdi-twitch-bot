@@ -29,8 +29,6 @@ class ValidateConfigUseCase:
             missing.append("TWITCH_CLIENT_SECRET")
         if not config.twitch.redirect_url:
             missing.append("TWITCH_REDIRECT_URL")
-        if not config.twitch.channel_name:
-            missing.append("TWITCH_CHANNEL")
 
         if not config.llmbox.host:
             missing.append("LLMBOX_DOMAIN")

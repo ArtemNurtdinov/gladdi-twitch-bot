@@ -1,12 +1,11 @@
 import asyncio
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.core.logger.domain.logger import Logger
 from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
-from core.background.task_runner import BackgroundTaskRunner
-from core.background.tasks import BackgroundJob
+from app.task.domain.job import BackgroundJob
 
 
 class PostJokeJob(BackgroundJob):
@@ -15,20 +14,19 @@ class PostJokeJob(BackgroundJob):
 
     def __init__(
         self,
-        channel_name: str,
         handle_post_joke_use_case: HandlePostJokeUseCase,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_name: str,
         logger: Logger,
     ):
-        self._channel_name = channel_name
+        self._channel_name: str | None = None
         self._handle_post_joke_use_case = handle_post_joke_use_case
         self._send_channel_message = send_channel_message
-        self._bot_name = bot_name
+        self._bot_name: str | None = None
         self._logger = logger.create_child(__name__)
 
-    def register(self, runner: BackgroundTaskRunner):
-        runner.register(self.name, self.run)
+    def apply_channel(self, channel_name: str, bot_name: str) -> None:
+        self._channel_name = channel_name
+        self._bot_name = bot_name
 
     async def run(self):
         while True:
@@ -38,7 +36,7 @@ class PostJokeJob(BackgroundJob):
                 post_joke = PostJokeDTO(
                     channel_name=self._channel_name,
                     bot_nick=self._bot_name.lower(),
-                    occurred_at=datetime.utcnow(),
+                    occurred_at=datetime.now(UTC),
                 )
 
                 result = await self._handle_post_joke_use_case.handle(post_joke=post_joke)

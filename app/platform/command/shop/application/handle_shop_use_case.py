@@ -11,7 +11,7 @@ class HandleShopUseCase:
         result_parts = ["МАГАЗИН АРТЕФАКТОВ:"]
 
         with self._shop_uow.create(read_only=True) as uow:
-            items = uow.shop_item_repository.get_active_items()
+            items = uow.shop_item_repository.get_active_items(command_shop.channel_name)
 
             if not items:
                 result_parts.append("В магазине пока нет товаров 😢")

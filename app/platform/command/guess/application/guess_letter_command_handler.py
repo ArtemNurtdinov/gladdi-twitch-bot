@@ -1,21 +1,18 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.platform.command.guess.application.model import GuessLetterDTO
 
 
-class GuessLetterCommandHandlerImpl(CommandHandler):
-    def __init__(
-        self,
-        command_prefix: str,
-        command_name: str,
-        handle_guess_use_case: HandleGuessUseCase,
-        bot_name: str,
-    ):
+class GuessLetterCommandHandler(CommandHandler):
+    def __init__(self, command_prefix: str, command_name: str, handle_guess_use_case: HandleGuessUseCase):
         self._command_prefix = command_prefix
         self._command_name = command_name
         self._handle_guess_use_case = handle_guess_use_case
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:
@@ -27,7 +24,7 @@ class GuessLetterCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_nick=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             letter_input=letter,
             message=message,
         )

@@ -8,7 +8,7 @@ class HandleBonusUseCase:
 
     async def handle(self, bonus: BonusDTO) -> str:
         with self._bonus_uow.create(read_only=True) as uow:
-            active_stream = uow.stream_service.get_active_stream(bonus.channel_name)
+            active_stream = uow.stream_repository.get_active_stream(bonus.channel_name)
 
         if not active_stream:
             result = f"🚫 @{bonus.display_name}, бонус доступен только во время стрима!"

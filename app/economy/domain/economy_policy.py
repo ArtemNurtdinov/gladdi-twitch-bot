@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.economy.domain.models import (
     BalanceBrief,
@@ -9,7 +9,7 @@ from app.economy.domain.models import (
     UserBalanceInfo,
 )
 from app.economy.domain.repo import EconomyRepository
-from app.equipment.domain.models import UserEquipmentItem
+from app.equipment.domain.model.user_equipment import UserEquipment
 from app.shop.domain.model.effect import DailyBonusMultiplierEffect
 
 
@@ -31,7 +31,7 @@ class EconomyPolicy:
 
     def _should_grant_activity_reward(self, user_balance: UserBalanceInfo) -> bool:
         if user_balance.last_activity_reward is not None:
-            time_since_last = datetime.utcnow() - user_balance.last_activity_reward
+            time_since_last = datetime.now(UTC) - user_balance.last_activity_reward
             if time_since_last < timedelta(minutes=self.ACTIVITY_COOLDOWN_MINUTES):
                 return False
 
@@ -41,18 +41,16 @@ class EconomyPolicy:
         user_balance = self.get_user_balance(channel_name, user_name)
 
         user_balance.message_count += 1
-        user_balance.updated_at = datetime.utcnow()
 
         if not self._should_grant_activity_reward(user_balance):
             self._repo.save_balance(user_balance)
             return None
 
-        user_balance.last_activity_reward = datetime.utcnow()
+        user_balance.last_activity_reward = datetime.now(UTC)
 
         balance_before = user_balance.balance
         user_balance.balance += self.ACTIVITY_REWARD
         user_balance.total_earned += self.ACTIVITY_REWARD
-        user_balance.updated_at = datetime.utcnow()
 
         self._repo.save_balance(user_balance)
         self._repo.add_transaction(
@@ -64,7 +62,7 @@ class EconomyPolicy:
                 balance_before=balance_before,
                 balance_after=user_balance.balance,
                 description="Награда за активность в чате",
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             ),
         )
 
@@ -83,7 +81,7 @@ class EconomyPolicy:
                     balance_before=0,
                     balance_after=self.STARTING_BALANCE,
                     description="Создание нового аккаунта",
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(UTC),
                 ),
             )
 
@@ -99,7 +97,6 @@ class EconomyPolicy:
         balance_before = user_balance.balance or 0
         user_balance.balance = (user_balance.balance or 0) + amount
         user_balance.total_earned = (user_balance.total_earned or 0) + max(0, amount)
-        user_balance.updated_at = datetime.utcnow()
 
         saved = self._repo.save_balance(user_balance)
         self._repo.add_transaction(
@@ -111,7 +108,7 @@ class EconomyPolicy:
                 balance_before=balance_before,
                 balance_after=saved.balance,
                 description=description,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             ),
         )
         return saved
@@ -130,7 +127,6 @@ class EconomyPolicy:
         balance_before = current_balance
         user_balance.balance = current_balance - amount
         user_balance.total_spent = (user_balance.total_spent or 0) + amount
-        user_balance.updated_at = datetime.utcnow()
 
         saved = self._repo.save_balance(user_balance)
         self._repo.add_transaction(
@@ -142,7 +138,7 @@ class EconomyPolicy:
                 balance_before=balance_before,
                 balance_after=saved.balance,
                 description=description,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             ),
         )
 
@@ -174,11 +170,9 @@ class EconomyPolicy:
 
         sender_balance.balance -= amount
         sender_balance.total_spent += amount
-        sender_balance.updated_at = datetime.utcnow()
 
         receiver_balance.balance += amount
         receiver_balance.total_earned += amount
-        receiver_balance.updated_at = datetime.utcnow()
 
         sender_saved = self._repo.save_balance(sender_balance)
         receiver_saved = self._repo.save_balance(receiver_balance)
@@ -192,7 +186,7 @@ class EconomyPolicy:
                 balance_before=sender_balance_before,
                 balance_after=sender_saved.balance,
                 description=f"Перевод {amount} монет пользователю {receiver_name}",
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             ),
         )
 
@@ -205,13 +199,13 @@ class EconomyPolicy:
                 balance_before=receiver_balance_before,
                 balance_after=receiver_saved.balance,
                 description=f"Получен перевод {amount} монет от {sender_name}",
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             ),
         )
         return TransferResult.success_result()
 
     def claim_daily_bonus(
-        self, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[UserEquipmentItem] = None
+        self, active_stream_id: int, channel_name: str, user_name: str, user_equipment: list[UserEquipment] = None
     ) -> DailyBonusResult:
         user_balance = self.get_user_balance(channel_name, user_name)
 
@@ -242,9 +236,9 @@ class EconomyPolicy:
         balance_before = user_balance.balance
         user_balance.balance += bonus_amount
         user_balance.total_earned += bonus_amount
-        user_balance.last_daily_claim = datetime.utcnow()
+        user_balance.last_daily_claim = datetime.now(UTC)
         user_balance.last_bonus_stream_id = active_stream_id
-        user_balance.updated_at = datetime.utcnow()
+        user_balance.updated_at = datetime.now(UTC)
 
         transaction_description = "Бонус" + (f" (усилен {special_items})" if special_items else "")
 
@@ -259,7 +253,7 @@ class EconomyPolicy:
                 balance_before=balance_before,
                 balance_after=saved.balance,
                 description=transaction_description,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             ),
         )
 

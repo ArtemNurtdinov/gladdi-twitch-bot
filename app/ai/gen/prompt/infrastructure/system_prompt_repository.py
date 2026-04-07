@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -27,8 +27,7 @@ class SystemPromptRepositoryImpl(SystemPromptRepository):
         )
         if row:
             row.content = system_prompt.prompt
-            row.updated_at = datetime.utcnow()
         else:
             self._session.add(
-                SystemPromptRow(channel_name=system_prompt.channel_name, content=system_prompt.prompt, updated_at=datetime.utcnow())
+                SystemPromptRow(channel_name=system_prompt.channel_name, content=system_prompt.prompt, updated_at=datetime.now(UTC))
             )

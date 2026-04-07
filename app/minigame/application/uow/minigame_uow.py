@@ -9,7 +9,7 @@ from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
-from app.stream.domain.stream_service import StreamService
+from app.stream.domain.repo import StreamRepository
 
 
 class MinigameUnitOfWork(UnitOfWork, Protocol):
@@ -20,7 +20,7 @@ class MinigameUnitOfWork(UnitOfWork, Protocol):
     def chat_use_case(self) -> ChatUseCase: ...
 
     @property
-    def stream_service(self) -> StreamService: ...
+    def stream_repository(self) -> StreamRepository: ...
 
     @property
     def get_used_words_use_case(self) -> GetUsedWordsUseCase: ...

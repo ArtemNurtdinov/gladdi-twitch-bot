@@ -4,7 +4,7 @@ from app.follow.application.models.follower import ChannelFollowerDTO
 from app.platform.command.followage.application.model import FollowageInfo
 from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
-from app.user.application.model.model import UserInfoDTO
+from app.viewer.application.model.model import ViewerInfoDTO
 
 
 class PlatformRepository(Protocol):
@@ -12,9 +12,9 @@ class PlatformRepository(Protocol):
 
     async def get_stream_chatters(self, broadcaster_id: str, moderator_id: str) -> list[str]: ...
 
-    async def get_user_by_login(self, login: str) -> UserInfoDTO | None: ...
+    async def get_user_by_login(self, login: str) -> ViewerInfoDTO | None: ...
 
-    async def get_authenticated_user(self) -> UserInfoDTO | None: ...
+    async def get_authenticated_user(self) -> ViewerInfoDTO | None: ...
 
     async def get_stream_info(self, channel_name: str) -> StreamInfoDTO | None: ...
 

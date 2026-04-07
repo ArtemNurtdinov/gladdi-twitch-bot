@@ -6,20 +6,20 @@ from app.core.network.api.client import ApiClient
 from app.follow.application.models.follower import ChannelFollowerDTO
 from app.platform.command.followage.application.model import FollowageInfo
 from app.platform.domain.repository import PlatformRepository
-from app.platform.infrastructure.common import handle_api_response
-from app.platform.infrastructure.model.chatter import ChattersResponse
-from app.platform.infrastructure.model.follower import FollowerData, FollowersResponse
-from app.platform.infrastructure.model.stream import StreamsResponse
-from app.platform.infrastructure.model.user import UsersResponse
+from app.platform.infrastructure.api.common import handle_api_response
+from app.platform.infrastructure.api.model.chatter import ChattersResponse
+from app.platform.infrastructure.api.model.follower import FollowerData, FollowersResponse
+from app.platform.infrastructure.api.model.stream import StreamsResponse
+from app.platform.infrastructure.api.model.user import UsersResponse
 from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
-from app.user.application.model.model import UserInfoDTO
+from app.viewer.application.model.model import ViewerInfoDTO
 
 
 class PlatformRepositoryImpl(PlatformRepository):
     def __init__(self, client: ApiClient, logger: Logger):
         self._api_client = client
-        self._logger = logger
+        self._logger = logger.create_child(__name__)
 
     async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool:
         response = await self._api_client.post(
@@ -55,7 +55,7 @@ class PlatformRepositoryImpl(PlatformRepository):
             self._logger.log_error(f"Ошибка при получении списка зрителей: {e}")
             return []
 
-    async def get_user_by_login(self, login: str) -> UserInfoDTO | None:
+    async def get_user_by_login(self, login: str) -> ViewerInfoDTO | None:
         self._logger.log_debug(f"Получение информации о пользователе для логина: {login}")
         try:
             response = await self._api_client.get(url="/users", params={"login": login})
@@ -81,7 +81,7 @@ class PlatformRepositoryImpl(PlatformRepository):
 
             user_data = parsed.data[0]
             self._logger.log_debug(f"Информация о пользователе {login} получена")
-            return UserInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
+            return ViewerInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
         except httpx.TimeoutException:
             self._logger.log_error(f"Таймаут при получении пользователя {login}")
             return None
@@ -92,7 +92,7 @@ class PlatformRepositoryImpl(PlatformRepository):
             self._logger.log_error(f"Неожиданная ошибка при получении пользователя {login}: {e}")
             return None
 
-    async def get_authenticated_user(self) -> UserInfoDTO | None:
+    async def get_authenticated_user(self) -> ViewerInfoDTO | None:
         self._logger.log_debug("Получение профиля по токену")
         try:
             response = await self._api_client.get(url="/users", params=None)
@@ -114,7 +114,7 @@ class PlatformRepositoryImpl(PlatformRepository):
                 return None
 
             user_data = parsed.data[0]
-            return UserInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
+            return ViewerInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
         except httpx.TimeoutException:
             self._logger.log_error("Таймаут при получении профиля по токену")
             return None
@@ -195,7 +195,7 @@ class PlatformRepositoryImpl(PlatformRepository):
         followers: list[FollowerData] = parsed.data
         if followers:
             follow_data = followers[0]
-            follow_dt = follow_data.followed_at.replace(tzinfo=None)
+            follow_dt = follow_data.followed_at
             return FollowageInfo(
                 user_id=follow_data.user_id,
                 user_name=follow_data.user_name,
@@ -238,7 +238,7 @@ class PlatformRepositoryImpl(PlatformRepository):
                         user_id=item.user_id,
                         user_name=item.user_login,
                         display_name=item.user_name,
-                        followed_at=item.followed_at.replace(tzinfo=None),
+                        followed_at=item.followed_at,
                     )
                     for item in followers_page
                 ]

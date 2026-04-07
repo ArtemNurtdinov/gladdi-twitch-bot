@@ -3,9 +3,9 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.minigame.application.uow.word_history_uow import WordHistoryUnitOfWork, WordHistoryUnitOfWorkFactory
 from app.minigame.domain.word_history_repository import WordHistoryRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -24,18 +24,18 @@ class SqlAlchemyWordHistoryUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[WordHis
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        word_history_repo_provider: Provider[WordHistoryRepository],
+        word_history_repo_factory: SessionScopedFactory[WordHistoryRepository],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._word_history_repo_provider = word_history_repo_provider
+        self._word_history_repo_factory = word_history_repo_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> WordHistoryUnitOfWork:
         return SqlAlchemyWordHistoryUnitOfWork(
             session=db,
-            word_history_repo=self._word_history_repo_provider.get(db),
+            word_history_repo=self._word_history_repo_factory.get(db),
             read_only=read_only,
         )

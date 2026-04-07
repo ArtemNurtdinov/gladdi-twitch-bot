@@ -31,8 +31,6 @@ class UserBalanceInfo:
     last_bonus_stream_id: int | None
     message_count: int
     last_activity_reward: datetime | None
-    created_at: datetime
-    updated_at: datetime
 
 
 @dataclass
@@ -73,5 +71,3 @@ class TransferResult:
     @classmethod
     def failure_result(cls, message: str) -> "TransferResult":
         return cls(success=False, message=message)
-
-

@@ -1,21 +1,22 @@
 import json
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
+from app.ai.gen.llm.domain.model.assistant import AIAssistant
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.logger.domain.logger import Logger
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.domain.model.word_guess import WordGuessGame
-from core.provider import Provider
 from core.types import SessionFactory
 
 
 class StartWordGameUseCase:
     WORD_GAME_DURATION_MINUTES = 5
-    WORD_GAME_MAX_PRIZE = 4000
+    WORD_GAME_MAX_PRIZE = 3000
     _USED_WORDS_LIMIT = 10
     _CHAT_MESSAGES_LIMIT = 50
 
@@ -25,27 +26,25 @@ class StartWordGameUseCase:
         prefix: str,
         minigame_uow: MinigameUnitOfWorkFactory,
         db_ro_session: SessionFactory,
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
-        llm_repository: LLMRepository,
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
+        llm_repository_factory: SessionScopedFactory[LLMRepository],
         command_guess_word: str,
         command_guess_letter: str,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_name: str,
         logger: Logger,
     ):
         self._minigame_repository = minigame_repository
         self._minigame_uow = minigame_uow
         self._db_ro_session = db_ro_session
-        self._system_prompt_repository_provider = system_prompt_repository_provider
-        self._llm_repository = llm_repository
+        self._system_prompt_repository_factory = system_prompt_repository_factory
+        self._llm_repository_factory = llm_repository_factory
         self._prefix = prefix
         self._command_guess_word = command_guess_word
         self._command_guess_letter = command_guess_letter
         self._send_channel_message = send_channel_message
-        self._bot_name = bot_name
         self._logger = logger.create_child(__name__)
 
-    async def start(self, channel_name: str):
+    async def start(self, channel_name: str, bot_name: str):
         with self._minigame_uow.create(read_only=True) as uow:
             used_words = uow.get_used_words_use_case.get_used_words(channel_name, limit=self._USED_WORDS_LIMIT)
             last_messages = uow.chat_use_case.get_last_chat_messages(channel_name, limit=self._CHAT_MESSAGES_LIMIT)
@@ -63,10 +62,13 @@ class StartWordGameUseCase:
         )
 
         with self._db_ro_session() as session:
-            system_prompt = self._system_prompt_repository_provider.get(session).get_system_prompt(channel_name)
-        ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt), AIMessage(role=Role.USER, content=prompt)]
+            system_prompt = self._system_prompt_repository_factory.get(session).get_system_prompt(channel_name)
+            ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt), AIMessage(role=Role.USER, content=prompt)]
+            assistant = await self._llm_repository_factory.get(session).get_assistant(channel_name)
+            if assistant is None:
+                assistant = AIAssistant.GPT_OSS_120B
+            assistant_response = await self._llm_repository_factory.get(session).generate_ai_response(assistant, ai_messages)
 
-        assistant_response = await self._llm_repository.generate_ai_response(ai_messages)
         assistant_message = assistant_response.message
 
         with self._minigame_uow.create() as uow:
@@ -77,7 +79,7 @@ class StartWordGameUseCase:
         hint = str(data.get("hint", "")).strip()
         final_word = word.strip().lower()
 
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         end_time = start_time + timedelta(minutes=self.WORD_GAME_DURATION_MINUTES)
         game = WordGuessGame(
             channel_name,
@@ -110,5 +112,5 @@ class StartWordGameUseCase:
 
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
-                channel_name=channel_name, user_name=self._bot_name, content=game_message, current_time=datetime.utcnow()
+                channel_name=channel_name, user_name=bot_name, content=game_message, current_time=datetime.now(UTC)
             )
