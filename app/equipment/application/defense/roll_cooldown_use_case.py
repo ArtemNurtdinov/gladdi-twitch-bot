@@ -1,9 +1,9 @@
-from app.equipment.domain.models import UserEquipmentItem
+from app.equipment.domain.model.user_equipment import UserEquipment
 from app.shop.domain.model.effect import RollCooldownOverrideEffect
 
 
 class RollCooldownUseCase:
-    def calc_seconds(self, default_cooldown_seconds: int, equipment: list[UserEquipmentItem]) -> int:
+    def calc_seconds(self, default_cooldown_seconds: int, equipment: list[UserEquipment]) -> int:
         min_cooldown = default_cooldown_seconds
         for item in equipment:
             for effect in item.shop_item.effects:

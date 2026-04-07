@@ -4,19 +4,19 @@ from typing import Protocol
 
 from app.common.application.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.stream.domain.stream_service import StreamService
+from app.stream.domain.repo import StreamRepository
 from app.viewer.domain.repo import ViewerRepository
 
 
 class ViewerTimeUnitOfWork(UnitOfWork, Protocol):
     @property
-    def stream_service(self) -> StreamService: ...
-
-    @property
     def viewer_repository(self) -> ViewerRepository: ...
 
     @property
     def economy_policy(self) -> EconomyPolicy: ...
+
+    @property
+    def stream_repository(self) -> StreamRepository: ...
 
 
 class ViewerTimeUnitOfWorkFactory(UnitOfWorkFactory[ViewerTimeUnitOfWork], Protocol):

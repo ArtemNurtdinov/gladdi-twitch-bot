@@ -11,7 +11,7 @@ class HandleRestoreStreamContextUseCase:
 
     def handle(self, channel_name: str) -> None:
         with self._restore_stream_uow.create(read_only=True) as uow:
-            active_stream = uow.stream_service.get_active_stream(channel_name)
+            active_stream = uow.stream_repository.get_active_stream(channel_name)
 
         if active_stream:
             self._minigame_repository.set_stream_start_time(channel_name, active_stream.started_at)

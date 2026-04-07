@@ -19,7 +19,7 @@ class RewardViewerTimeUseCase:
 
     async def handle(self, viewer_time: ViewerTimeDTO):
         with self._reward_viewer_time_uow.create(read_only=True) as uow:
-            active_stream = uow.stream_service.get_active_stream(viewer_time.channel_name)
+            active_stream = uow.stream_repository.get_active_stream(viewer_time.channel_name)
 
         if not active_stream:
             return
@@ -68,7 +68,7 @@ class RewardViewerTimeUseCase:
 
         if viewers_count > active_stream.max_concurrent_viewers:
             with self._reward_viewer_time_uow.create() as uow:
-                uow.stream_service.update_max_concurrent_viewers_count(active_stream.id, viewers_count)
+                uow.stream_repository.update_max_concurrent_viewers_count(active_stream.id, viewers_count)
 
         with self._reward_viewer_time_uow.create() as uow:
             viewer_sessions = uow.viewer_repository.get_viewer_sessions(active_stream.id)

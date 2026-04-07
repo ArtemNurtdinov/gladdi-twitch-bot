@@ -7,14 +7,14 @@ from app.betting.domain.models import EmojiConfig
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
-from app.equipment.domain.models import UserEquipmentItem
+from app.equipment.domain.model.user_equipment import UserEquipment
 from app.platform.command.roll.application.model import RollDTO, RollTimeoutAction, RollUseCaseResult
 from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
 from app.shop.domain.model.effect import MaxBetIncreaseEffect
 from core.provider import SingletonProvider
 
 
-def _get_max_bet_amount(equipment: list[UserEquipmentItem]) -> int:
+def _get_max_bet_amount(equipment: list[UserEquipment]) -> int:
     result = BettingService.MAX_BET_AMOUNT
     for item in equipment:
         for effect in item.shop_item.effects:
