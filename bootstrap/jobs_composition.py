@@ -111,7 +111,7 @@ def build_background_tasks(
     chat_summarizer_job: ChatSummarizerJob = ChatSummarizerJob(
         channel_name=channel_name,
         handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
-            unit_of_work_factory=uow_factories.build_chat_summarizer_uow_factory(),
+            chat_summarizer_uow=uow_factories.build_chat_summarizer_uow_factory(),
             chat_response_use_case=chat_response_use_case,
         ),
         chat_summary_state=chat_summary_state,

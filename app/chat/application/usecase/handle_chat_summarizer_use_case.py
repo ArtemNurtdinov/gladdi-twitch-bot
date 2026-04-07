@@ -6,19 +6,12 @@ from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWor
 
 
 class HandleChatSummarizerUseCase:
-    def __init__(
-        self,
-        unit_of_work_factory: ChatSummarizerUnitOfWorkFactory,
-        chat_response_use_case: GenerateResponseUseCase,
-    ):
-        self._unit_of_work_factory = unit_of_work_factory
+    def __init__(self, chat_summarizer_uow: ChatSummarizerUnitOfWorkFactory, chat_response_use_case: GenerateResponseUseCase):
+        self._chat_summarizer_uow = chat_summarizer_uow
         self._chat_response_use_case = chat_response_use_case
 
-    async def handle(
-        self,
-        summarizer_job: SummarizerJobDTO,
-    ) -> str | None:
-        with self._unit_of_work_factory.create(read_only=True) as uow:
+    async def handle(self, summarizer_job: SummarizerJobDTO) -> str | None:
+        with self._chat_summarizer_uow.create(read_only=True) as uow:
             active_stream = uow.stream_repository.get_active_stream(summarizer_job.channel_name)
             if not active_stream:
                 return None
