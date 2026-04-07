@@ -27,7 +27,7 @@ router = APIRouter()
 
 @router.get("/items", summary="Получение всех предметов магазина", response_model=AllItemsResponse)
 async def get_all_shop_items(
-    channel_name: str = Query(None),
+    channel_name: str = Query(..., description="Имя канала"),
     shop_item_schema_mapper: ShopItemSchemaMapper = Depends(get_shop_item_schema_mapper),
 ) -> AllItemsResponse:
     if channel_name is None:
