@@ -22,8 +22,8 @@ class ShopItemRepositoryImpl(ShopItemRepository):
         orm_item = self._db.execute(stmt).scalars().first()
         return self._mapper.map_to_domain(orm_item) if orm_item else None
 
-    def get_active_items(self) -> list[ShopItem]:
-        stmt = select(ShopItemORM).where(ShopItemORM.is_active)
+    def get_active_items(self, channel_name: str) -> list[ShopItem]:
+        stmt = select(ShopItemORM).where(ShopItemORM.is_active).where(ShopItemORM.channel_name == channel_name)
         orm_items = self._db.execute(stmt).scalars().all()
         return [self._mapper.map_to_domain(item) for item in orm_items]
 

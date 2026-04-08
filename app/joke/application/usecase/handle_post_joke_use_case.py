@@ -29,13 +29,10 @@ class HandlePostJokeUseCase:
         if not configuration.is_enabled:
             return None
 
-        if not configuration.next_joke_time:
-            return None
-
         now = datetime.now(UTC)
         next_joke_time = configuration.next_joke_time
 
-        if now < next_joke_time:
+        if next_joke_time is not None and now < next_joke_time:
             return None
 
         broadcaster_id = await self._user_cache.get_user_id(post_joke.channel_name)
@@ -45,7 +42,7 @@ class HandlePostJokeUseCase:
 
         stream_info = await self._platform_repository.get_stream_info(post_joke.channel_name)
 
-        if not stream_info or not stream_info.game_name:
+        if stream_info is None or not stream_info.game_name:
             return None
 
         prompt = f"Придумай анекдот, связанный с категорией трансляции: {stream_info.game_name}."
