@@ -4,6 +4,8 @@ from datetime import datetime
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.core.logger.domain.logger import Logger
+from app.joke.infrastructure.mapper.jokes_configuration_mapper import JokesConfigurationMapper
+from app.joke.infrastructure.repository import JokesConfigurationRepositoryImpl
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.moderation.application.moderation_service import ModerationService
@@ -60,6 +62,7 @@ from bootstrap.providers_bundle import build_providers_bundle
 from bootstrap.uow_composition import create_uow_factories
 from core.background.tasks import BackgroundTasks
 from core.db import db_ro_session, db_rw_session
+from core.provider import Provider
 
 
 class BotManager:
@@ -465,6 +468,9 @@ class BotManager:
                 tg_bot_token=tg_bot_token,
                 channel_name=channel_name,
                 start_word_game_use_case=start_word_game_use_case,
+                jokes_configuration_repository_provider=Provider(
+                    lambda session: JokesConfigurationRepositoryImpl(session, JokesConfigurationMapper())
+                ),
             )
             self._background_tasks.start_all()
 

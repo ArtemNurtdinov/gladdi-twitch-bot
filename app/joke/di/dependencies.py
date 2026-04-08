@@ -12,13 +12,10 @@ from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.application.usecase.get_jokes_configuration_use_case import GetJokesConfigurationUseCase
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
 from app.joke.application.usecase.save_jokes_configuration_use_case import SaveJokesConfigurationUseCase
-from app.joke.domain.joke_service import JokeService
-from app.joke.domain.repo import JokeSettingsRepository
 from app.joke.domain.repository import JokesConfigurationRepository
-from app.joke.infrastructure.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
 from app.joke.infrastructure.mapper.jokes_configuration_mapper import JokesConfigurationMapper
 from app.joke.infrastructure.repository import JokesConfigurationRepositoryImpl
-from app.joke.infrastructure.settings_repository import FileJokeSettingsRepository
+from app.joke.infrastructure.uow.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
 from app.joke.presentation.api.mapper.jokes_configuration_mapper import JokesConfigurationMapper as JokesConfigurationMapperSchema
 from app.platform.domain.repository import PlatformRepository
 from app.user.application.ports.user_cache_port import UserCachePort
@@ -26,41 +23,33 @@ from core.provider import Provider
 from core.types import SessionFactory
 
 
-def provide_joke_settings_repository(logger: Logger) -> JokeSettingsRepository:
-    return FileJokeSettingsRepository(logger)
-
-
-def provide_joke_service(joke_settings_repository: JokeSettingsRepository, logger: Logger) -> JokeService:
-    return JokeService(joke_settings_repository, logger)
-
-
 def provide_joke_unit_of_work_factory(
     session_factory_rw: SessionFactory,
     session_factory_ro: SessionFactory,
     conversation_service_provider: Provider[ConversationService],
     chat_use_case_provider: Provider[ChatUseCase],
+    jokes_configuration_repository_provider: Provider[JokesConfigurationRepository],
 ) -> JokeUnitOfWorkFactory:
     return SqlAlchemyJokeUnitOfWorkFactory(
         session_factory_rw=session_factory_rw,
         session_factory_ro=session_factory_ro,
         conversation_service_provider=conversation_service_provider,
         chat_use_case_provider=chat_use_case_provider,
+        jokes_configuration_repository_provider=jokes_configuration_repository_provider,
     )
 
 
 def provide_handle_post_joke_use_case(
-    joke_service: JokeService,
     user_cache: UserCachePort,
     platform_repository: PlatformRepository,
     generate_response_use_case: GenerateResponseUseCase,
     joke_uow_factory: JokeUnitOfWorkFactory,
 ) -> HandlePostJokeUseCase:
     return HandlePostJokeUseCase(
-        joke_service=joke_service,
         user_cache=user_cache,
         platform_repository=platform_repository,
         chat_response_use_case=generate_response_use_case,
-        unit_of_work_factory=joke_uow_factory,
+        joke_uow=joke_uow_factory,
     )
 
 

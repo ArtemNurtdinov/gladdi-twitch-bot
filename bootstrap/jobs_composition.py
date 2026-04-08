@@ -14,11 +14,10 @@ from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.di.dependencies import (
     provide_handle_post_joke_use_case,
-    provide_joke_service,
-    provide_joke_settings_repository,
     provide_joke_unit_of_work_factory,
     provide_post_joke_job,
 )
+from app.joke.domain.repository import JokesConfigurationRepository
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
 from app.minigame.application.use_case.finish_rps_use_case import FinishRpsUseCase
@@ -64,15 +63,14 @@ def build_background_tasks(
     tg_bot_token: str,
     channel_name: str,
     start_word_game_use_case: StartWordGameUseCase,
+    jokes_configuration_repository_provider: Provider[JokesConfigurationRepository],
 ) -> BackgroundTasks:
     telegram_bot = provide_telegram_bot(tg_bot_token)
     notifications_repository = provide_notification_repository(telegram_bot)
-    joke_repository = provide_joke_settings_repository(logger)
 
     port_joke_job: PostJokeJob = provide_post_joke_job(
         channel_name=channel_name,
         handle_post_joke_use_case=provide_handle_post_joke_use_case(
-            joke_service=provide_joke_service(joke_repository, logger),
             user_cache=user_cache,
             platform_repository=platform_repository,
             generate_response_use_case=chat_response_use_case,
@@ -81,6 +79,7 @@ def build_background_tasks(
                 session_factory_ro=session_factory_ro,
                 conversation_service_provider=conversation_service_provider,
                 chat_use_case_provider=chat_use_case_provider,
+                jokes_configuration_repository_provider=jokes_configuration_repository_provider,
             ),
         ),
         send_channel_message=send_channel_message,
