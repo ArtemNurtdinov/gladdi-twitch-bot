@@ -3,9 +3,9 @@ from datetime import datetime
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.bot.domain.model.bot_settings import BotSettings
+from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.status import BotStatusResponse
-from app.bot.presentation.api.model.status import BotStatus
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.core.logger.domain.logger import Logger
 from app.joke.infrastructure.mapper.jokes_configuration_mapper import JokesConfigurationMapper
