@@ -4,12 +4,12 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.ai.gen.prompt.presentation import system_prompt_routes
 from app.auth.presentation import auth_routes
+from app.bot.presentation.api import bot_routes, bot_twitch_routes
 from app.chat.presentation import chat_routes
 from app.core.config.di.composition import load_config
 from app.core.logger.di.composition import get_logger
 from app.follow.presentation import followers_routes
 from app.joke.presentation.api import joke_routes
-from app.platform.bot.infrastructure import bot_routes, bot_twitch_routes
 from app.shop.presentation.api import shop_routes
 from app.stream.presentation import stream_routes
 from app.user.presentation import user_routes

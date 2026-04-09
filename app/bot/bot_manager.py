@@ -2,6 +2,10 @@ import asyncio
 from datetime import datetime
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
+from app.bot.domain.model.bot_settings import BotSettings
+from app.bot.presentation.api.model.response.action import BotActionResultResponse
+from app.bot.presentation.api.model.response.status import BotStatusResponse
+from app.bot.presentation.api.model.status import BotStatus
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.core.logger.domain.logger import Logger
 from app.joke.infrastructure.mapper.jokes_configuration_mapper import JokesConfigurationMapper
@@ -10,10 +14,6 @@ from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCa
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.application.di.dependencies import provide_platform_auth
-from app.platform.bot.infrastructure.model.response.action import BotActionResultResponse
-from app.platform.bot.infrastructure.model.response.status import BotStatusResponse
-from app.platform.bot.infrastructure.model.status import BotStatus
-from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.application.platform_chat_client import PlatformChatClient

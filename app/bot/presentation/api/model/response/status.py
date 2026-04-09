@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from app.platform.bot.infrastructure.model.status import BotStatus
+from app.bot.presentation.api.model.status import BotStatus
 
 
 class BotStatusResponse(BaseModel):

@@ -2,13 +2,13 @@ from functools import lru_cache
 
 from fastapi import APIRouter, Depends
 
+from app.bot.bot_manager import BotManager
+from app.bot.domain.model.bot_settings import BotSettings, DefaultBotSettings
+from app.bot.presentation.api.model.response.status import BotStatusResponse
 from app.core.config.di.composition import load_config
 from app.core.config.domain.model.configuration import Config
 from app.core.logger.di.composition import get_logger
 from app.core.logger.domain.logger import Logger
-from app.platform.bot.bot_manager import BotManager
-from app.platform.bot.infrastructure.model.response.status import BotStatusResponse
-from app.platform.bot.model.bot_settings import BotSettings, DefaultBotSettings
 
 router = APIRouter()
 

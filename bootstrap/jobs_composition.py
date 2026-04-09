@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.bot.domain.model.bot_settings import BotSettings
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.chat_use_case import ChatUseCase
@@ -29,7 +30,6 @@ from app.notification.di.dependencies import provide_notification_repository, pr
 from app.platform.auth.application.di.dependencies import provide_handle_token_checker_use_case, provide_token_checker_job
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.bot.model.bot_settings import BotSettings
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.di.dependencies import provide_handle_stream_status_use_case, provide_stream_status_job
