@@ -19,7 +19,7 @@ from app.user.application.model.model import UserInfoDTO
 class PlatformRepositoryImpl(PlatformRepository):
     def __init__(self, client: ApiClient, logger: Logger):
         self._api_client = client
-        self._logger = logger
+        self._logger = logger.create_child(__name__)
 
     async def timeout_user(self, broadcaster_id: str, moderator_id: str, user_id: str, duration_seconds: int, reason: str) -> bool:
         response = await self._api_client.post(
