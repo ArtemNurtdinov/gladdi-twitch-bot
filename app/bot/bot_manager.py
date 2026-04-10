@@ -53,7 +53,7 @@ from app.platform.command.top_bottom.application.top_command_handler import TopC
 from app.platform.command.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
 from app.platform.domain.repository import PlatformRepository
-from app.platform.infrastructure.client import TwitchHelixClient
+from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.user.di.dependencies import provide_user_cache

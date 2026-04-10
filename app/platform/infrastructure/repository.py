@@ -6,11 +6,11 @@ from app.core.network.api.client import ApiClient
 from app.follow.application.models.follower import ChannelFollowerDTO
 from app.platform.command.followage.application.model import FollowageInfo
 from app.platform.domain.repository import PlatformRepository
-from app.platform.infrastructure.common import handle_api_response
-from app.platform.infrastructure.model.chatter import ChattersResponse
-from app.platform.infrastructure.model.follower import FollowerData, FollowersResponse
-from app.platform.infrastructure.model.stream import StreamsResponse
-from app.platform.infrastructure.model.user import UsersResponse
+from app.platform.infrastructure.api.common import handle_api_response
+from app.platform.infrastructure.api.model.chatter import ChattersResponse
+from app.platform.infrastructure.api.model.follower import FollowerData, FollowersResponse
+from app.platform.infrastructure.api.model.stream import StreamsResponse
+from app.platform.infrastructure.api.model.user import UsersResponse
 from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
 from app.user.application.model.model import UserInfoDTO
