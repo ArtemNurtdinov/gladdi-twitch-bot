@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.auth.application.contracts import LoginResponse, UserLogin, UserResponse
-from app.auth.application.model.login_result import LoginResultDTO
+from app.auth.application.model.login_result import InvalidPassword, LoginSuccess, UserInactive, UserNotFound
 from app.auth.application.model.user import UserDTO
 from app.auth.di.composition import get_login_use_case, get_validate_access_token_use_case
 from app.auth.domain.model.role import UserRole
@@ -67,27 +67,27 @@ async def get_me(current_user: UserDTO = Depends(get_current_user)):
 
 @router.post("/login", response_model=LoginResponse)
 async def login(user_data: UserLogin):
-    result = handle_login(user_data.email, user_data.password)
-    if not result:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль", headers={"WWW-Authenticate": "Bearer"}
+    with db_rw_session() as session:
+        login_use_case = get_login_use_case(session)
+        result = login_use_case.login(user_data.email, user_data.password)
+
+    if isinstance(result, UserNotFound):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль")
+    if isinstance(result, InvalidPassword):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль")
+    if isinstance(result, UserInactive):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Пользователь неактивен")
+    if isinstance(result, LoginSuccess):
+        user_response = UserResponse.model_validate(result.user)
+        return LoginResponse(
+            access_token=result.access_token,
+            created_at=result.created_at,
+            expires_at=result.expires_at,
+            user=user_response,
         )
-    user_response = UserResponse.model_validate(result.user)
-    return LoginResponse(
-        access_token=result.access_token,
-        created_at=result.created_at,
-        expires_at=result.expires_at,
-        user=user_response,
-    )
 
 
 def validate_token(token: str) -> UserDTO | None:
     with db_rw_session() as session:
         validate_access_token_use_case = get_validate_access_token_use_case(session)
         return validate_access_token_use_case.validate_access_token(token)
-
-
-def handle_login(email: str, password: str) -> LoginResultDTO | None:
-    with db_rw_session() as session:
-        login_use_case = get_login_use_case(session)
-        return login_use_case.login(email, password)
