@@ -38,28 +38,6 @@ def get_optional_current_user(credentials: HTTPAuthorizationCredentials | None =
     return user
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> UserDTO:
-    user = validate_token(credentials.credentials)
-    if not user:
-        raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
-    return user
-
-
-def get_admin_user(current_user: UserDTO = Depends(get_current_user)) -> UserDTO:
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недостаточно прав доступа")
-    return current_user
-
-
-def get_optional_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(security_optional)) -> UserDTO | None:
-    if credentials is None:
-        return None
-    user = validate_token(credentials.credentials)
-    if not user:
-        raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
-    return user
-
-
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: UserDTO = Depends(get_current_user)):
     return UserResponse.model_validate(current_user).model_dump()

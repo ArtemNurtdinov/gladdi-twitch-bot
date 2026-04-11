@@ -1,7 +1,6 @@
 from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Union
 
 from app.auth.application.model.user import UserDTO
 
@@ -34,4 +33,4 @@ class UserInactive(LoginResult):
     pass
 
 
-LoginResultDTO = Union[LoginSuccess, UserNotFound, InvalidPassword, UserInactive]
+LoginResultDTO = LoginSuccess | UserNotFound | InvalidPassword | UserInactive
