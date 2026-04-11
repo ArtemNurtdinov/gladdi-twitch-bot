@@ -9,7 +9,7 @@ from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, S
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWork, StreamStatusUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
-from app.viewer.domain.repo import ViewerRepository
+from app.viewer.session.domain.repository import ViewerRepository
 from core.provider import Provider
 from core.types import SessionFactory
 

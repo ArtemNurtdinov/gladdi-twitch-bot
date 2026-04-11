@@ -9,7 +9,7 @@ from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, S
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.platform.chat.application.chat_message_uow import ChatMessageUnitOfWork, ChatMessageUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
-from app.viewer.domain.repo import ViewerRepository
+from app.viewer.session.domain.repository import ViewerRepository
 from core.provider import Provider
 from core.types import SessionFactory
 

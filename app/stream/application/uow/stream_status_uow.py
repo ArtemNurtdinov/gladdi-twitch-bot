@@ -8,7 +8,7 @@ from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.application.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.domain.repo import StreamRepository
-from app.viewer.domain.repo import ViewerRepository
+from app.viewer.session.domain.repository import ViewerRepository
 
 
 class StreamStatusUnitOfWork(UnitOfWork, Protocol):

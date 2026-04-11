@@ -12,7 +12,7 @@ from app.follow.presentation import followers_routes
 from app.joke.presentation.api import joke_routes
 from app.shop.presentation.api import shop_routes
 from app.stream.presentation import stream_routes
-from app.user.presentation import user_routes
+from app.viewer.presentation.api import viewer_routes
 from core.db import init_db
 
 app = FastAPI(
@@ -40,7 +40,7 @@ app.include_router(bot_twitch_routes.router, prefix="/api/v1/bot", tags=["Twitch
 app.include_router(joke_routes.router, prefix="/api/v1/jokes", tags=["Jokes"])
 app.include_router(stream_routes.router, prefix="/api/v1/streams", tags=["Streams"])
 app.include_router(followers_routes.router, prefix="/api/v1/followers", tags=["Followers"])
-app.include_router(user_routes.router, prefix="/api/v1", tags=["Users"])
+app.include_router(viewer_routes.router, prefix="/api/v1", tags=["Users"])
 app.include_router(shop_routes.router, prefix="/api/v1/shop", tags=["Shop"])
 
 

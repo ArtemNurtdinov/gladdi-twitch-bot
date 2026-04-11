@@ -13,7 +13,7 @@ from app.platform.infrastructure.api.model.stream import StreamsResponse
 from app.platform.infrastructure.api.model.user import UsersResponse
 from app.stream.application.models.stream_info import StreamInfoDTO
 from app.stream.application.models.stream_status import StreamStatusDTO
-from app.user.application.model.model import UserInfoDTO
+from app.viewer.application.model.model import ViewerInfoDTO
 
 
 class PlatformRepositoryImpl(PlatformRepository):
@@ -55,7 +55,7 @@ class PlatformRepositoryImpl(PlatformRepository):
             self._logger.log_error(f"Ошибка при получении списка зрителей: {e}")
             return []
 
-    async def get_user_by_login(self, login: str) -> UserInfoDTO | None:
+    async def get_user_by_login(self, login: str) -> ViewerInfoDTO | None:
         self._logger.log_debug(f"Получение информации о пользователе для логина: {login}")
         try:
             response = await self._api_client.get(url="/users", params={"login": login})
@@ -81,7 +81,7 @@ class PlatformRepositoryImpl(PlatformRepository):
 
             user_data = parsed.data[0]
             self._logger.log_debug(f"Информация о пользователе {login} получена")
-            return UserInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
+            return ViewerInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
         except httpx.TimeoutException:
             self._logger.log_error(f"Таймаут при получении пользователя {login}")
             return None
@@ -92,7 +92,7 @@ class PlatformRepositoryImpl(PlatformRepository):
             self._logger.log_error(f"Неожиданная ошибка при получении пользователя {login}: {e}")
             return None
 
-    async def get_authenticated_user(self) -> UserInfoDTO | None:
+    async def get_authenticated_user(self) -> ViewerInfoDTO | None:
         self._logger.log_debug("Получение профиля по токену")
         try:
             response = await self._api_client.get(url="/users", params=None)
@@ -114,7 +114,7 @@ class PlatformRepositoryImpl(PlatformRepository):
                 return None
 
             user_data = parsed.data[0]
-            return UserInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
+            return ViewerInfoDTO(id=user_data.id, login=user_data.login, display_name=user_data.display_name)
         except httpx.TimeoutException:
             self._logger.log_error("Таймаут при получении профиля по токену")
             return None

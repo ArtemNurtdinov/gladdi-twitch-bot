@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.viewer.application.usecases.get_user_sessions_use_case import GetUserSessionsUseCase
-from app.viewer.domain.repo import ViewerRepository
-from app.viewer.infrastructure.viewer_repository import ViewerRepositoryImpl
+from app.viewer.session.application.usecase.get_user_sessions_use_case import GetUserSessionsUseCase
+from app.viewer.session.domain.repository import ViewerRepository
+from app.viewer.session.infrastructure.session_repository import ViewerRepositoryImpl
 from core.db import get_db_ro, get_db_rw
 from core.provider import Provider
 
@@ -17,7 +17,6 @@ class ViewerProviders:
 
 
 def build_viewer_providers() -> ViewerProviders:
-
     def viewer_query_service(db):
         return GetUserSessionsUseCase(ViewerRepositoryImpl(db))
 

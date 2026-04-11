@@ -7,11 +7,11 @@ from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
-from app.user.application.ports.user_cache_port import UserCachePort
+from app.viewer.application.port.viewer_cache_port import ViewerCachePort
 
 
 def provide_handle_stream_status_use_case(
-    user_cache: UserCachePort,
+    user_cache: ViewerCachePort,
     platform_repository: PlatformRepository,
     stream_status_uow_factory: StreamStatusUnitOfWorkFactory,
     minigame_repository: MinigameRepository,

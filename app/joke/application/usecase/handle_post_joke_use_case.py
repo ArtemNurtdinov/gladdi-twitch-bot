@@ -6,13 +6,13 @@ from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.domain.model.configuration import JokesConfiguration
 from app.platform.domain.repository import PlatformRepository
-from app.user.application.ports.user_cache_port import UserCachePort
+from app.viewer.application.port.viewer_cache_port import ViewerCachePort
 
 
 class HandlePostJokeUseCase:
     def __init__(
         self,
-        user_cache: UserCachePort,
+        user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
         chat_response_use_case: GenerateResponseUseCase,
         joke_uow: JokeUnitOfWorkFactory,
@@ -35,7 +35,7 @@ class HandlePostJokeUseCase:
         if next_joke_time is not None and now < next_joke_time:
             return None
 
-        broadcaster_id = await self._user_cache.get_user_id(post_joke.channel_name)
+        broadcaster_id = await self._user_cache.get_viewer_id(post_joke.channel_name)
 
         if not broadcaster_id:
             return None

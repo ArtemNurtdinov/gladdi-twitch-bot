@@ -11,13 +11,13 @@ from app.platform.domain.repository import PlatformRepository
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.model.info import StreamInfo
 from app.stream.domain.model.stat import StreamStatistics
-from app.user.application.ports.user_cache_port import UserCachePort
+from app.viewer.application.port.viewer_cache_port import ViewerCachePort
 
 
 class HandleStreamStatusUseCase:
     def __init__(
         self,
-        user_cache: UserCachePort,
+        user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
         stream_status_uow: StreamStatusUnitOfWorkFactory,
         minigame_repository: MinigameRepository,
@@ -38,7 +38,7 @@ class HandleStreamStatusUseCase:
         self._logger = logger.create_child(__name__)
 
     async def handle(self, channel_name: str):
-        broadcaster_id = await self._user_cache.get_user_id(channel_name)
+        broadcaster_id = await self._user_cache.get_viewer_id(channel_name)
 
         if not broadcaster_id:
             self._logger.log_error(f"Не удалось получить ID канала {channel_name}. Пропускаем проверку.")

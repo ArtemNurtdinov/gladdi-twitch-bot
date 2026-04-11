@@ -56,7 +56,7 @@ from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
-from app.user.di.dependencies import provide_user_cache
+from app.viewer.di.dependencies import provide_viewer_cache
 from bootstrap.jobs_composition import build_background_tasks
 from bootstrap.providers_bundle import build_providers_bundle
 from bootstrap.uow_composition import create_uow_factories
@@ -148,7 +148,7 @@ class BotManager:
                 logger=logger,
             )
 
-            user_cache = provide_user_cache(platform_repository)
+            user_cache = provide_viewer_cache(platform_repository)
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,

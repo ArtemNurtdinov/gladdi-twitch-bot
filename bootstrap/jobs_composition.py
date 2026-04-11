@@ -33,9 +33,9 @@ from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.di.dependencies import provide_handle_stream_status_use_case, provide_stream_status_job
-from app.user.application.ports.user_cache_port import UserCachePort
-from app.viewer.application.jobs.viewer_time_job import ViewerTimeJob
-from app.viewer.application.usecases.reward_viewer_time_use_case import RewardViewerTimeUseCase
+from app.viewer.application.port.viewer_cache_port import ViewerCachePort
+from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
+from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from bootstrap.providers_bundle import ProvidersBundle
 from bootstrap.uow_composition import UowFactories
 from core.background.task_runner import BackgroundTaskRunner
@@ -55,7 +55,7 @@ def build_background_tasks(
     platform_auth: PlatformAuth,
     platform_repository: PlatformRepository,
     logger: Logger,
-    user_cache: UserCachePort,
+    user_cache: ViewerCachePort,
     session_factory_rw: SessionFactory,
     session_factory_ro: SessionFactory,
     conversation_service_provider: Provider[ConversationService],

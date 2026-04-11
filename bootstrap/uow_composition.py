@@ -25,7 +25,7 @@ from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemy
 from app.platform.domain.repository import PlatformRepository
 from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
 from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
-from app.viewer.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
+from app.viewer.session.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
 from bootstrap.providers_bundle import ProvidersBundle
 from core.types import SessionFactory
 

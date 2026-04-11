@@ -21,7 +21,7 @@ from app.joke.infrastructure.db.configuration import JokesConfigurationRow
 from app.minigame.infrastructure.db.word_history import WordHistory
 from app.shop.infrastructure.db.model.shop_item import ShopItem
 from app.stream.infrastructure.db.stream import Stream
-from app.viewer.infrastructure.db.viewer_session import StreamViewerSession
+from app.viewer.session.infrastructure.db.model.viewer_session import StreamViewerSession
 from core.db import db_ro_session, db_rw_session, get_engine
 
 

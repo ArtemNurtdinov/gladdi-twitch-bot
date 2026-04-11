@@ -8,7 +8,7 @@ from app.stream.domain.model.session import StreamViewerSessionInfo
 from app.stream.domain.repo import StreamRepository
 from app.stream.infrastructure.db.stream import Stream
 from app.stream.infrastructure.mappers.stream_mapper import map_stream_row
-from app.viewer.infrastructure.db.viewer_session import StreamViewerSession
+from app.viewer.session.infrastructure.db.model.viewer_session import StreamViewerSession
 
 
 class StreamRepositoryImpl(StreamRepository):
