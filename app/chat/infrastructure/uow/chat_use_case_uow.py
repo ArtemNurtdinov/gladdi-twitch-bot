@@ -19,9 +19,7 @@ class SqlAlchemyChatUseCaseUnitOfWork(SqlAlchemyUnitOfWorkBase, ChatUseCaseUnitO
         return self._chat_repo
 
 
-class SqlAlchemyChatUseCaseUnitOfWorkFactory(
-    SqlAlchemyUnitOfWorkFactory[ChatUseCaseUnitOfWork], ChatUseCaseUnitOfWorkFactory
-):
+class SqlAlchemyChatUseCaseUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatUseCaseUnitOfWork], ChatUseCaseUnitOfWorkFactory):
     def __init__(
         self,
         session_factory_rw: SessionFactory,
