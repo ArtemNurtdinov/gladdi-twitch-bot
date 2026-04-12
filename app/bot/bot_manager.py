@@ -71,6 +71,7 @@ from app.platform.command.transfer.application.transfer_command_handler import T
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
+from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.di.container import get_stream_status_job
 from app.task.domain.model.task import Task
@@ -470,7 +471,7 @@ class BotManager:
 
             token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
 
-            stream_status_job = get_stream_status_job(
+            stream_status_job: StreamStatusJob = get_stream_status_job(
                 channel_name=channel_name,
                 user_cache=user_cache,
                 platform_repository=platform_repository,
