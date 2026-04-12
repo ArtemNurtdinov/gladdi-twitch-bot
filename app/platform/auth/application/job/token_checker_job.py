@@ -2,8 +2,7 @@ import asyncio
 
 from app.core.logger.domain.logger import Logger
 from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
-from core.background.task_runner import BackgroundTaskRunner
-from core.background.tasks import BackgroundJob
+from app.task.domain.job import BackgroundJob
 
 
 class TokenCheckerJob(BackgroundJob):
@@ -13,9 +12,6 @@ class TokenCheckerJob(BackgroundJob):
     def __init__(self, handle_token_checker_use_case: HandleTokenCheckerUseCase, logger: Logger):
         self._handle_token_checker_use_case = handle_token_checker_use_case
         self._logger = logger.create_child(__name__)
-
-    def register(self, runner: BackgroundTaskRunner):
-        runner.register(self.name, self.run)
 
     async def run(self):
         while True:

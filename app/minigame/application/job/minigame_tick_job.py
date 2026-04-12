@@ -2,8 +2,7 @@ import asyncio
 
 from app.core.logger.domain.logger import Logger
 from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
-from core.background.task_runner import BackgroundTaskRunner
-from core.background.tasks import BackgroundJob
+from app.task.domain.job import BackgroundJob
 
 
 class MinigameTickJob(BackgroundJob):
@@ -14,9 +13,6 @@ class MinigameTickJob(BackgroundJob):
         self._channel_name = channel_name
         self._handle_minigame_tick_use_case = handle_minigame_tick_use_case
         self._logger = logger.create_child(__name__)
-
-    def register(self, runner: BackgroundTaskRunner):
-        runner.register(self.name, self.run)
 
     async def run(self):
         while True:

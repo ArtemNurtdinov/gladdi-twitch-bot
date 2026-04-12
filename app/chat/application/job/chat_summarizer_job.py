@@ -5,8 +5,7 @@ from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.model.summarizer_job import SummarizerJobDTO
 from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.core.logger.domain.logger import Logger
-from core.background.task_runner import BackgroundTaskRunner
-from core.background.tasks import BackgroundJob
+from app.task.domain.job import BackgroundJob
 
 
 class ChatSummarizerJob(BackgroundJob):
@@ -24,9 +23,6 @@ class ChatSummarizerJob(BackgroundJob):
         self._handle_chat_summarizer_use_case = handle_chat_summarizer_use_case
         self._chat_summary_state = chat_summary_state
         self._logger = logger.create_child(__name__)
-
-    def register(self, runner: BackgroundTaskRunner) -> None:
-        runner.register(self.name, self.run)
 
     async def run(self):
         while True:

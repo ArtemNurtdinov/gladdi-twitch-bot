@@ -3,8 +3,7 @@ from datetime import datetime
 
 from app.core.logger.domain.logger import Logger
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
-from core.background.task_runner import BackgroundTaskRunner
-from core.background.tasks import BackgroundJob
+from app.task.domain.job import BackgroundJob
 
 
 class FollowersSyncJob(BackgroundJob):
@@ -15,9 +14,6 @@ class FollowersSyncJob(BackgroundJob):
         self._channel_name = channel_name
         self._handle_followers_sync_use_case = handle_followers_sync_use_case
         self._logger = logger.create_child(__name__)
-
-    def register(self, runner: BackgroundTaskRunner):
-        runner.register(self.name, self.run)
 
     async def run(self):
         while True:

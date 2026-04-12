@@ -6,14 +6,32 @@ from app.bot.domain.model.bot_settings import BotSettings
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.status import BotStatusResponse
+from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
+from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.core.logger.domain.logger import Logger
+from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
+from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
+from app.joke.application.job.post_joke_job import PostJokeJob
+from app.joke.di.dependencies import provide_handle_post_joke_use_case, provide_joke_unit_of_work_factory, provide_post_joke_job
 from app.joke.infrastructure.mapper.jokes_configuration_mapper import JokesConfigurationMapper
 from app.joke.infrastructure.repository import JokesConfigurationRepositoryImpl
+from app.minigame.application.job.minigame_tick_job import MinigameTickJob
+from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
+from app.minigame.application.use_case.finish_rps_use_case import FinishRpsUseCase
+from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
+from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
+from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.moderation.application.moderation_service import ModerationService
-from app.platform.auth.application.di.dependencies import provide_platform_auth
+from app.notification.di.dependencies import provide_notification_repository, provide_telegram_bot
+from app.platform.auth.application.di.dependencies import (
+    provide_handle_token_checker_use_case,
+    provide_platform_auth,
+    provide_token_checker_job,
+)
+from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
@@ -55,12 +73,16 @@ from app.platform.command.transfer.application.transfer_command_handler import T
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
+from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
+from app.stream.di.dependencies import provide_handle_stream_status_use_case, provide_stream_status_job
+from app.task.application.tasks import BackgroundTasks
+from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.di.dependencies import provide_viewer_cache
-from bootstrap.jobs_composition import build_background_tasks
+from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
+from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from bootstrap.providers_bundle import build_providers_bundle
 from bootstrap.uow_composition import create_uow_factories
-from core.background.tasks import BackgroundTasks
 from core.db import db_ro_session, db_rw_session
 from core.provider import Provider
 
@@ -428,13 +450,6 @@ class BotManager:
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
-            self._status = BotStatus.RUNNING
-            self._started_at = datetime.utcnow()
-            self._last_error = None
-
-            self._task = asyncio.create_task(self._chat_client.start_chat())
-            self._task.add_done_callback(self._on_bot_done)
-
             start_word_game_use_case = StartWordGameUseCase(
                 minigame_repository=providers_bundle.minigame_providers.minigame_repository,
                 prefix=self._settings.prefix,
@@ -449,30 +464,138 @@ class BotManager:
                 logger=logger,
             )
 
-            self._background_tasks = build_background_tasks(
-                providers=providers_bundle,
-                uow_factories=uow_factories,
-                settings=self._settings,
-                bot_name=bot_name,
-                chat_summary_state=chat_summary_state,
-                chat_response_use_case=generate_response_use_case,
-                send_channel_message=chat_client.send_channel_message,
-                platform_auth=platform_auth,
-                platform_repository=platform_repository,
-                logger=self._logger,
-                user_cache=user_cache,
-                session_factory_rw=db_rw_session,
-                session_factory_ro=db_ro_session,
-                conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
-                chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
-                tg_bot_token=tg_bot_token,
+            telegram_bot = provide_telegram_bot(tg_bot_token)
+            notifications_repository = provide_notification_repository(telegram_bot)
+
+            port_joke_job: PostJokeJob = provide_post_joke_job(
                 channel_name=channel_name,
-                start_word_game_use_case=start_word_game_use_case,
-                jokes_configuration_repository_provider=Provider(
-                    lambda session: JokesConfigurationRepositoryImpl(session, JokesConfigurationMapper())
+                handle_post_joke_use_case=provide_handle_post_joke_use_case(
+                    user_cache=user_cache,
+                    platform_repository=platform_repository,
+                    generate_response_use_case=generate_response_use_case,
+                    joke_uow_factory=provide_joke_unit_of_work_factory(
+                        session_factory_rw=db_rw_session,
+                        session_factory_ro=db_ro_session,
+                        conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
+                        chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
+                        jokes_configuration_repository_provider=Provider(
+                            lambda session: JokesConfigurationRepositoryImpl(session, JokesConfigurationMapper())
+                        ),
+                    ),
                 ),
+                send_channel_message=chat_client.send_channel_message,
+                bot_name=bot_name,
+                logger=logger,
             )
+
+            token_checker_job: TokenCheckerJob = provide_token_checker_job(
+                handle_token_checker_use_case=provide_handle_token_checker_use_case(platform_auth, logger), logger=logger
+            )
+
+            stream_status_job: StreamStatusJob = provide_stream_status_job(
+                channel_name=channel_name,
+                handle_stream_status_use_case=provide_handle_stream_status_use_case(
+                    user_cache=user_cache,
+                    platform_repository=platform_repository,
+                    stream_status_uow_factory=uow_factories.build_stream_status_uow_factory(),
+                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    notification_repository=notifications_repository,
+                    notification_group_id=self._settings.group_id,
+                    generate_response_use_case=generate_response_use_case,
+                    state=chat_summary_state,
+                    logger=logger,
+                ),
+                logger=logger,
+            )
+
+            chat_summarizer_job: ChatSummarizerJob = ChatSummarizerJob(
+                channel_name=channel_name,
+                handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
+                    chat_summarizer_uow=uow_factories.build_chat_summarizer_uow_factory(),
+                    chat_response_use_case=generate_response_use_case,
+                ),
+                chat_summary_state=chat_summary_state,
+                logger=logger,
+            )
+
+            minigame_job: MinigameTickJob = MinigameTickJob(
+                channel_name=channel_name,
+                handle_minigame_tick_use_case=HandleMinigameTickUseCase(
+                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    minigame_ouw=uow_factories.build_minigame_uow_factory(),
+                    start_number_guess_game_use_case=StartNumberGuessGameUseCase(
+                        minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                        prefix=self._settings.prefix,
+                        command_name=self._settings.command_guess,
+                        send_channel_message=chat_client.send_channel_message,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=bot_name.lower(),
+                    ),
+                    start_word_game_use_case=start_word_game_use_case,
+                    start_rps_game_use_case=StartRpsGameUseCase(
+                        minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                        prefix=self._settings.prefix,
+                        command_name=self._settings.command_rps,
+                        send_channel_message=chat_client.send_channel_message,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=bot_name.lower(),
+                    ),
+                    finish_rps_game_use_case=FinishRpsUseCase(
+                        minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=bot_name.lower(),
+                        send_channel_message=chat_client.send_channel_message,
+                    ),
+                    finish_expired_games_use_case=FinishExpiredGamesUseCase(
+                        minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                        send_channel_message=chat_client.send_channel_message,
+                        minigame_uow=uow_factories.build_minigame_uow_factory(),
+                        bot_name=bot_name.lower(),
+                    ),
+                ),
+                logger=logger,
+            )
+
+            viewer_time_job: ViewerTimeJob = ViewerTimeJob(
+                channel_name=channel_name,
+                handle_viewer_time_use_case=RewardViewerTimeUseCase(
+                    reward_viewer_time_uow=uow_factories.build_viewer_time_uow_factory(),
+                    user_cache=user_cache,
+                    platform_repository=platform_repository,
+                ),
+                bot_nick=bot_name,
+                logger=logger,
+            )
+
+            followers_sync_job: FollowersSyncJob = FollowersSyncJob(
+                channel_name=channel_name,
+                handle_followers_sync_use_case=HandleFollowersSyncUseCase(
+                    platform_repository=platform_repository,
+                    sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
+                ),
+                logger=logger,
+            )
+
+            self._background_tasks = BackgroundTasks(
+                runner=BackgroundTaskRunner(),
+                jobs=[
+                    port_joke_job,
+                    token_checker_job,
+                    stream_status_job,
+                    chat_summarizer_job,
+                    minigame_job,
+                    viewer_time_job,
+                    followers_sync_job,
+                ],
+            )
+
             self._background_tasks.start_all()
+
+            self._status = BotStatus.RUNNING
+            self._started_at = datetime.utcnow()
+            self._last_error = None
+            self._task = asyncio.create_task(self._chat_client.start_chat())
+            self._task.add_done_callback(self._on_bot_done)
 
             return BotActionResultResponse(**self.get_status().model_dump(), message="Запуск инициализирован")
 

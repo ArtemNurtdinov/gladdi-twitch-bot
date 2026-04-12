@@ -2,10 +2,9 @@ import asyncio
 from datetime import datetime
 
 from app.core.logger.domain.logger import Logger
+from app.task.domain.job import BackgroundJob
 from app.viewer.session.application.model.viewer_time import ViewerTimeDTO
 from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
-from core.background.task_runner import BackgroundTaskRunner
-from core.background.tasks import BackgroundJob
 
 
 class ViewerTimeJob(BackgroundJob):
@@ -17,9 +16,6 @@ class ViewerTimeJob(BackgroundJob):
         self._handle_viewer_time_use_case = handle_viewer_time_use_case
         self._bot_nick = bot_nick
         self._logger = logger.create_child(__name__)
-
-    def register(self, runner: BackgroundTaskRunner):
-        runner.register(self.name, self.run)
 
     async def run(self):
         while True:

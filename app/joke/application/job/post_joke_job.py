@@ -5,8 +5,7 @@ from datetime import datetime
 from app.core.logger.domain.logger import Logger
 from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
-from core.background.task_runner import BackgroundTaskRunner
-from core.background.tasks import BackgroundJob
+from app.task.domain.job import BackgroundJob
 
 
 class PostJokeJob(BackgroundJob):
@@ -26,9 +25,6 @@ class PostJokeJob(BackgroundJob):
         self._send_channel_message = send_channel_message
         self._bot_name = bot_name
         self._logger = logger.create_child(__name__)
-
-    def register(self, runner: BackgroundTaskRunner):
-        runner.register(self.name, self.run)
 
     async def run(self):
         while True:

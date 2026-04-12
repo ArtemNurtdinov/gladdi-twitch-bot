@@ -1,8 +1,10 @@
 import asyncio
 from collections.abc import Awaitable, Callable
 
+from app.task.domain.runner import TaskRunner
 
-class BackgroundTaskRunner:
+
+class BackgroundTaskRunner(TaskRunner):
     def __init__(self):
         self._registry: list[tuple[str, Callable[[], Awaitable[None]]]] = []
         self._tasks: dict[str, asyncio.Task] = {}
