@@ -27,9 +27,9 @@ class ProvidersBundle:
     betting_providers: BettingProviders
 
 
-def build_providers_bundle(llmbox_host: str, intent_detector_host: str, logger: Logger) -> ProvidersBundle:
+def build_providers_bundle(logger: Logger) -> ProvidersBundle:
     stream_providers = build_stream_providers()
-    ai_providers = build_ai_providers(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
+    ai_providers = build_ai_providers()
     follow_providers = build_follow_providers()
     viewer_providers = build_viewer_providers()
     economy_providers = build_economy_providers()
