@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.network.api.model.base_response import BaseResponse
-from app.shop.di.composition import get_shop_container
+from app.shop.di.container import get_shop_container
 from app.shop.presentation.api.model.request.create_shop_item_request import CreateShopItemRequest
 from app.shop.presentation.api.model.request.patch_shop_item_request import PatchShopItemRequest
 from app.shop.presentation.api.model.response.all_shop_items_response import AllItemsResponse
