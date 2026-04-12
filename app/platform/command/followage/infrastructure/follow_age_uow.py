@@ -17,14 +17,14 @@ class SqlAlchemyFollowAgeUnitOfWork(SqlAlchemyUnitOfWorkBase, FollowAgeUnitOfWor
         self,
         session: Session,
         conversation_service: ConversationService,
-        chat_repo: ChatRepository,
+        chat_repository: ChatRepository,
         system_prompt_repository: SystemPromptRepository,
         platform_repository: PlatformRepository,
         read_only: bool,
     ):
         super().__init__(session=session, read_only=read_only)
         self._conversation_service = conversation_service
-        self._chat_repo = chat_repo
+        self._chat_repository = chat_repository
         self._system_prompt_repository = system_prompt_repository
         self._platform_repository = platform_repository
 
@@ -33,8 +33,8 @@ class SqlAlchemyFollowAgeUnitOfWork(SqlAlchemyUnitOfWorkBase, FollowAgeUnitOfWor
         return self._conversation_service
 
     @property
-    def chat_repo(self) -> ChatRepository:
-        return self._chat_repo
+    def chat_repository(self) -> ChatRepository:
+        return self._chat_repository
 
     @property
     def system_prompt_repository(self) -> SystemPromptRepository:
@@ -69,7 +69,7 @@ class SqlAlchemyFollowAgeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[FollowAge
         return SqlAlchemyFollowAgeUnitOfWork(
             session=db,
             conversation_service=self._conversation_service_provider.get(db),
-            chat_repo=self._chat_repo_provider.get(db),
+            chat_repository=self._chat_repo_provider.get(db),
             system_prompt_repository=self._system_prompt_repository_provider.get(db),
             platform_repository=self._platform_repository,
             read_only=read_only,

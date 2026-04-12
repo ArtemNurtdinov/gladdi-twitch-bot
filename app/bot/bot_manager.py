@@ -40,6 +40,7 @@ from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.ask.application.ask_command_handler import AskCommandHandlerImpl
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
+from app.platform.command.ask.di.dependencies import provide_ask_uow_factory
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
 from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandlerImpl
@@ -161,6 +162,8 @@ class BotManager:
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
                 providers=providers_bundle,
+                chat_repository_provider=providers_bundle.chat_providers.chat_repo_provider,
+                chat_use_case_provider=providers_bundle.chat_providers.chat_use_case_provider,
                 platform_repository=platform_repository,
             )
 
@@ -185,14 +188,19 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_followage,
                 handle_follow_age_use_case=HandleFollowAgeUseCase(
-                    conversation_repo_provider=providers_bundle.ai_providers.conversation_repo_provider,
                     chat_response_use_case=generate_response_use_case,
-                    unit_of_work_factory=uow_factories.build_follow_age_uow_factory(),
+                    follow_age_uow_factory=uow_factories.build_follow_age_uow_factory(),
                 ),
                 bot_nick=bot_name,
             )
 
-            ask_uow_factory = uow_factories.build_ask_uow_factory()
+            ask_ouw_factory = provide_ask_uow_factory(
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                chat_repository_provider=providers_bundle.chat_providers.chat_repo_provider,
+                conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
+                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
+            )
 
             ask_command_handler: CommandHandler = AskCommandHandlerImpl(
                 command_prefix=self._settings.prefix,
@@ -200,7 +208,7 @@ class BotManager:
                 handle_ask_use_case=HandleAskUseCase(
                     get_intent_from_text_use_case=providers_bundle.ai_providers.get_intent_use_case,
                     prompt_service=providers_bundle.ai_providers.prompt_service,
-                    unit_of_work_factory=ask_uow_factory,
+                    unit_of_work_factory=ask_ouw_factory,
                     chat_response_use_case=generate_response_use_case,
                 ),
                 bot_nick=bot_name,
