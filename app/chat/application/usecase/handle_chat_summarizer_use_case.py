@@ -6,6 +6,8 @@ from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWor
 
 
 class HandleChatSummarizerUseCase:
+    _INTERVAL_MINUTES: int = 20
+
     def __init__(self, chat_summarizer_uow: ChatSummarizerUnitOfWorkFactory, chat_response_use_case: GenerateResponseUseCase):
         self._chat_summarizer_uow = chat_summarizer_uow
         self._chat_response_use_case = chat_response_use_case
@@ -16,7 +18,7 @@ class HandleChatSummarizerUseCase:
             if not active_stream:
                 return None
 
-            since = summarizer_job.occurred_at - timedelta(minutes=summarizer_job.interval_minutes)
+            since = summarizer_job.occurred_at - timedelta(minutes=self._INTERVAL_MINUTES)
             messages = uow.chat_use_case.get_last_chat_messages_since(summarizer_job.channel_name, since)
 
         if not messages:
