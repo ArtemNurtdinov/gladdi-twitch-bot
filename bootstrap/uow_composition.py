@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from app.ai.gen.application.uow.chat_response_uow import ChatResponseUnitOfWorkFactory
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
+from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
@@ -85,6 +86,7 @@ def create_uow_factories(
     chat_use_case: ChatUseCase,
     chat_repository_provider: Provider[ChatRepository],
     platform_repository: PlatformRepository,
+    system_prompt_repository_provider: Provider[SystemPromptRepository],
 ) -> UowFactories:
     ai_providers = providers.ai_providers
     stream_providers = providers.stream_providers
@@ -105,7 +107,7 @@ def create_uow_factories(
             stream_repo_provider=stream_providers.stream_repo_provider,
             viewer_repo_provider=viewer_providers.viewer_repo_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
-            system_prompt_repository_provider=ai_providers.system_prompt_repo_provider,
+            system_prompt_repository_provider=system_prompt_repository_provider,
         )
 
     def build_chat_response_uow_factory() -> ChatResponseUnitOfWorkFactory:
@@ -250,7 +252,7 @@ def create_uow_factories(
             session_factory_ro=session_factory_ro,
             chat_repo_provider=chat_repository_provider,
             conversation_service_provider=ai_providers.conversation_service_provider,
-            system_prompt_repository_provider=ai_providers.system_prompt_repo_provider,
+            system_prompt_repository_provider=system_prompt_repository_provider,
             platform_repository=platform_repository,
         )
 

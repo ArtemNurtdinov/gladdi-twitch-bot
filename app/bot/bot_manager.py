@@ -2,6 +2,7 @@ import asyncio
 from datetime import UTC, datetime
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.di.container import AIContainer
 from app.bot.domain.model.bot_settings import BotSettings
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
@@ -156,6 +157,8 @@ class BotManager:
 
             user_cache = provide_viewer_cache(platform_repository)
 
+            ai_container = AIContainer(llmbox_host=llmbox_host)
+
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
@@ -163,6 +166,7 @@ class BotManager:
                 chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
                 chat_use_case=get_chat_use_case(),
                 platform_repository=platform_repository,
+                system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
             )
 
             bot_user = await platform_repository.get_authenticated_user()
@@ -173,10 +177,12 @@ class BotManager:
             battle_waiting_user = {"value": None}
             chat_summary_state = ChatSummaryState()
 
+            chat_response_uow_factory = ai_container.chat_response_uow_factory(providers_bundle.ai_providers.conversation_service_provider)
+
             generate_response_use_case = GenerateResponseUseCase(
-                unit_of_work_factory=uow_factories.build_chat_response_uow_factory(),
-                llm_repository=providers_bundle.ai_providers.llm_repository,
-                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
+                chat_response_uow_factory=chat_response_uow_factory,
+                llm_repository=ai_container.llm_repository,
+                system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                 db_ro_session=db_ro_session,
             )
 
@@ -197,7 +203,7 @@ class BotManager:
                 session_factory_ro=db_ro_session,
                 chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
                 conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
-                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
+                system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
             )
 
             ask_command_handler: CommandHandler = AskCommandHandlerImpl(
@@ -438,8 +444,8 @@ class BotManager:
                 prefix=self._settings.prefix,
                 minigame_uow=uow_factories.build_minigame_uow_factory(),
                 db_ro_session=db_ro_session,
-                system_prompt_repository_provider=providers_bundle.ai_providers.system_prompt_repo_provider,
-                llm_repository=providers_bundle.ai_providers.llm_repository,
+                system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                llm_repository=ai_container.llm_repository,
                 command_guess_word=self._settings.command_guess_word,
                 command_guess_letter=self._settings.command_guess_letter,
                 send_channel_message=chat_client.send_channel_message,
