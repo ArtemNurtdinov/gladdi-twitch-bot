@@ -58,7 +58,7 @@ class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOf
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
         economy_policy_provider: Provider[EconomyPolicy],
-        chat_use_case_provider: Provider[ChatUseCase],
+        chat_use_case: ChatUseCase,
         conversation_service_provider: Provider[ConversationService],
         battle_use_case_provider: Provider[BattleUseCase],
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
@@ -69,7 +69,7 @@ class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOf
             builder=self._build_uow,
         )
         self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._chat_use_case = chat_use_case
         self._conversation_service_provider = conversation_service_provider
         self._battle_use_case_provider = battle_use_case_provider
         self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
@@ -78,7 +78,7 @@ class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOf
         return SqlAlchemyBattleUnitOfWork(
             session=db,
             economy_policy=self._economy_policy_provider.get(db),
-            chat_use_case=self._chat_use_case_provider.get(db),
+            chat_use_case=self._chat_use_case,
             conversation_service=self._conversation_service_provider.get(db),
             battle_use_case=self._battle_use_case_provider.get(db),
             get_user_equipment_use_case=self._get_user_equipment_use_case_provider.get(db),

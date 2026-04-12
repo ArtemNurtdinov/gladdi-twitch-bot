@@ -68,7 +68,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         viewer_repository_provider: Provider[ViewerRepository],
         battle_use_case_provider: Provider[BattleUseCase],
         economy_policy_provider: Provider[EconomyPolicy],
-        chat_use_case_provider: Provider[ChatUseCase],
+        chat_use_case: ChatUseCase,
         conversation_service_provider: Provider[ConversationService],
     ):
         super().__init__(
@@ -80,7 +80,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         self._viewer_repository_provider = viewer_repository_provider
         self._battle_use_case_provider = battle_use_case_provider
         self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._chat_use_case = chat_use_case
         self._conversation_service_provider = conversation_service_provider
 
     def _build_uow(self, db: Session, read_only: bool) -> StreamStatusUnitOfWork:
@@ -90,7 +90,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
             viewer_repository=self._viewer_repository_provider.get(db),
             battle_use_case=self._battle_use_case_provider.get(db),
             economy_policy=self._economy_policy_provider.get(db),
-            chat_use_case=self._chat_use_case_provider.get(db),
+            chat_use_case=self._chat_use_case,
             conversation_service=self._conversation_service_provider.get(db),
             read_only=read_only,
         )

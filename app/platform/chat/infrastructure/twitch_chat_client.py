@@ -41,7 +41,7 @@ class TwitchChatClient(Client, PlatformChatClient):
             command_prefix=command_prefix,
             logger=logger,
         )
-
+        self._auth = auth
         self._token_user_id: str | None = None
         self._broadcaster_id: str | None = None
         self._subscribed_session_id: str | None = None
@@ -61,7 +61,7 @@ class TwitchChatClient(Client, PlatformChatClient):
         await self._subscribe_chat(reason="startup")
 
     async def _register_token(self) -> None:
-        payload = await self.add_token(self.auth.access_token, self.auth.refresh_token)
+        payload = await self.add_token(self._auth.access_token, self._auth.refresh_token)
         self._token_user_id = payload.user_id
         self._logger.log_info(f"set _token_user_id = {self._token_user_id}")
 

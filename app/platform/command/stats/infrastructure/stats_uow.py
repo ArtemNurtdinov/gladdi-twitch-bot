@@ -53,7 +53,7 @@ class SqlAlchemyStatsUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[StatsUnitOfWo
         economy_policy_provider: Provider[EconomyPolicy],
         betting_service_provider: Provider[BettingService],
         battle_use_case_provider: Provider[BattleUseCase],
-        chat_use_case_provider: Provider[ChatUseCase],
+        chat_use_case: ChatUseCase,
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -63,7 +63,7 @@ class SqlAlchemyStatsUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[StatsUnitOfWo
         self._economy_policy_provider = economy_policy_provider
         self._betting_service_provider = betting_service_provider
         self._battle_use_case_provider = battle_use_case_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> StatsUnitOfWork:
         return SqlAlchemyStatsUnitOfWork(
@@ -71,6 +71,6 @@ class SqlAlchemyStatsUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[StatsUnitOfWo
             economy_policy=self._economy_policy_provider.get(db),
             betting_service=self._betting_service_provider.get(db),
             battle_use_case=self._battle_use_case_provider.get(db),
-            chat_use_case=self._chat_use_case_provider.get(db),
+            chat_use_case=self._chat_use_case,
             read_only=read_only,
         )

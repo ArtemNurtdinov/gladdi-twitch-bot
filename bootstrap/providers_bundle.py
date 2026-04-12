@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from app.ai.bootstrap import AIProviders, build_ai_providers
 from app.battle.bootstrap import BattleProviders, build_battle_providers
 from app.betting.bootstrap import BettingProviders, build_betting_providers
-from app.chat.bootstrap import ChatProviders, build_chat_providers
 from app.core.logger.domain.logger import Logger
 from app.economy.bootstrap import EconomyProviders, build_economy_providers
 from app.equipment.bootstrap import EquipmentProviders, build_equipment_providers
@@ -19,7 +18,6 @@ from app.viewer.bootstrap import ViewerProviders, build_viewer_providers
 class ProvidersBundle:
     ai_providers: AIProviders
     stream_providers: StreamProviders
-    chat_providers: ChatProviders
     follow_providers: FollowProviders
     viewer_providers: ViewerProviders
     economy_providers: EconomyProviders
@@ -32,7 +30,6 @@ class ProvidersBundle:
 def build_providers_bundle(llmbox_host: str, intent_detector_host: str, logger: Logger) -> ProvidersBundle:
     stream_providers = build_stream_providers()
     ai_providers = build_ai_providers(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
-    chat_providers = build_chat_providers()
     follow_providers = build_follow_providers()
     viewer_providers = build_viewer_providers()
     economy_providers = build_economy_providers()
@@ -44,7 +41,6 @@ def build_providers_bundle(llmbox_host: str, intent_detector_host: str, logger: 
     return ProvidersBundle(
         ai_providers=ai_providers,
         stream_providers=stream_providers,
-        chat_providers=chat_providers,
         follow_providers=follow_providers,
         viewer_providers=viewer_providers,
         economy_providers=economy_providers,

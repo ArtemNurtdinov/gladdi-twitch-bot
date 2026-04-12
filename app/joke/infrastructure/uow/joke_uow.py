@@ -44,7 +44,7 @@ class SqlAlchemyJokeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[JokeUnitOfWork
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
         conversation_service_provider: Provider[ConversationService],
-        chat_use_case_provider: Provider[ChatUseCase],
+        chat_use_case: ChatUseCase,
         jokes_configuration_repository_provider: Provider[JokesConfigurationRepository],
     ):
         super().__init__(
@@ -53,14 +53,14 @@ class SqlAlchemyJokeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[JokeUnitOfWork
             builder=self._build_uow,
         )
         self._conversation_service_provider = conversation_service_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._chat_use_case = chat_use_case
         self._jokes_configuration_repository_provider = jokes_configuration_repository_provider
 
     def _build_uow(self, db: Session, read_only: bool) -> JokeUnitOfWork:
         return SqlAlchemyJokeUnitOfWork(
             session=db,
             conversation_service=self._conversation_service_provider.get(db),
-            chat_use_case=self._chat_use_case_provider.get(db),
+            chat_use_case=self._chat_use_case,
             jokes_configuration_repository=self._jokes_configuration_repository_provider.get(db),
             read_only=read_only,
         )

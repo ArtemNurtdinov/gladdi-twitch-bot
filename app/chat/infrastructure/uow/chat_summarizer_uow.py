@@ -31,7 +31,7 @@ class SqlAlchemyChatSummarizerUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Chat
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
         stream_repository_provider: Provider[StreamRepository],
-        chat_use_case_provider: Provider[ChatUseCase],
+        chat_use_case: ChatUseCase,
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -39,12 +39,12 @@ class SqlAlchemyChatSummarizerUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Chat
             builder=self._build_uow,
         )
         self._stream_repository_provider = stream_repository_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> ChatSummarizerUnitOfWork:
         return SqlAlchemyChatSummarizerUnitOfWork(
             session=db,
             stream_repository=self._stream_repository_provider.get(db),
-            chat_use_case=self._chat_use_case_provider.get(db),
+            chat_use_case=self._chat_use_case,
             read_only=read_only,
         )

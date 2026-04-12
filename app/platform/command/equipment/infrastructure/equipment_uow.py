@@ -37,7 +37,7 @@ class SqlAlchemyEquipmentUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Equipment
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
         get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
-        chat_use_case_provider: Provider[ChatUseCase],
+        chat_use_case: ChatUseCase,
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -45,12 +45,12 @@ class SqlAlchemyEquipmentUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Equipment
             builder=self._build_uow,
         )
         self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> EquipmentUnitOfWork:
         return SqlAlchemyEquipmentUnitOfWork(
             session=db,
             get_user_equipment_use_case=self._get_user_equipment_use_case_provider.get(db),
-            chat_use_case=self._chat_use_case_provider.get(db),
+            chat_use_case=self._chat_use_case,
             read_only=read_only,
         )

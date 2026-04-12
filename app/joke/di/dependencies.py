@@ -27,14 +27,14 @@ def provide_joke_unit_of_work_factory(
     session_factory_rw: SessionFactory,
     session_factory_ro: SessionFactory,
     conversation_service_provider: Provider[ConversationService],
-    chat_use_case_provider: Provider[ChatUseCase],
+    chat_use_case: ChatUseCase,
     jokes_configuration_repository_provider: Provider[JokesConfigurationRepository],
 ) -> JokeUnitOfWorkFactory:
     return SqlAlchemyJokeUnitOfWorkFactory(
         session_factory_rw=session_factory_rw,
         session_factory_ro=session_factory_ro,
         conversation_service_provider=conversation_service_provider,
-        chat_use_case_provider=chat_use_case_provider,
+        chat_use_case=chat_use_case,
         jokes_configuration_repository_provider=jokes_configuration_repository_provider,
     )
 

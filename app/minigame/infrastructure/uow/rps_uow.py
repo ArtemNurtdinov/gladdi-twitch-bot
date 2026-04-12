@@ -31,7 +31,7 @@ class SqlAlchemyRpsUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[RpsUnitOfWork],
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
         economy_policy_provider: Provider[EconomyPolicy],
-        chat_use_case_provider: Provider[ChatUseCase],
+        chat_use_case: ChatUseCase,
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -39,12 +39,12 @@ class SqlAlchemyRpsUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[RpsUnitOfWork],
             builder=self._build_uow,
         )
         self._economy_policy_provider = economy_policy_provider
-        self._chat_use_case_provider = chat_use_case_provider
+        self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> RpsUnitOfWork:
         return SqlAlchemyRpsUnitOfWork(
             session=db,
             economy_policy=self._economy_policy_provider.get(db),
-            chat_use_case=self._chat_use_case_provider.get(db),
+            chat_use_case=self._chat_use_case,
             read_only=read_only,
         )
