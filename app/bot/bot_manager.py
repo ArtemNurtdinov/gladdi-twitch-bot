@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.bot.domain.model.bot_settings import BotSettings
@@ -592,7 +592,7 @@ class BotManager:
             self._task_runner.start_all()
 
             self._status = BotStatus.RUNNING
-            self._started_at = datetime.utcnow()
+            self._started_at = datetime.now(UTC)
             self._last_error = None
             self._task = asyncio.create_task(self._chat_client.start_chat())
             self._task.add_done_callback(self._on_bot_done)
