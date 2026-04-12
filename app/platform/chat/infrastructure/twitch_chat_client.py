@@ -33,7 +33,6 @@ class TwitchChatClient(Client, PlatformChatClient):
         Client.__init__(self, client_id=auth.client_id, client_secret=auth.client_secret, bot_id=bot_id, fetch_client_user=False)
         PlatformChatClient.__init__(
             self,
-            auth=auth,
             handle_chat_message_use_case=handle_chat_message_use_case,
             handle_reply_use_case=handle_reply_use_case,
             command_router=command_router,

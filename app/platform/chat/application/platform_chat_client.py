@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from app.core.logger.domain.logger import Logger
-from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.application.model import ChatMessageDTO
@@ -14,7 +13,6 @@ from app.platform.command.domain.command_router import CommandRouter
 class PlatformChatClient(ABC):
     def __init__(
         self,
-        auth: PlatformAuth,
         handle_chat_message_use_case: HandleChatMessageUseCase,
         handle_reply_use_case: HandleReplyUseCase,
         command_router: CommandRouter,
@@ -23,7 +21,6 @@ class PlatformChatClient(ABC):
         command_prefix: str,
         logger: Logger,
     ):
-        self.auth = auth
         self._handle_chat_message_use_case = handle_chat_message_use_case
         self._handle_reply_use_case = handle_reply_use_case
         self._command_router = command_router

@@ -27,12 +27,8 @@ from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGa
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.dependencies import provide_notification_repository, provide_telegram_bot
-from app.platform.auth.application.di.dependencies import (
-    provide_handle_token_checker_use_case,
-    provide_platform_auth,
-    provide_token_checker_job,
-)
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
+from app.platform.auth.di.container import PlatformAuthContainer
 from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
@@ -145,9 +141,9 @@ class BotManager:
             if self._task and not self._task.done():
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            platform_auth = provide_platform_auth(access_token, refresh_token, client_id, client_secret, logger)
+            platform_auth_container = PlatformAuthContainer(access_token, refresh_token, client_id, client_secret, logger)
 
-            self._api_client: ApiClient = TwitchHelixClient(platform_auth)
+            self._api_client: ApiClient = TwitchHelixClient(platform_auth_container.platform_auth)
             platform_repository: PlatformRepository = PlatformRepositoryImpl(self._api_client, self._logger)
 
             providers_bundle = build_providers_bundle(
@@ -411,7 +407,7 @@ class BotManager:
             )
 
             chat_client: PlatformChatClient = TwitchChatClient(
-                auth=platform_auth,
+                auth=platform_auth_container.platform_auth,
                 handle_chat_message_use_case=handle_chat_message_use_case,
                 handle_reply_use_case=handle_reply_use_case,
                 command_router=command_router,
@@ -473,9 +469,7 @@ class BotManager:
                 logger=logger,
             )
 
-            token_checker_job: TokenCheckerJob = provide_token_checker_job(
-                handle_token_checker_use_case=provide_handle_token_checker_use_case(platform_auth, logger), logger=logger
-            )
+            token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
 
             stream_status_job: StreamStatusJob = provide_stream_status_job(
                 channel_name=channel_name,
