@@ -314,7 +314,6 @@ class BotManager:
 
             help_command_handler: CommandHandler = HelpCommandHandlerImpl(
                 command_prefix=self._settings.prefix,
-                command_name=self._settings.command_help,
                 handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=uow_factories.build_help_uow_factory()),
                 commands=commands,
                 bot_name=bot_name,

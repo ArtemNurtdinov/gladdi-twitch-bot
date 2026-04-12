@@ -9,13 +9,11 @@ class HelpCommandHandlerImpl(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
-        command_name: str,
         handle_help_use_case: HandleHelpUseCase,
         commands: set[str],
         bot_name: str,
     ):
         self.command_prefix = command_prefix
-        self.command_name = command_name
         self._handle_help_use_case = handle_help_use_case
         self.commands = commands
         self._bot_name = bot_name
