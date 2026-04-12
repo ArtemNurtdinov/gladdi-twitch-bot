@@ -9,13 +9,11 @@ class EquipmentCommandHandlerImpl(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
-        command_name: str,
         command_shop: str,
         handle_equipment_use_case: HandleEquipmentUseCase,
         bot_name: str,
     ):
         self._handle_equipment_use_case = handle_equipment_use_case
-        self.command_name = command_name
         self.command_shop = command_shop
         self.command_prefix = command_prefix
         self._bot_name = bot_name

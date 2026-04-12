@@ -1,15 +1,12 @@
-from app.core.logger.domain.logger import Logger
 from app.platform.command.balance.application.balance_uow import BalanceUnitOfWorkFactory
 from app.platform.command.balance.application.model import BalanceDTO
 
 
 class HandleBalanceUseCase:
-    def __init__(self, balance_uow: BalanceUnitOfWorkFactory, logger: Logger):
+    def __init__(self, balance_uow: BalanceUnitOfWorkFactory):
         self._balance_uow = balance_uow
-        self._logger = logger.create_child(__name__)
 
     async def handle(self, command_balance: BalanceDTO) -> str:
-        self._logger.log_info(f"handle balance command {command_balance}")
         with self._balance_uow.create(read_only=True) as uow:
             user_balance = uow.economy_policy.get_user_balance(
                 channel_name=command_balance.channel_name,

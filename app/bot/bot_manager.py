@@ -234,14 +234,11 @@ class BotManager:
             balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(
                 handle_balance_use_case=HandleBalanceUseCase(
                     balance_uow=uow_factories.build_balance_uow_factory(),
-                    logger=logger,
                 ),
                 bot_name=bot_name,
             )
 
             bonus_command_handler: CommandHandler = BonusCommandHandlerImpl(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_bonus,
                 handle_bonus_use_case=HandleBonusUseCase(
                     bonus_uow=uow_factories.build_bonus_uow_factory(),
                 ),
@@ -278,7 +275,6 @@ class BotManager:
 
             equipment_command_handler: CommandHandler = EquipmentCommandHandlerImpl(
                 command_prefix=self._settings.prefix,
-                command_name=self._settings.command_equipment,
                 command_shop=self._settings.command_shop,
                 handle_equipment_use_case=HandleEquipmentUseCase(
                     unit_of_work_factory=uow_factories.build_equipment_uow_factory(),

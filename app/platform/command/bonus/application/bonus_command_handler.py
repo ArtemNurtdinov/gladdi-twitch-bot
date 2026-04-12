@@ -6,15 +6,7 @@ from app.platform.command.domain.command_handler import CommandHandler
 
 
 class BonusCommandHandlerImpl(CommandHandler):
-    def __init__(
-        self,
-        command_prefix: str,
-        command_name: str,
-        handle_bonus_use_case: HandleBonusUseCase,
-        bot_name: str,
-    ):
-        self.command_prefix = command_prefix
-        self.command_name = command_name
+    def __init__(self, handle_bonus_use_case: HandleBonusUseCase, bot_name: str):
         self._handle_bonus_use_case = handle_bonus_use_case
         self._bot_name = bot_name
 
