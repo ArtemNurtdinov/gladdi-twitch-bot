@@ -163,6 +163,7 @@ class BotManager:
                 chat_use_case=get_chat_use_case(),
                 platform_repository=platform_repository,
                 system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                conversation_service_provider=ai_container.conversation_service_provider,
             )
 
             bot_user = await platform_repository.get_authenticated_user()
@@ -173,10 +174,8 @@ class BotManager:
             battle_waiting_user = {"value": None}
             chat_summary_state = ChatSummaryState()
 
-            chat_response_uow_factory = ai_container.chat_response_uow_factory(providers_bundle.ai_providers.conversation_service_provider)
-
             generate_response_use_case = GenerateResponseUseCase(
-                chat_response_uow_factory=chat_response_uow_factory,
+                chat_response_uow_factory=ai_container.chat_response_uow_factory(),
                 llm_repository=ai_container.llm_repository,
                 system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                 db_ro_session=db_ro_session,
@@ -198,7 +197,7 @@ class BotManager:
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
                 chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
-                conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
+                conversation_service_provider=ai_container.conversation_service_provider,
                 system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
             )
 
@@ -461,7 +460,7 @@ class BotManager:
                     joke_uow_factory=provide_joke_unit_of_work_factory(
                         session_factory_rw=db_rw_session,
                         session_factory_ro=db_ro_session,
-                        conversation_service_provider=providers_bundle.ai_providers.conversation_service_provider,
+                        conversation_service_provider=ai_container.conversation_service_provider,
                         chat_use_case=get_chat_use_case(),
                         jokes_configuration_repository_provider=Provider(
                             lambda session: JokesConfigurationRepositoryImpl(session, JokesConfigurationMapper())

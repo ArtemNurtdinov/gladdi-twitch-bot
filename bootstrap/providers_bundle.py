@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.ai.bootstrap import AIProviders, build_ai_providers
 from app.battle.bootstrap import BattleProviders, build_battle_providers
 from app.betting.bootstrap import BettingProviders, build_betting_providers
 from app.core.logger.domain.logger import Logger
@@ -16,7 +15,6 @@ from app.viewer.bootstrap import ViewerProviders, build_viewer_providers
 
 @dataclass(frozen=True)
 class ProvidersBundle:
-    ai_providers: AIProviders
     stream_providers: StreamProviders
     follow_providers: FollowProviders
     viewer_providers: ViewerProviders
@@ -29,7 +27,6 @@ class ProvidersBundle:
 
 def build_providers_bundle(logger: Logger) -> ProvidersBundle:
     stream_providers = build_stream_providers()
-    ai_providers = build_ai_providers()
     follow_providers = build_follow_providers()
     viewer_providers = build_viewer_providers()
     economy_providers = build_economy_providers()
@@ -39,7 +36,6 @@ def build_providers_bundle(logger: Logger) -> ProvidersBundle:
     betting_providers = build_betting_providers()
 
     return ProvidersBundle(
-        ai_providers=ai_providers,
         stream_providers=stream_providers,
         follow_providers=follow_providers,
         viewer_providers=viewer_providers,

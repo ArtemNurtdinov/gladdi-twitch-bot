@@ -1,5 +1,6 @@
 from app.ai.gen.application.uow.chat_response_uow import ChatResponseUnitOfWorkFactory
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.conversation.infrastructure.conversation_repository import ConversationRepositoryImpl
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.ai.gen.llm.infrastructure.llm_repository import LLMRepositoryImpl
 from app.ai.gen.prompt.infrastructure.system_prompt_repository import SystemPromptRepositoryImpl
@@ -20,10 +21,11 @@ class AIContainer:
             unit_of_work_factory=SimpleIntentUnitOfWorkFactory(self.intent_detector, self.llm_repository)
         )
         self.prompt_service = PromptService()
+        self.conversation_service_provider = Provider(lambda session: ConversationService(ConversationRepositoryImpl(session)))
 
-    def chat_response_uow_factory(self, conversation_service_provider: Provider[ConversationService]) -> ChatResponseUnitOfWorkFactory:
+    def chat_response_uow_factory(self) -> ChatResponseUnitOfWorkFactory:
         return SqlAlchemyChatResponseUnitOfWorkFactory(
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
-            conversation_service_provider=conversation_service_provider,
+            conversation_service_provider=self.conversation_service_provider,
         )

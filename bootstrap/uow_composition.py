@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from app.ai.gen.application.uow.chat_response_uow import ChatResponseUnitOfWorkFactory
+from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
@@ -87,8 +88,8 @@ def create_uow_factories(
     chat_repository_provider: Provider[ChatRepository],
     platform_repository: PlatformRepository,
     system_prompt_repository_provider: Provider[SystemPromptRepository],
+    conversation_service_provider: Provider[ConversationService],
 ) -> UowFactories:
-    ai_providers = providers.ai_providers
     stream_providers = providers.stream_providers
     economy_providers = providers.economy_providers
     equipment_providers = providers.equipment_providers
@@ -106,7 +107,7 @@ def create_uow_factories(
             economy_policy_provider=economy_providers.economy_policy_provider,
             stream_repo_provider=stream_providers.stream_repo_provider,
             viewer_repo_provider=viewer_providers.viewer_repo_provider,
-            conversation_service_provider=ai_providers.conversation_service_provider,
+            conversation_service_provider=conversation_service_provider,
             system_prompt_repository_provider=system_prompt_repository_provider,
         )
 
@@ -114,7 +115,7 @@ def create_uow_factories(
         return SqlAlchemyChatResponseUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            conversation_service_provider=ai_providers.conversation_service_provider,
+            conversation_service_provider=conversation_service_provider,
         )
 
     def build_chat_summarizer_uow_factory() -> ChatSummarizerUnitOfWorkFactory:
@@ -139,7 +140,7 @@ def create_uow_factories(
             session_factory_ro=session_factory_ro,
             economy_policy_provider=economy_providers.economy_policy_provider,
             chat_use_case=chat_use_case,
-            conversation_service_provider=ai_providers.conversation_service_provider,
+            conversation_service_provider=conversation_service_provider,
             battle_use_case_provider=battle_providers.battle_use_case_provider,
             get_user_equipment_use_case_provider=equipment_providers.get_user_equipment_use_case_provider,
         )
@@ -234,7 +235,7 @@ def create_uow_factories(
             stream_repository_provider=stream_providers.stream_repo_provider,
             get_used_words_use_case_provider=minigame_providers.get_used_words_use_case_provider,
             add_used_words_use_case_provider=minigame_providers.add_used_words_use_case_provider,
-            conversation_service_provider=ai_providers.conversation_service_provider,
+            conversation_service_provider=conversation_service_provider,
             get_user_equipment_use_case=equipment_providers.get_user_equipment_use_case_provider,
         )
 
@@ -251,7 +252,7 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             chat_repo_provider=chat_repository_provider,
-            conversation_service_provider=ai_providers.conversation_service_provider,
+            conversation_service_provider=conversation_service_provider,
             system_prompt_repository_provider=system_prompt_repository_provider,
             platform_repository=platform_repository,
         )
@@ -279,7 +280,7 @@ def create_uow_factories(
             battle_use_case_provider=battle_providers.battle_use_case_provider,
             economy_policy_provider=economy_providers.economy_policy_provider,
             chat_use_case=chat_use_case,
-            conversation_service_provider=ai_providers.conversation_service_provider,
+            conversation_service_provider=conversation_service_provider,
         )
 
     def build_viewer_time_uow_factory() -> ViewerTimeUnitOfWorkFactory:
