@@ -76,7 +76,8 @@ from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.di.dependencies import provide_handle_stream_status_use_case, provide_stream_status_job
-from app.task.application.tasks import BackgroundTasks
+from app.task.domain.model.task import Task
+from app.task.domain.runner import TaskRunner
 from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.di.dependencies import provide_viewer_cache
 from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
@@ -98,12 +99,12 @@ class BotManager:
         self._lock = asyncio.Lock()
 
         self._chat_client: PlatformChatClient | None = None
-        self._background_tasks: BackgroundTasks | None = None
+        self._task_runner: TaskRunner | None = None
 
         self._task: asyncio.Task | None = None
 
     def _reset_state(self):
-        self._background_tasks = None
+        self._task_runner = None
         self._chat_client = None
         self._task = None
         self._started_at = None
@@ -576,20 +577,19 @@ class BotManager:
                 logger=logger,
             )
 
-            self._background_tasks = BackgroundTasks(
-                runner=BackgroundTaskRunner(),
-                jobs=[
-                    port_joke_job,
-                    token_checker_job,
-                    stream_status_job,
-                    chat_summarizer_job,
-                    minigame_job,
-                    viewer_time_job,
-                    followers_sync_job,
-                ],
-            )
+            jobs = [
+                port_joke_job,
+                token_checker_job,
+                stream_status_job,
+                chat_summarizer_job,
+                minigame_job,
+                viewer_time_job,
+                followers_sync_job,
+            ]
 
-            self._background_tasks.start_all()
+            tasks = [Task(job.name, job.run) for job in jobs]
+            self._task_runner: TaskRunner = BackgroundTaskRunner(tasks)
+            self._task_runner.start_all()
 
             self._status = BotStatus.RUNNING
             self._started_at = datetime.utcnow()
@@ -609,7 +609,7 @@ class BotManager:
             try:
                 self._status: BotStatus = BotStatus.STOPPED
                 await self._streaming_client.aclose()
-                await self._background_tasks.stop_all()
+                await self._task_runner.cancel_all()
                 await self._chat_client.stop_chat()
             except asyncio.CancelledError:
                 self._logger.log_debug("Задача бота отменена")

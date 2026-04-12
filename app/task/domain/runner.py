@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable
+
+from app.task.domain.model.task import Task
 
 
 class TaskRunner(ABC):
-    @abstractmethod
-    def register(self, name: str, coro_factory: Callable[[], Awaitable[None]]): ...
+    def __init__(self, tasks: list[Task]):
+        self.registry = tasks
 
     @abstractmethod
     def start_all(self): ...
