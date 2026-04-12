@@ -71,9 +71,8 @@ from app.platform.command.transfer.application.transfer_command_handler import T
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
-from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
-from app.stream.di.dependencies import provide_handle_stream_status_use_case, provide_stream_status_job
+from app.stream.di.container import get_stream_status_job
 from app.task.domain.model.task import Task
 from app.task.domain.runner import TaskRunner
 from app.task.infrastructure.runner import BackgroundTaskRunner
@@ -471,19 +470,16 @@ class BotManager:
 
             token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
 
-            stream_status_job: StreamStatusJob = provide_stream_status_job(
+            stream_status_job = get_stream_status_job(
                 channel_name=channel_name,
-                handle_stream_status_use_case=provide_handle_stream_status_use_case(
-                    user_cache=user_cache,
-                    platform_repository=platform_repository,
-                    stream_status_uow_factory=uow_factories.build_stream_status_uow_factory(),
-                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
-                    notification_repository=notifications_repository,
-                    notification_group_id=self._settings.group_id,
-                    generate_response_use_case=generate_response_use_case,
-                    state=chat_summary_state,
-                    logger=logger,
-                ),
+                user_cache=user_cache,
+                platform_repository=platform_repository,
+                stream_status_uow_factory=uow_factories.build_stream_status_uow_factory(),
+                minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                notification_repository=notifications_repository,
+                notification_group_id=self._settings.group_id,
+                generate_response_use_case=generate_response_use_case,
+                state=chat_summary_state,
                 logger=logger,
             )
 
