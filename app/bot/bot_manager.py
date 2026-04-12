@@ -234,6 +234,7 @@ class BotManager:
             balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(
                 handle_balance_use_case=HandleBalanceUseCase(
                     balance_uow=uow_factories.build_balance_uow_factory(),
+                    logger=logger,
                 ),
                 bot_name=bot_name,
             )

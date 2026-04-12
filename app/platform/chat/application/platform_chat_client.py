@@ -69,6 +69,7 @@ class PlatformChatClient(ABC):
             return False
         try:
             result = await command_handler.handle(self.channel_name, user_name, message)
+            self._logger.log_info(f"command handled: {result}")
             await self.send_channel_message(result)
             return True
         except Exception as e:

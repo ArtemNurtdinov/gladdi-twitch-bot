@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.platform.command.balance.application.model import BalanceDTO
@@ -16,7 +16,7 @@ class BalanceCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_nick=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             message=message,
         )
 
