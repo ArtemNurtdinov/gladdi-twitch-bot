@@ -207,7 +207,7 @@ class BotManager:
                 command_name=self._settings.command_gladdi,
                 handle_ask_use_case=HandleAskUseCase(
                     get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case,
-                    prompt_service=providers_bundle.ai_providers.prompt_service,
+                    prompt_service=ai_container.prompt_service,
                     unit_of_work_factory=ask_ouw_factory,
                     chat_response_use_case=generate_response_use_case,
                 ),
@@ -400,13 +400,13 @@ class BotManager:
             handle_chat_message_use_case = HandleChatMessageUseCase(
                 unit_of_work_factory=uow_factories.build_chat_message_uow_factory(),
                 get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case,
-                prompt_service=providers_bundle.ai_providers.prompt_service,
+                prompt_service=ai_container.prompt_service,
                 generate_response_use_case=generate_response_use_case,
             )
 
             handle_reply_use_case = HandleReplyUseCase(
                 chat_message_uow=uow_factories.build_chat_message_uow_factory(),
-                prompt_service=providers_bundle.ai_providers.prompt_service,
+                prompt_service=ai_container.prompt_service,
                 generate_response_use_case=generate_response_use_case,
             )
 

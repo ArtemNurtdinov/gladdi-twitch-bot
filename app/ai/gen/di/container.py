@@ -3,6 +3,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.ai.gen.llm.infrastructure.llm_repository import LLMRepositoryImpl
 from app.ai.gen.prompt.infrastructure.system_prompt_repository import SystemPromptRepositoryImpl
+from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
 from app.ai.intent.infrastructure.intent_uow import SimpleIntentUnitOfWorkFactory
@@ -18,6 +19,7 @@ class AIContainer:
         self.get_intent_from_text_use_case = GetIntentFromTextUseCase(
             unit_of_work_factory=SimpleIntentUnitOfWorkFactory(self.intent_detector, self.llm_repository)
         )
+        self.prompt_service = PromptService()
 
     def chat_response_uow_factory(self, conversation_service_provider: Provider[ConversationService]) -> ChatResponseUnitOfWorkFactory:
         return SqlAlchemyChatResponseUnitOfWorkFactory(
