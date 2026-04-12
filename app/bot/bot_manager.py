@@ -10,6 +10,7 @@ from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.core.logger.domain.logger import Logger
+from app.core.network.api.client import ApiClient
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
@@ -98,6 +99,7 @@ class BotManager:
         self._last_error: str | None = None
         self._lock = asyncio.Lock()
 
+        self._api_client: ApiClient | None = None
         self._chat_client: PlatformChatClient | None = None
         self._task_runner: TaskRunner | None = None
 
@@ -126,20 +128,6 @@ class BotManager:
         started_at = self._started_at.isoformat() if self._started_at else None
         return BotStatusResponse(status=self._status, started_at=started_at, last_error=self._last_error)
 
-    def validate_credentials(self, access_token: str, refresh_token: str, client_id: str, client_secret: str) -> None:
-        missing = []
-        if not client_id:
-            missing.append("client_id")
-        if not client_secret:
-            missing.append("client_secret")
-        if not refresh_token:
-            missing.append("refresh_token")
-        if not access_token:
-            missing.append("access_token")
-
-        if missing:
-            raise ValueError(f"Недостаточно данных для авторизации платформы: {', '.join(missing)}")
-
     async def start_bot(
         self,
         access_token: str,
@@ -156,14 +144,10 @@ class BotManager:
             if self._task and not self._task.done():
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            self.validate_credentials(access_token, refresh_token, client_id, client_secret)
-
             platform_auth = provide_platform_auth(access_token, refresh_token, client_id, client_secret, logger)
 
-            streaming_client = TwitchHelixClient(platform_auth)
-            platform_repository: PlatformRepository = PlatformRepositoryImpl(streaming_client, self._logger)
-
-            self._streaming_client = streaming_client
+            self._api_client: ApiClient = TwitchHelixClient(platform_auth)
+            platform_repository: PlatformRepository = PlatformRepositoryImpl(self._api_client, self._logger)
 
             providers_bundle = build_providers_bundle(
                 llmbox_host=llmbox_host,
@@ -604,7 +588,7 @@ class BotManager:
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже остановлен")
             try:
                 self._status: BotStatus = BotStatus.STOPPED
-                await self._streaming_client.aclose()
+                await self._api_client.close()
                 await self._task_runner.cancel_all()
                 await self._chat_client.stop_chat()
             except asyncio.CancelledError:

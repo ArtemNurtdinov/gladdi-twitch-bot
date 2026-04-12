@@ -37,5 +37,5 @@ class ApiClient(ABC):
         response = await self._client.post(url, params=params, headers=merged_headers, json=data)
         return ApiResponse(status_code=response.status_code, text=response.text, json_data=response.json())
 
-    async def aclose(self) -> None:
+    async def close(self) -> None:
         await self._client.aclose()
