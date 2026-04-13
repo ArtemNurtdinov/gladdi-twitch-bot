@@ -9,15 +9,10 @@ from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWorkFactory
 from app.follow.domain.repo import FollowersRepository
 from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
-from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
-from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
-from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
 from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
@@ -36,7 +31,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_minigame_uow_factory: Callable[[], MinigameUnitOfWorkFactory]
     build_rps_uow_factory: Callable[[], RpsUnitOfWorkFactory]
     build_follow_age_uow_factory: Callable[[], FollowAgeUnitOfWorkFactory]
     build_followers_sync_uow_factory: Callable[[], FollowersSyncUnitOfWorkFactory]
@@ -57,24 +51,8 @@ def create_uow_factories(
     follow_repository_provider: Provider[FollowersRepository],
     viewer_repository_provider: Provider[ViewerRepository],
     economy_policy_provider: Provider[EconomyPolicy],
-    get_user_equipment_use_case: GetUserEquipmentUseCase,
-    get_used_words_use_case: GetUsedWordsUseCase,
-    add_used_word_use_case: AddUsedWordsUseCase,
     battle_use_case: BattleUseCase,
 ) -> UowFactories:
-    def build_minigame_uow_factory() -> MinigameUnitOfWorkFactory:
-        return SqlAlchemyMinigameUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            chat_use_case=chat_use_case,
-            stream_repository_provider=stream_repository_provider,
-            get_used_words_use_case=get_used_words_use_case,
-            add_used_words_use_case=add_used_word_use_case,
-            conversation_service_provider=conversation_service_provider,
-            get_user_equipment_use_case=get_user_equipment_use_case,
-        )
-
     def build_rps_uow_factory() -> RpsUnitOfWorkFactory:
         return SqlAlchemyRpsUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
@@ -129,7 +107,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_minigame_uow_factory=build_minigame_uow_factory,
         build_rps_uow_factory=build_rps_uow_factory,
         build_follow_age_uow_factory=build_follow_age_uow_factory,
         build_followers_sync_uow_factory=build_followers_sync_uow_factory,

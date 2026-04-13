@@ -1,13 +1,29 @@
+from collections.abc import Awaitable, Callable
+
+from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.llm.domain.llm_repository import LLMRepository
+from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
+from app.core.logger.domain.logger import Logger
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
+from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
+from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
+from app.minigame.application.use_case.finish_rps_use_case import FinishRpsUseCase
+from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
+from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
+from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
+from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
+from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
+from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
@@ -57,9 +73,10 @@ from core.types import SessionFactory
 
 
 class PlatformContainer:
-    def __init__(self, session_factory_rw: SessionFactory, session_factory_ro: SessionFactory):
+    def __init__(self, session_factory_rw: SessionFactory, session_factory_ro: SessionFactory, logger: Logger):
         self._session_factory_rw = session_factory_rw
         self._session_factory_ro = session_factory_ro
+        self._logger = logger
 
     def bonus_uow_factory(
         self,
@@ -453,4 +470,152 @@ class PlatformContainer:
         handle_transfer_use_case = self.handle_transfer_use_case(economy_policy_provider, chat_use_case)
         return TransferCommandHandlerImpl(
             command_prefix=command_prefix, command_name=command_name, handle_transfer_use_case=handle_transfer_use_case, bot_name=bot_name
+        )
+
+    def minigame_uow_factory(
+        self,
+        economy_policy_provider: Provider[EconomyPolicy],
+        chat_use_case: ChatUseCase,
+        stream_repository_provider: Provider[StreamRepository],
+        get_used_words_use_case: GetUsedWordsUseCase,
+        add_used_words_use_case: AddUsedWordsUseCase,
+        conversation_service_provider: Provider[ConversationService],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
+    ) -> MinigameUnitOfWorkFactory:
+        return SqlAlchemyMinigameUnitOfWorkFactory(
+            session_factory_rw=self._session_factory_rw,
+            session_factory_ro=self._session_factory_ro,
+            economy_policy_provider=economy_policy_provider,
+            chat_use_case=chat_use_case,
+            stream_repository_provider=stream_repository_provider,
+            get_used_words_use_case=get_used_words_use_case,
+            add_used_words_use_case=add_used_words_use_case,
+            conversation_service_provider=conversation_service_provider,
+            get_user_equipment_use_case=get_user_equipment_use_case,
+        )
+
+    def start_word_game_use_case(
+        self,
+        prefix: str,
+        minigame_repository: MinigameRepository,
+        minigame_uow_factory: MinigameUnitOfWorkFactory,
+        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        llm_repository: LLMRepository,
+        command_guess_word: str,
+        command_guess_letter: str,
+        send_channel_message: Callable[[str], Awaitable[None]],
+        bot_name: str,
+    ) -> StartWordGameUseCase:
+        return StartWordGameUseCase(
+            minigame_repository,
+            prefix,
+            minigame_uow_factory,
+            self._session_factory_ro,
+            system_prompt_repository_provider,
+            llm_repository,
+            command_guess_word,
+            command_guess_letter,
+            send_channel_message,
+            bot_name,
+            self._logger,
+        )
+
+    def start_number_guess_game_use_case(
+        self,
+        prefix: str,
+        minigame_repository: MinigameRepository,
+        minigame_uow_factory: MinigameUnitOfWorkFactory,
+        command_name: str,
+        send_channel_message: Callable[[str], Awaitable[None]],
+        bot_name: str,
+    ) -> StartNumberGuessGameUseCase:
+        return StartNumberGuessGameUseCase(minigame_repository, prefix, command_name, send_channel_message, minigame_uow_factory, bot_name)
+
+    def start_rps_game_use_case(
+        self,
+        prefix: str,
+        minigame_repository: MinigameRepository,
+        minigame_uow_factory: MinigameUnitOfWorkFactory,
+        command_name: str,
+        send_channel_message: Callable[[str], Awaitable[None]],
+        bot_name: str,
+    ) -> StartRpsGameUseCase:
+        return StartRpsGameUseCase(minigame_repository, prefix, command_name, send_channel_message, minigame_uow_factory, bot_name)
+
+    def finish_rps_game_use_case(
+        self,
+        minigame_repository: MinigameRepository,
+        minigame_uow_factory: MinigameUnitOfWorkFactory,
+        bot_name: str,
+        send_channel_message: Callable[[str], Awaitable[None]],
+    ) -> FinishRpsUseCase:
+        return FinishRpsUseCase(minigame_repository, minigame_uow_factory, bot_name, send_channel_message)
+
+    def finish_expired_games_use_case(
+        self,
+        minigame_repository: MinigameRepository,
+        minigame_uow_factory: MinigameUnitOfWorkFactory,
+        send_channel_message: Callable[[str], Awaitable[None]],
+        bot_name: str,
+    ) -> FinishExpiredGamesUseCase:
+        return FinishExpiredGamesUseCase(minigame_repository, send_channel_message, minigame_uow_factory, bot_name)
+
+    def handle_minigame_tick_use_case(
+        self,
+        minigame_repository: MinigameRepository,
+        economy_policy_provider: Provider[EconomyPolicy],
+        chat_use_case: ChatUseCase,
+        stream_repository_provider: Provider[StreamRepository],
+        get_used_words_use_case: GetUsedWordsUseCase,
+        add_used_words_use_case: AddUsedWordsUseCase,
+        conversation_service_provider: Provider[ConversationService],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
+        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        llm_repository: LLMRepository,
+        prefix: str,
+        number_guess_name: str,
+        command_guess_word: str,
+        command_guess_letter: str,
+        rps_command_name: str,
+        send_channel_message: Callable[[str], Awaitable[None]],
+        bot_name: str,
+    ) -> HandleMinigameTickUseCase:
+        minigame_uow_factory = self.minigame_uow_factory(
+            economy_policy_provider,
+            chat_use_case,
+            stream_repository_provider,
+            get_used_words_use_case,
+            add_used_words_use_case,
+            conversation_service_provider,
+            get_user_equipment_use_case,
+        )
+        start_number_guess_game_use_case = self.start_number_guess_game_use_case(
+            prefix, minigame_repository, minigame_uow_factory, number_guess_name, send_channel_message, bot_name
+        )
+        start_word_game_use_case = self.start_word_game_use_case(
+            prefix,
+            minigame_repository,
+            minigame_uow_factory,
+            system_prompt_repository_provider,
+            llm_repository,
+            command_guess_word,
+            command_guess_letter,
+            send_channel_message,
+            bot_name,
+        )
+        start_rps_game_use_case = self.start_rps_game_use_case(
+            prefix, minigame_repository, minigame_uow_factory, rps_command_name, send_channel_message, bot_name
+        )
+        finish_rps_game_use_case = self.finish_rps_game_use_case(minigame_repository, minigame_uow_factory, bot_name, send_channel_message)
+        finish_expired_games_use_case = self.finish_expired_games_use_case(
+            minigame_repository, minigame_uow_factory, send_channel_message, bot_name
+        )
+        return HandleMinigameTickUseCase(
+            minigame_repository,
+            minigame_uow_factory,
+            start_number_guess_game_use_case,
+            start_word_game_use_case,
+            start_rps_game_use_case,
+            finish_rps_game_use_case,
+            finish_expired_games_use_case,
         )
