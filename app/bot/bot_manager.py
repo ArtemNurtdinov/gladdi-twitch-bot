@@ -15,6 +15,7 @@ from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
 from app.core.di.application_container import app_container
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
+from app.economy.di.container import EconomyContainer
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.di.container import FollowContainer
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
@@ -160,6 +161,7 @@ class BotManager:
             joke_container = JokeContainer(app_container.logger)
             stream_container = StreamContainer()
             follow_container = FollowContainer()
+            economy_container = EconomyContainer()
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -173,6 +175,7 @@ class BotManager:
                 stream_repository_provider=stream_container.stream_repository_provider,
                 follow_repository_provider=follow_container.followers_repository_provider,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
+                economy_policy_provider=economy_container.economy_policy_provider,
             )
 
             bot_user = await platform_repository.get_authenticated_user()

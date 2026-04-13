@@ -260,7 +260,7 @@ class HandleRollUseCase:
                     )
                 messages.append(no_timeout_message)
             else:
-                reason = f"Промах! Поразмышляй: {final_timeout} сек ⏰"
+                reason = f"Промах! Поразмышляй {final_timeout} сек ⏰"
 
                 if protection_message:
                     reason += f" {protection_message}"

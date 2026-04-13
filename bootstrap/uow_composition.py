@@ -11,6 +11,7 @@ from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWor
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWorkFactory
 from app.follow.domain.repo import FollowersRepository
 from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
@@ -95,8 +96,8 @@ def create_uow_factories(
     stream_repository_provider: Provider[StreamRepository],
     follow_repository_provider: Provider[FollowersRepository],
     viewer_repository_provider: Provider[ViewerRepository],
+    economy_policy_provider: Provider[EconomyPolicy],
 ) -> UowFactories:
-    economy_providers = providers.economy_providers
     equipment_providers = providers.equipment_providers
     minigame_providers = providers.minigame_providers
     battle_providers = providers.battle_providers
@@ -107,7 +108,7 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             chat_repo_provider=chat_repository_provider,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             stream_repo_provider=stream_repository_provider,
             viewer_repo_provider=viewer_repository_provider,
             conversation_service_provider=conversation_service_provider,
@@ -133,7 +134,7 @@ def create_uow_factories(
         return SqlAlchemyBalanceUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
         )
 
@@ -141,7 +142,7 @@ def create_uow_factories(
         return SqlAlchemyBattleUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
             conversation_service_provider=conversation_service_provider,
             battle_use_case_provider=battle_providers.battle_use_case_provider,
@@ -154,7 +155,7 @@ def create_uow_factories(
             session_factory_ro=session_factory_ro,
             stream_repository_provider=stream_repository_provider,
             get_user_equipment_use_case_provider=equipment_providers.get_user_equipment_use_case_provider,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
         )
 
@@ -170,7 +171,7 @@ def create_uow_factories(
         return SqlAlchemyGuessUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
             get_user_equipment_use_case=equipment_providers.get_user_equipment_use_case_provider,
         )
@@ -186,7 +187,7 @@ def create_uow_factories(
         return SqlAlchemyRollUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             betting_service_provider=betting_providers.betting_service_provider,
             get_user_equipment_use_case_provider=equipment_providers.get_user_equipment_use_case_provider,
             chat_use_case=chat_use_case,
@@ -196,7 +197,7 @@ def create_uow_factories(
         return SqlAlchemyShopUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             add_equipment_use_case_provider=equipment_providers.add_equipment_use_case_provider,
             equipment_exists_use_case_provider=equipment_providers.equipment_exists_use_case_provider,
             chat_use_case=chat_use_case,
@@ -207,7 +208,7 @@ def create_uow_factories(
         return SqlAlchemyStatsUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             betting_service_provider=betting_providers.betting_service_provider,
             battle_use_case_provider=battle_providers.battle_use_case_provider,
             chat_use_case=chat_use_case,
@@ -217,7 +218,7 @@ def create_uow_factories(
         return SqlAlchemyTopBottomUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
         )
 
@@ -225,7 +226,7 @@ def create_uow_factories(
         return SqlAlchemyTransferUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
         )
 
@@ -233,7 +234,7 @@ def create_uow_factories(
         return SqlAlchemyMinigameUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
             stream_repository_provider=stream_repository_provider,
             get_used_words_use_case_provider=minigame_providers.get_used_words_use_case_provider,
@@ -246,7 +247,7 @@ def create_uow_factories(
         return SqlAlchemyRpsUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
         )
 
@@ -281,7 +282,7 @@ def create_uow_factories(
             stream_repository_provider=stream_repository_provider,
             viewer_repository_provider=viewer_repository_provider,
             battle_use_case_provider=battle_providers.battle_use_case_provider,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
             conversation_service_provider=conversation_service_provider,
         )
@@ -291,7 +292,7 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             viewer_repository_provider=viewer_repository_provider,
-            economy_policy_provider=economy_providers.economy_policy_provider,
+            economy_policy_provider=economy_policy_provider,
             stream_repository_provider=stream_repository_provider,
         )
 

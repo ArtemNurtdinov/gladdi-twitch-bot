@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from app.economy.bootstrap import get_economy_policy_ro
-from app.economy.domain.economy_policy import EconomyPolicy
+from app.economy.di.container import EconomyContainer
 from app.follow.di.container import FollowContainer
 from app.viewer.application.model.viewer_detail_models import ViewerSessionDetail
 from app.viewer.di.container import ViewerContainer
@@ -19,11 +18,12 @@ router = APIRouter(prefix="/viewers", tags=["Viewers"])
 async def get_viewer_detail(
     channel_name: str,
     user_name: str,
-    economy_policy: EconomyPolicy = Depends(get_economy_policy_ro),
 ):
+    economy_container = EconomyContainer()
     follow_container = FollowContainer()
     viewer_container = ViewerContainer()
     with db_ro_session() as session:
+        economy_policy = economy_container.economy_policy(session)
         followers_repo = follow_container.followers_repository(session)
         get_viewer_detail_use_case = viewer_container.get_viewer_detail_use_case(followers_repo, economy_policy, session)
         result = get_viewer_detail_use_case.handle(channel_name, user_name)
