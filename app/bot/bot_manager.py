@@ -45,16 +45,12 @@ from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.shop.di.container import ShopContainer
-from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
-from app.stream.di.container import StreamContainer, get_stream_status_job
+from app.stream.di.container import StreamContainer
 from app.task.domain.model.task import Task
 from app.task.domain.runner import TaskRunner
 from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.di.container import ViewerContainer
-from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
-from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
-from bootstrap.uow_composition import create_uow_factories
 from core.db import db_ro_session, db_rw_session
 from core.provider import Provider
 
@@ -133,17 +129,6 @@ class BotManager:
             betting_container = BettingContainer()
             chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
             platform_container = PlatformContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
-
-            uow_factories = create_uow_factories(
-                session_factory_rw=db_rw_session,
-                session_factory_ro=db_ro_session,
-                chat_use_case=chat_container.chat_use_case(),
-                conversation_service_provider=ai_container.conversation_service_provider,
-                stream_repository_provider=stream_container.stream_repository_provider,
-                viewer_repository_provider=viewer_container.viewer_repository_provider,
-                economy_policy_provider=economy_container.economy_policy_provider,
-                battle_use_case=battle_container.battle_use_case(),
-            )
 
             minigame_repository = minigame_container.minigame_repository()
 
@@ -448,17 +433,21 @@ class BotManager:
 
             token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
 
-            stream_status_job: StreamStatusJob = get_stream_status_job(
+            stream_status_job = platform_container.stream_status_job(
                 channel_name=channel_name,
                 user_cache=viewer_container.viewer_cache(platform_repository),
                 platform_repository=platform_repository,
-                stream_status_uow_factory=uow_factories.build_stream_status_uow_factory(),
                 minigame_repository=minigame_repository,
                 notification_repository=notifications_repository,
                 notification_group_id=self._settings.group_id,
                 generate_response_use_case=generate_response_use_case,
                 state=chat_summary_state,
-                logger=logger,
+                stream_repository_provider=stream_container.stream_repository_provider,
+                viewer_repository_provider=viewer_container.viewer_repository_provider,
+                battle_use_case=battle_container.battle_use_case(),
+                economy_policy_provider=economy_container.economy_policy_provider,
+                chat_use_case=chat_container.chat_use_case(),
+                conversation_service_provider=ai_container.conversation_service_provider,
             )
 
             chat_summarizer_job: ChatSummarizerJob = chat_container.chat_summarizer_job(
@@ -492,15 +481,14 @@ class BotManager:
                 logger=logger,
             )
 
-            viewer_time_job: ViewerTimeJob = ViewerTimeJob(
+            viewer_time_job = platform_container.viewer_time_job(
+                stream_repository_provider=stream_container.stream_repository_provider,
+                viewer_repository_provider=viewer_container.viewer_repository_provider,
+                economy_policy_provider=economy_container.economy_policy_provider,
+                viewer_cache=viewer_container.viewer_cache(platform_repository),
+                platform_repository=platform_repository,
                 channel_name=channel_name,
-                handle_viewer_time_use_case=RewardViewerTimeUseCase(
-                    reward_viewer_time_uow=uow_factories.build_viewer_time_uow_factory(),
-                    user_cache=viewer_container.viewer_cache(platform_repository),
-                    platform_repository=platform_repository,
-                ),
-                bot_nick=bot_name,
-                logger=logger,
+                bot_name=bot_name,
             )
 
             followers_sync_job = platform_container.followers_sync_job(

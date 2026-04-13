@@ -6,6 +6,7 @@ from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.betting.application.betting_service import BettingService
+from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.core.logger.domain.logger import Logger
@@ -35,6 +36,7 @@ from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.moderation.application.chat_moderation_port import ChatModerationPort
+from app.notification.domain.repository import NotificationRepository
 from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
 from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
@@ -83,9 +85,19 @@ from app.platform.command.transfer.application.transfer_uow import TransferUnitO
 from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
 from app.shop.domain.repository import ShopItemRepository
+from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
+from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
+from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.domain.repo import StreamRepository
 from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
+from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
+from app.viewer.application.port.viewer_cache_port import ViewerCachePort
+from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
+from app.viewer.session.application.uow.viewer_time_uow import ViewerTimeUnitOfWorkFactory
+from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
+from app.viewer.session.domain.repository import ViewerRepository
+from app.viewer.session.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
 from core.provider import Provider
 from core.types import SessionFactory
 
@@ -743,3 +755,135 @@ class PlatformContainer:
             session_factory_rw=self._session_factory_rw,
             stream_repository_provider=stream_repository_provider,
         )
+
+    def stream_status_uow_factory(
+        self,
+        stream_repository_provider: Provider[StreamRepository],
+        viewer_repository_provider: Provider[ViewerRepository],
+        battle_use_case: BattleUseCase,
+        economy_policy_provider: Provider[EconomyPolicy],
+        chat_use_case: ChatUseCase,
+        conversation_service_provider: Provider[ConversationService],
+    ) -> StreamStatusUnitOfWorkFactory:
+        return SqlAlchemyStreamStatusUnitOfWorkFactory(
+            session_factory_rw=self._session_factory_rw,
+            session_factory_ro=self._session_factory_ro,
+            stream_repository_provider=stream_repository_provider,
+            viewer_repository_provider=viewer_repository_provider,
+            battle_use_case=battle_use_case,
+            economy_policy_provider=economy_policy_provider,
+            chat_use_case=chat_use_case,
+            conversation_service_provider=conversation_service_provider,
+        )
+
+    def handle_stream_status_use_case(
+        self,
+        user_cache: ViewerCachePort,
+        platform_repository: PlatformRepository,
+        minigame_repository: MinigameRepository,
+        notification_repository: NotificationRepository,
+        notification_group_id: int,
+        generate_response_use_case: GenerateResponseUseCase,
+        state: ChatSummaryState,
+        stream_repository_provider: Provider[StreamRepository],
+        viewer_repository_provider: Provider[ViewerRepository],
+        battle_use_case: BattleUseCase,
+        economy_policy_provider: Provider[EconomyPolicy],
+        chat_use_case: ChatUseCase,
+        conversation_service_provider: Provider[ConversationService],
+    ) -> HandleStreamStatusUseCase:
+        stream_status_uow_factory = self.stream_status_uow_factory(
+            stream_repository_provider,
+            viewer_repository_provider,
+            battle_use_case,
+            economy_policy_provider,
+            chat_use_case,
+            conversation_service_provider,
+        )
+        return HandleStreamStatusUseCase(
+            user_cache,
+            platform_repository,
+            stream_status_uow_factory,
+            minigame_repository,
+            notification_repository,
+            notification_group_id,
+            generate_response_use_case,
+            state,
+            self._logger,
+        )
+
+    def stream_status_job(
+        self,
+        channel_name: str,
+        user_cache: ViewerCachePort,
+        platform_repository: PlatformRepository,
+        minigame_repository: MinigameRepository,
+        notification_repository: NotificationRepository,
+        notification_group_id: int,
+        generate_response_use_case: GenerateResponseUseCase,
+        state: ChatSummaryState,
+        stream_repository_provider: Provider[StreamRepository],
+        viewer_repository_provider: Provider[ViewerRepository],
+        battle_use_case: BattleUseCase,
+        economy_policy_provider: Provider[EconomyPolicy],
+        chat_use_case: ChatUseCase,
+        conversation_service_provider: Provider[ConversationService],
+    ) -> StreamStatusJob:
+        handle_stream_status_use_case = self.handle_stream_status_use_case(
+            user_cache=user_cache,
+            platform_repository=platform_repository,
+            minigame_repository=minigame_repository,
+            notification_repository=notification_repository,
+            notification_group_id=notification_group_id,
+            generate_response_use_case=generate_response_use_case,
+            state=state,
+            stream_repository_provider=stream_repository_provider,
+            viewer_repository_provider=viewer_repository_provider,
+            battle_use_case=battle_use_case,
+            economy_policy_provider=economy_policy_provider,
+            chat_use_case=chat_use_case,
+            conversation_service_provider=conversation_service_provider,
+        )
+        return StreamStatusJob(channel_name, handle_stream_status_use_case, self._logger)
+
+    def reward_viewer_time_uow_factory(
+        self,
+        stream_repository_provider: Provider[StreamRepository],
+        viewer_repository_provider: Provider[ViewerRepository],
+        economy_policy_provider: Provider[EconomyPolicy],
+    ) -> ViewerTimeUnitOfWorkFactory:
+        return SqlAlchemyViewerTimeUnitOfWorkFactory(
+            session_factory_ro=self._session_factory_ro,
+            session_factory_rw=self._session_factory_rw,
+            stream_repository_provider=stream_repository_provider,
+            viewer_repository_provider=viewer_repository_provider,
+            economy_policy_provider=economy_policy_provider,
+        )
+
+    def handle_viewer_time_use_case(
+        self,
+        stream_repository_provider: Provider[StreamRepository],
+        viewer_repository_provider: Provider[ViewerRepository],
+        economy_policy_provider: Provider[EconomyPolicy],
+        viewer_cache: ViewerCachePort,
+        platform_repository: PlatformRepository,
+    ) -> RewardViewerTimeUseCase:
+        reward_viewer_time_uow_factory = self.reward_viewer_time_uow_factory(
+            stream_repository_provider, viewer_repository_provider, economy_policy_provider
+        )
+        return RewardViewerTimeUseCase(reward_viewer_time_uow_factory, viewer_cache, platform_repository)
+
+    def viewer_time_job(
+        self,
+        stream_repository_provider: Provider[StreamRepository],
+        viewer_repository_provider: Provider[ViewerRepository],
+        economy_policy_provider: Provider[EconomyPolicy],
+        viewer_cache: ViewerCachePort,
+        platform_repository: PlatformRepository,
+        channel_name: str,
+        bot_name: str,
+    ) -> ViewerTimeJob:
+        handle_viewer_time_use_case = self.handle_viewer_time_use_case(
+            stream_repository_provider, viewer_repository_provider, economy_policy_provider, viewer_cache, platform_repository
+        )
+        return ViewerTimeJob(channel_name, handle_viewer_time_use_case, bot_name, self._logger)
