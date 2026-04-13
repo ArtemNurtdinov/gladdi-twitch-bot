@@ -21,8 +21,6 @@ from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitO
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
 from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
-from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWorkFactory
-from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
@@ -38,7 +36,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_transfer_uow_factory: Callable[[], TransferUnitOfWorkFactory]
     build_minigame_uow_factory: Callable[[], MinigameUnitOfWorkFactory]
     build_rps_uow_factory: Callable[[], RpsUnitOfWorkFactory]
     build_follow_age_uow_factory: Callable[[], FollowAgeUnitOfWorkFactory]
@@ -65,14 +62,6 @@ def create_uow_factories(
     add_used_word_use_case: AddUsedWordsUseCase,
     battle_use_case: BattleUseCase,
 ) -> UowFactories:
-    def build_transfer_uow_factory() -> TransferUnitOfWorkFactory:
-        return SqlAlchemyTransferUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            chat_use_case=chat_use_case,
-        )
-
     def build_minigame_uow_factory() -> MinigameUnitOfWorkFactory:
         return SqlAlchemyMinigameUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
@@ -140,7 +129,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_transfer_uow_factory=build_transfer_uow_factory,
         build_minigame_uow_factory=build_minigame_uow_factory,
         build_rps_uow_factory=build_rps_uow_factory,
         build_follow_age_uow_factory=build_follow_age_uow_factory,

@@ -52,8 +52,6 @@ from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 from app.platform.command.guess.application.rps_command_handler import RpsCommandHandlerImpl
-from app.platform.command.transfer.application.handle_transfer_use_case import HandleTransferUseCase
-from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
 from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
@@ -259,13 +257,12 @@ class BotManager:
                 bot_name=bot_name,
             )
 
-            transfer_command_handler: CommandHandler = TransferCommandHandlerImpl(
+            transfer_command_handler = platform_container.transfer_command_handler(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_transfer,
-                handle_transfer_use_case=HandleTransferUseCase(
-                    unit_of_work_factory=uow_factories.build_transfer_uow_factory(),
-                ),
-                bot_nick=bot_name,
+                economy_policy_provider=economy_container.economy_policy_provider,
+                chat_use_case=chat_container.chat_use_case(),
+                bot_name=bot_name,
             )
 
             shop_command_handler = platform_container.shop_command_handler(

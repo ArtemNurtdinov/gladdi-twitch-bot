@@ -46,6 +46,10 @@ from app.platform.command.top_bottom.application.handle_top_bottom_use_case impo
 from app.platform.command.top_bottom.application.top_bottom_uow import TopBottomUnitOfWorkFactory
 from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandlerImpl
 from app.platform.command.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
+from app.platform.command.transfer.application.handle_transfer_use_case import HandleTransferUseCase
+from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
+from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWorkFactory
+from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.shop.domain.repository import ShopItemRepository
 from app.stream.domain.repo import StreamRepository
 from core.provider import Provider
@@ -421,3 +425,32 @@ class PlatformContainer:
     ) -> CommandHandler:
         handle_top_bottom_use_case = self.handle_top_bottom_use_case(economy_policy_provider, chat_use_case)
         return BottomCommandHandlerImpl(handle_top_bottom_use_case, bot_name)
+
+    def transfer_uow_factory(
+        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+    ) -> TransferUnitOfWorkFactory:
+        return SqlAlchemyTransferUnitOfWorkFactory(
+            session_factory_ro=self._session_factory_ro,
+            session_factory_rw=self._session_factory_rw,
+            economy_policy_provider=economy_policy_provider,
+            chat_use_case=chat_use_case,
+        )
+
+    def handle_transfer_use_case(
+        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+    ) -> HandleTransferUseCase:
+        transfer_uow_factory = self.transfer_uow_factory(economy_policy_provider, chat_use_case)
+        return HandleTransferUseCase(transfer_uow_factory)
+
+    def transfer_command_handler(
+        self,
+        command_prefix: str,
+        command_name: str,
+        economy_policy_provider: Provider[EconomyPolicy],
+        chat_use_case: ChatUseCase,
+        bot_name: str,
+    ) -> CommandHandler:
+        handle_transfer_use_case = self.handle_transfer_use_case(economy_policy_provider, chat_use_case)
+        return TransferCommandHandlerImpl(
+            command_prefix=command_prefix, command_name=command_name, handle_transfer_use_case=handle_transfer_use_case, bot_name=bot_name
+        )
