@@ -19,9 +19,9 @@ from core.provider import Provider
 class AIContainer:
     def __init__(self, llmbox_host: str, intent_detector_host: str):
         self.llm_repository = LLMRepositoryImpl(llmbox_host)
-        self.system_prompt_repo_provider = Provider(self._system_prompt_repository)
         self.intent_detector = IntentDetectorClientImpl(intent_detector_host)
         self.prompt_service = PromptService()
+        self.system_prompt_repo_provider = Provider(self._system_prompt_repository)
         self.conversation_service_provider = Provider(self._conversation_service)
 
     def _system_prompt_repository(self, session: Session) -> SystemPromptRepository:
