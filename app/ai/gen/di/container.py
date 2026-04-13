@@ -6,6 +6,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.conversation.infrastructure.conversation_repository import ConversationRepositoryImpl
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.ai.gen.llm.infrastructure.llm_repository import LLMRepositoryImpl
+from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.ai.gen.prompt.infrastructure.system_prompt_repository import SystemPromptRepositoryImpl
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
@@ -18,10 +19,13 @@ from core.provider import Provider
 class AIContainer:
     def __init__(self, llmbox_host: str, intent_detector_host: str):
         self.llm_repository = LLMRepositoryImpl(llmbox_host)
-        self.system_prompt_repo_provider = Provider(lambda session: SystemPromptRepositoryImpl(session))
+        self.system_prompt_repo_provider = Provider(self._system_prompt_repository)
         self.intent_detector = IntentDetectorClientImpl(intent_detector_host)
         self.prompt_service = PromptService()
         self.conversation_service_provider = Provider(self._conversation_service)
+
+    def _system_prompt_repository(self, session: Session) -> SystemPromptRepository:
+        return SystemPromptRepositoryImpl(session)
 
     def _conversation_repository(self, session: Session) -> ConversationRepository:
         return ConversationRepositoryImpl(session)
