@@ -16,6 +16,7 @@ from app.core.di.application_container import app_container
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
+from app.follow.di.container import FollowContainer
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.di.container import JokeContainer
@@ -158,6 +159,7 @@ class BotManager:
             )
             joke_container = JokeContainer(app_container.logger)
             stream_container = StreamContainer()
+            follow_container = FollowContainer()
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -169,6 +171,7 @@ class BotManager:
                 system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                 conversation_service_provider=ai_container.conversation_service_provider,
                 stream_repository_provider=stream_container.stream_repository_provider,
+                follow_repository_provider=follow_container.followers_repository_provider,
             )
 
             bot_user = await platform_repository.get_authenticated_user()

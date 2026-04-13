@@ -12,6 +12,7 @@ from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
 from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWorkFactory
+from app.follow.domain.repo import FollowersRepository
 from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
@@ -91,13 +92,13 @@ def create_uow_factories(
     system_prompt_repository_provider: Provider[SystemPromptRepository],
     conversation_service_provider: Provider[ConversationService],
     stream_repository_provider: Provider[StreamRepository],
+    follow_repository_provider: Provider[FollowersRepository],
 ) -> UowFactories:
     economy_providers = providers.economy_providers
     equipment_providers = providers.equipment_providers
     minigame_providers = providers.minigame_providers
     battle_providers = providers.battle_providers
     betting_providers = providers.betting_providers
-    follow_providers = providers.follow_providers
     viewer_providers = providers.viewer_providers
 
     def build_chat_message_uow_factory() -> ChatMessageUnitOfWorkFactory:
@@ -262,7 +263,7 @@ def create_uow_factories(
         return SqlAlchemyFollowersSyncUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            followers_repository_provider=follow_providers.followers_repository_provider,
+            followers_repository_provider=follow_repository_provider,
         )
 
     def build_restore_stream_context_uow_factory() -> RestoreStreamContextUnitOfWorkFactory:
