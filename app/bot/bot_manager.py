@@ -1,7 +1,6 @@
 import asyncio
 from datetime import UTC, datetime
 
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.di.container import AIContainer
 from app.battle.di.container import BattleContainer
 from app.betting.di.container import BettingContainer
@@ -41,9 +40,6 @@ from app.platform.command.battle.application.handle_battle_use_case import Handl
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.di.container import PlatformContainer
-from app.platform.domain.repository import PlatformRepository
-from app.platform.infrastructure.api.client import TwitchHelixClient
-from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.shop.di.container import ShopContainer
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.di.container import StreamContainer
@@ -111,12 +107,13 @@ class BotManager:
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже запущен")
 
             platform_auth_container = PlatformAuthContainer(access_token, refresh_token, client_id, client_secret, logger)
-
-            self._api_client: ApiClient = TwitchHelixClient(platform_auth_container.platform_auth)
-            platform_repository: PlatformRepository = PlatformRepositoryImpl(self._api_client, self._logger)
-
             viewer_container = ViewerContainer()
-            ai_container = AIContainer(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
+            ai_container = AIContainer(
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                llmbox_host=llmbox_host,
+                intent_detector_host=intent_detector_host,
+            )
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             joke_container = JokeContainer(app_container.logger)
             stream_container = StreamContainer()
@@ -128,11 +125,17 @@ class BotManager:
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             betting_container = BettingContainer()
             chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
-            platform_container = PlatformContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
+            platform_container = PlatformContainer(
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                platform_auth_container=platform_auth_container,
+                logger=logger,
+            )
 
             minigame_repository = minigame_container.minigame_repository()
+            self._api_client = platform_container.api_client
 
-            bot_user = await platform_repository.get_authenticated_user()
+            bot_user = await platform_container.platform_repository().get_authenticated_user()
             if not bot_user:
                 raise ValueError("Не удалось получить профиль бота по токену (GET /users). Проверьте авторизацию.")
             bot_name = bot_user.display_name.lower()
@@ -140,25 +143,20 @@ class BotManager:
             battle_waiting_user = {"value": None}
             chat_summary_state = ChatSummaryState()
 
-            generate_response_use_case = GenerateResponseUseCase(
-                chat_response_uow_factory=ai_container.chat_response_uow_factory(),
-                llm_repository=ai_container.llm_repository,
-                system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
-                db_ro_session=db_ro_session,
-            )
-
             moderation_service = ModerationService(
-                platform_repository=platform_repository, user_cache=viewer_container.viewer_cache(platform_repository), logger=logger
+                platform_repository=platform_container.platform_repository(),
+                user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
+                logger=logger,
             )
 
             followage_command_handler = platform_container.followage_command_handler(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_followage,
-                generate_response_use_case=generate_response_use_case,
+                generate_response_use_case=ai_container.generate_response_use_case(),
                 chat_repo_provider=chat_container.chat_repository_provider,
                 conversation_service_provider=ai_container.conversation_service_provider,
                 system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
-                platform_repository=platform_repository,
+                platform_repository=platform_container.platform_repository(),
                 bot_name=bot_name,
             )
 
@@ -175,7 +173,7 @@ class BotManager:
                     get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case(),
                     prompt_service=ai_container.prompt_service,
                     unit_of_work_factory=ask_ouw_factory,
-                    chat_response_use_case=generate_response_use_case,
+                    chat_response_use_case=ai_container.generate_response_use_case(),
                 ),
                 bot_nick=bot_name,
             )
@@ -190,7 +188,7 @@ class BotManager:
                         conversation_service_provider=ai_container.conversation_service_provider,
                         get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     ),
-                    chat_response_use_case=generate_response_use_case,
+                    chat_response_use_case=ai_container.generate_response_use_case(),
                     calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
                 ),
                 chat_moderation=moderation_service,
@@ -375,7 +373,7 @@ class BotManager:
                 ),
                 get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case(),
                 prompt_service=ai_container.prompt_service,
-                generate_response_use_case=generate_response_use_case,
+                generate_response_use_case=ai_container.generate_response_use_case(),
             )
 
             handle_reply_use_case = HandleReplyUseCase(
@@ -387,7 +385,7 @@ class BotManager:
                     system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                 ),
                 prompt_service=ai_container.prompt_service,
-                generate_response_use_case=generate_response_use_case,
+                generate_response_use_case=ai_container.generate_response_use_case(),
             )
 
             chat_client: PlatformChatClient = TwitchChatClient(
@@ -411,7 +409,7 @@ class BotManager:
             self._chat_client = chat_client
 
             try:
-                await viewer_container.viewer_cache(platform_repository).warmup(channel_name)
+                await viewer_container.viewer_cache(platform_container.platform_repository()).warmup(channel_name)
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
@@ -426,21 +424,21 @@ class BotManager:
                 session_factory_ro=db_ro_session,
                 conversation_service_provider=ai_container.conversation_service_provider,
                 chat_use_case=chat_container.chat_use_case(),
-                user_cache=viewer_container.viewer_cache(platform_repository),
-                platform_repository=platform_repository,
-                generate_response_use_case=generate_response_use_case,
+                user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
+                platform_repository=platform_container.platform_repository(),
+                generate_response_use_case=ai_container.generate_response_use_case(),
             )
 
             token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
 
             stream_status_job = platform_container.stream_status_job(
                 channel_name=channel_name,
-                user_cache=viewer_container.viewer_cache(platform_repository),
-                platform_repository=platform_repository,
+                user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
+                platform_repository=platform_container.platform_repository(),
                 minigame_repository=minigame_repository,
                 notification_repository=notifications_repository,
                 notification_group_id=self._settings.group_id,
-                generate_response_use_case=generate_response_use_case,
+                generate_response_use_case=ai_container.generate_response_use_case(),
                 state=chat_summary_state,
                 stream_repository_provider=stream_container.stream_repository_provider,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
@@ -453,7 +451,7 @@ class BotManager:
             chat_summarizer_job: ChatSummarizerJob = chat_container.chat_summarizer_job(
                 channel_name=channel_name,
                 stream_repository_provider=stream_container.stream_repository_provider,
-                generate_response_use_case=generate_response_use_case,
+                generate_response_use_case=ai_container.generate_response_use_case(),
                 chat_summary_state=chat_summary_state,
             )
 
@@ -485,15 +483,15 @@ class BotManager:
                 stream_repository_provider=stream_container.stream_repository_provider,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
                 economy_policy_provider=economy_container.economy_policy_provider,
-                viewer_cache=viewer_container.viewer_cache(platform_repository),
-                platform_repository=platform_repository,
+                viewer_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
+                platform_repository=platform_container.platform_repository(),
                 channel_name=channel_name,
                 bot_name=bot_name,
             )
 
             followers_sync_job = platform_container.followers_sync_job(
                 channel_name=channel_name,
-                platform_repository=platform_repository,
+                platform_repository=platform_container.platform_repository(),
                 followers_repository_provider=follow_container.followers_repository_provider,
             )
 
