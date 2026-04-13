@@ -3,7 +3,6 @@ from functools import lru_cache
 from fastapi import APIRouter, Depends
 
 from app.bot.bot_manager import BotManager
-from app.bot.domain.model.bot_settings import DefaultBotSettings
 from app.bot.presentation.api.model.response.status import BotStatusResponse
 from app.core.di.application_container import app_container
 
@@ -12,8 +11,7 @@ router = APIRouter()
 
 @lru_cache
 def get_bot_manager() -> BotManager:
-    settings = DefaultBotSettings(group_id=app_container.config.telegram.group_id)
-    return BotManager(settings=settings, logger=app_container.logger)
+    return BotManager(config=app_container.config.bot, group_id=app_container.config.telegram.group_id, logger=app_container.logger)
 
 
 @router.get("/status", response_model=BotStatusResponse)

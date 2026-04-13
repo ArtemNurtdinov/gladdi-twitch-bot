@@ -4,7 +4,6 @@ from datetime import UTC, datetime
 from app.ai.gen.di.container import AIContainer
 from app.battle.di.container import BattleContainer
 from app.betting.di.container import BettingContainer
-from app.bot.domain.model.bot_settings import BotSettings
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.status import BotStatusResponse
@@ -12,6 +11,7 @@ from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.di.container import ChatContainer
 from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
+from app.core.config.domain.model.bot import BotConfig
 from app.core.di.application_container import app_container
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
@@ -52,8 +52,9 @@ from core.provider import Provider
 
 
 class BotManager:
-    def __init__(self, settings: BotSettings, logger: Logger):
-        self._settings = settings
+    def __init__(self, config: BotConfig, group_id: int, logger: Logger):
+        self._config = config
+        self._group_id = group_id
         self._logger = logger.create_child(__name__)
 
         self._status: BotStatus = BotStatus.STOPPED
@@ -150,8 +151,8 @@ class BotManager:
             )
 
             followage_command_handler = platform_container.followage_command_handler(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_followage,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_followage,
                 generate_response_use_case=ai_container.generate_response_use_case(),
                 chat_repo_provider=chat_container.chat_repository_provider,
                 conversation_service_provider=ai_container.conversation_service_provider,
@@ -167,8 +168,8 @@ class BotManager:
             )
 
             ask_command_handler: CommandHandler = AskCommandHandlerImpl(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_gladdi,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_gladdi,
                 handle_ask_use_case=HandleAskUseCase(
                     get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case(),
                     prompt_service=ai_container.prompt_service,
@@ -179,8 +180,8 @@ class BotManager:
             )
 
             battle_command_handler: CommandHandler = BattleCommandHandlerImpl(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_fight,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_fight,
                 handle_battle_use_case=HandleBattleUseCase(
                     battle_uow=battle_container.battle_uow_factory(
                         economy_policy_provider=economy_container.economy_policy_provider,
@@ -197,8 +198,8 @@ class BotManager:
             )
 
             roll_command_handler = platform_container.roll_command_handler(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_roll,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_roll,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 betting_service_provider=betting_container.betting_service_provider,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
@@ -223,17 +224,17 @@ class BotManager:
             )
 
             transfer_command_handler = platform_container.transfer_command_handler(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_transfer,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_transfer,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
             )
 
             shop_command_handler = platform_container.shop_command_handler(
-                command_prefix=self._settings.prefix,
-                command_shop_name=self._settings.command_shop,
-                command_buy_name=self._settings.command_buy,
+                command_prefix=self._config.prefix,
+                command_shop_name=self._config.command_shop,
+                command_buy_name=self._config.command_buy,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 add_equipment_use_case=equipment_container.add_equipment_use_case(),
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
@@ -243,8 +244,8 @@ class BotManager:
             )
 
             buy_command_handler = platform_container.buy_command_handler(
-                command_prefix=self._settings.prefix,
-                command_buy_name=self._settings.command_buy,
+                command_prefix=self._config.prefix,
+                command_buy_name=self._config.command_buy,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 add_equipment_use_case=equipment_container.add_equipment_use_case(),
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
@@ -254,8 +255,8 @@ class BotManager:
             )
 
             equipment_command_handler = platform_container.equipment_command_handler(
-                command_prefix=self._settings.prefix,
-                command_shop=self._settings.command_shop,
+                command_prefix=self._config.prefix,
+                command_shop=self._config.command_shop,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
@@ -274,28 +275,28 @@ class BotManager:
             )
 
             commands = {
-                self._settings.command_balance,
-                self._settings.command_bonus,
-                f"{self._settings.command_roll} [сумма]",
-                f"{self._settings.command_transfer} @ник сумма",
-                self._settings.command_shop,
-                f"{self._settings.command_buy} название",
-                self._settings.command_equipment,
-                self._settings.command_top,
-                self._settings.command_bottom,
-                self._settings.command_stats,
-                self._settings.command_fight,
-                f"{self._settings.command_gladdi} текст",
-                self._settings.command_followage,
+                self._config.command_balance,
+                self._config.command_bonus,
+                f"{self._config.command_roll} [сумма]",
+                f"{self._config.command_transfer} @ник сумма",
+                self._config.command_shop,
+                f"{self._config.command_buy} название",
+                self._config.command_equipment,
+                self._config.command_top,
+                self._config.command_bottom,
+                self._config.command_stats,
+                self._config.command_fight,
+                f"{self._config.command_gladdi} текст",
+                self._config.command_followage,
             }
 
             help_command_handler = platform_container.help_command_handler(
-                command_prefix=self._settings.prefix, chat_use_case=chat_container.chat_use_case(), commands=commands, bot_name=bot_name
+                command_prefix=self._config.prefix, chat_use_case=chat_container.chat_use_case(), commands=commands, bot_name=bot_name
             )
 
             stats_command_handler = platform_container.stats_command_handler(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_stats,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_stats,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 betting_service_provider=betting_container.betting_service_provider,
                 battle_use_case=battle_container.battle_use_case(),
@@ -304,8 +305,8 @@ class BotManager:
             )
 
             guess_number_command_handler = platform_container.guess_number_command_handler(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_guess,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_guess,
                 minigame_repository=minigame_repository,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 chat_use_case=chat_container.chat_use_case(),
@@ -314,8 +315,8 @@ class BotManager:
             )
 
             guess_letter_command_handler = platform_container.guess_letter_command_handler(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_guess_letter,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_guess_letter,
                 minigame_repository=minigame_repository,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 chat_use_case=chat_container.chat_use_case(),
@@ -324,8 +325,8 @@ class BotManager:
             )
 
             guess_word_command_handler = platform_container.guess_word_command_handler(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_guess_word,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_guess_word,
                 minigame_repository=minigame_repository,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 chat_use_case=chat_container.chat_use_case(),
@@ -334,34 +335,34 @@ class BotManager:
             )
 
             rps_command_handler = platform_container.rps_command_handler(
-                command_prefix=self._settings.prefix,
-                command_name=self._settings.command_rps,
+                command_prefix=self._config.prefix,
+                command_name=self._config.command_rps,
                 minigame_repository=minigame_repository,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
             )
 
-            command_router: CommandRouter = CommandRouterImpl(self._settings.prefix)
+            command_router: CommandRouter = CommandRouterImpl(self._config.prefix)
 
-            command_router.register_command_handler(self._settings.command_followage, followage_command_handler)
-            command_router.register_command_handler(self._settings.command_gladdi, ask_command_handler)
-            command_router.register_command_handler(self._settings.command_fight, battle_command_handler)
-            command_router.register_command_handler(self._settings.command_roll, roll_command_handler)
-            command_router.register_command_handler(self._settings.command_balance, balance_command_handler)
-            command_router.register_command_handler(self._settings.command_bonus, bonus_command_handler)
-            command_router.register_command_handler(self._settings.command_transfer, transfer_command_handler)
-            command_router.register_command_handler(self._settings.command_shop, shop_command_handler)
-            command_router.register_command_handler(self._settings.command_buy, buy_command_handler)
-            command_router.register_command_handler(self._settings.command_equipment, equipment_command_handler)
-            command_router.register_command_handler(self._settings.command_top, top_command_handler)
-            command_router.register_command_handler(self._settings.command_bottom, bottom_command_handler)
-            command_router.register_command_handler(self._settings.command_help, help_command_handler)
-            command_router.register_command_handler(self._settings.command_stats, stats_command_handler)
-            command_router.register_command_handler(self._settings.command_guess, guess_number_command_handler)
-            command_router.register_command_handler(self._settings.command_guess_letter, guess_letter_command_handler)
-            command_router.register_command_handler(self._settings.command_guess_word, guess_word_command_handler)
-            command_router.register_command_handler(self._settings.command_rps, rps_command_handler)
+            command_router.register_command_handler(self._config.command_followage, followage_command_handler)
+            command_router.register_command_handler(self._config.command_gladdi, ask_command_handler)
+            command_router.register_command_handler(self._config.command_fight, battle_command_handler)
+            command_router.register_command_handler(self._config.command_roll, roll_command_handler)
+            command_router.register_command_handler(self._config.command_balance, balance_command_handler)
+            command_router.register_command_handler(self._config.command_bonus, bonus_command_handler)
+            command_router.register_command_handler(self._config.command_transfer, transfer_command_handler)
+            command_router.register_command_handler(self._config.command_shop, shop_command_handler)
+            command_router.register_command_handler(self._config.command_buy, buy_command_handler)
+            command_router.register_command_handler(self._config.command_equipment, equipment_command_handler)
+            command_router.register_command_handler(self._config.command_top, top_command_handler)
+            command_router.register_command_handler(self._config.command_bottom, bottom_command_handler)
+            command_router.register_command_handler(self._config.command_help, help_command_handler)
+            command_router.register_command_handler(self._config.command_stats, stats_command_handler)
+            command_router.register_command_handler(self._config.command_guess, guess_number_command_handler)
+            command_router.register_command_handler(self._config.command_guess_letter, guess_letter_command_handler)
+            command_router.register_command_handler(self._config.command_guess_word, guess_word_command_handler)
+            command_router.register_command_handler(self._config.command_rps, rps_command_handler)
 
             handle_chat_message_use_case = HandleChatMessageUseCase(
                 unit_of_work_factory=chat_container.chat_message_uow_factory(
@@ -394,7 +395,7 @@ class BotManager:
                 handle_reply_use_case=handle_reply_use_case,
                 command_router=command_router,
                 channel_name=channel_name,
-                command_prefix=self._settings.prefix,
+                command_prefix=self._config.prefix,
                 bot_id=bot_user_id,
                 bot_name=bot_name,
                 logger=self._logger,
@@ -437,7 +438,7 @@ class BotManager:
                 platform_repository=platform_container.platform_repository(),
                 minigame_repository=minigame_repository,
                 notification_repository=notifications_repository,
-                notification_group_id=self._settings.group_id,
+                notification_group_id=self._group_id,
                 generate_response_use_case=ai_container.generate_response_use_case(),
                 state=chat_summary_state,
                 stream_repository_provider=stream_container.stream_repository_provider,
@@ -468,11 +469,11 @@ class BotManager:
                     get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                     llm_repository=ai_container.llm_repository,
-                    prefix=self._settings.prefix,
-                    number_guess_name=self._settings.command_guess,
-                    command_guess_word=self._settings.command_guess_word,
-                    command_guess_letter=self._settings.command_guess_letter,
-                    rps_command_name=self._settings.command_rps,
+                    prefix=self._config.prefix,
+                    number_guess_name=self._config.command_guess,
+                    command_guess_word=self._config.command_guess_word,
+                    command_guess_letter=self._config.command_guess_letter,
+                    rps_command_name=self._config.command_rps,
                     send_channel_message=chat_client.send_channel_message,
                     bot_name=bot_name,
                 ),
