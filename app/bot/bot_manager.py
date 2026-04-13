@@ -25,7 +25,7 @@ from app.joke.di.container import JokeContainer
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.minigame.di.container import MinigameContainer
 from app.moderation.application.moderation_service import ModerationService
-from app.notification.di.dependencies import provide_notification_repository, provide_telegram_bot
+from app.notification.di.container import NotificationContainer
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.di.container import PlatformAuthContainer
 from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
@@ -139,6 +139,7 @@ class BotManager:
                 platform_auth_container=platform_auth_container,
                 logger=self._logger,
             )
+            notification_container = NotificationContainer(self._telegram_config.bot_token)
 
             minigame_repository = minigame_container.minigame_repository()
             self._api_client = platform_container.api_client
@@ -421,9 +422,6 @@ class BotManager:
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
-            telegram_bot = provide_telegram_bot(self._telegram_config.bot_token)
-            notifications_repository = provide_notification_repository(telegram_bot)
-
             post_joke_job: PostJokeJob = joke_container.post_joke_job(
                 channel_name=channel_name,
                 send_channel_message=chat_client.send_channel_message,
@@ -444,7 +442,7 @@ class BotManager:
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),
                 minigame_repository=minigame_repository,
-                notification_repository=notifications_repository,
+                notification_repository=notification_container.notification_repository(),
                 notification_group_id=self._telegram_config.group_id,
                 generate_response_use_case=ai_container.generate_response_use_case(),
                 state=chat_summary_state,
