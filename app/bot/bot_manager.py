@@ -165,7 +165,7 @@ class BotManager:
             minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             betting_container = BettingContainer()
-            chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
+            chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -420,14 +420,26 @@ class BotManager:
             command_router.register_command_handler(self._settings.command_rps, rps_command_handler)
 
             handle_chat_message_use_case = HandleChatMessageUseCase(
-                unit_of_work_factory=uow_factories.build_chat_message_uow_factory(),
+                unit_of_work_factory=chat_container.chat_message_uow_factory(
+                    economy_policy_provider=economy_container.economy_policy_provider,
+                    stream_repository_provider=stream_container.stream_repository_provider,
+                    viewer_repository_provider=viewer_container.viewer_repository_provider,
+                    conversation_service_provider=ai_container.conversation_service_provider,
+                    system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                ),
                 get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case(),
                 prompt_service=ai_container.prompt_service,
                 generate_response_use_case=generate_response_use_case,
             )
 
             handle_reply_use_case = HandleReplyUseCase(
-                chat_message_uow=uow_factories.build_chat_message_uow_factory(),
+                chat_message_uow=chat_container.chat_message_uow_factory(
+                    economy_policy_provider=economy_container.economy_policy_provider,
+                    stream_repository_provider=stream_container.stream_repository_provider,
+                    viewer_repository_provider=viewer_container.viewer_repository_provider,
+                    conversation_service_provider=ai_container.conversation_service_provider,
+                    system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                ),
                 prompt_service=ai_container.prompt_service,
                 generate_response_use_case=generate_response_use_case,
             )
