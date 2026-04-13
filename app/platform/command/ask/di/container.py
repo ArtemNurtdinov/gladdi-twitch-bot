@@ -23,5 +23,5 @@ class AskContainer:
             session_factory_ro=self._session_factory_ro,
             chat_repo_provider=chat_repository_provider,
             conversation_service_provider=conversation_service_provider,
-            system_prompt_repository_provider=system_prompt_repo_provider,
+            system_prompt_repository_provider=system_prompt_repository_provider,
         )
