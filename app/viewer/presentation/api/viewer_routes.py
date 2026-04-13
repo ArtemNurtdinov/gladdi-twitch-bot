@@ -1,13 +1,18 @@
 from fastapi import APIRouter, Depends
 
+from app.economy.bootstrap import get_economy_policy_ro
+from app.economy.domain.economy_policy import EconomyPolicy
+from app.follow.bootstrap import get_followers_repo_ro
+from app.follow.domain.repo import FollowersRepository
 from app.viewer.application.model.viewer_detail_models import ViewerSessionDetail
-from app.viewer.application.usecase.get_viewer_detail_use_case import GetViewerDetailUseCase
-from app.viewer.di.composition import get_get_viewer_detail_use_case
+from app.viewer.bootstrap import get_viewer_service_ro
+from app.viewer.di.container import ViewerContainer
 from app.viewer.presentation.api.model.viewer_schemas import (
     ViewerDetailResponse,
     ViewerSessionItem,
     ViewerSessionStreamInfo,
 )
+from app.viewer.session.application.usecase.get_user_sessions_use_case import GetUserSessionsUseCase
 
 router = APIRouter(prefix="/viewers", tags=["Viewers"])
 
@@ -16,9 +21,13 @@ router = APIRouter(prefix="/viewers", tags=["Viewers"])
 async def get_viewer_detail(
     channel_name: str,
     user_name: str,
-    use_case: GetViewerDetailUseCase = Depends(get_get_viewer_detail_use_case),
+    followers_repo: FollowersRepository = Depends(get_followers_repo_ro),
+    economy_policy: EconomyPolicy = Depends(get_economy_policy_ro),
+    viewer_service: GetUserSessionsUseCase = Depends(get_viewer_service_ro),
 ):
-    result = use_case.handle(channel_name, user_name)
+    viewer_container = ViewerContainer()
+    get_viewer_detail_use_case = viewer_container.get_viewer_detail_use_case(followers_repo, economy_policy, viewer_service)
+    result = get_viewer_detail_use_case.handle(channel_name, user_name)
     u = result.user_info
 
     def to_session_item(s: ViewerSessionDetail):

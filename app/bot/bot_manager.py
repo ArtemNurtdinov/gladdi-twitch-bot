@@ -79,7 +79,7 @@ from app.stream.di.container import get_stream_status_job
 from app.task.domain.model.task import Task
 from app.task.domain.runner import TaskRunner
 from app.task.infrastructure.runner import BackgroundTaskRunner
-from app.viewer.di.dependencies import provide_viewer_cache
+from app.viewer.di.container import ViewerContainer
 from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
 from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from bootstrap.providers_bundle import build_providers_bundle
@@ -150,7 +150,9 @@ class BotManager:
 
             providers_bundle = build_providers_bundle(logger=logger)
 
-            user_cache = provide_viewer_cache(platform_repository)
+            viewer_container = ViewerContainer()
+
+            user_cache = viewer_container.viewer_cache(platform_repository)
 
             ai_container = AIContainer(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
 
