@@ -45,7 +45,6 @@ from app.platform.command.ask.application.ask_command_handler import AskCommandH
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.platform.command.ask.di.container import AskContainer
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
-from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandlerImpl
 from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
@@ -159,7 +158,7 @@ class BotManager:
             joke_container = JokeContainer(app_container.logger)
             stream_container = StreamContainer()
             follow_container = FollowContainer()
-            economy_container = EconomyContainer()
+            economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             shop_container = ShopContainer()
             minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
@@ -262,9 +261,7 @@ class BotManager:
             )
 
             balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(
-                handle_balance_use_case=HandleBalanceUseCase(
-                    balance_uow=uow_factories.build_balance_uow_factory(),
-                ),
+                handle_balance_use_case=economy_container.handle_balance_use_case(chat_use_case=chat_container.chat_use_case()),
                 bot_name=bot_name,
             )
 
