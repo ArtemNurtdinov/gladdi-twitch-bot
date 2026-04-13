@@ -52,8 +52,6 @@ from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 from app.platform.command.guess.application.rps_command_handler import RpsCommandHandlerImpl
-from app.platform.command.stats.application.handle_stats_use_case import HandleStatsUseCase
-from app.platform.command.stats.application.stats_command_handler import StatsCommandHandlerImpl
 from app.platform.command.top_bottom.application.bottom_command_handler import BottomCommandHandlerImpl
 from app.platform.command.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandlerImpl
@@ -339,12 +337,13 @@ class BotManager:
                 command_prefix=self._settings.prefix, chat_use_case=chat_container.chat_use_case(), commands=commands, bot_name=bot_name
             )
 
-            stats_command_handler: CommandHandler = StatsCommandHandlerImpl(
+            stats_command_handler = platform_container.stats_command_handler(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_stats,
-                handle_stats_use_case=HandleStatsUseCase(
-                    stats_uow=uow_factories.build_stats_uow_factory(),
-                ),
+                economy_policy_provider=economy_container.economy_policy_provider,
+                betting_service_provider=betting_container.betting_service_provider,
+                battle_use_case=battle_container.battle_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
             )
 

@@ -1,3 +1,4 @@
+from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.economy.domain.economy_policy import EconomyPolicy
@@ -36,6 +37,10 @@ from app.platform.command.shop.application.handle_shop_use_case import HandleSho
 from app.platform.command.shop.application.shop_command_handler import ShopCommandHandlerImpl
 from app.platform.command.shop.application.shop_uow import ShopUnitOfWorkFactory
 from app.platform.command.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
+from app.platform.command.stats.application.handle_stats_use_case import HandleStatsUseCase
+from app.platform.command.stats.application.stats_command_handler import StatsCommandHandlerImpl
+from app.platform.command.stats.application.stats_uow import StatsUnitOfWorkFactory
+from app.platform.command.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
 from app.shop.domain.repository import ShopItemRepository
 from app.stream.domain.repo import StreamRepository
 from core.provider import Provider
@@ -339,4 +344,47 @@ class PlatformContainer:
         )
         return BuyCommandHandlerImpl(
             command_prefix=command_prefix, command_buy_name=command_buy_name, handle_shop_use_case=handle_shop_use_case, bot_nick=bot_name
+        )
+
+    def stats_uow_factory(
+        self,
+        economy_policy_provider: Provider[EconomyPolicy],
+        betting_service_provider: Provider[BettingService],
+        battle_use_case: BattleUseCase,
+        chat_use_case: ChatUseCase,
+    ) -> StatsUnitOfWorkFactory:
+        return SqlAlchemyStatsUnitOfWorkFactory(
+            session_factory_rw=self._session_factory_rw,
+            session_factory_ro=self._session_factory_ro,
+            economy_policy_provider=economy_policy_provider,
+            betting_service_provider=betting_service_provider,
+            battle_use_case=battle_use_case,
+            chat_use_case=chat_use_case,
+        )
+
+    def handle_stats_use_case(
+        self,
+        economy_policy_provider: Provider[EconomyPolicy],
+        betting_service_provider: Provider[BettingService],
+        battle_use_case: BattleUseCase,
+        chat_use_case: ChatUseCase,
+    ) -> HandleStatsUseCase:
+        stats_uow_factory = self.stats_uow_factory(economy_policy_provider, betting_service_provider, battle_use_case, chat_use_case)
+        return HandleStatsUseCase(stats_uow_factory)
+
+    def stats_command_handler(
+        self,
+        command_prefix: str,
+        command_name: str,
+        economy_policy_provider: Provider[EconomyPolicy],
+        betting_service_provider: Provider[BettingService],
+        battle_use_case: BattleUseCase,
+        chat_use_case: ChatUseCase,
+        bot_name: str,
+    ) -> CommandHandler:
+        handle_stats_use_case = self.handle_stats_use_case(
+            economy_policy_provider, betting_service_provider, battle_use_case, chat_use_case
+        )
+        return StatsCommandHandlerImpl(
+            command_prefix=command_prefix, command_name=command_name, handle_stats_use_case=handle_stats_use_case, bot_name=bot_name
         )
