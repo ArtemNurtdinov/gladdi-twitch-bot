@@ -64,7 +64,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_chat_response_uow_factory: Callable[[], ChatResponseUnitOfWorkFactory]
     build_balance_uow_factory: Callable[[], BalanceUnitOfWorkFactory]
     build_battle_uow_factory: Callable[[], BattleUnitOfWorkFactory]
     build_bonus_uow_factory: Callable[[], BonusUnitOfWorkFactory]
@@ -280,7 +279,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_chat_response_uow_factory=build_chat_response_uow_factory,
         build_balance_uow_factory=build_balance_uow_factory,
         build_battle_uow_factory=build_battle_uow_factory,
         build_bonus_uow_factory=build_bonus_uow_factory,
