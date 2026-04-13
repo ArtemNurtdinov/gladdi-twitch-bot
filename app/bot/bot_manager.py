@@ -30,6 +30,7 @@ from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCa
 from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
 from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
+from app.minigame.di.container import MinigameContainer
 from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.dependencies import provide_notification_repository, provide_telegram_bot
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
@@ -152,7 +153,7 @@ class BotManager:
             self._api_client: ApiClient = TwitchHelixClient(platform_auth_container.platform_auth)
             platform_repository: PlatformRepository = PlatformRepositoryImpl(self._api_client, self._logger)
 
-            providers_bundle = build_providers_bundle(logger=logger)
+            providers_bundle = build_providers_bundle()
 
             viewer_container = ViewerContainer()
             ai_container = AIContainer(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
@@ -163,6 +164,7 @@ class BotManager:
             economy_container = EconomyContainer()
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             shop_container = ShopContainer()
+            minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -181,6 +183,8 @@ class BotManager:
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
                 add_equipment_use_case=equipment_container.add_equipment_use_case(),
                 shop_item_repository_provider=shop_container.shop_item_repository_provider,
+                get_used_words_use_case=minigame_container.get_used_words_use_case(),
+                add_used_word_use_case=minigame_container.add_used_word_use_case(),
             )
 
             bot_user = await platform_repository.get_authenticated_user()
@@ -356,7 +360,7 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_guess,
                 handle_guess_use_case=HandleGuessUseCase(
-                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    minigame_repository=minigame_container.minigame_repository(),
                     guess_uow=uow_factories.build_guess_uow_factory(),
                 ),
                 bot_name=bot_name,
@@ -366,7 +370,7 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_guess_letter,
                 handle_guess_use_case=HandleGuessUseCase(
-                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    minigame_repository=minigame_container.minigame_repository(),
                     guess_uow=uow_factories.build_guess_uow_factory(),
                 ),
                 bot_name=bot_name,
@@ -376,7 +380,7 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_guess_word,
                 handle_guess_use_case=HandleGuessUseCase(
-                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    minigame_repository=minigame_container.minigame_repository(),
                     guess_uow=uow_factories.build_guess_uow_factory(),
                 ),
                 bot_name=bot_name,
@@ -386,7 +390,7 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_rps,
                 handle_rps_use_case=HandleRpsUseCase(
-                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    minigame_repository=minigame_container.minigame_repository(),
                     rps_uow=uow_factories.build_rps_uow_factory(),
                 ),
                 bot_name=bot_name,
@@ -440,7 +444,7 @@ class BotManager:
 
             HandleRestoreStreamContextUseCase(
                 restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
-                minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                minigame_repository=minigame_container.minigame_repository(),
                 logger=logger,
             ).handle(channel_name)
 
@@ -452,7 +456,7 @@ class BotManager:
                 self._logger.log_error("Не удалось прогреть cache")
 
             start_word_game_use_case = StartWordGameUseCase(
-                minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                minigame_repository=minigame_container.minigame_repository(),
                 prefix=self._settings.prefix,
                 minigame_uow=uow_factories.build_minigame_uow_factory(),
                 db_ro_session=db_ro_session,
@@ -488,7 +492,7 @@ class BotManager:
                 user_cache=viewer_container.viewer_cache(platform_repository),
                 platform_repository=platform_repository,
                 stream_status_uow_factory=uow_factories.build_stream_status_uow_factory(),
-                minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                minigame_repository=minigame_container.minigame_repository(),
                 notification_repository=notifications_repository,
                 notification_group_id=self._settings.group_id,
                 generate_response_use_case=generate_response_use_case,
@@ -509,10 +513,10 @@ class BotManager:
             minigame_job: MinigameTickJob = MinigameTickJob(
                 channel_name=channel_name,
                 handle_minigame_tick_use_case=HandleMinigameTickUseCase(
-                    minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                    minigame_repository=minigame_container.minigame_repository(),
                     minigame_ouw=uow_factories.build_minigame_uow_factory(),
                     start_number_guess_game_use_case=StartNumberGuessGameUseCase(
-                        minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                        minigame_repository=minigame_container.minigame_repository(),
                         prefix=self._settings.prefix,
                         command_name=self._settings.command_guess,
                         send_channel_message=chat_client.send_channel_message,
@@ -521,7 +525,7 @@ class BotManager:
                     ),
                     start_word_game_use_case=start_word_game_use_case,
                     start_rps_game_use_case=StartRpsGameUseCase(
-                        minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                        minigame_repository=minigame_container.minigame_repository(),
                         prefix=self._settings.prefix,
                         command_name=self._settings.command_rps,
                         send_channel_message=chat_client.send_channel_message,
@@ -529,13 +533,13 @@ class BotManager:
                         bot_name=bot_name.lower(),
                     ),
                     finish_rps_game_use_case=FinishRpsUseCase(
-                        minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                        minigame_repository=minigame_container.minigame_repository(),
                         minigame_uow=uow_factories.build_minigame_uow_factory(),
                         bot_name=bot_name.lower(),
                         send_channel_message=chat_client.send_channel_message,
                     ),
                     finish_expired_games_use_case=FinishExpiredGamesUseCase(
-                        minigame_repository=providers_bundle.minigame_providers.minigame_repository,
+                        minigame_repository=minigame_container.minigame_repository(),
                         send_channel_message=chat_client.send_channel_message,
                         minigame_uow=uow_factories.build_minigame_uow_factory(),
                         bot_name=bot_name.lower(),

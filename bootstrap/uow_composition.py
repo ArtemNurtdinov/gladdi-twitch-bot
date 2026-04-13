@@ -20,6 +20,8 @@ from app.follow.domain.repo import FollowersRepository
 from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
+from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.platform.chat.application.chat_message_uow import ChatMessageUnitOfWorkFactory
@@ -105,8 +107,9 @@ def create_uow_factories(
     equipment_exists_use_case: EquipmentExistsUseCase,
     add_equipment_use_case: AddEquipmentUseCase,
     shop_item_repository_provider: Provider[ShopItemRepository],
+    get_used_words_use_case: GetUsedWordsUseCase,
+    add_used_word_use_case: AddUsedWordsUseCase,
 ) -> UowFactories:
-    minigame_providers = providers.minigame_providers
     battle_providers = providers.battle_providers
     betting_providers = providers.betting_providers
 
@@ -244,8 +247,8 @@ def create_uow_factories(
             economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
             stream_repository_provider=stream_repository_provider,
-            get_used_words_use_case_provider=minigame_providers.get_used_words_use_case_provider,
-            add_used_words_use_case_provider=minigame_providers.add_used_words_use_case_provider,
+            get_used_words_use_case=get_used_words_use_case,
+            add_used_words_use_case=add_used_word_use_case,
             conversation_service_provider=conversation_service_provider,
             get_user_equipment_use_case=get_user_equipment_use_case,
         )
