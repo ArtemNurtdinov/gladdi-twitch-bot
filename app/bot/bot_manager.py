@@ -18,9 +18,7 @@ from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
 from app.economy.di.container import EconomyContainer
 from app.equipment.di.container import EquipmentContainer
-from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.di.container import FollowContainer
-from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.di.container import JokeContainer
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
@@ -506,13 +504,10 @@ class BotManager:
                 logger=logger,
             )
 
-            followers_sync_job: FollowersSyncJob = FollowersSyncJob(
+            followers_sync_job = platform_container.followers_sync_job(
                 channel_name=channel_name,
-                handle_followers_sync_use_case=HandleFollowersSyncUseCase(
-                    platform_repository=platform_repository,
-                    sync_followers_uow=uow_factories.build_followers_sync_uow_factory(),
-                ),
-                logger=logger,
+                platform_repository=platform_repository,
+                followers_repository_provider=follow_container.followers_repository_provider,
             )
 
             jobs = [

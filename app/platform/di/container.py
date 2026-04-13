@@ -15,6 +15,11 @@ from app.equipment.application.defense.calculate_timeout_use_case import Calcula
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
+from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWorkFactory
+from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
+from app.follow.domain.repo import FollowersRepository
+from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
+from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
@@ -710,3 +715,22 @@ class PlatformContainer:
             handle_follow_age_use_case=handle_follow_age_use_case,
             bot_name=bot_name,
         )
+
+    def sync_followers_uow_factory(self, followers_repository_provider: Provider[FollowersRepository]) -> FollowersSyncUnitOfWorkFactory:
+        return SqlAlchemyFollowersSyncUnitOfWorkFactory(
+            session_factory_ro=self._session_factory_ro,
+            session_factory_rw=self._session_factory_rw,
+            followers_repository_provider=followers_repository_provider,
+        )
+
+    def handle_followers_sync_use_case(
+        self, platform_repository: PlatformRepository, followers_repository_provider: Provider[FollowersRepository]
+    ) -> HandleFollowersSyncUseCase:
+        sync_followers_uow_factory = self.sync_followers_uow_factory(followers_repository_provider)
+        return HandleFollowersSyncUseCase(platform_repository, sync_followers_uow_factory)
+
+    def followers_sync_job(
+        self, channel_name: str, platform_repository: PlatformRepository, followers_repository_provider: Provider[FollowersRepository]
+    ) -> FollowersSyncJob:
+        handle_followers_sync_use_case = self.handle_followers_sync_use_case(platform_repository, followers_repository_provider)
+        return FollowersSyncJob(channel_name, handle_followers_sync_use_case, self._logger)

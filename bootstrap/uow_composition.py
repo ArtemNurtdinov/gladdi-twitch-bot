@@ -24,7 +24,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_followers_sync_uow_factory: Callable[[], FollowersSyncUnitOfWorkFactory]
     build_restore_stream_context_uow_factory: Callable[[], RestoreStreamContextUnitOfWorkFactory]
     build_stream_status_uow_factory: Callable[[], StreamStatusUnitOfWorkFactory]
     build_viewer_time_uow_factory: Callable[[], ViewerTimeUnitOfWorkFactory]
