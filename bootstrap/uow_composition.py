@@ -8,6 +8,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase
+from app.betting.application.betting_service import BettingService
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
@@ -61,7 +62,6 @@ from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStat
 from app.viewer.session.application.uow.viewer_time_uow import ViewerTimeUnitOfWorkFactory
 from app.viewer.session.domain.repository import ViewerRepository
 from app.viewer.session.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
-from bootstrap.providers_bundle import ProvidersBundle
 from core.provider import Provider
 from core.types import SessionFactory
 
@@ -94,7 +94,6 @@ class UowFactories:
 def create_uow_factories(
     session_factory_rw: SessionFactory,
     session_factory_ro: SessionFactory,
-    providers: ProvidersBundle,
     chat_use_case: ChatUseCase,
     chat_repository_provider: Provider[ChatRepository],
     platform_repository: PlatformRepository,
@@ -111,9 +110,8 @@ def create_uow_factories(
     get_used_words_use_case: GetUsedWordsUseCase,
     add_used_word_use_case: AddUsedWordsUseCase,
     battle_use_case: BattleUseCase,
+    betting_service_provider: Provider[BettingService],
 ) -> UowFactories:
-    betting_providers = providers.betting_providers
-
     def build_chat_message_uow_factory() -> ChatMessageUnitOfWorkFactory:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
@@ -199,7 +197,7 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             economy_policy_provider=economy_policy_provider,
-            betting_service_provider=betting_providers.betting_service_provider,
+            betting_service_provider=betting_service_provider,
             get_user_equipment_use_case=get_user_equipment_use_case,
             chat_use_case=chat_use_case,
         )
@@ -220,7 +218,7 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             economy_policy_provider=economy_policy_provider,
-            betting_service_provider=betting_providers.betting_service_provider,
+            betting_service_provider=betting_service_provider,
             battle_use_case=battle_use_case,
             chat_use_case=chat_use_case,
         )

@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.di.container import AIContainer
 from app.battle.di.container import BattleContainer
+from app.betting.di.container import BettingContainer
 from app.bot.domain.model.bot_settings import BotSettings
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
@@ -88,7 +89,6 @@ from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.di.container import ViewerContainer
 from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
 from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
-from bootstrap.providers_bundle import build_providers_bundle
 from bootstrap.uow_composition import create_uow_factories
 from core.db import db_ro_session, db_rw_session
 from core.provider import Provider
@@ -154,8 +154,6 @@ class BotManager:
             self._api_client: ApiClient = TwitchHelixClient(platform_auth_container.platform_auth)
             platform_repository: PlatformRepository = PlatformRepositoryImpl(self._api_client, self._logger)
 
-            providers_bundle = build_providers_bundle()
-
             viewer_container = ViewerContainer()
             ai_container = AIContainer(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
@@ -167,11 +165,11 @@ class BotManager:
             shop_container = ShopContainer()
             minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
+            betting_container = BettingContainer()
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
-                providers=providers_bundle,
                 chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
                 chat_use_case=get_chat_use_case(),
                 platform_repository=platform_repository,
@@ -188,6 +186,7 @@ class BotManager:
                 get_used_words_use_case=minigame_container.get_used_words_use_case(),
                 add_used_word_use_case=minigame_container.add_used_word_use_case(),
                 battle_use_case=battle_container.battle_use_case(),
+                betting_service_provider=betting_container.betting_service_provider,
             )
 
             bot_user = await platform_repository.get_authenticated_user()
