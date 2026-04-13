@@ -38,7 +38,7 @@ from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.ask.application.ask_command_handler import AskCommandHandlerImpl
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
-from app.platform.command.ask.di.dependencies import provide_ask_uow_factory
+from app.platform.command.ask.di.container import AskContainer
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
 from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandlerImpl
@@ -194,9 +194,12 @@ class BotManager:
                 bot_nick=bot_name,
             )
 
-            ask_ouw_factory = provide_ask_uow_factory(
+            ask_container = AskContainer(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
+            )
+
+            ask_ouw_factory = ask_container.ask_uow_factory(
                 chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
                 conversation_service_provider=ai_container.conversation_service_provider,
                 system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
