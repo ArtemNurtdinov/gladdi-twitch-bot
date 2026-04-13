@@ -52,10 +52,6 @@ from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 from app.platform.command.guess.application.rps_command_handler import RpsCommandHandlerImpl
-from app.platform.command.help.application.handle_help_use_case import HandleHelpUseCase
-from app.platform.command.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
-from app.platform.command.roll.application.handle_roll_use_case import HandleRollUseCase
-from app.platform.command.roll.application.roll_command_handler import RollCommandHandlerImpl
 from app.platform.command.shop.application.buy_command_handler import BuyCommandHandlerImpl
 from app.platform.command.shop.application.handle_shop_use_case import HandleShopUseCase
 from app.platform.command.shop.application.shop_command_handler import ShopCommandHandlerImpl
@@ -249,15 +245,16 @@ class BotManager:
                 battle_waiting_user=battle_waiting_user,
             )
 
-            roll_command_handler: CommandHandler = RollCommandHandlerImpl(
+            roll_command_handler = platform_container.roll_command_handler(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_roll,
-                handle_roll_use_case=HandleRollUseCase(
-                    unit_of_work_factory=uow_factories.build_roll_uow_factory(),
-                    roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
-                    calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
-                ),
-                chat_moderation=moderation_service,
+                economy_policy_provider=economy_container.economy_policy_provider,
+                betting_service_provider=betting_container.betting_service_provider,
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
+                roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
+                calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
+                chat_moderation_port=moderation_service,
                 bot_name=bot_name,
             )
 
@@ -340,11 +337,8 @@ class BotManager:
                 self._settings.command_followage,
             }
 
-            help_command_handler: CommandHandler = HelpCommandHandlerImpl(
-                command_prefix=self._settings.prefix,
-                handle_help_use_case=HandleHelpUseCase(unit_of_work_factory=uow_factories.build_help_uow_factory()),
-                commands=commands,
-                bot_name=bot_name,
+            help_command_handler = platform_container.help_command_handler(
+                command_prefix=self._settings.prefix, chat_use_case=chat_container.chat_use_case(), commands=commands, bot_name=bot_name
             )
 
             stats_command_handler: CommandHandler = StatsCommandHandlerImpl(

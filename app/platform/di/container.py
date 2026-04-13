@@ -1,7 +1,11 @@
+from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.economy.domain.economy_policy import EconomyPolicy
+from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
+from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
+from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
 from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
@@ -17,6 +21,14 @@ from app.platform.command.guess.application.guess_uow import GuessUnitOfWorkFact
 from app.platform.command.guess.application.guess_word_command_handler import GuessWordCommandHandlerImpl
 from app.platform.command.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.platform.command.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
+from app.platform.command.help.application.handle_help_use_case import HandleHelpUseCase
+from app.platform.command.help.application.help_uow import HelpUnitOfWorkFactory
+from app.platform.command.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
+from app.platform.command.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
+from app.platform.command.roll.application.handle_roll_use_case import HandleRollUseCase
+from app.platform.command.roll.application.roll_command_handler import RollCommandHandlerImpl
+from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
+from app.platform.command.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
 from core.provider import Provider
 from core.types import SessionFactory
@@ -173,4 +185,78 @@ class PlatformContainer:
         )
         return GuessWordCommandHandlerImpl(
             command_prefix=command_prefix, command_name=command_name, handle_guess_use_case=handle_guess_use_case, bot_name=bot_name
+        )
+
+    def help_uow_factory(self, chat_use_case: ChatUseCase) -> HelpUnitOfWorkFactory:
+        return SqlAlchemyHelpUnitOfWorkFactory(
+            session_factory_rw=self._session_factory_rw, session_factory_ro=self._session_factory_ro, chat_use_case=chat_use_case
+        )
+
+    def handle_help_use_case(self, chat_use_case: ChatUseCase) -> HandleHelpUseCase:
+        help_uow_factory = self.help_uow_factory(chat_use_case)
+        return HandleHelpUseCase(help_uow_factory)
+
+    def help_command_handler(self, command_prefix: str, chat_use_case: ChatUseCase, commands: set[str], bot_name: str) -> CommandHandler:
+        handle_help_use_case = self.handle_help_use_case(chat_use_case)
+        return HelpCommandHandlerImpl(
+            command_prefix=command_prefix, handle_help_use_case=handle_help_use_case, commands=commands, bot_name=bot_name
+        )
+
+    def roll_uow_factory(
+        self,
+        economy_policy_provider: Provider[EconomyPolicy],
+        betting_service_provider: Provider[BettingService],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
+        chat_use_case: ChatUseCase,
+    ) -> RollUnitOfWorkFactory:
+        return SqlAlchemyRollUnitOfWorkFactory(
+            session_factory_rw=self._session_factory_rw,
+            session_factory_ro=self._session_factory_ro,
+            economy_policy_provider=economy_policy_provider,
+            betting_service_provider=betting_service_provider,
+            get_user_equipment_use_case=get_user_equipment_use_case,
+            chat_use_case=chat_use_case,
+        )
+
+    def handle_roll_use_case(
+        self,
+        economy_policy_provider: Provider[EconomyPolicy],
+        betting_service_provider: Provider[BettingService],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
+        chat_use_case: ChatUseCase,
+        roll_cooldown_use_case: RollCooldownUseCase,
+        calculate_timeout_use_case: CalculateTimeoutUseCase,
+    ) -> HandleRollUseCase:
+        roll_uow_factory = self.roll_uow_factory(
+            economy_policy_provider, betting_service_provider, get_user_equipment_use_case, chat_use_case
+        )
+        return HandleRollUseCase(roll_uow_factory, roll_cooldown_use_case, calculate_timeout_use_case)
+
+    def roll_command_handler(
+        self,
+        command_prefix: str,
+        command_name: str,
+        economy_policy_provider: Provider[EconomyPolicy],
+        betting_service_provider: Provider[BettingService],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
+        chat_use_case: ChatUseCase,
+        roll_cooldown_use_case: RollCooldownUseCase,
+        calculate_timeout_use_case: CalculateTimeoutUseCase,
+        chat_moderation_port: ChatModerationPort,
+        bot_name: str,
+    ) -> CommandHandler:
+        handle_roll_use_case = self.handle_roll_use_case(
+            economy_policy_provider,
+            betting_service_provider,
+            get_user_equipment_use_case,
+            chat_use_case,
+            roll_cooldown_use_case,
+            calculate_timeout_use_case,
+        )
+        return RollCommandHandlerImpl(
+            command_prefix=command_prefix,
+            command_name=command_name,
+            handle_roll_use_case=handle_roll_use_case,
+            chat_moderation=chat_moderation_port,
+            bot_name=bot_name,
         )

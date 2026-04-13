@@ -24,10 +24,6 @@ from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitO
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
 from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
-from app.platform.command.help.application.help_uow import HelpUnitOfWorkFactory
-from app.platform.command.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
-from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
-from app.platform.command.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
 from app.platform.command.shop.application.shop_uow import ShopUnitOfWorkFactory
 from app.platform.command.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
 from app.platform.command.stats.application.stats_uow import StatsUnitOfWorkFactory
@@ -52,8 +48,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_help_uow_factory: Callable[[], HelpUnitOfWorkFactory]
-    build_roll_uow_factory: Callable[[], RollUnitOfWorkFactory]
     build_shop_uow_factory: Callable[[], ShopUnitOfWorkFactory]
     build_stats_uow_factory: Callable[[], StatsUnitOfWorkFactory]
     build_top_bottom_uow_factory: Callable[[], TopBottomUnitOfWorkFactory]
@@ -88,23 +82,6 @@ def create_uow_factories(
     battle_use_case: BattleUseCase,
     betting_service_provider: Provider[BettingService],
 ) -> UowFactories:
-    def build_help_uow_factory() -> HelpUnitOfWorkFactory:
-        return SqlAlchemyHelpUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            chat_use_case=chat_use_case,
-        )
-
-    def build_roll_uow_factory() -> RollUnitOfWorkFactory:
-        return SqlAlchemyRollUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            betting_service_provider=betting_service_provider,
-            get_user_equipment_use_case=get_user_equipment_use_case,
-            chat_use_case=chat_use_case,
-        )
-
     def build_shop_uow_factory() -> ShopUnitOfWorkFactory:
         return SqlAlchemyShopUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
@@ -209,8 +186,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_help_uow_factory=build_help_uow_factory,
-        build_roll_uow_factory=build_roll_uow_factory,
         build_shop_uow_factory=build_shop_uow_factory,
         build_stats_uow_factory=build_stats_uow_factory,
         build_top_bottom_uow_factory=build_top_bottom_uow_factory,
