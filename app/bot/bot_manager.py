@@ -16,6 +16,7 @@ from app.core.di.application_container import app_container
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
 from app.economy.di.container import EconomyContainer
+from app.equipment.di.container import EquipmentContainer
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.di.container import FollowContainer
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
@@ -154,14 +155,12 @@ class BotManager:
 
             viewer_container = ViewerContainer()
             ai_container = AIContainer(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
-            ask_container = AskContainer(
-                session_factory_rw=db_rw_session,
-                session_factory_ro=db_ro_session,
-            )
+            ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             joke_container = JokeContainer(app_container.logger)
             stream_container = StreamContainer()
             follow_container = FollowContainer()
             economy_container = EconomyContainer()
+            equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -176,6 +175,7 @@ class BotManager:
                 follow_repository_provider=follow_container.followers_repository_provider,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
                 economy_policy_provider=economy_container.economy_policy_provider,
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
             )
 
             bot_user = await platform_repository.get_authenticated_user()

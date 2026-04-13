@@ -45,7 +45,7 @@ class SqlAlchemyGuessUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[GuessUnitOfWo
         session_factory_ro: SessionFactory,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        get_user_equipment_use_case: Provider[GetUserEquipmentUseCase],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -61,6 +61,6 @@ class SqlAlchemyGuessUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[GuessUnitOfWo
             session=db,
             economy_policy=self._economy_policy_provider.get(db),
             chat_use_case=self._chat_use_case,
-            get_user_equipment_use_case=self._get_user_equipment_use_case.get(db),
+            get_user_equipment_use_case=self._get_user_equipment_use_case,
             read_only=read_only,
         )

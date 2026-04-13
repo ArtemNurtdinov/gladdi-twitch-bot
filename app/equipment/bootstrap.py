@@ -17,7 +17,6 @@ from core.provider import Provider, SingletonProvider
 
 @dataclass
 class EquipmentProviders:
-    get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase]
     equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase]
     add_equipment_use_case_provider: Provider[AddEquipmentUseCase]
     roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase]

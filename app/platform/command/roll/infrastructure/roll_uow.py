@@ -52,7 +52,7 @@ class SqlAlchemyRollUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[RollUnitOfWork
         session_factory_ro: SessionFactory,
         economy_policy_provider: Provider[EconomyPolicy],
         betting_service_provider: Provider[BettingService],
-        get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
         chat_use_case: ChatUseCase,
     ):
         super().__init__(
@@ -62,7 +62,7 @@ class SqlAlchemyRollUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[RollUnitOfWork
         )
         self._economy_policy_provider = economy_policy_provider
         self._betting_service_provider = betting_service_provider
-        self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
+        self._get_user_equipment_use_case = get_user_equipment_use_case
         self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> RollUnitOfWork:
@@ -70,7 +70,7 @@ class SqlAlchemyRollUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[RollUnitOfWork
             session=db,
             economy_policy=self._economy_policy_provider.get(db),
             betting_service=self._betting_service_provider.get(db),
-            get_user_equipment_use_case=self._get_user_equipment_use_case_provider.get(db),
+            get_user_equipment_use_case=self._get_user_equipment_use_case,
             chat_use_case=self._chat_use_case,
             read_only=read_only,
         )

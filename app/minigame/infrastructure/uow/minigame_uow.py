@@ -77,7 +77,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
         get_used_words_use_case_provider: Provider[GetUsedWordsUseCase],
         add_used_words_use_case_provider: Provider[AddUsedWordsUseCase],
         conversation_service_provider: Provider[ConversationService],
-        get_user_equipment_use_case: Provider[GetUserEquipmentUseCase],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -101,6 +101,6 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
             get_used_words_use_case=self._get_used_words_use_case_provider.get(db),
             add_used_words_use_case=self._add_used_words_use_case_provider.get(db),
             conversation_service=self._conversation_service_provider.get(db),
-            get_user_equipment_use_case=self._get_user_equipment_use_case.get(db),
+            get_user_equipment_use_case=self._get_user_equipment_use_case,
             read_only=read_only,
         )

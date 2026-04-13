@@ -51,7 +51,7 @@ class SqlAlchemyBonusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BonusUnitOfWo
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
         stream_repository_provider: Provider[StreamRepository],
-        get_user_equipment_use_case_provider: Provider[GetUserEquipmentUseCase],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
     ):
@@ -61,7 +61,7 @@ class SqlAlchemyBonusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BonusUnitOfWo
             builder=self._build_uow,
         )
         self._stream_repository_provider = stream_repository_provider
-        self._get_user_equipment_use_case_provider = get_user_equipment_use_case_provider
+        self._get_user_equipment_use_case = get_user_equipment_use_case
         self._economy_policy_provider = economy_policy_provider
         self._chat_use_case = chat_use_case
 
@@ -69,7 +69,7 @@ class SqlAlchemyBonusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BonusUnitOfWo
         return SqlAlchemyBonusUnitOfWork(
             session=db,
             stream_repository=self._stream_repository_provider.get(db),
-            get_user_equipment_use_case=self._get_user_equipment_use_case_provider.get(db),
+            get_user_equipment_use_case=self._get_user_equipment_use_case,
             economy_policy=self._economy_policy_provider.get(db),
             chat_use_case=self._chat_use_case,
             read_only=read_only,
