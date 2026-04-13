@@ -158,8 +158,6 @@ class BotManager:
             )
             joke_container = JokeContainer(app_container.logger)
 
-            user_cache = viewer_container.viewer_cache(platform_repository)
-
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
@@ -186,7 +184,9 @@ class BotManager:
                 db_ro_session=db_ro_session,
             )
 
-            moderation_service = ModerationService(platform_repository=platform_repository, user_cache=user_cache, logger=logger)
+            moderation_service = ModerationService(
+                platform_repository=platform_repository, user_cache=viewer_container.viewer_cache(platform_repository), logger=logger
+            )
 
             followage_command_handler: CommandHandler = FollowageCommandHandlerImpl(
                 command_prefix=self._settings.prefix,
@@ -433,7 +433,7 @@ class BotManager:
             self._chat_client = chat_client
 
             try:
-                await user_cache.warmup(channel_name)
+                await viewer_container.viewer_cache(platform_repository).warmup(channel_name)
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
@@ -462,7 +462,7 @@ class BotManager:
                 session_factory_ro=db_ro_session,
                 conversation_service_provider=ai_container.conversation_service_provider,
                 chat_use_case=get_chat_use_case(),
-                user_cache=user_cache,
+                user_cache=viewer_container.viewer_cache(platform_repository),
                 platform_repository=platform_repository,
                 generate_response_use_case=generate_response_use_case,
             )
@@ -471,7 +471,7 @@ class BotManager:
 
             stream_status_job: StreamStatusJob = get_stream_status_job(
                 channel_name=channel_name,
-                user_cache=user_cache,
+                user_cache=viewer_container.viewer_cache(platform_repository),
                 platform_repository=platform_repository,
                 stream_status_uow_factory=uow_factories.build_stream_status_uow_factory(),
                 minigame_repository=providers_bundle.minigame_providers.minigame_repository,
@@ -534,7 +534,7 @@ class BotManager:
                 channel_name=channel_name,
                 handle_viewer_time_use_case=RewardViewerTimeUseCase(
                     reward_viewer_time_uow=uow_factories.build_viewer_time_uow_factory(),
-                    user_cache=user_cache,
+                    user_cache=viewer_container.viewer_cache(platform_repository),
                     platform_repository=platform_repository,
                 ),
                 bot_nick=bot_name,
