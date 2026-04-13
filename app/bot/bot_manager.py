@@ -12,7 +12,7 @@ from app.bot.presentation.api.model.response.status import BotStatusResponse
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
-from app.chat.di.container import get_chat_use_case
+from app.chat.di.container import ChatContainer
 from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
 from app.core.di.application_container import app_container
 from app.core.logger.domain.logger import Logger
@@ -166,12 +166,13 @@ class BotManager:
             minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             betting_container = BettingContainer()
+            chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
                 chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
-                chat_use_case=get_chat_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
                 platform_repository=platform_repository,
                 system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                 conversation_service_provider=ai_container.conversation_service_provider,
@@ -481,7 +482,7 @@ class BotManager:
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
                 conversation_service_provider=ai_container.conversation_service_provider,
-                chat_use_case=get_chat_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
                 user_cache=viewer_container.viewer_cache(platform_repository),
                 platform_repository=platform_repository,
                 generate_response_use_case=generate_response_use_case,
@@ -505,7 +506,7 @@ class BotManager:
             chat_summarizer_job: ChatSummarizerJob = ChatSummarizerJob(
                 channel_name=channel_name,
                 handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
-                    chat_summarizer_uow=uow_factories.build_chat_summarizer_uow_factory(),
+                    chat_summarizer_uow=chat_container.chat_summarizer_uow_factory(stream_container.stream_repository_provider),
                     chat_response_use_case=generate_response_use_case,
                 ),
                 chat_summary_state=chat_summary_state,

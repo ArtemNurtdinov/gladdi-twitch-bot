@@ -1,11 +1,11 @@
 from dataclasses import asdict
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 
-from app.chat.application.usecase.chat_use_case import ChatUseCase
-from app.chat.di.container import get_chat_use_case
+from app.chat.di.container import ChatContainer
 from app.chat.presentation.schemas.chat_user import TopChatUser, TopChatUsersResponse
+from core.db import db_ro_session, db_rw_session
 
 router = APIRouter()
 
@@ -20,12 +20,12 @@ async def get_top_users(
     limit: int = Query(10, ge=1, le=100, description="Максимальное количество пользователей в результате"),
     date_from: datetime | None = Query(None, description="Начало периода (UTC)"),
     date_to: datetime | None = Query(None, description="Конец периода (UTC)"),
-    chat_use_case: ChatUseCase = Depends(get_chat_use_case),
 ) -> TopChatUsersResponse:
     if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
+    chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
     try:
-        users = chat_use_case.get_top_chat_users(limit, date_from, date_to)
+        users = chat_container.chat_use_case().get_top_chat_users(limit, date_from, date_to)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return TopChatUsersResponse(top_users=[TopChatUser(**asdict(user)) for user in users])

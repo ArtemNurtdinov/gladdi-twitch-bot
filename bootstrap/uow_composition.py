@@ -9,10 +9,8 @@ from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUn
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.betting.application.betting_service import BettingService
-from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
-from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
@@ -70,7 +68,6 @@ from core.types import SessionFactory
 class UowFactories:
     build_chat_message_uow_factory: Callable[[], ChatMessageUnitOfWorkFactory]
     build_chat_response_uow_factory: Callable[[], ChatResponseUnitOfWorkFactory]
-    build_chat_summarizer_uow_factory: Callable[[], ChatSummarizerUnitOfWorkFactory]
     build_balance_uow_factory: Callable[[], BalanceUnitOfWorkFactory]
     build_battle_uow_factory: Callable[[], BattleUnitOfWorkFactory]
     build_bonus_uow_factory: Callable[[], BonusUnitOfWorkFactory]
@@ -129,14 +126,6 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             conversation_service_provider=conversation_service_provider,
-        )
-
-    def build_chat_summarizer_uow_factory() -> ChatSummarizerUnitOfWorkFactory:
-        return SqlAlchemyChatSummarizerUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            stream_repository_provider=stream_repository_provider,
-            chat_use_case=chat_use_case,
         )
 
     def build_balance_uow_factory() -> BalanceUnitOfWorkFactory:
@@ -308,7 +297,6 @@ def create_uow_factories(
     return UowFactories(
         build_chat_message_uow_factory=build_chat_message_uow_factory,
         build_chat_response_uow_factory=build_chat_response_uow_factory,
-        build_chat_summarizer_uow_factory=build_chat_summarizer_uow_factory,
         build_balance_uow_factory=build_balance_uow_factory,
         build_battle_uow_factory=build_battle_uow_factory,
         build_bonus_uow_factory=build_bonus_uow_factory,
