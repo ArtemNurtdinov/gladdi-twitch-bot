@@ -58,8 +58,8 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
         economy_policy_provider: Provider[EconomyPolicy],
-        add_equipment_use_case_provider: Provider[AddEquipmentUseCase],
-        equipment_exists_use_case_provider: Provider[EquipmentExistsUseCase],
+        add_equipment_use_case: AddEquipmentUseCase,
+        equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
         shop_item_repository_provider: Provider[ShopItemRepository],
     ):
@@ -69,8 +69,8 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
             builder=self._build_uow,
         )
         self._economy_policy_provider = economy_policy_provider
-        self._add_equipment_use_case_provider = add_equipment_use_case_provider
-        self._equipment_exists_use_case_provider = equipment_exists_use_case_provider
+        self._add_equipment_use_case = add_equipment_use_case
+        self._equipment_exists_use_case = equipment_exists_use_case
         self._chat_use_case = chat_use_case
         self._shop_item_repository_provider = shop_item_repository_provider
 
@@ -78,8 +78,8 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
         return SqlAlchemyShopUnitOfWork(
             session=db,
             economy_policy=self._economy_policy_provider.get(db),
-            add_equipment_use_case=self._add_equipment_use_case_provider.get(db),
-            equipment_exists_use_case=self._equipment_exists_use_case_provider.get(db),
+            add_equipment_use_case=self._add_equipment_use_case,
+            equipment_exists_use_case=self._equipment_exists_use_case,
             chat_use_case=self._chat_use_case,
             shop_item_repository=self._shop_item_repository_provider.get(db),
             read_only=read_only,

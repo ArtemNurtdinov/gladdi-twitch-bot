@@ -12,6 +12,8 @@ from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
 from app.economy.domain.economy_policy import EconomyPolicy
+from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
+from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWorkFactory
 from app.follow.domain.repo import FollowersRepository
@@ -47,6 +49,7 @@ from app.platform.command.top_bottom.infrastructure.top_bottom_uow import SqlAlc
 from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWorkFactory
 from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
+from app.shop.domain.repository import ShopItemRepository
 from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
@@ -99,8 +102,10 @@ def create_uow_factories(
     viewer_repository_provider: Provider[ViewerRepository],
     economy_policy_provider: Provider[EconomyPolicy],
     get_user_equipment_use_case: GetUserEquipmentUseCase,
+    equipment_exists_use_case: EquipmentExistsUseCase,
+    add_equipment_use_case: AddEquipmentUseCase,
+    shop_item_repository_provider: Provider[ShopItemRepository],
 ) -> UowFactories:
-    equipment_providers = providers.equipment_providers
     minigame_providers = providers.minigame_providers
     battle_providers = providers.battle_providers
     betting_providers = providers.betting_providers
@@ -200,10 +205,10 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             economy_policy_provider=economy_policy_provider,
-            add_equipment_use_case_provider=equipment_providers.add_equipment_use_case_provider,
-            equipment_exists_use_case_provider=equipment_providers.equipment_exists_use_case_provider,
+            add_equipment_use_case=add_equipment_use_case,
+            equipment_exists_use_case=equipment_exists_use_case,
             chat_use_case=chat_use_case,
-            shop_item_repository_provider=equipment_providers.shop_item_repository_provider,
+            shop_item_repository_provider=shop_item_repository_provider,
         )
 
     def build_stats_uow_factory() -> StatsUnitOfWorkFactory:

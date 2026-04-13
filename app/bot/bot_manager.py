@@ -76,6 +76,7 @@ from app.platform.command.transfer.application.transfer_command_handler import T
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
+from app.shop.di.container import ShopContainer
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.di.container import StreamContainer, get_stream_status_job
@@ -161,6 +162,7 @@ class BotManager:
             follow_container = FollowContainer()
             economy_container = EconomyContainer()
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
+            shop_container = ShopContainer()
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -176,6 +178,9 @@ class BotManager:
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
+                add_equipment_use_case=equipment_container.add_equipment_use_case(),
+                shop_item_repository_provider=shop_container.shop_item_repository_provider,
             )
 
             bot_user = await platform_repository.get_authenticated_user()
@@ -231,7 +236,7 @@ class BotManager:
                 handle_battle_use_case=HandleBattleUseCase(
                     battle_uow=uow_factories.build_battle_uow_factory(),
                     chat_response_use_case=generate_response_use_case,
-                    calculate_timeout_use_case=providers_bundle.equipment_providers.calculate_timeout_use_case,
+                    calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
                 ),
                 chat_moderation=moderation_service,
                 bot_name=bot_name,
@@ -243,8 +248,8 @@ class BotManager:
                 command_name=self._settings.command_roll,
                 handle_roll_use_case=HandleRollUseCase(
                     unit_of_work_factory=uow_factories.build_roll_uow_factory(),
-                    roll_cooldown_use_case_provider=providers_bundle.equipment_providers.roll_cooldown_use_case_provider,
-                    calculate_timeout_use_case=providers_bundle.equipment_providers.calculate_timeout_use_case,
+                    roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
+                    calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
                 ),
                 chat_moderation=moderation_service,
                 bot_name=bot_name,

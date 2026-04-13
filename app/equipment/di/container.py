@@ -1,5 +1,9 @@
 from sqlalchemy.orm import Session
 
+from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
+from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
+from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
+from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.equipment_use_case_uow import EquipmentUseCaseUnitOfWorkFactory
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.equipment.domain.repo import EquipmentRepository
@@ -32,3 +36,17 @@ class EquipmentContainer:
     def get_user_equipment_use_case(self) -> GetUserEquipmentUseCase:
         equipment_use_case_uow_factory = self.equipment_use_case_uow_factory()
         return GetUserEquipmentUseCase(equipment_use_case_uow_factory)
+
+    def equipment_exists_use_case(self) -> EquipmentExistsUseCase:
+        equipment_use_case_uow_factory = self.equipment_use_case_uow_factory()
+        return EquipmentExistsUseCase(equipment_use_case_uow_factory)
+
+    def add_equipment_use_case(self) -> AddEquipmentUseCase:
+        equipment_use_case_uow_factory = self.equipment_use_case_uow_factory()
+        return AddEquipmentUseCase(equipment_use_case_uow_factory)
+
+    def roll_cooldown_use_case(self) -> RollCooldownUseCase:
+        return RollCooldownUseCase()
+
+    def calculate_timeout_use_case(self) -> CalculateTimeoutUseCase:
+        return CalculateTimeoutUseCase()

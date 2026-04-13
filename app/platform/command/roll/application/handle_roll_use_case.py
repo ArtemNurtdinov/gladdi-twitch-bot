@@ -11,7 +11,6 @@ from app.equipment.domain.model.user_equipment import UserEquipment
 from app.platform.command.roll.application.model import RollDTO, RollTimeoutAction, RollUseCaseResult
 from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
 from app.shop.domain.model.effect import MaxBetIncreaseEffect
-from core.provider import SingletonProvider
 
 
 def _get_max_bet_amount(equipment: list[UserEquipment]) -> int:
@@ -29,11 +28,11 @@ class HandleRollUseCase:
     def __init__(
         self,
         unit_of_work_factory: RollUnitOfWorkFactory,
-        roll_cooldown_use_case_provider: SingletonProvider[RollCooldownUseCase],
+        roll_cooldown_use_case: RollCooldownUseCase,
         calculate_timeout_use_case: CalculateTimeoutUseCase,
     ):
         self._unit_of_work_factory = unit_of_work_factory
-        self._roll_cooldown_use_case_provider = roll_cooldown_use_case_provider
+        self._roll_cooldown_use_case = roll_cooldown_use_case
         self._calculate_timeout_use_case = calculate_timeout_use_case
 
     async def handle(self, command_roll: RollDTO) -> RollUseCaseResult:
@@ -45,7 +44,7 @@ class HandleRollUseCase:
             equipment = uow.get_user_equipment_use_case.get_user_equipment(
                 channel_name=command_roll.channel_name, user_name=command_roll.user_name
             )
-            cooldown_seconds = self._roll_cooldown_use_case_provider.get().calc_seconds(
+            cooldown_seconds = self._roll_cooldown_use_case.calc_seconds(
                 default_cooldown_seconds=HandleRollUseCase.DEFAULT_COOLDOWN_SECONDS, equipment=equipment
             )
 
