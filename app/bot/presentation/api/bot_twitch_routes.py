@@ -50,7 +50,6 @@ async def oauth_callback(
     bot_manager: BotManager = Depends(get_bot_manager),
 ) -> BotActionResultResponse:
     config = app_container.config
-    logger = app_container.logger
     data = {
         "client_id": config.twitch.client_id,
         "client_secret": config.twitch.client_secret,
@@ -72,13 +71,9 @@ async def oauth_callback(
     return await bot_manager.start_bot(
         access_token=access_token,
         refresh_token=refresh_token,
-        tg_bot_token=config.telegram.bot_token,
-        llmbox_host=config.llmbox.host,
-        intent_detector_host=config.intent_detector.host,
         client_id=config.twitch.client_id,
         client_secret=config.twitch.client_secret,
         channel_name=state,
-        logger=logger,
     )
 
 

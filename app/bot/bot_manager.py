@@ -12,7 +12,9 @@ from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.di.container import ChatContainer
 from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
 from app.core.config.domain.model.bot import BotConfig
-from app.core.di.application_container import app_container
+from app.core.config.domain.model.intent_detector import IntentDetectorConfig
+from app.core.config.domain.model.llmbox import LLMBoxConfig
+from app.core.config.domain.model.telegram import TelegramConfig
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
 from app.economy.di.container import EconomyContainer
@@ -52,9 +54,18 @@ from core.provider import Provider
 
 
 class BotManager:
-    def __init__(self, config: BotConfig, group_id: int, logger: Logger):
+    def __init__(
+        self,
+        config: BotConfig,
+        telegram_config: TelegramConfig,
+        llmbox_config: LLMBoxConfig,
+        intent_detector_config: IntentDetectorConfig,
+        logger: Logger,
+    ):
         self._config = config
-        self._group_id = group_id
+        self._telegram_config = telegram_config
+        self._llmbox_config = llmbox_config
+        self._intent_detector_config = intent_detector_config
         self._logger = logger.create_child(__name__)
 
         self._status: BotStatus = BotStatus.STOPPED
@@ -95,42 +106,38 @@ class BotManager:
         self,
         access_token: str,
         refresh_token: str,
-        tg_bot_token: str,
-        llmbox_host: str,
-        intent_detector_host: str,
         client_id: str,
         client_secret: str,
         channel_name: str,
-        logger: Logger,
     ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            platform_auth_container = PlatformAuthContainer(access_token, refresh_token, client_id, client_secret, logger)
+            platform_auth_container = PlatformAuthContainer(access_token, refresh_token, client_id, client_secret, self._logger)
             viewer_container = ViewerContainer()
             ai_container = AIContainer(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
-                llmbox_host=llmbox_host,
-                intent_detector_host=intent_detector_host,
+                llmbox_host=self._llmbox_config.host,
+                intent_detector_host=self._intent_detector_config.host,
             )
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            joke_container = JokeContainer(app_container.logger)
+            joke_container = JokeContainer(self._logger)
             stream_container = StreamContainer()
             follow_container = FollowContainer()
             economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             shop_container = ShopContainer()
-            minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
+            minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             betting_container = BettingContainer()
-            chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
+            chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             platform_container = PlatformContainer(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
                 platform_auth_container=platform_auth_container,
-                logger=logger,
+                logger=self._logger,
             )
 
             minigame_repository = minigame_container.minigame_repository()
@@ -147,7 +154,7 @@ class BotManager:
             moderation_service = ModerationService(
                 platform_repository=platform_container.platform_repository(),
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
-                logger=logger,
+                logger=self._logger,
             )
 
             followage_command_handler = platform_container.followage_command_handler(
@@ -404,7 +411,7 @@ class BotManager:
             HandleRestoreStreamContextUseCase(
                 restore_stream_uow=platform_container.restore_stream_uow(stream_container.stream_repository_provider),
                 minigame_repository=minigame_repository,
-                logger=logger,
+                logger=self._logger,
             ).handle(channel_name)
 
             self._chat_client = chat_client
@@ -414,7 +421,7 @@ class BotManager:
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
-            telegram_bot = provide_telegram_bot(tg_bot_token)
+            telegram_bot = provide_telegram_bot(self._telegram_config.bot_token)
             notifications_repository = provide_notification_repository(telegram_bot)
 
             post_joke_job: PostJokeJob = joke_container.post_joke_job(
@@ -438,7 +445,7 @@ class BotManager:
                 platform_repository=platform_container.platform_repository(),
                 minigame_repository=minigame_repository,
                 notification_repository=notifications_repository,
-                notification_group_id=self._group_id,
+                notification_group_id=self._telegram_config.group_id,
                 generate_response_use_case=ai_container.generate_response_use_case(),
                 state=chat_summary_state,
                 stream_repository_provider=stream_container.stream_repository_provider,
@@ -477,7 +484,7 @@ class BotManager:
                     send_channel_message=chat_client.send_channel_message,
                     bot_name=bot_name,
                 ),
-                logger=logger,
+                logger=self._logger,
             )
 
             viewer_time_job = platform_container.viewer_time_job(

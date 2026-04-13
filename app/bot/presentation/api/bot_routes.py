@@ -11,7 +11,13 @@ router = APIRouter()
 
 @lru_cache
 def get_bot_manager() -> BotManager:
-    return BotManager(config=app_container.config.bot, group_id=app_container.config.telegram.group_id, logger=app_container.logger)
+    return BotManager(
+        config=app_container.config.bot,
+        telegram_config=app_container.config.telegram,
+        llmbox_config=app_container.config.llmbox,
+        intent_detector_config=app_container.config.intent_detector,
+        logger=app_container.logger,
+    )
 
 
 @router.get("/status", response_model=BotStatusResponse)
