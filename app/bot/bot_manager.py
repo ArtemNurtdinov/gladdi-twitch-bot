@@ -151,10 +151,14 @@ class BotManager:
             providers_bundle = build_providers_bundle(logger=logger)
 
             viewer_container = ViewerContainer()
+            ai_container = AIContainer(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
+            ask_container = AskContainer(
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+            )
+            joke_container = JokeContainer(app_container.logger)
 
             user_cache = viewer_container.viewer_cache(platform_repository)
-
-            ai_container = AIContainer(llmbox_host=llmbox_host, intent_detector_host=intent_detector_host)
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -194,11 +198,6 @@ class BotManager:
                 bot_nick=bot_name,
             )
 
-            ask_container = AskContainer(
-                session_factory_rw=db_rw_session,
-                session_factory_ro=db_ro_session,
-            )
-
             ask_ouw_factory = ask_container.ask_uow_factory(
                 chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
                 conversation_service_provider=ai_container.conversation_service_provider,
@@ -209,7 +208,7 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_gladdi,
                 handle_ask_use_case=HandleAskUseCase(
-                    get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case,
+                    get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case(),
                     prompt_service=ai_container.prompt_service,
                     unit_of_work_factory=ask_ouw_factory,
                     chat_response_use_case=generate_response_use_case,
@@ -402,7 +401,7 @@ class BotManager:
 
             handle_chat_message_use_case = HandleChatMessageUseCase(
                 unit_of_work_factory=uow_factories.build_chat_message_uow_factory(),
-                get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case,
+                get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case(),
                 prompt_service=ai_container.prompt_service,
                 generate_response_use_case=generate_response_use_case,
             )
@@ -454,8 +453,6 @@ class BotManager:
 
             telegram_bot = provide_telegram_bot(tg_bot_token)
             notifications_repository = provide_notification_repository(telegram_bot)
-
-            joke_container = JokeContainer(app_container.logger)
 
             post_joke_job: PostJokeJob = joke_container.post_joke_job(
                 channel_name=channel_name,
