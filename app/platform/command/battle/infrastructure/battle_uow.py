@@ -60,7 +60,7 @@ class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOf
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
         conversation_service_provider: Provider[ConversationService],
-        battle_use_case_provider: Provider[BattleUseCase],
+        battle_use_case: BattleUseCase,
         get_user_equipment_use_case: GetUserEquipmentUseCase,
     ):
         super().__init__(
@@ -71,7 +71,7 @@ class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOf
         self._economy_policy_provider = economy_policy_provider
         self._chat_use_case = chat_use_case
         self._conversation_service_provider = conversation_service_provider
-        self._battle_use_case_provider = battle_use_case_provider
+        self._battle_use_case = battle_use_case
         self._get_user_equipment_use_case = get_user_equipment_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> BattleUnitOfWork:
@@ -80,7 +80,7 @@ class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOf
             economy_policy=self._economy_policy_provider.get(db),
             chat_use_case=self._chat_use_case,
             conversation_service=self._conversation_service_provider.get(db),
-            battle_use_case=self._battle_use_case_provider.get(db),
+            battle_use_case=self._battle_use_case,
             get_user_equipment_use_case=self._get_user_equipment_use_case,
             read_only=read_only,
         )

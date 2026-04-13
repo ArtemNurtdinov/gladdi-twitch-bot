@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.di.container import AIContainer
+from app.battle.di.container import BattleContainer
 from app.bot.domain.model.bot_settings import BotSettings
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
@@ -165,6 +166,7 @@ class BotManager:
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             shop_container = ShopContainer()
             minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
+            battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -185,6 +187,7 @@ class BotManager:
                 shop_item_repository_provider=shop_container.shop_item_repository_provider,
                 get_used_words_use_case=minigame_container.get_used_words_use_case(),
                 add_used_word_use_case=minigame_container.add_used_word_use_case(),
+                battle_use_case=battle_container.battle_use_case(),
             )
 
             bot_user = await platform_repository.get_authenticated_user()

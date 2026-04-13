@@ -7,6 +7,7 @@ from app.ai.gen.application.uow.chat_response_uow import ChatResponseUnitOfWorkF
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
+from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
@@ -109,8 +110,8 @@ def create_uow_factories(
     shop_item_repository_provider: Provider[ShopItemRepository],
     get_used_words_use_case: GetUsedWordsUseCase,
     add_used_word_use_case: AddUsedWordsUseCase,
+    battle_use_case: BattleUseCase,
 ) -> UowFactories:
-    battle_providers = providers.battle_providers
     betting_providers = providers.betting_providers
 
     def build_chat_message_uow_factory() -> ChatMessageUnitOfWorkFactory:
@@ -155,7 +156,7 @@ def create_uow_factories(
             economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
             conversation_service_provider=conversation_service_provider,
-            battle_use_case_provider=battle_providers.battle_use_case_provider,
+            battle_use_case=battle_use_case,
             get_user_equipment_use_case=get_user_equipment_use_case,
         )
 
@@ -220,7 +221,7 @@ def create_uow_factories(
             session_factory_ro=session_factory_ro,
             economy_policy_provider=economy_policy_provider,
             betting_service_provider=betting_providers.betting_service_provider,
-            battle_use_case_provider=battle_providers.battle_use_case_provider,
+            battle_use_case=battle_use_case,
             chat_use_case=chat_use_case,
         )
 
@@ -291,7 +292,7 @@ def create_uow_factories(
             session_factory_ro=session_factory_ro,
             stream_repository_provider=stream_repository_provider,
             viewer_repository_provider=viewer_repository_provider,
-            battle_use_case_provider=battle_providers.battle_use_case_provider,
+            battle_use_case=battle_use_case,
             economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
             conversation_service_provider=conversation_service_provider,
