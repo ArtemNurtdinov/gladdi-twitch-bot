@@ -11,11 +11,11 @@ from app.auth.di.dependencies import (
     provide_user_mapper,
     provide_validate_access_token_use_case,
 )
-from app.core.config.di.composition import load_config
+from app.core.di.application_container import app_container
 
 
 def get_validate_access_token_use_case(session: Session) -> ValidateAccessTokenUseCase:
-    config = load_config()
+    config = app_container.config
     auth_repository = provide_auth_repository(session)
     user_mapper = provide_user_mapper()
 
@@ -25,7 +25,7 @@ def get_validate_access_token_use_case(session: Session) -> ValidateAccessTokenU
 def get_login_use_case(session: Session) -> LoginUseCase:
     auth_repository = provide_auth_repository(session)
     password_hasher = provide_password_hasher()
-    config = load_config()
+    config = app_container.config
     token_mapper = provide_token_mapper()
     user_mapper = provide_user_mapper()
     create_access_token_use_case = provide_create_access_token_use_case(config, auth_repository, token_mapper)

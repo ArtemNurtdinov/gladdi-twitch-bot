@@ -8,10 +8,7 @@ from app.bot.presentation.api.bot_routes import get_bot_manager
 from app.bot.presentation.api.model.request.start_bot import StartBotRequest
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.start_bot import AuthStartResponse
-from app.core.config.di.composition import load_config
-from app.core.config.domain.model.configuration import Config
-from app.core.logger.di.composition import get_logger
-from app.core.logger.domain.logger import Logger
+from app.core.di.application_container import app_container
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -27,9 +24,10 @@ router = APIRouter()
 
 
 @router.post("/start", summary="Начать авторизацию Twitch", response_model=AuthStartResponse)
-async def start_authorization(request: StartBotRequest, config=Depends(load_config)) -> AuthStartResponse:
+async def start_authorization(request: StartBotRequest) -> AuthStartResponse:
     if not request.channel_name:
         raise HTTPException(status_code=400, detail="Не передан channel_name")
+    config = app_container.config
     params = {
         "client_id": config.twitch.client_id,
         "redirect_uri": config.twitch.redirect_url,
@@ -49,10 +47,10 @@ async def start_authorization(request: StartBotRequest, config=Depends(load_conf
 async def oauth_callback(
     code: str | None = None,
     state: str | None = None,
-    config: Config = Depends(load_config),
     bot_manager: BotManager = Depends(get_bot_manager),
-    logger: Logger = Depends(get_logger),
 ) -> BotActionResultResponse:
+    config = app_container.config
+    logger = app_container.logger
     data = {
         "client_id": config.twitch.client_id,
         "client_secret": config.twitch.client_secret,

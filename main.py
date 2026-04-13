@@ -6,8 +6,7 @@ from app.ai.gen.prompt.presentation import system_prompt_routes
 from app.auth.presentation import auth_routes
 from app.bot.presentation.api import bot_routes, bot_twitch_routes
 from app.chat.presentation import chat_routes
-from app.core.config.di.composition import load_config
-from app.core.logger.di.composition import get_logger
+from app.core.di.application_container import app_container
 from app.follow.presentation import followers_routes
 from app.joke.presentation.api import joke_routes
 from app.shop.presentation.api import shop_routes
@@ -55,13 +54,13 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    config = load_config()
+    config = app_container.config
+    logger = app_container.logger
+
     host = config.application.host
     port = config.application.port
 
     init_db(config.db)
-
-    logger = get_logger()
 
     logger.log_info(f"Запуск на http://{host}:{port}")
 
