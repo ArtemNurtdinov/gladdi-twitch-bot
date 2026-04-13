@@ -11,7 +11,6 @@ from app.bot.presentation.api.model.response.action import BotActionResultRespon
 from app.bot.presentation.api.model.response.status import BotStatusResponse
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
-from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.di.container import ChatContainer
 from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
 from app.core.di.application_container import app_container
@@ -503,14 +502,11 @@ class BotManager:
                 logger=logger,
             )
 
-            chat_summarizer_job: ChatSummarizerJob = ChatSummarizerJob(
+            chat_summarizer_job: ChatSummarizerJob = chat_container.chat_summarizer_job(
                 channel_name=channel_name,
-                handle_chat_summarizer_use_case=HandleChatSummarizerUseCase(
-                    chat_summarizer_uow=chat_container.chat_summarizer_uow_factory(stream_container.stream_repository_provider),
-                    chat_response_use_case=generate_response_use_case,
-                ),
+                stream_repository_provider=stream_container.stream_repository_provider,
+                generate_response_use_case=generate_response_use_case,
                 chat_summary_state=chat_summary_state,
-                logger=logger,
             )
 
             minigame_job: MinigameTickJob = MinigameTickJob(

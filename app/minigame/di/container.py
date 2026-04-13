@@ -18,7 +18,7 @@ class MinigameContainer:
         self._session_factory_rw = session_factory_rw
         self._session_factory_ro = session_factory_ro
         self._word_history_repo_provider = Provider(self.word_history_repository)
-        self._logger = logger
+        self._logger = logger.create_child(__name__)
 
     def minigame_repository(self) -> MinigameRepository:
         return MinigameRepositoryImpl(self._logger)
