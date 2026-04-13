@@ -1,10 +1,11 @@
 from dataclasses import asdict
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 
-from app.stream.di.container import StreamContainer, get_stream_container
+from app.stream.di.container import StreamContainer
 from app.stream.presentation.stream_schemas import StreamDetailResponse, StreamListResponse, StreamResponse
+from core.db import db_ro_session
 
 router = APIRouter()
 
@@ -15,12 +16,13 @@ async def get_streams(
     limit: int = Query(20, ge=1, le=100, description="Количество записей в ответе"),
     date_from: datetime | None = Query(None, description="Начало диапазона даты начала стрима (UTC)"),
     date_to: datetime | None = Query(None, description="Конец диапазона даты начала стрима (UTC)"),
-    stream_container: StreamContainer = Depends(get_stream_container),
 ) -> StreamListResponse:
     if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
     try:
-        items, total = stream_container.stream_use_case.get_streams(skip, limit, date_from, date_to)
+        stream_container = StreamContainer()
+        with db_ro_session() as session:
+            items, total = stream_container.stream_use_case(session).get_streams(skip, limit, date_from, date_to)
         return StreamListResponse(
             items=[StreamResponse.model_validate(asdict(item)) for item in items],
             total=total,
@@ -34,9 +36,10 @@ async def get_streams(
 @router.get("/{stream_id}", summary="Детали стрима", response_model=StreamDetailResponse)
 async def get_stream_detail(
     stream_id: int,
-    stream_container: StreamContainer = Depends(get_stream_container),
 ) -> StreamDetailResponse:
-    stream_details = stream_container.stream_use_case.get_stream_detail(stream_id)
+    stream_container = StreamContainer()
+    with db_ro_session() as session:
+        stream_details = stream_container.stream_use_case(session).get_stream_detail(stream_id)
     if not stream_details:
         raise HTTPException(status_code=404, detail="Стрим не найден")
 

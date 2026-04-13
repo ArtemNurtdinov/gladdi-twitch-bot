@@ -1,4 +1,3 @@
-from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
@@ -16,18 +15,20 @@ from app.stream.application.usecase.stream_query_use_case import StreamQueryUseC
 from app.stream.domain.repo import StreamRepository
 from app.stream.infrastructure.stream_repository import StreamRepositoryImpl
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
-from core.db import get_db
+from core.provider import Provider
 
 
 class StreamContainer:
-    def __init__(self, session: Session):
-        self.stream_repository: StreamRepository = StreamRepositoryImpl(session)
-        self.chat_repository: ChatRepository = ChatRepositoryImpl(session)
-        self.stream_use_case = StreamQueryUseCase(self.stream_repository, self.chat_repository)
+    def __init__(self):
+        self.stream_repository_provider: Provider[StreamRepository] = Provider(self._stream_repository)
 
+    def _stream_repository(self, session: Session) -> StreamRepository:
+        return StreamRepositoryImpl(session)
 
-def get_stream_container(session: Session = Depends(get_db)) -> StreamContainer:
-    return StreamContainer(session)
+    def stream_use_case(self, session: Session) -> StreamQueryUseCase:
+        stream_repository = self._stream_repository(session)
+        chat_repository: ChatRepository = ChatRepositoryImpl(session)
+        return StreamQueryUseCase(stream_repository, chat_repository)
 
 
 def get_stream_status_job(

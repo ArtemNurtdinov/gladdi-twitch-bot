@@ -75,7 +75,7 @@ from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
-from app.stream.di.container import get_stream_status_job
+from app.stream.di.container import StreamContainer, get_stream_status_job
 from app.task.domain.model.task import Task
 from app.task.domain.runner import TaskRunner
 from app.task.infrastructure.runner import BackgroundTaskRunner
@@ -157,6 +157,7 @@ class BotManager:
                 session_factory_ro=db_ro_session,
             )
             joke_container = JokeContainer(app_container.logger)
+            stream_container = StreamContainer()
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -167,6 +168,7 @@ class BotManager:
                 platform_repository=platform_repository,
                 system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                 conversation_service_provider=ai_container.conversation_service_provider,
+                stream_repository_provider=stream_container.stream_repository_provider,
             )
 
             bot_user = await platform_repository.get_authenticated_user()

@@ -9,13 +9,11 @@ from app.economy.bootstrap import EconomyProviders, build_economy_providers
 from app.equipment.bootstrap import EquipmentProviders, build_equipment_providers
 from app.follow.bootstrap import FollowProviders, build_follow_providers
 from app.minigame.bootstrap import MinigameProviders, build_minigame_providers
-from app.stream.bootstrap import StreamProviders, build_stream_providers
 from app.viewer.bootstrap import ViewerProviders, build_viewer_providers
 
 
 @dataclass(frozen=True)
 class ProvidersBundle:
-    stream_providers: StreamProviders
     follow_providers: FollowProviders
     viewer_providers: ViewerProviders
     economy_providers: EconomyProviders
@@ -26,7 +24,6 @@ class ProvidersBundle:
 
 
 def build_providers_bundle(logger: Logger) -> ProvidersBundle:
-    stream_providers = build_stream_providers()
     follow_providers = build_follow_providers()
     viewer_providers = build_viewer_providers()
     economy_providers = build_economy_providers()
@@ -36,7 +33,6 @@ def build_providers_bundle(logger: Logger) -> ProvidersBundle:
     betting_providers = build_betting_providers()
 
     return ProvidersBundle(
-        stream_providers=stream_providers,
         follow_providers=follow_providers,
         viewer_providers=viewer_providers,
         economy_providers=economy_providers,
