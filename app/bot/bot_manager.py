@@ -239,7 +239,12 @@ class BotManager:
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_fight,
                 handle_battle_use_case=HandleBattleUseCase(
-                    battle_uow=uow_factories.build_battle_uow_factory(),
+                    battle_uow=battle_container.battle_uow_factory(
+                        economy_policy_provider=economy_container.economy_policy_provider,
+                        chat_use_case=chat_container.chat_use_case(),
+                        conversation_service_provider=ai_container.conversation_service_provider,
+                        get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                    ),
                     chat_response_use_case=generate_response_use_case,
                     calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
                 ),

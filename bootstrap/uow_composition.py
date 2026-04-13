@@ -22,8 +22,6 @@ from app.minigame.application.use_case.add_used_word_use_case import AddUsedWord
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
-from app.platform.command.battle.application.battle_uow import BattleUnitOfWorkFactory
-from app.platform.command.battle.infrastructure.battle_uow import SqlAlchemyBattleUnitOfWorkFactory
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
 from app.platform.command.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
 from app.platform.command.equipment.application.equipment_uow import EquipmentUnitOfWorkFactory
@@ -60,7 +58,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_battle_uow_factory: Callable[[], BattleUnitOfWorkFactory]
     build_bonus_uow_factory: Callable[[], BonusUnitOfWorkFactory]
     build_equipment_uow_factory: Callable[[], EquipmentUnitOfWorkFactory]
     build_guess_uow_factory: Callable[[], GuessUnitOfWorkFactory]
@@ -100,17 +97,6 @@ def create_uow_factories(
     battle_use_case: BattleUseCase,
     betting_service_provider: Provider[BettingService],
 ) -> UowFactories:
-    def build_battle_uow_factory() -> BattleUnitOfWorkFactory:
-        return SqlAlchemyBattleUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            chat_use_case=chat_use_case,
-            conversation_service_provider=conversation_service_provider,
-            battle_use_case=battle_use_case,
-            get_user_equipment_use_case=get_user_equipment_use_case,
-        )
-
     def build_bonus_uow_factory() -> BonusUnitOfWorkFactory:
         return SqlAlchemyBonusUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
@@ -259,7 +245,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_battle_uow_factory=build_battle_uow_factory,
         build_bonus_uow_factory=build_bonus_uow_factory,
         build_equipment_uow_factory=build_equipment_uow_factory,
         build_guess_uow_factory=build_guess_uow_factory,
