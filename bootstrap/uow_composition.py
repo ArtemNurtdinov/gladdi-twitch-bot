@@ -22,14 +22,8 @@ from app.minigame.application.use_case.add_used_word_use_case import AddUsedWord
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
-from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
-from app.platform.command.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
-from app.platform.command.equipment.application.equipment_uow import EquipmentUnitOfWorkFactory
-from app.platform.command.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
 from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
-from app.platform.command.guess.application.guess_uow import GuessUnitOfWorkFactory
-from app.platform.command.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
 from app.platform.command.help.application.help_uow import HelpUnitOfWorkFactory
 from app.platform.command.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
 from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
@@ -58,9 +52,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_bonus_uow_factory: Callable[[], BonusUnitOfWorkFactory]
-    build_equipment_uow_factory: Callable[[], EquipmentUnitOfWorkFactory]
-    build_guess_uow_factory: Callable[[], GuessUnitOfWorkFactory]
     build_help_uow_factory: Callable[[], HelpUnitOfWorkFactory]
     build_roll_uow_factory: Callable[[], RollUnitOfWorkFactory]
     build_shop_uow_factory: Callable[[], ShopUnitOfWorkFactory]
@@ -97,33 +88,6 @@ def create_uow_factories(
     battle_use_case: BattleUseCase,
     betting_service_provider: Provider[BettingService],
 ) -> UowFactories:
-    def build_bonus_uow_factory() -> BonusUnitOfWorkFactory:
-        return SqlAlchemyBonusUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            stream_repository_provider=stream_repository_provider,
-            get_user_equipment_use_case=get_user_equipment_use_case,
-            economy_policy_provider=economy_policy_provider,
-            chat_use_case=chat_use_case,
-        )
-
-    def build_equipment_uow_factory() -> EquipmentUnitOfWorkFactory:
-        return SqlAlchemyEquipmentUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            get_user_equipment_use_case=get_user_equipment_use_case,
-            chat_use_case=chat_use_case,
-        )
-
-    def build_guess_uow_factory() -> GuessUnitOfWorkFactory:
-        return SqlAlchemyGuessUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            chat_use_case=chat_use_case,
-            get_user_equipment_use_case=get_user_equipment_use_case,
-        )
-
     def build_help_uow_factory() -> HelpUnitOfWorkFactory:
         return SqlAlchemyHelpUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
@@ -245,9 +209,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_bonus_uow_factory=build_bonus_uow_factory,
-        build_equipment_uow_factory=build_equipment_uow_factory,
-        build_guess_uow_factory=build_guess_uow_factory,
         build_help_uow_factory=build_help_uow_factory,
         build_roll_uow_factory=build_roll_uow_factory,
         build_shop_uow_factory=build_shop_uow_factory,

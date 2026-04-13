@@ -47,18 +47,10 @@ from app.platform.command.ask.di.container import AskContainer
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandlerImpl
 from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
-from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
-from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
-from app.platform.command.equipment.application.equipment_command_handler import EquipmentCommandHandlerImpl
-from app.platform.command.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
-from app.platform.command.guess.application.guess_letter_command_handler import GuessLetterCommandHandlerImpl
-from app.platform.command.guess.application.guess_number_command_handler import GuessNumberCommandHandlerImpl
-from app.platform.command.guess.application.guess_word_command_handler import GuessWordCommandHandlerImpl
-from app.platform.command.guess.application.handle_guess_use_case import HandleGuessUseCase
 from app.platform.command.guess.application.rps_command_handler import RpsCommandHandlerImpl
 from app.platform.command.help.application.handle_help_use_case import HandleHelpUseCase
 from app.platform.command.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
@@ -74,6 +66,7 @@ from app.platform.command.top_bottom.application.handle_top_bottom_use_case impo
 from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandlerImpl
 from app.platform.command.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
+from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
@@ -165,6 +158,7 @@ class BotManager:
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             betting_container = BettingContainer()
             chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=logger)
+            platform_container = PlatformContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
 
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
@@ -270,10 +264,11 @@ class BotManager:
                 bot_name=bot_name,
             )
 
-            bonus_command_handler: CommandHandler = BonusCommandHandlerImpl(
-                handle_bonus_use_case=HandleBonusUseCase(
-                    bonus_uow=uow_factories.build_bonus_uow_factory(),
-                ),
+            bonus_command_handler = platform_container.bonus_command_handler(
+                stream_repository_provider=stream_container.stream_repository_provider,
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                economy_policy_provider=economy_container.economy_policy_provider,
+                chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
             )
 
@@ -305,12 +300,11 @@ class BotManager:
                 bot_nick=bot_name,
             )
 
-            equipment_command_handler: CommandHandler = EquipmentCommandHandlerImpl(
+            equipment_command_handler = platform_container.equipment_command_handler(
                 command_prefix=self._settings.prefix,
                 command_shop=self._settings.command_shop,
-                handle_equipment_use_case=HandleEquipmentUseCase(
-                    unit_of_work_factory=uow_factories.build_equipment_uow_factory(),
-                ),
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
             )
 
@@ -360,33 +354,33 @@ class BotManager:
                 bot_name=bot_name,
             )
 
-            guess_number_command_handler: CommandHandler = GuessNumberCommandHandlerImpl(
+            guess_number_command_handler = platform_container.guess_number_command_handler(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_guess,
-                handle_guess_use_case=HandleGuessUseCase(
-                    minigame_repository=minigame_container.minigame_repository(),
-                    guess_uow=uow_factories.build_guess_uow_factory(),
-                ),
+                minigame_repository=minigame_container.minigame_repository(),
+                economy_policy_provider=economy_container.economy_policy_provider,
+                chat_use_case=chat_container.chat_use_case(),
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 bot_name=bot_name,
             )
 
-            guess_letter_command_handler: CommandHandler = GuessLetterCommandHandlerImpl(
+            guess_letter_command_handler = platform_container.guess_letter_command_handler(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_guess_letter,
-                handle_guess_use_case=HandleGuessUseCase(
-                    minigame_repository=minigame_container.minigame_repository(),
-                    guess_uow=uow_factories.build_guess_uow_factory(),
-                ),
+                minigame_repository=minigame_container.minigame_repository(),
+                economy_policy_provider=economy_container.economy_policy_provider,
+                chat_use_case=chat_container.chat_use_case(),
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 bot_name=bot_name,
             )
 
-            guess_word_command_handler: CommandHandler = GuessWordCommandHandlerImpl(
+            guess_word_command_handler = platform_container.guess_word_command_handler(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_guess_word,
-                handle_guess_use_case=HandleGuessUseCase(
-                    minigame_repository=minigame_container.minigame_repository(),
-                    guess_uow=uow_factories.build_guess_uow_factory(),
-                ),
+                minigame_repository=minigame_container.minigame_repository(),
+                economy_policy_provider=economy_container.economy_policy_provider,
+                chat_use_case=chat_container.chat_use_case(),
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 bot_name=bot_name,
             )
 
