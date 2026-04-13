@@ -1,22 +1,14 @@
 from collections.abc import Awaitable, Callable
 
-from sqlalchemy.orm import Session
-
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.core.logger.domain.logger import Logger
 from app.joke.application.job.post_joke_job import PostJokeJob
-from app.joke.application.mapper.jokes_configuration_mapper import JokesConfigurationMapper as JokesConfigurationMapperDTO
 from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
-from app.joke.application.usecase.get_jokes_configuration_use_case import GetJokesConfigurationUseCase
 from app.joke.application.usecase.handle_post_joke_use_case import HandlePostJokeUseCase
-from app.joke.application.usecase.save_jokes_configuration_use_case import SaveJokesConfigurationUseCase
 from app.joke.domain.repository import JokesConfigurationRepository
-from app.joke.infrastructure.mapper.jokes_configuration_mapper import JokesConfigurationMapper
-from app.joke.infrastructure.repository import JokesConfigurationRepositoryImpl
 from app.joke.infrastructure.uow.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
-from app.joke.presentation.api.mapper.jokes_configuration_mapper import JokesConfigurationMapper as JokesConfigurationMapperSchema
 from app.platform.domain.repository import PlatformRepository
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
 from core.provider import Provider
@@ -67,31 +59,3 @@ def provide_post_joke_job(
         bot_name=bot_name,
         logger=logger,
     )
-
-
-def provide_jokes_configuration_mapper() -> JokesConfigurationMapper:
-    return JokesConfigurationMapper()
-
-
-def provide_jokes_configuration_mapper_dto() -> JokesConfigurationMapperDTO:
-    return JokesConfigurationMapperDTO()
-
-
-def provide_jokes_configuration_repository(session: Session, mapper: JokesConfigurationMapper) -> JokesConfigurationRepository:
-    return JokesConfigurationRepositoryImpl(session, mapper)
-
-
-def provide_get_jokes_configuration_use_case(
-    jokes_configuration_repository: JokesConfigurationRepository, mapper: JokesConfigurationMapperDTO
-) -> GetJokesConfigurationUseCase:
-    return GetJokesConfigurationUseCase(jokes_configuration_repository, mapper)
-
-
-def provide_save_jokes_configuration_use_case(
-    jokes_configuration_repository: JokesConfigurationRepository, mapper: JokesConfigurationMapperDTO
-) -> SaveJokesConfigurationUseCase:
-    return SaveJokesConfigurationUseCase(jokes_configuration_repository, mapper)
-
-
-def provide_jokes_configuration_mapper_schema() -> JokesConfigurationMapperSchema:
-    return JokesConfigurationMapperSchema()
