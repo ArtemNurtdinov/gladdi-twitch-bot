@@ -4,8 +4,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.auth.application.contracts import LoginResponse, UserLogin, UserResponse
 from app.auth.application.model.login_result import InvalidPassword, LoginSuccess, UserInactive, UserNotFound
 from app.auth.application.model.user import UserDTO
-from app.auth.di.composition import get_login_use_case, get_validate_access_token_use_case
+from app.auth.di.container import AuthContainer
 from app.auth.domain.model.role import UserRole
+from app.core.di.application_container import app_container
 from core.db import db_rw_session
 
 router = APIRouter()
@@ -46,7 +47,8 @@ async def get_me(current_user: UserDTO = Depends(get_current_user)):
 @router.post("/login", response_model=LoginResponse)
 async def login(user_data: UserLogin):
     with db_rw_session() as session:
-        login_use_case = get_login_use_case(session)
+        auth_container = AuthContainer(app_container.config.application)
+        login_use_case = auth_container.login_use_case(session)
         result = login_use_case.login(user_data.email, user_data.password)
 
     if isinstance(result, UserNotFound):
@@ -67,5 +69,5 @@ async def login(user_data: UserLogin):
 
 def validate_token(token: str) -> UserDTO | None:
     with db_rw_session() as session:
-        validate_access_token_use_case = get_validate_access_token_use_case(session)
-        return validate_access_token_use_case.validate_access_token(token)
+        auth_container = AuthContainer(app_container.config.application)
+        return auth_container.validate_access_token_use_case(session).validate_access_token(token)
