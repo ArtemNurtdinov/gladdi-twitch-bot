@@ -31,7 +31,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_rps_uow_factory: Callable[[], RpsUnitOfWorkFactory]
     build_follow_age_uow_factory: Callable[[], FollowAgeUnitOfWorkFactory]
     build_followers_sync_uow_factory: Callable[[], FollowersSyncUnitOfWorkFactory]
     build_restore_stream_context_uow_factory: Callable[[], RestoreStreamContextUnitOfWorkFactory]
@@ -107,7 +106,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_rps_uow_factory=build_rps_uow_factory,
         build_follow_age_uow_factory=build_follow_age_uow_factory,
         build_followers_sync_uow_factory=build_followers_sync_uow_factory,
         build_restore_stream_context_uow_factory=build_restore_stream_context_uow_factory,

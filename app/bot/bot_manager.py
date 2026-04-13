@@ -24,7 +24,6 @@ from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.di.container import JokeContainer
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
-from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.di.container import MinigameContainer
 from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.dependencies import provide_notification_repository, provide_telegram_bot
@@ -45,7 +44,6 @@ from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
-from app.platform.command.guess.application.rps_command_handler import RpsCommandHandlerImpl
 from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
@@ -359,13 +357,12 @@ class BotManager:
                 bot_name=bot_name,
             )
 
-            rps_command_handler: CommandHandler = RpsCommandHandlerImpl(
+            rps_command_handler = platform_container.rps_command_handler(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_rps,
-                handle_rps_use_case=HandleRpsUseCase(
-                    minigame_repository=minigame_repository,
-                    rps_uow=uow_factories.build_rps_uow_factory(),
-                ),
+                minigame_repository=minigame_repository,
+                economy_policy_provider=economy_container.economy_policy_provider,
+                chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
             )
 

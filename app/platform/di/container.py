@@ -14,16 +14,19 @@ from app.equipment.application.defense.roll_cooldown_use_case import RollCooldow
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
+from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
 from app.minigame.application.use_case.finish_rps_use_case import FinishRpsUseCase
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
+from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
 from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
 from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
+from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
@@ -39,6 +42,7 @@ from app.platform.command.guess.application.guess_number_command_handler import 
 from app.platform.command.guess.application.guess_uow import GuessUnitOfWorkFactory
 from app.platform.command.guess.application.guess_word_command_handler import GuessWordCommandHandlerImpl
 from app.platform.command.guess.application.handle_guess_use_case import HandleGuessUseCase
+from app.platform.command.guess.application.rps_command_handler import RpsCommandHandlerImpl
 from app.platform.command.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
 from app.platform.command.help.application.handle_help_use_case import HandleHelpUseCase
 from app.platform.command.help.application.help_uow import HelpUnitOfWorkFactory
@@ -619,3 +623,29 @@ class PlatformContainer:
             finish_rps_game_use_case,
             finish_expired_games_use_case,
         )
+
+    def rps_uow_factory(self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase) -> RpsUnitOfWorkFactory:
+        return SqlAlchemyRpsUnitOfWorkFactory(
+            session_factory_ro=self._session_factory_ro,
+            session_factory_rw=self._session_factory_rw,
+            economy_policy_provider=economy_policy_provider,
+            chat_use_case=chat_use_case,
+        )
+
+    def handle_rps_use_case(
+        self, minigame_repository: MinigameRepository, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+    ) -> HandleRpsUseCase:
+        rps_uow_factory = self.rps_uow_factory(economy_policy_provider, chat_use_case)
+        return HandleRpsUseCase(minigame_repository, rps_uow_factory)
+
+    def rps_command_handler(
+        self,
+        command_prefix: str,
+        command_name: str,
+        minigame_repository: MinigameRepository,
+        economy_policy_provider: Provider[EconomyPolicy],
+        chat_use_case: ChatUseCase,
+        bot_name: str,
+    ) -> CommandHandler:
+        handle_rps_use_case = self.handle_rps_use_case(minigame_repository, economy_policy_provider, chat_use_case)
+        return RpsCommandHandlerImpl(command_prefix, command_name, handle_rps_use_case, bot_name)
