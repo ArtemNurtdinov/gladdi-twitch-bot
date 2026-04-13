@@ -1,11 +1,13 @@
 from collections.abc import Awaitable, Callable
 
+from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
+from app.chat.domain.repo import ChatRepository
 from app.core.logger.domain.logger import Logger
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
@@ -37,6 +39,10 @@ from app.platform.command.equipment.application.equipment_command_handler import
 from app.platform.command.equipment.application.equipment_uow import EquipmentUnitOfWorkFactory
 from app.platform.command.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.platform.command.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
+from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
+from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
+from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
+from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
 from app.platform.command.guess.application.guess_letter_command_handler import GuessLetterCommandHandlerImpl
 from app.platform.command.guess.application.guess_number_command_handler import GuessNumberCommandHandlerImpl
 from app.platform.command.guess.application.guess_uow import GuessUnitOfWorkFactory
@@ -70,6 +76,7 @@ from app.platform.command.transfer.application.handle_transfer_use_case import H
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
 from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWorkFactory
 from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
+from app.platform.domain.repository import PlatformRepository
 from app.shop.domain.repository import ShopItemRepository
 from app.stream.domain.repo import StreamRepository
 from core.provider import Provider
@@ -649,3 +656,57 @@ class PlatformContainer:
     ) -> CommandHandler:
         handle_rps_use_case = self.handle_rps_use_case(minigame_repository, economy_policy_provider, chat_use_case)
         return RpsCommandHandlerImpl(command_prefix, command_name, handle_rps_use_case, bot_name)
+
+    def follow_age_uow_factory(
+        self,
+        chat_repo_provider: Provider[ChatRepository],
+        conversation_service_provider: Provider[ConversationService],
+        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        platform_repository: PlatformRepository,
+    ) -> FollowAgeUnitOfWorkFactory:
+        return SqlAlchemyFollowAgeUnitOfWorkFactory(
+            session_factory_ro=self._session_factory_ro,
+            session_factory_rw=self._session_factory_rw,
+            chat_repo_provider=chat_repo_provider,
+            conversation_service_provider=conversation_service_provider,
+            system_prompt_repository_provider=system_prompt_repository_provider,
+            platform_repository=platform_repository,
+        )
+
+    def handle_follow_age_use_case(
+        self,
+        generate_response_use_case: GenerateResponseUseCase,
+        chat_repo_provider: Provider[ChatRepository],
+        conversation_service_provider: Provider[ConversationService],
+        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        platform_repository: PlatformRepository,
+    ) -> HandleFollowAgeUseCase:
+        follow_age_uow_factory = self.follow_age_uow_factory(
+            chat_repo_provider, conversation_service_provider, system_prompt_repository_provider, platform_repository
+        )
+        return HandleFollowAgeUseCase(generate_response_use_case, follow_age_uow_factory)
+
+    def followage_command_handler(
+        self,
+        command_prefix: str,
+        command_name: str,
+        generate_response_use_case: GenerateResponseUseCase,
+        chat_repo_provider: Provider[ChatRepository],
+        conversation_service_provider: Provider[ConversationService],
+        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        platform_repository: PlatformRepository,
+        bot_name: str,
+    ) -> CommandHandler:
+        handle_follow_age_use_case = self.handle_follow_age_use_case(
+            generate_response_use_case,
+            chat_repo_provider,
+            conversation_service_provider,
+            system_prompt_repository_provider,
+            platform_repository,
+        )
+        return FollowageCommandHandlerImpl(
+            command_prefix=command_prefix,
+            command_name=command_name,
+            handle_follow_age_use_case=handle_follow_age_use_case,
+            bot_name=bot_name,
+        )

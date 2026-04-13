@@ -4,19 +4,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
-from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
-from app.chat.domain.repo import ChatRepository
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWorkFactory
 from app.follow.domain.repo import FollowersRepository
 from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
-from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
-from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
-from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
-from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
-from app.platform.domain.repository import PlatformRepository
 from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
@@ -31,7 +24,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_follow_age_uow_factory: Callable[[], FollowAgeUnitOfWorkFactory]
     build_followers_sync_uow_factory: Callable[[], FollowersSyncUnitOfWorkFactory]
     build_restore_stream_context_uow_factory: Callable[[], RestoreStreamContextUnitOfWorkFactory]
     build_stream_status_uow_factory: Callable[[], StreamStatusUnitOfWorkFactory]
@@ -42,9 +34,6 @@ def create_uow_factories(
     session_factory_rw: SessionFactory,
     session_factory_ro: SessionFactory,
     chat_use_case: ChatUseCase,
-    chat_repository_provider: Provider[ChatRepository],
-    platform_repository: PlatformRepository,
-    system_prompt_repository_provider: Provider[SystemPromptRepository],
     conversation_service_provider: Provider[ConversationService],
     stream_repository_provider: Provider[StreamRepository],
     follow_repository_provider: Provider[FollowersRepository],
@@ -52,24 +41,6 @@ def create_uow_factories(
     economy_policy_provider: Provider[EconomyPolicy],
     battle_use_case: BattleUseCase,
 ) -> UowFactories:
-    def build_rps_uow_factory() -> RpsUnitOfWorkFactory:
-        return SqlAlchemyRpsUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            chat_use_case=chat_use_case,
-        )
-
-    def build_follow_age_uow_factory() -> FollowAgeUnitOfWorkFactory:
-        return SqlAlchemyFollowAgeUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            chat_repo_provider=chat_repository_provider,
-            conversation_service_provider=conversation_service_provider,
-            system_prompt_repository_provider=system_prompt_repository_provider,
-            platform_repository=platform_repository,
-        )
-
     def build_followers_sync_uow_factory() -> FollowersSyncUnitOfWorkFactory:
         return SqlAlchemyFollowersSyncUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
@@ -106,7 +77,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_follow_age_uow_factory=build_follow_age_uow_factory,
         build_followers_sync_uow_factory=build_followers_sync_uow_factory,
         build_restore_stream_context_uow_factory=build_restore_stream_context_uow_factory,
         build_stream_status_uow_factory=build_stream_status_uow_factory,

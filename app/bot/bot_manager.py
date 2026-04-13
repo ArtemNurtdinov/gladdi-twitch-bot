@@ -42,8 +42,6 @@ from app.platform.command.battle.application.battle_command_handler import Battl
 from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
-from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
-from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
@@ -141,10 +139,7 @@ class BotManager:
             uow_factories = create_uow_factories(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
-                chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
                 chat_use_case=chat_container.chat_use_case(),
-                platform_repository=platform_repository,
-                system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                 conversation_service_provider=ai_container.conversation_service_provider,
                 stream_repository_provider=stream_container.stream_repository_provider,
                 follow_repository_provider=follow_container.followers_repository_provider,
@@ -174,14 +169,15 @@ class BotManager:
                 platform_repository=platform_repository, user_cache=viewer_container.viewer_cache(platform_repository), logger=logger
             )
 
-            followage_command_handler: CommandHandler = FollowageCommandHandlerImpl(
+            followage_command_handler = platform_container.followage_command_handler(
                 command_prefix=self._settings.prefix,
                 command_name=self._settings.command_followage,
-                handle_follow_age_use_case=HandleFollowAgeUseCase(
-                    chat_response_use_case=generate_response_use_case,
-                    follow_age_uow_factory=uow_factories.build_follow_age_uow_factory(),
-                ),
-                bot_nick=bot_name,
+                generate_response_use_case=generate_response_use_case,
+                chat_repo_provider=chat_container.chat_repository_provider,
+                conversation_service_provider=ai_container.conversation_service_provider,
+                system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                platform_repository=platform_repository,
+                bot_name=bot_name,
             )
 
             ask_ouw_factory = ask_container.ask_uow_factory(
