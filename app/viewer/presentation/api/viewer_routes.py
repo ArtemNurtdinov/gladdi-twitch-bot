@@ -9,7 +9,7 @@ from app.viewer.presentation.api.model.viewer_schemas import (
     ViewerSessionItem,
     ViewerSessionStreamInfo,
 )
-from core.db import db_ro_session
+from core.db import db_ro_session, db_rw_session
 
 router = APIRouter(prefix="/viewers", tags=["Viewers"])
 
@@ -19,7 +19,7 @@ async def get_viewer_detail(
     channel_name: str,
     user_name: str,
 ):
-    economy_container = EconomyContainer()
+    economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
     follow_container = FollowContainer()
     viewer_container = ViewerContainer()
     with db_ro_session() as session:
