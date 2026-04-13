@@ -104,12 +104,5 @@ docker build -t gladdi-twitch-bot .
 docker run -d -p 8003:8003 gladdi-twitch-bot
 ```
 
-## Структура
-
-- `main.py` — точка входа.
-- `features/` — модули бота (чат, аналитика, игры, экономика, интеграции и тд.).
-- `config.py` — чтение переменных окружения.
-- `Dockerfile` — контейнеризация.
-
 
 
