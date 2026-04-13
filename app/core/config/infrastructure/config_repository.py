@@ -60,7 +60,6 @@ class ConfigRepositoryImpl(ConfigRepository):
                 client_id=self._config_source.get_str("TWITCH_CLIENT_ID"),
                 client_secret=self._config_source.get_str("TWITCH_CLIENT_SECRET"),
                 redirect_url=self._config_source.get_str("TWITCH_REDIRECT_URL"),
-                channel_name=self._config_source.get_str("TWITCH_CHANNEL"),
             ),
             llmbox=LLMBoxConfig(host=self._config_source.get_str("LLMBOX_DOMAIN")),
             intent_detector=IntentDetectorConfig(host=self._config_source.get_str("INTENT_DETECTOR_DOMAIN")),
