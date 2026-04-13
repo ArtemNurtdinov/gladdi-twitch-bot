@@ -83,7 +83,9 @@ from app.platform.command.transfer.application.transfer_uow import TransferUnitO
 from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
 from app.shop.domain.repository import ShopItemRepository
+from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
+from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
 from core.provider import Provider
 from core.types import SessionFactory
 
@@ -734,3 +736,10 @@ class PlatformContainer:
     ) -> FollowersSyncJob:
         handle_followers_sync_use_case = self.handle_followers_sync_use_case(platform_repository, followers_repository_provider)
         return FollowersSyncJob(channel_name, handle_followers_sync_use_case, self._logger)
+
+    def restore_stream_uow(self, stream_repository_provider: Provider[StreamRepository]) -> RestoreStreamContextUnitOfWorkFactory:
+        return SqlAlchemyRestoreStreamContextUnitOfWorkFactory(
+            session_factory_ro=self._session_factory_ro,
+            session_factory_rw=self._session_factory_rw,
+            stream_repository_provider=stream_repository_provider,
+        )

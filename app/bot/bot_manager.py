@@ -140,7 +140,6 @@ class BotManager:
                 chat_use_case=chat_container.chat_use_case(),
                 conversation_service_provider=ai_container.conversation_service_provider,
                 stream_repository_provider=stream_container.stream_repository_provider,
-                follow_repository_provider=follow_container.followers_repository_provider,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 battle_use_case=battle_container.battle_use_case(),
@@ -419,7 +418,7 @@ class BotManager:
             )
 
             HandleRestoreStreamContextUseCase(
-                restore_stream_uow=uow_factories.build_restore_stream_context_uow_factory(),
+                restore_stream_uow=platform_container.restore_stream_uow(stream_container.stream_repository_provider),
                 minigame_repository=minigame_repository,
                 logger=logger,
             ).handle(channel_name)
