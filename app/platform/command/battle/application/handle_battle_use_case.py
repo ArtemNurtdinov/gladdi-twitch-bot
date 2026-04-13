@@ -161,10 +161,8 @@ class HandleBattleUseCase:
 
         prompt = (
             f"На арене сражаются два героя: {opponent_display} и {challenger_display}."
-            "\nСимулируй юмористическую и эпичную битву между ними, с абсурдом и неожиданными поворотами."
-            "\nБитва должна быть короткой, но эпичной и красочной."
+            "\nСимулируй абсурдную и эпическую битву между ними в одно предложение."
             f"\nПобедить в битве должен {winner}, проигравший: {loser}"
-            f"\n\nПроигравший получит таймаут! Победитель получит {EconomyPolicy.BATTLE_WINNER_PRIZE} монет!"
         )
 
         result_story = await self._chat_response_use_case.generate_response(prompt, command_battle.channel_name)
