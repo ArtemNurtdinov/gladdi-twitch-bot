@@ -172,6 +172,7 @@ class BotManager:
                 conversation_service_provider=ai_container.conversation_service_provider,
                 stream_repository_provider=stream_container.stream_repository_provider,
                 follow_repository_provider=follow_container.followers_repository_provider,
+                viewer_repository_provider=viewer_container.viewer_repository_provider,
             )
 
             bot_user = await platform_repository.get_authenticated_user()

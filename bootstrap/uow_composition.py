@@ -51,6 +51,7 @@ from app.stream.domain.repo import StreamRepository
 from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
 from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
 from app.viewer.session.application.uow.viewer_time_uow import ViewerTimeUnitOfWorkFactory
+from app.viewer.session.domain.repository import ViewerRepository
 from app.viewer.session.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
 from bootstrap.providers_bundle import ProvidersBundle
 from core.provider import Provider
@@ -93,13 +94,13 @@ def create_uow_factories(
     conversation_service_provider: Provider[ConversationService],
     stream_repository_provider: Provider[StreamRepository],
     follow_repository_provider: Provider[FollowersRepository],
+    viewer_repository_provider: Provider[ViewerRepository],
 ) -> UowFactories:
     economy_providers = providers.economy_providers
     equipment_providers = providers.equipment_providers
     minigame_providers = providers.minigame_providers
     battle_providers = providers.battle_providers
     betting_providers = providers.betting_providers
-    viewer_providers = providers.viewer_providers
 
     def build_chat_message_uow_factory() -> ChatMessageUnitOfWorkFactory:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
@@ -108,7 +109,7 @@ def create_uow_factories(
             chat_repo_provider=chat_repository_provider,
             economy_policy_provider=economy_providers.economy_policy_provider,
             stream_repo_provider=stream_repository_provider,
-            viewer_repo_provider=viewer_providers.viewer_repo_provider,
+            viewer_repo_provider=viewer_repository_provider,
             conversation_service_provider=conversation_service_provider,
             system_prompt_repository_provider=system_prompt_repository_provider,
         )
@@ -278,7 +279,7 @@ def create_uow_factories(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             stream_repository_provider=stream_repository_provider,
-            viewer_repository_provider=viewer_providers.viewer_repo_provider,
+            viewer_repository_provider=viewer_repository_provider,
             battle_use_case_provider=battle_providers.battle_use_case_provider,
             economy_policy_provider=economy_providers.economy_policy_provider,
             chat_use_case=chat_use_case,
@@ -289,7 +290,7 @@ def create_uow_factories(
         return SqlAlchemyViewerTimeUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            viewer_repository_provider=viewer_providers.viewer_repo_provider,
+            viewer_repository_provider=viewer_repository_provider,
             economy_policy_provider=economy_providers.economy_policy_provider,
             stream_repository_provider=stream_repository_provider,
         )
