@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query
 
+from app.core.di.application_container import app_container
 from app.core.network.api.model.base_response import BaseResponse
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api.model.configuration import JokesConfigurationSchema
@@ -13,7 +14,7 @@ router = APIRouter()
 async def get_configuration(
     channel_name: str = Query(..., description="Имя канала"),
 ) -> JokesConfigurationResponse:
-    joke_container = JokeContainer()
+    joke_container = JokeContainer(app_container.logger)
     with db_ro_session() as session:
         jokes_configuration_use_case = joke_container.get_jokes_configuration_use_case(session)
         configuration = await jokes_configuration_use_case.get_configuration(channel_name=channel_name)
@@ -25,7 +26,7 @@ async def get_configuration(
 async def save_configuration(
     configuration: JokesConfigurationSchema,
 ) -> BaseResponse:
-    joke_container = JokeContainer()
+    joke_container = JokeContainer(app_container.logger)
     configuration_dto = joke_container.jokes_configuration_schema_mapper.map_to_dto(configuration)
     with db_rw_session() as session:
         save_jokes_configuration_use_case = joke_container.save_jokes_configuration_use_case(session)

@@ -12,14 +12,13 @@ from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleChatSummarizerUseCase
 from app.chat.di.container import get_chat_use_case
 from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
+from app.core.di.application_container import app_container
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
 from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
-from app.joke.di.dependencies import provide_handle_post_joke_use_case, provide_joke_unit_of_work_factory, provide_post_joke_job
-from app.joke.infrastructure.mapper.jokes_configuration_mapper import JokesConfigurationMapper
-from app.joke.infrastructure.repository import JokesConfigurationRepositoryImpl
+from app.joke.di.container import JokeContainer
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
 from app.minigame.application.use_case.finish_rps_use_case import FinishRpsUseCase
@@ -451,25 +450,19 @@ class BotManager:
             telegram_bot = provide_telegram_bot(tg_bot_token)
             notifications_repository = provide_notification_repository(telegram_bot)
 
-            port_joke_job: PostJokeJob = provide_post_joke_job(
+            joke_container = JokeContainer(app_container.logger)
+
+            post_joke_job: PostJokeJob = joke_container.post_joke_job(
                 channel_name=channel_name,
-                handle_post_joke_use_case=provide_handle_post_joke_use_case(
-                    user_cache=user_cache,
-                    platform_repository=platform_repository,
-                    generate_response_use_case=generate_response_use_case,
-                    joke_uow_factory=provide_joke_unit_of_work_factory(
-                        session_factory_rw=db_rw_session,
-                        session_factory_ro=db_ro_session,
-                        conversation_service_provider=ai_container.conversation_service_provider,
-                        chat_use_case=get_chat_use_case(),
-                        jokes_configuration_repository_provider=Provider(
-                            lambda session: JokesConfigurationRepositoryImpl(session, JokesConfigurationMapper())
-                        ),
-                    ),
-                ),
                 send_channel_message=chat_client.send_channel_message,
                 bot_name=bot_name,
-                logger=logger,
+                session_factory_rw=db_rw_session,
+                session_factory_ro=db_ro_session,
+                conversation_service_provider=ai_container.conversation_service_provider,
+                chat_use_case=get_chat_use_case(),
+                user_cache=user_cache,
+                platform_repository=platform_repository,
+                generate_response_use_case=generate_response_use_case,
             )
 
             token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
@@ -556,7 +549,7 @@ class BotManager:
             )
 
             jobs = [
-                port_joke_job,
+                post_joke_job,
                 token_checker_job,
                 stream_status_job,
                 chat_summarizer_job,
