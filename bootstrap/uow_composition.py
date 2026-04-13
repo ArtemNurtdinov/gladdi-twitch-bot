@@ -10,8 +10,6 @@ from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
-from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWorkFactory
 from app.follow.domain.repo import FollowersRepository
@@ -24,8 +22,6 @@ from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitO
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
 from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
-from app.platform.command.shop.application.shop_uow import ShopUnitOfWorkFactory
-from app.platform.command.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
 from app.platform.command.stats.application.stats_uow import StatsUnitOfWorkFactory
 from app.platform.command.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
 from app.platform.command.top_bottom.application.top_bottom_uow import TopBottomUnitOfWorkFactory
@@ -33,7 +29,6 @@ from app.platform.command.top_bottom.infrastructure.top_bottom_uow import SqlAlc
 from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWorkFactory
 from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
-from app.shop.domain.repository import ShopItemRepository
 from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
@@ -48,7 +43,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_shop_uow_factory: Callable[[], ShopUnitOfWorkFactory]
     build_stats_uow_factory: Callable[[], StatsUnitOfWorkFactory]
     build_top_bottom_uow_factory: Callable[[], TopBottomUnitOfWorkFactory]
     build_transfer_uow_factory: Callable[[], TransferUnitOfWorkFactory]
@@ -74,25 +68,11 @@ def create_uow_factories(
     viewer_repository_provider: Provider[ViewerRepository],
     economy_policy_provider: Provider[EconomyPolicy],
     get_user_equipment_use_case: GetUserEquipmentUseCase,
-    equipment_exists_use_case: EquipmentExistsUseCase,
-    add_equipment_use_case: AddEquipmentUseCase,
-    shop_item_repository_provider: Provider[ShopItemRepository],
     get_used_words_use_case: GetUsedWordsUseCase,
     add_used_word_use_case: AddUsedWordsUseCase,
     battle_use_case: BattleUseCase,
     betting_service_provider: Provider[BettingService],
 ) -> UowFactories:
-    def build_shop_uow_factory() -> ShopUnitOfWorkFactory:
-        return SqlAlchemyShopUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            add_equipment_use_case=add_equipment_use_case,
-            equipment_exists_use_case=equipment_exists_use_case,
-            chat_use_case=chat_use_case,
-            shop_item_repository_provider=shop_item_repository_provider,
-        )
-
     def build_stats_uow_factory() -> StatsUnitOfWorkFactory:
         return SqlAlchemyStatsUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
@@ -186,7 +166,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_shop_uow_factory=build_shop_uow_factory,
         build_stats_uow_factory=build_stats_uow_factory,
         build_top_bottom_uow_factory=build_top_bottom_uow_factory,
         build_transfer_uow_factory=build_transfer_uow_factory,

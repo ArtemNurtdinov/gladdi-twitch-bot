@@ -1,8 +1,10 @@
 from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.economy.domain.economy_policy import EconomyPolicy
+from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
+from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.moderation.application.chat_moderation_port import ChatModerationPort
@@ -29,6 +31,12 @@ from app.platform.command.roll.application.handle_roll_use_case import HandleRol
 from app.platform.command.roll.application.roll_command_handler import RollCommandHandlerImpl
 from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
 from app.platform.command.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
+from app.platform.command.shop.application.buy_command_handler import BuyCommandHandlerImpl
+from app.platform.command.shop.application.handle_shop_use_case import HandleShopUseCase
+from app.platform.command.shop.application.shop_command_handler import ShopCommandHandlerImpl
+from app.platform.command.shop.application.shop_uow import ShopUnitOfWorkFactory
+from app.platform.command.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
+from app.shop.domain.repository import ShopItemRepository
 from app.stream.domain.repo import StreamRepository
 from core.provider import Provider
 from core.types import SessionFactory
@@ -259,4 +267,76 @@ class PlatformContainer:
             handle_roll_use_case=handle_roll_use_case,
             chat_moderation=chat_moderation_port,
             bot_name=bot_name,
+        )
+
+    def shop_uow_factory(
+        self,
+        economy_policy_provider: Provider[EconomyPolicy],
+        add_equipment_use_case: AddEquipmentUseCase,
+        equipment_exists_use_case: EquipmentExistsUseCase,
+        chat_use_case: ChatUseCase,
+        shop_item_repository_provider: Provider[ShopItemRepository],
+    ) -> ShopUnitOfWorkFactory:
+        return SqlAlchemyShopUnitOfWorkFactory(
+            session_factory_rw=self._session_factory_rw,
+            session_factory_ro=self._session_factory_ro,
+            economy_policy_provider=economy_policy_provider,
+            add_equipment_use_case=add_equipment_use_case,
+            equipment_exists_use_case=equipment_exists_use_case,
+            chat_use_case=chat_use_case,
+            shop_item_repository_provider=shop_item_repository_provider,
+        )
+
+    def handle_shop_use_case(
+        self,
+        economy_policy_provider: Provider[EconomyPolicy],
+        add_equipment_use_case: AddEquipmentUseCase,
+        equipment_exists_use_case: EquipmentExistsUseCase,
+        chat_use_case: ChatUseCase,
+        shop_item_repository_provider: Provider[ShopItemRepository],
+    ) -> HandleShopUseCase:
+        shop_uow_factory = self.shop_uow_factory(
+            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_provider
+        )
+        return HandleShopUseCase(shop_uow_factory)
+
+    def shop_command_handler(
+        self,
+        command_prefix: str,
+        command_shop_name: str,
+        command_buy_name: str,
+        economy_policy_provider: Provider[EconomyPolicy],
+        add_equipment_use_case: AddEquipmentUseCase,
+        equipment_exists_use_case: EquipmentExistsUseCase,
+        chat_use_case: ChatUseCase,
+        shop_item_repository_provider: Provider[ShopItemRepository],
+        bot_name: str,
+    ) -> CommandHandler:
+        handle_shop_use_case = self.handle_shop_use_case(
+            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_provider
+        )
+        return ShopCommandHandlerImpl(
+            command_prefix=command_prefix,
+            command_shop_name=command_shop_name,
+            command_buy_name=command_buy_name,
+            handle_shop_use_case=handle_shop_use_case,
+            bot_nick=bot_name,
+        )
+
+    def buy_command_handler(
+        self,
+        command_prefix: str,
+        command_buy_name: str,
+        economy_policy_provider: Provider[EconomyPolicy],
+        add_equipment_use_case: AddEquipmentUseCase,
+        equipment_exists_use_case: EquipmentExistsUseCase,
+        chat_use_case: ChatUseCase,
+        shop_item_repository_provider: Provider[ShopItemRepository],
+        bot_name: str,
+    ) -> CommandHandler:
+        handle_shop_use_case = self.handle_shop_use_case(
+            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_provider
+        )
+        return BuyCommandHandlerImpl(
+            command_prefix=command_prefix, command_buy_name=command_buy_name, handle_shop_use_case=handle_shop_use_case, bot_nick=bot_name
         )

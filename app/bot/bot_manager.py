@@ -52,9 +52,6 @@ from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 from app.platform.command.guess.application.rps_command_handler import RpsCommandHandlerImpl
-from app.platform.command.shop.application.buy_command_handler import BuyCommandHandlerImpl
-from app.platform.command.shop.application.handle_shop_use_case import HandleShopUseCase
-from app.platform.command.shop.application.shop_command_handler import ShopCommandHandlerImpl
 from app.platform.command.stats.application.handle_stats_use_case import HandleStatsUseCase
 from app.platform.command.stats.application.stats_command_handler import StatsCommandHandlerImpl
 from app.platform.command.top_bottom.application.bottom_command_handler import BottomCommandHandlerImpl
@@ -169,9 +166,6 @@ class BotManager:
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
-                add_equipment_use_case=equipment_container.add_equipment_use_case(),
-                shop_item_repository_provider=shop_container.shop_item_repository_provider,
                 get_used_words_use_case=minigame_container.get_used_words_use_case(),
                 add_used_word_use_case=minigame_container.add_used_word_use_case(),
                 battle_use_case=battle_container.battle_use_case(),
@@ -280,23 +274,27 @@ class BotManager:
                 bot_nick=bot_name,
             )
 
-            shop_command_handler: CommandHandler = ShopCommandHandlerImpl(
+            shop_command_handler = platform_container.shop_command_handler(
                 command_prefix=self._settings.prefix,
                 command_shop_name=self._settings.command_shop,
                 command_buy_name=self._settings.command_buy,
-                handle_shop_use_case=HandleShopUseCase(
-                    shop_uow=uow_factories.build_shop_uow_factory(),
-                ),
-                bot_nick=bot_name,
+                economy_policy_provider=economy_container.economy_policy_provider,
+                add_equipment_use_case=equipment_container.add_equipment_use_case(),
+                equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
+                shop_item_repository_provider=shop_container.shop_item_repository_provider,
+                bot_name=bot_name,
             )
 
-            buy_command_handler: CommandHandler = BuyCommandHandlerImpl(
+            buy_command_handler = platform_container.buy_command_handler(
                 command_prefix=self._settings.prefix,
                 command_buy_name=self._settings.command_buy,
-                handle_shop_use_case=HandleShopUseCase(
-                    shop_uow=uow_factories.build_shop_uow_factory(),
-                ),
-                bot_nick=bot_name,
+                economy_policy_provider=economy_container.economy_policy_provider,
+                add_equipment_use_case=equipment_container.add_equipment_use_case(),
+                equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
+                shop_item_repository_provider=shop_container.shop_item_repository_provider,
+                bot_name=bot_name,
             )
 
             equipment_command_handler = platform_container.equipment_command_handler(
