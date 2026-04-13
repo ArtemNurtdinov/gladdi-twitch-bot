@@ -41,6 +41,11 @@ from app.platform.command.stats.application.handle_stats_use_case import HandleS
 from app.platform.command.stats.application.stats_command_handler import StatsCommandHandlerImpl
 from app.platform.command.stats.application.stats_uow import StatsUnitOfWorkFactory
 from app.platform.command.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
+from app.platform.command.top_bottom.application.bottom_command_handler import BottomCommandHandlerImpl
+from app.platform.command.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
+from app.platform.command.top_bottom.application.top_bottom_uow import TopBottomUnitOfWorkFactory
+from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandlerImpl
+from app.platform.command.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
 from app.shop.domain.repository import ShopItemRepository
 from app.stream.domain.repo import StreamRepository
 from core.provider import Provider
@@ -388,3 +393,31 @@ class PlatformContainer:
         return StatsCommandHandlerImpl(
             command_prefix=command_prefix, command_name=command_name, handle_stats_use_case=handle_stats_use_case, bot_name=bot_name
         )
+
+    def top_bottom_uow_factory(
+        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+    ) -> TopBottomUnitOfWorkFactory:
+        return SqlAlchemyTopBottomUnitOfWorkFactory(
+            session_factory_ro=self._session_factory_ro,
+            session_factory_rw=self._session_factory_rw,
+            economy_policy_provider=economy_policy_provider,
+            chat_use_case=chat_use_case,
+        )
+
+    def handle_top_bottom_use_case(
+        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+    ) -> HandleTopBottomUseCase:
+        top_bottom_uow_factory = self.top_bottom_uow_factory(economy_policy_provider, chat_use_case)
+        return HandleTopBottomUseCase(top_bottom_uow_factory)
+
+    def top_command_handler(
+        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase, bot_name: str
+    ) -> CommandHandler:
+        handle_top_bottom_use_case = self.handle_top_bottom_use_case(economy_policy_provider, chat_use_case)
+        return TopCommandHandlerImpl(handle_top_bottom_use_case, bot_name)
+
+    def bottom_command_handler(
+        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase, bot_name: str
+    ) -> CommandHandler:
+        handle_top_bottom_use_case = self.handle_top_bottom_use_case(economy_policy_provider, chat_use_case)
+        return BottomCommandHandlerImpl(handle_top_bottom_use_case, bot_name)

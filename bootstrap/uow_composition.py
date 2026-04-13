@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase
-from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.economy.domain.economy_policy import EconomyPolicy
@@ -22,8 +21,6 @@ from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitO
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
 from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
-from app.platform.command.top_bottom.application.top_bottom_uow import TopBottomUnitOfWorkFactory
-from app.platform.command.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
 from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWorkFactory
 from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
@@ -41,7 +38,6 @@ from core.types import SessionFactory
 
 @dataclass(frozen=True)
 class UowFactories:
-    build_top_bottom_uow_factory: Callable[[], TopBottomUnitOfWorkFactory]
     build_transfer_uow_factory: Callable[[], TransferUnitOfWorkFactory]
     build_minigame_uow_factory: Callable[[], MinigameUnitOfWorkFactory]
     build_rps_uow_factory: Callable[[], RpsUnitOfWorkFactory]
@@ -68,16 +64,7 @@ def create_uow_factories(
     get_used_words_use_case: GetUsedWordsUseCase,
     add_used_word_use_case: AddUsedWordsUseCase,
     battle_use_case: BattleUseCase,
-    betting_service_provider: Provider[BettingService],
 ) -> UowFactories:
-    def build_top_bottom_uow_factory() -> TopBottomUnitOfWorkFactory:
-        return SqlAlchemyTopBottomUnitOfWorkFactory(
-            session_factory_rw=session_factory_rw,
-            session_factory_ro=session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            chat_use_case=chat_use_case,
-        )
-
     def build_transfer_uow_factory() -> TransferUnitOfWorkFactory:
         return SqlAlchemyTransferUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
@@ -153,7 +140,6 @@ def create_uow_factories(
         )
 
     return UowFactories(
-        build_top_bottom_uow_factory=build_top_bottom_uow_factory,
         build_transfer_uow_factory=build_transfer_uow_factory,
         build_minigame_uow_factory=build_minigame_uow_factory,
         build_rps_uow_factory=build_rps_uow_factory,

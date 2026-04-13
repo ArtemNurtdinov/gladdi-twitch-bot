@@ -52,9 +52,6 @@ from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 from app.platform.command.guess.application.rps_command_handler import RpsCommandHandlerImpl
-from app.platform.command.top_bottom.application.bottom_command_handler import BottomCommandHandlerImpl
-from app.platform.command.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
-from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandlerImpl
 from app.platform.command.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
 from app.platform.di.container import PlatformContainer
@@ -167,7 +164,6 @@ class BotManager:
                 get_used_words_use_case=minigame_container.get_used_words_use_case(),
                 add_used_word_use_case=minigame_container.add_used_word_use_case(),
                 battle_use_case=battle_container.battle_use_case(),
-                betting_service_provider=betting_container.betting_service_provider,
             )
 
             minigame_repository = minigame_container.minigame_repository()
@@ -303,17 +299,15 @@ class BotManager:
                 bot_name=bot_name,
             )
 
-            top_command_handler: CommandHandler = TopCommandHandlerImpl(
-                handle_top_bottom_use_case=HandleTopBottomUseCase(
-                    unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
-                ),
+            top_command_handler = platform_container.top_command_handler(
+                economy_policy_provider=economy_container.economy_policy_provider,
+                chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
             )
 
-            bottom_command_handler: CommandHandler = BottomCommandHandlerImpl(
-                handle_top_bottom_use_case=HandleTopBottomUseCase(
-                    unit_of_work_factory=uow_factories.build_top_bottom_uow_factory(),
-                ),
+            bottom_command_handler = platform_container.bottom_command_handler(
+                economy_policy_provider=economy_container.economy_policy_provider,
+                chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
             )
 
