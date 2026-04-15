@@ -36,10 +36,7 @@ class Application:
         self._setup_middleware()
         self._setup_routes()
         self._setup_health_checks()
-        self._setup_logger()
-        self._setup_config()
-        self._setup_containers()
-        self._setup_bot_manager()
+        self._setup_state()
 
     def _setup_middleware(self):
         self.fast_api.add_middleware(
@@ -50,17 +47,11 @@ class Application:
             allow_headers=["*"],
         )
 
-    def _setup_logger(self):
+    def _setup_state(self):
         self.fast_api.state.logger = self.container.logger
-
-    def _setup_config(self):
         self.fast_api.state.config = self.container.config
-
-    def _setup_containers(self):
         self.fast_api.state.auth_container = AuthContainer(self.container.config.application)
         self.fast_api.state.joke_container = JokeContainer(self.container.logger)
-
-    def _setup_bot_manager(self):
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,
