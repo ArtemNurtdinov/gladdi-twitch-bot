@@ -3,11 +3,14 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.ai.gen.prompt.presentation import system_prompt_routes
+from app.auth.di.container import AuthContainer
 from app.auth.presentation import auth_routes
+from app.bot.bot_manager import BotManager
 from app.bot.presentation.api import bot_routes, bot_twitch_routes
 from app.chat.presentation import chat_routes
-from app.core.di.application_container import ApplicationContainer, app_container
+from app.core.di.application_container import ApplicationContainer
 from app.follow.presentation import followers_routes
+from app.joke.di.container import JokeContainer
 from app.joke.presentation.api import joke_routes
 from app.shop.presentation.api import shop_routes
 from app.stream.presentation import stream_routes
@@ -29,9 +32,14 @@ class Application:
             version=self._VERSION,
             docs_url=self._DOCS_URL,
         )
+
         self._setup_middleware()
         self._setup_routes()
         self._setup_health_checks()
+        self._setup_logger()
+        self._setup_config()
+        self._setup_containers()
+        self._setup_bot_manager()
 
     def _setup_middleware(self):
         self.fast_api.add_middleware(
@@ -40,6 +48,25 @@ class Application:
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
+        )
+
+    def _setup_logger(self):
+        self.fast_api.state.logger = self.container.logger
+
+    def _setup_config(self):
+        self.fast_api.state.config = self.container.config
+
+    def _setup_containers(self):
+        self.fast_api.state.auth_container = AuthContainer(self.container.config.application)
+        self.fast_api.state.joke_container = JokeContainer(self.container.logger)
+
+    def _setup_bot_manager(self):
+        self.fast_api.state.bot_manager = BotManager(
+            config=self.container.config.bot,
+            telegram_config=self.container.config.telegram,
+            llmbox_config=self.container.config.llmbox,
+            intent_detector_config=self.container.config.intent_detector,
+            logger=self.container.logger,
         )
 
     def _setup_routes(self):
@@ -79,4 +106,5 @@ class Application:
 
 
 if __name__ == "__main__":
+    app_container = ApplicationContainer()
     Application(app_container).run()

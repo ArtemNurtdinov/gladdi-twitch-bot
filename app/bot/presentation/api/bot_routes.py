@@ -1,23 +1,13 @@
-from functools import lru_cache
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from app.bot.bot_manager import BotManager
 from app.bot.presentation.api.model.response.status import BotStatusResponse
-from app.core.di.application_container import app_container
 
 router = APIRouter()
 
 
-@lru_cache
-def get_bot_manager() -> BotManager:
-    return BotManager(
-        config=app_container.config.bot,
-        telegram_config=app_container.config.telegram,
-        llmbox_config=app_container.config.llmbox,
-        intent_detector_config=app_container.config.intent_detector,
-        logger=app_container.logger,
-    )
+def get_bot_manager(request: Request) -> BotManager:
+    return request.app.state.bot_manager
 
 
 @router.get("/status", response_model=BotStatusResponse)

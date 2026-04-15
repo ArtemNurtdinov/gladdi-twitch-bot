@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.auth.application.contracts import LoginResponse, UserLogin, UserResponse
@@ -6,7 +6,6 @@ from app.auth.application.model.login_result import InvalidPassword, LoginSucces
 from app.auth.application.model.user import UserDTO
 from app.auth.di.container import AuthContainer
 from app.auth.domain.model.role import UserRole
-from app.core.di.application_container import app_container
 from core.db import db_rw_session
 
 router = APIRouter()
@@ -15,10 +14,15 @@ security = HTTPBearer()
 security_optional = HTTPBearer(auto_error=False)
 
 
+def get_auth_container(request: Request) -> AuthContainer:
+    return request.app.state.auth_container
+
+
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security), auth_container: AuthContainer = Depends(get_auth_container)
 ) -> UserDTO:
-    user = validate_token(credentials.credentials)
+    with db_rw_session() as session:
+        user = auth_container.validate_access_token_use_case(session).validate_access_token(credentials.credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
     return user
@@ -30,10 +34,14 @@ def get_admin_user(current_user: UserDTO = Depends(get_current_user)) -> UserDTO
     return current_user
 
 
-def get_optional_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(security_optional)) -> UserDTO | None:
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
+    auth_container: AuthContainer = Depends(get_auth_container),
+) -> UserDTO | None:
     if credentials is None:
         return None
-    user = validate_token(credentials.credentials)
+    with db_rw_session() as session:
+        user = auth_container.validate_access_token_use_case(session).validate_access_token(credentials.credentials)
     if not user:
         raise HTTPException(status_code=401, detail="Недействительный токен", headers={"WWW-Authenticate": "Bearer"})
     return user
@@ -45,9 +53,8 @@ async def get_me(current_user: UserDTO = Depends(get_current_user)):
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(user_data: UserLogin):
+async def login(user_data: UserLogin, auth_container: AuthContainer = Depends(get_auth_container)):
     with db_rw_session() as session:
-        auth_container = AuthContainer(app_container.config.application)
         login_use_case = auth_container.login_use_case(session)
         result = login_use_case.login(user_data.email, user_data.password)
 
@@ -65,9 +72,3 @@ async def login(user_data: UserLogin):
             expires_at=result.expires_at,
             user=user_response,
         )
-
-
-def validate_token(token: str) -> UserDTO | None:
-    with db_rw_session() as session:
-        auth_container = AuthContainer(app_container.config.application)
-        return auth_container.validate_access_token_use_case(session).validate_access_token(token)

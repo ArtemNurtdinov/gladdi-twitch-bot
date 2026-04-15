@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query, Request
 
-from app.core.di.application_container import app_container
 from app.core.network.api.model.base_response import BaseResponse
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api.model.configuration import JokesConfigurationSchema
@@ -10,11 +9,14 @@ from core.db import db_ro_session, db_rw_session
 router = APIRouter()
 
 
+def get_joke_container(request: Request) -> JokeContainer:
+    return request.app.state.joke_container
+
+
 @router.get("/configuration", summary="Конфигурация анекдотов", response_model=JokesConfigurationResponse)
 async def get_configuration(
-    channel_name: str = Query(..., description="Имя канала"),
+    channel_name: str = Query(..., description="Имя канала"), joke_container: JokeContainer = Depends(get_joke_container)
 ) -> JokesConfigurationResponse:
-    joke_container = JokeContainer(app_container.logger)
     with db_ro_session() as session:
         jokes_configuration_use_case = joke_container.get_jokes_configuration_use_case(session)
         configuration = await jokes_configuration_use_case.get_configuration(channel_name=channel_name)
@@ -24,9 +26,8 @@ async def get_configuration(
 
 @router.post("/configuration", summary="Сохранить конфигурацию анекдотов", response_model=BaseResponse)
 async def save_configuration(
-    configuration: JokesConfigurationSchema,
+    configuration: JokesConfigurationSchema, joke_container: JokeContainer = Depends(get_joke_container)
 ) -> BaseResponse:
-    joke_container = JokeContainer(app_container.logger)
     configuration_dto = joke_container.jokes_configuration_schema_mapper.map_to_dto(configuration)
     with db_rw_session() as session:
         save_jokes_configuration_use_case = joke_container.save_jokes_configuration_use_case(session)

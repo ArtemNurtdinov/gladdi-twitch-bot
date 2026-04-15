@@ -1,14 +1,15 @@
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.bot.bot_manager import BotManager
 from app.bot.presentation.api.bot_routes import get_bot_manager
 from app.bot.presentation.api.model.request.start_bot import StartBotRequest
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.start_bot import AuthStartResponse
-from app.core.di.application_container import app_container
+from app.core.config.domain.model.application import ApplicationConfig
+from app.core.config.domain.model.configuration import Config
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -23,11 +24,17 @@ PERMISSIONS_SCOPE = (
 router = APIRouter()
 
 
+def get_config(request: Request) -> ApplicationConfig:
+    return request.app.state.config
+
+
 @router.post("/start", summary="Начать авторизацию Twitch", response_model=AuthStartResponse)
-async def start_authorization(request: StartBotRequest) -> AuthStartResponse:
+async def start_authorization(
+    request: StartBotRequest,
+    config: Config = Depends(get_config),
+) -> AuthStartResponse:
     if not request.channel_name:
         raise HTTPException(status_code=400, detail="Не передан channel_name")
-    config = app_container.config
     params = {
         "client_id": config.twitch.client_id,
         "redirect_uri": config.twitch.redirect_url,
@@ -48,8 +55,8 @@ async def oauth_callback(
     code: str | None = None,
     state: str | None = None,
     bot_manager: BotManager = Depends(get_bot_manager),
+    config: Config = Depends(get_config),
 ) -> BotActionResultResponse:
-    config = app_container.config
     data = {
         "client_id": config.twitch.client_id,
         "client_secret": config.twitch.client_secret,

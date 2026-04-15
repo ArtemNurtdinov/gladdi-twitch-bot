@@ -26,6 +26,3 @@ class ApplicationContainer:
     def logger(self) -> Logger:
         config = self.config
         return LoggerImpl("gladdi", config.logging)
-
-
-app_container = ApplicationContainer()
