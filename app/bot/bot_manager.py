@@ -28,9 +28,9 @@ from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.container import NotificationContainer
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.di.container import PlatformAuthContainer
-from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
-from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
+from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.ask.application.ask_command_handler import AskCommandHandlerImpl
@@ -373,7 +373,7 @@ class BotManager:
             command_router.register_command_handler(self._config.command_rps, rps_command_handler)
 
             handle_chat_message_use_case = HandleChatMessageUseCase(
-                unit_of_work_factory=chat_container.chat_message_uow_factory(
+                chat_message_uow=chat_container.chat_message_uow_factory(
                     economy_policy_provider=economy_container.economy_policy_provider,
                     stream_repository_provider=stream_container.stream_repository_provider,
                     viewer_repository_provider=viewer_container.viewer_repository_provider,

@@ -9,9 +9,9 @@ from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.core.logger.domain.logger import Logger
 from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
-from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
+from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
 from app.platform.command.domain.command_router import CommandRouter
 
 

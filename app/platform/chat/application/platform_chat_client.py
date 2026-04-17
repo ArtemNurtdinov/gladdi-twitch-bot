@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from app.core.logger.domain.logger import Logger
-from app.platform.chat.application.handle_chat_message_use_case import HandleChatMessageUseCase
-from app.platform.chat.application.handle_reply_use_case import HandleReplyUseCase
-from app.platform.chat.application.model import ChatMessageDTO
+from app.platform.chat.application.model.message import ChatMessageDTO
+from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
 from app.platform.command.domain.command_router import CommandRouter
 
 

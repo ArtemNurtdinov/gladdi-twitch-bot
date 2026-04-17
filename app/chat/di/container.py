@@ -15,7 +15,7 @@ from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummar
 from app.chat.infrastructure.uow.chat_use_case_uow import SqlAlchemyChatUseCaseUnitOfWorkFactory
 from app.core.logger.domain.logger import Logger
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.platform.chat.application.chat_message_uow import ChatMessageUnitOfWorkFactory
+from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOfWorkFactory
 from app.platform.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
 from app.viewer.session.domain.repository import ViewerRepository

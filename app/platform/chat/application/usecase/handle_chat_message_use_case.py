@@ -3,19 +3,19 @@ from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
 from app.chat.domain.model.chat_message import ChatMessage
-from app.platform.chat.application.chat_message_uow import ChatMessageUnitOfWorkFactory
-from app.platform.chat.application.model import ChatMessageDTO
+from app.platform.chat.application.model.message import ChatMessageDTO
+from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOfWorkFactory
 
 
 class HandleChatMessageUseCase:
     def __init__(
         self,
-        unit_of_work_factory: ChatMessageUnitOfWorkFactory,
+        chat_message_uow: ChatMessageUnitOfWorkFactory,
         get_intent_from_text_use_case: GetIntentFromTextUseCase,
         prompt_service: PromptService,
         generate_response_use_case: GenerateResponseUseCase,
     ):
-        self._unit_of_work_factory = unit_of_work_factory
+        self._chat_message_uow = chat_message_uow
         self._get_intent_from_text_use_case = get_intent_from_text_use_case
         self._prompt_service = prompt_service
         self._generate_response_use_case = generate_response_use_case
@@ -23,7 +23,7 @@ class HandleChatMessageUseCase:
     async def handle(self, chat_message: ChatMessageDTO) -> str | None:
         intent = await self._get_intent_from_text_use_case.get_intent_from_text(chat_message.message)
 
-        with self._unit_of_work_factory.create() as uow:
+        with self._chat_message_uow.create() as uow:
             uow.chat_repo.save(
                 ChatMessage(
                     channel_name=chat_message.channel_name,
@@ -69,7 +69,7 @@ class HandleChatMessageUseCase:
         if prompt is None:
             return None
 
-        with self._unit_of_work_factory.create(read_only=True) as uow_ro:
+        with self._chat_message_uow.create(read_only=True) as uow_ro:
             system_prompt = uow_ro.system_prompt_repository.get_system_prompt(chat_message.channel_name)
             history = uow_ro.conversation_service.get_last_messages(
                 channel_name=chat_message.channel_name,
@@ -78,7 +78,7 @@ class HandleChatMessageUseCase:
 
         result = await self._generate_response_use_case.generate_response_from_history(history, prompt)
 
-        with self._unit_of_work_factory.create() as uow:
+        with self._chat_message_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(
                 channel_name=chat_message.channel_name,
                 user_message=prompt,

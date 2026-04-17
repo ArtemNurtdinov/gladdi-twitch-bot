@@ -1,8 +1,8 @@
 from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.chat.domain.model.chat_message import ChatMessage
-from app.platform.chat.application.chat_message_uow import ChatMessageUnitOfWorkFactory
-from app.platform.chat.application.model import ChatMessageDTO
+from app.platform.chat.application.model.message import ChatMessageDTO
+from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOfWorkFactory
 
 
 class HandleReplyUseCase:
