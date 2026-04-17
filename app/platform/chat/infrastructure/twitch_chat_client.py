@@ -12,6 +12,7 @@ from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
 from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
+from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 
 
@@ -28,6 +29,7 @@ class TwitchChatClient(Client, PlatformChatClient):
         command_prefix: str,
         bot_id: str,
         bot_name: str,
+        help_command_handler: CommandHandler,
         logger: Logger,
     ):
         Client.__init__(self, client_id=auth.client_id, client_secret=auth.client_secret, bot_id=bot_id, fetch_client_user=False)
@@ -39,6 +41,7 @@ class TwitchChatClient(Client, PlatformChatClient):
             channel_name=channel_name,
             bot_name=bot_name,
             command_prefix=command_prefix,
+            help_command_handler=help_command_handler,
             logger=logger,
         )
         self._auth = auth

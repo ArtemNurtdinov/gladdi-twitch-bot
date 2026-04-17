@@ -285,16 +285,16 @@ class BotManager:
             commands = {
                 self._config.command_balance,
                 self._config.command_bonus,
-                f"{self._config.command_roll} [сумма]",
-                f"{self._config.command_transfer} @ник сумма",
+                self._config.command_roll,
+                self._config.command_transfer,
                 self._config.command_shop,
-                f"{self._config.command_buy} название",
+                self._config.command_buy,
                 self._config.command_equipment,
                 self._config.command_top,
                 self._config.command_bottom,
                 self._config.command_stats,
                 self._config.command_fight,
-                f"{self._config.command_gladdi} текст",
+                self._config.command_gladdi,
                 self._config.command_followage,
             }
 
@@ -406,6 +406,7 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 bot_id=bot_user_id,
                 bot_name=bot_name,
+                help_command_handler=help_command_handler,
                 logger=self._logger,
             )
 
