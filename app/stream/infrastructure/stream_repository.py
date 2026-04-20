@@ -16,7 +16,8 @@ class StreamRepositoryImpl(StreamRepository):
         self._db = db
 
     def start_new_stream(self, channel_name: str, started_at: datetime, game_name: str | None, title: str | None) -> None:
-        stream = Stream(channel_name=channel_name, started_at=started_at, game_name=game_name, title=title, is_active=True)
+        started_at_naive = started_at.replace(tzinfo=None)
+        stream = Stream(channel_name=channel_name, started_at=started_at_naive, game_name=game_name, title=title, is_active=True)
         self._db.add(stream)
 
     def get_active_stream(self, channel_name: str) -> StreamInfo | None:
@@ -27,11 +28,13 @@ class StreamRepositoryImpl(StreamRepository):
         return map_stream_row(row)
 
     def end_stream(self, active_stream_id: int, finish_time: datetime) -> None:
+        finish_time_naive = finish_time.replace(tzinfo=None)
+
         stmt = select(Stream).where(Stream.id == active_stream_id)
         stream = self._db.execute(stmt).scalars().first()
         if not stream:
             return
-        stream.ended_at = finish_time
+        stream.ended_at = finish_time_naive
         stream.is_active = False
 
     def update_stream_total_viewers(self, stream_id: int, total_viewers: int) -> None:
