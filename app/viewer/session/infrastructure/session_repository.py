@@ -1,9 +1,9 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.stream.infrastructure.mappers.stream_mapper import map_stream_row
+from app.stream.infrastructure.mappers.stream_mapper import map_stream_row, normalize_datetime
 from app.viewer.session.domain.model.models import ViewerSession
 from app.viewer.session.domain.repository import ViewerRepository
 from app.viewer.session.infrastructure.db.model.viewer_session import StreamViewerSession
@@ -21,24 +21,17 @@ class ViewerRepositoryImpl(ViewerRepository):
             stream_id=row.stream_id,
             channel_name=row.channel_name,
             user_name=row.user_name,
-            session_start=self._normalize_datetime(row.session_start),
-            session_end=self._normalize_datetime(row.session_end),
+            session_start=normalize_datetime(row.session_start),
+            session_end=normalize_datetime(row.session_end),
             total_minutes=row.total_minutes,
-            last_activity=self._normalize_datetime(row.last_activity),
+            last_activity=normalize_datetime(row.last_activity),
             is_watching=row.is_watching,
             rewards_claimed=row.rewards_claimed,
-            last_reward_claimed=self._normalize_datetime(row.last_reward_claimed),
-            created_at=self._normalize_datetime(row.created_at),
-            updated_at=self._normalize_datetime(row.updated_at),
+            last_reward_claimed=normalize_datetime(row.last_reward_claimed),
+            created_at=normalize_datetime(row.created_at),
+            updated_at=normalize_datetime(row.updated_at),
             stream=map_stream_row(row.stream) if row.stream else None,
         )
-
-    def _normalize_datetime(self, dt: datetime | None) -> datetime | None:
-        if dt is None:
-            return None
-        if dt.tzinfo is None:
-            return dt.replace(tzinfo=UTC)
-        return dt
 
     def get_viewer_session(self, stream_id: int, channel_name: str, user_name: str) -> ViewerSession | None:
         stmt = (
@@ -53,17 +46,21 @@ class ViewerRepositoryImpl(ViewerRepository):
         return self._to_viewer_session(row)
 
     def create_view_session(self, stream_id: int, channel_name: str, user_name: str, current_time: datetime):
+        session_start_naive = current_time.replace(tzinfo=None)
+
         session = StreamViewerSession(
             stream_id=stream_id,
             channel_name=channel_name,
             user_name=user_name,
-            session_start=current_time,
-            last_activity=current_time,
+            session_start=session_start_naive,
+            last_activity=session_start_naive,
             is_watching=True,
         )
         self._db.add(session)
 
     def update_last_activity(self, stream_id: int, channel_name: str, user_name: str, current_time: datetime):
+        session_start_naive = current_time.replace(tzinfo=None)
+
         stmt = (
             select(StreamViewerSession)
             .where(StreamViewerSession.stream_id == stream_id)
@@ -73,12 +70,13 @@ class ViewerRepositoryImpl(ViewerRepository):
         session = self._db.execute(stmt).scalars().first()
         if not session:
             return
-        session.last_activity = current_time
-        session.updated_at = current_time
+        session.last_activity = session_start_naive
         session.is_watching = True
 
     def get_inactive_sessions(self, stream_id: int, current_time: datetime) -> list[ViewerSession]:
-        cutoff_time = current_time - timedelta(minutes=self.ACTIVITY_TIMEOUT_MINUTES)
+        current_time_naive = current_time.replace(tzinfo=None)
+
+        cutoff_time = current_time_naive - timedelta(minutes=self.ACTIVITY_TIMEOUT_MINUTES)
         stmt = (
             select(StreamViewerSession)
             .where(StreamViewerSession.stream_id == stream_id)
@@ -89,6 +87,8 @@ class ViewerRepositoryImpl(ViewerRepository):
         return [self._to_viewer_session(row) for row in rows]
 
     def finish_session(self, stream_id: int, channel_name: str, user_name: str, total_minutes: int, current_time: datetime):
+        current_time_naive = current_time.replace(tzinfo=None)
+
         stmt = (
             select(StreamViewerSession)
             .where(StreamViewerSession.stream_id == stream_id)
@@ -99,9 +99,8 @@ class ViewerRepositoryImpl(ViewerRepository):
         if not session:
             return
         session.total_minutes = total_minutes
-        session.session_end = current_time
+        session.session_end = current_time_naive
         session.is_watching = False
-        session.updated_at = current_time
 
     def get_active_sessions(self, stream_id: int) -> list[ViewerSession]:
         stmt = (
@@ -120,13 +119,14 @@ class ViewerRepositoryImpl(ViewerRepository):
         return [self._to_viewer_session(row) for row in rows]
 
     def update_session_rewards(self, session_id: int, rewards: str, current_time: datetime):
+        current_time_naive = current_time.replace(tzinfo=None)
+
         stmt = select(StreamViewerSession).where(StreamViewerSession.id == session_id)
         row = self._db.execute(stmt).scalars().first()
         if not row:
             return
         row.rewards_claimed = rewards
-        row.last_reward_claimed = current_time
-        row.updated_at = current_time
+        row.last_reward_claimed = current_time_naive
 
     def get_user_sessions(self, channel_name: str, user_name: str) -> list[ViewerSession]:
         stmt = (

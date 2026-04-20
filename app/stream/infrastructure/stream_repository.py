@@ -58,15 +58,9 @@ class StreamRepositoryImpl(StreamRepository):
             return
         stream.max_concurrent_viewers = viewers_count
 
-    def list_streams(self, skip: int, limit: int, date_from: datetime | None, date_to: datetime | None) -> tuple[list[StreamInfo], int]:
+    def list_streams(self, skip: int, limit: int) -> tuple[list[StreamInfo], int]:
         base_stmt = select(Stream)
         count_stmt = select(func.count()).select_from(Stream)
-        if date_from:
-            base_stmt = base_stmt.where(Stream.started_at >= date_from)
-            count_stmt = count_stmt.where(Stream.started_at >= date_from)
-        if date_to:
-            base_stmt = base_stmt.where(Stream.started_at <= date_to)
-            count_stmt = count_stmt.where(Stream.started_at <= date_to)
 
         total = self._db.execute(count_stmt).scalar_one()
 
@@ -101,7 +95,7 @@ class StreamRepositoryImpl(StreamRepository):
                     last_activity=normalize_datetime(s.last_activity),
                     is_watching=s.is_watching,
                     rewards_claimed=s.rewards_claimed,
-                    last_reward_claimed=s.last_reward_claimed,
+                    last_reward_claimed=normalize_datetime(s.last_reward_claimed),
                     created_at=normalize_datetime(s.created_at),
                     updated_at=normalize_datetime(s.updated_at),
                 )

@@ -1,5 +1,4 @@
 from dataclasses import asdict
-from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -14,15 +13,11 @@ router = APIRouter()
 async def get_streams(
     skip: int = Query(0, ge=0, description="Количество пропускаемых записей"),
     limit: int = Query(20, ge=1, le=100, description="Количество записей в ответе"),
-    date_from: datetime | None = Query(None, description="Начало диапазона даты начала стрима (UTC)"),
-    date_to: datetime | None = Query(None, description="Конец диапазона даты начала стрима (UTC)"),
 ) -> StreamListResponse:
-    if date_from and date_to and date_from > date_to:
-        raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
     try:
         stream_container = StreamContainer()
         with db_ro_session() as session:
-            items, total = stream_container.stream_use_case(session).get_streams(skip, limit, date_from, date_to)
+            items, total = stream_container.stream_use_case(session).get_streams(skip, limit)
         return StreamListResponse(
             items=[StreamResponse.model_validate(asdict(item)) for item in items],
             total=total,

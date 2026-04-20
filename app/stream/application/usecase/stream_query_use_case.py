@@ -11,10 +11,8 @@ class StreamQueryUseCase:
         self._repo = repo
         self._chat_repository = chat_repository
 
-    def get_streams(
-        self, skip: int, limit: int, date_from: datetime | None = None, date_to: datetime | None = None
-    ) -> tuple[list[StreamInfo], int]:
-        return self._repo.list_streams(skip, limit, date_from, date_to)
+    def get_streams(self, skip: int, limit: int) -> tuple[list[StreamInfo], int]:
+        return self._repo.list_streams(skip, limit)
 
     def get_stream_detail(self, stream_id: int) -> StreamDetail | None:
         result = self._repo.get_stream_with_sessions(stream_id)
