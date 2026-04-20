@@ -41,7 +41,7 @@ def _to_domain_token(token: OrmAccessToken) -> DomainAccessToken:
         token=token.token,
         expires_at=normalize_datetime(token.expires_at),
         is_active=token.is_active,
-        created_at=normalize_datetime(token.expires_at),
+        created_at=normalize_datetime(token.created_at),
     )
 
 
