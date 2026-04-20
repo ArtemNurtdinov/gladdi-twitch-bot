@@ -1,5 +1,5 @@
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_repository import MinigameRepository
@@ -28,7 +28,7 @@ class StartRpsGameUseCase:
         self._bot_name = bot_name
 
     async def start(self, channel_name: str):
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         end_time = start_time + timedelta(minutes=self.RPS_GAME_DURATION_MINUTES)
         game = RPSGame(
             channel_name=channel_name,
@@ -52,5 +52,5 @@ class StartRpsGameUseCase:
         await self._send_channel_message(game_message)
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
-                channel_name=channel_name, user_name=self._bot_name, content=game_message, current_time=datetime.utcnow()
+                channel_name=channel_name, user_name=self._bot_name, content=game_message, current_time=datetime.now(UTC)
             )

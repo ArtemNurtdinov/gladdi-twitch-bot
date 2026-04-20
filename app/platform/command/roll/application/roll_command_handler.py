@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.platform.command.domain.command_handler import CommandHandler
@@ -51,7 +51,7 @@ class RollCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_name=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             amount_input=amount,
             last_roll_time=self.roll_cooldowns.get(user_name),
             message=message,

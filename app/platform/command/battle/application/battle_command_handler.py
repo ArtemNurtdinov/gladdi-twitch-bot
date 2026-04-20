@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
@@ -29,7 +29,7 @@ class BattleCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_name=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             message=message,
             command_call=f"{self.command_prefix}{self.command_name}",
             waiting_user=self._battle_waiting_user["value"],

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.core.logger.domain.logger import Logger
 from app.platform.chat.application.model.message import ChatMessageDTO
@@ -52,7 +52,7 @@ class PlatformChatClient(ABC):
             user_name=user_name.lower(),
             message=message,
             bot_name=self.bot_name,
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
         )
 
         if self.is_reply_message(message):

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.stats.application.handle_stats_use_case import HandleStatsUseCase
@@ -26,7 +26,7 @@ class StatsCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_name=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             message=message,
         )
 

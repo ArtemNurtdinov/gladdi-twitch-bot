@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.economy.domain.models import TransactionType
 from app.platform.domain.repository import PlatformRepository
@@ -29,7 +29,7 @@ class RewardViewerTimeUseCase:
             inactive_sessions = uow.viewer_repository.get_inactive_sessions(active_stream.id, viewer_time.occurred_at)
             for session in inactive_sessions:
                 inactive_users.append(session.user_name)
-                session_duration = datetime.utcnow() - session.session_start
+                session_duration = datetime.now(UTC) - session.session_start
                 session_minutes = int(session_duration.total_seconds() / 60)
                 total_minutes = session.total_minutes + session_minutes
                 uow.viewer_repository.finish_session(
@@ -76,7 +76,7 @@ class RewardViewerTimeUseCase:
                 available_rewards = []
 
                 if session.is_watching and session.session_start:
-                    duration = datetime.utcnow() - session.session_start
+                    duration = datetime.now(UTC) - session.session_start
                     current_session_minutes = int(duration.total_seconds() / 60)
                 else:
                     current_session_minutes = 0

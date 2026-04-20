@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.help.application.handle_help_use_case import HandleHelpUseCase
@@ -24,7 +24,7 @@ class HelpCommandHandlerImpl(CommandHandler):
             user_name=user_name.lower(),
             channel_name=channel_name,
             bot_nick=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             commands=self.commands,
             message=message,
         )

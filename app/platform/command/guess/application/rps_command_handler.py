@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.minigame.application.model.rps import RpsDTO
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
@@ -27,7 +27,7 @@ class RpsCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_name=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             choice_input=choice,
             message=message,
         )

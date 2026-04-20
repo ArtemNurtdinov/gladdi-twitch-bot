@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from jose import JWTError, jwt
@@ -30,8 +30,8 @@ class ValidateAccessTokenUseCase:
             if not user_id_raw or not email or not role_raw or not iat or not exp:
                 return None
 
-            issued_at = datetime.utcfromtimestamp(iat)
-            expires_at = datetime.utcfromtimestamp(exp)
+            issued_at = datetime.fromtimestamp(iat, UTC)
+            expires_at = datetime.fromtimestamp(exp, UTC)
 
             payload = TokenPayload(
                 user_id=UUID(user_id_raw),
@@ -41,7 +41,7 @@ class ValidateAccessTokenUseCase:
                 expires_at=expires_at,
             )
 
-            current_time = datetime.utcnow()
+            current_time = datetime.now(UTC)
             access_token = self._auth_repo.find_active_token(token, current_time)
             if not access_token:
                 return None

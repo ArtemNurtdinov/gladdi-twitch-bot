@@ -1,5 +1,6 @@
 from app.battle.domain.model.battle import Battle
 from app.battle.infrastructure.db.battle_history import BattleHistory
+from app.stream.infrastructure.mappers.stream_mapper import normalize_datetime
 
 
 def map_battle_history(row: BattleHistory) -> Battle:
@@ -10,5 +11,5 @@ def map_battle_history(row: BattleHistory) -> Battle:
         opponent_2=row.opponent_2,
         winner=row.winner,
         result_text=row.result_text,
-        created_at=row.created_at,
+        created_at=normalize_datetime(row.created_at),
     )

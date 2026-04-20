@@ -7,7 +7,7 @@ from app.stream.domain.model.info import StreamInfo
 from app.stream.domain.model.session import StreamViewerSessionInfo
 from app.stream.domain.repo import StreamRepository
 from app.stream.infrastructure.db.stream import Stream
-from app.stream.infrastructure.mappers.stream_mapper import map_stream_row
+from app.stream.infrastructure.mappers.stream_mapper import map_stream_row, normalize_datetime
 from app.viewer.session.infrastructure.db.model.viewer_session import StreamViewerSession
 
 
@@ -33,7 +33,6 @@ class StreamRepositoryImpl(StreamRepository):
             return
         stream.ended_at = finish_time
         stream.is_active = False
-        stream.updated_at = datetime.utcnow()
 
     def update_stream_total_viewers(self, stream_id: int, total_viewers: int) -> None:
         stmt = select(Stream).where(Stream.id == stream_id)
@@ -41,7 +40,6 @@ class StreamRepositoryImpl(StreamRepository):
         if not stream:
             return
         stream.total_viewers = total_viewers
-        stream.updated_at = datetime.utcnow()
 
     def update_stream_metadata(self, stream_id: int, game_name: str | None, title: str | None) -> None:
         stmt = select(Stream).where(Stream.id == stream_id)
@@ -52,7 +50,6 @@ class StreamRepositoryImpl(StreamRepository):
             stream.game_name = game_name
         if title is not None:
             stream.title = title
-        stream.updated_at = datetime.utcnow()
 
     def update_max_concurrent_viewers_count(self, active_stream_id: int, viewers_count: int) -> None:
         stmt = select(Stream).where(Stream.id == active_stream_id)
@@ -60,7 +57,6 @@ class StreamRepositoryImpl(StreamRepository):
         if not stream:
             return
         stream.max_concurrent_viewers = viewers_count
-        stream.updated_at = datetime.utcnow()
 
     def list_streams(self, skip: int, limit: int, date_from: datetime | None, date_to: datetime | None) -> tuple[list[StreamInfo], int]:
         base_stmt = select(Stream)
@@ -99,15 +95,15 @@ class StreamRepositoryImpl(StreamRepository):
                     stream_id=s.stream_id,
                     channel_name=s.channel_name,
                     user_name=s.user_name,
-                    session_start=s.session_start,
-                    session_end=s.session_end,
+                    session_start=normalize_datetime(s.session_start),
+                    session_end=normalize_datetime(s.session_end),
                     total_minutes=s.total_minutes,
-                    last_activity=s.last_activity,
+                    last_activity=normalize_datetime(s.last_activity),
                     is_watching=s.is_watching,
                     rewards_claimed=s.rewards_claimed,
                     last_reward_claimed=s.last_reward_claimed,
-                    created_at=s.created_at,
-                    updated_at=s.updated_at,
+                    created_at=normalize_datetime(s.created_at),
+                    updated_at=normalize_datetime(s.updated_at),
                 )
                 for s in sessions
             ],

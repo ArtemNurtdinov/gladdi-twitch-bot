@@ -27,7 +27,6 @@ class SystemPromptRepositoryImpl(SystemPromptRepository):
         )
         if row:
             row.content = system_prompt.prompt
-            row.updated_at = datetime.utcnow()
         else:
             self._session.add(
                 SystemPromptRow(channel_name=system_prompt.channel_name, content=system_prompt.prompt, updated_at=datetime.now(UTC))

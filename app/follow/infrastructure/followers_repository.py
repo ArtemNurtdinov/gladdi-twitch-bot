@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.follow.domain.models import ChannelFollower
 from app.follow.domain.repo import FollowersRepository
 from app.follow.infrastructure.db.follower import ChannelFollowerRow
+from app.stream.infrastructure.mappers.stream_mapper import normalize_datetime
 
 
 class FollowersRepositoryImpl(FollowersRepository):
@@ -19,13 +20,13 @@ class FollowersRepositoryImpl(FollowersRepository):
             user_id=row.user_id,
             user_name=row.user_name,
             display_name=row.display_name,
-            followed_at=row.followed_at,
-            first_seen_at=row.first_seen_at,
-            last_seen_at=row.last_seen_at,
-            unfollowed_at=row.unfollowed_at,
+            followed_at=normalize_datetime(row.followed_at),
+            first_seen_at=normalize_datetime(row.first_seen_at),
+            last_seen_at=normalize_datetime(row.last_seen_at),
+            unfollowed_at=normalize_datetime(row.unfollowed_at),
             is_active=row.is_active,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
+            created_at=normalize_datetime(row.created_at),
+            updated_at=normalize_datetime(row.updated_at),
         )
 
     def list_by_channel(self, channel_name: str) -> list[ChannelFollower]:

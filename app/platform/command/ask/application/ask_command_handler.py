@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.platform.command.ask.application.model import AskCommandDTO
@@ -26,7 +26,7 @@ class AskCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_nick=self._bot_nick,
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             message=user_message,
         )
 

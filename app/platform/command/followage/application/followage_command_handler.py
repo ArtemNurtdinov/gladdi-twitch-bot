@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.followage.application.model import FollowageDTO
@@ -18,7 +18,7 @@ class FollowageCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_nick=self.bot_name,
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             message=message,
         )
         return await self._handle_follow_age_use_case.handle(followage)

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session, joinedload
@@ -21,17 +21,24 @@ class ViewerRepositoryImpl(ViewerRepository):
             stream_id=row.stream_id,
             channel_name=row.channel_name,
             user_name=row.user_name,
-            session_start=row.session_start,
-            session_end=row.session_end,
+            session_start=self._normalize_datetime(row.session_start),
+            session_end=self._normalize_datetime(row.session_end),
             total_minutes=row.total_minutes,
-            last_activity=row.last_activity,
+            last_activity=self._normalize_datetime(row.last_activity),
             is_watching=row.is_watching,
             rewards_claimed=row.rewards_claimed,
-            last_reward_claimed=row.last_reward_claimed,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
+            last_reward_claimed=self._normalize_datetime(row.last_reward_claimed),
+            created_at=self._normalize_datetime(row.created_at),
+            updated_at=self._normalize_datetime(row.updated_at),
             stream=map_stream_row(row.stream) if row.stream else None,
         )
+
+    def _normalize_datetime(self, dt: datetime | None) -> datetime | None:
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=UTC)
+        return dt
 
     def get_viewer_session(self, stream_id: int, channel_name: str, user_name: str) -> ViewerSession | None:
         stmt = (

@@ -7,6 +7,7 @@ from app.economy.domain.models import BalanceBrief, TransactionData, UserBalance
 from app.economy.domain.repo import EconomyRepository
 from app.economy.infrastructure.db.transaction_history import TransactionHistory
 from app.economy.infrastructure.db.user_balance import UserBalance
+from app.stream.infrastructure.mappers.stream_mapper import normalize_datetime
 
 
 class EconomyRepositoryImpl(EconomyRepository):
@@ -21,12 +22,12 @@ class EconomyRepositoryImpl(EconomyRepository):
             balance=row.balance,
             total_earned=row.total_earned,
             total_spent=row.total_spent,
-            last_daily_claim=row.last_daily_claim,
+            last_daily_claim=normalize_datetime(row.last_daily_claim),
             last_bonus_stream_id=row.last_bonus_stream_id,
             message_count=row.message_count,
-            last_activity_reward=row.last_activity_reward,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
+            last_activity_reward=normalize_datetime(row.last_activity_reward),
+            created_at=normalize_datetime(row.created_at),
+            updated_at=normalize_datetime(row.updated_at),
         )
 
     def get_balance(self, channel_name: str, user_name: str) -> UserBalanceInfo | None:
@@ -68,7 +69,6 @@ class EconomyRepositoryImpl(EconomyRepository):
         row.last_bonus_stream_id = balance.last_bonus_stream_id
         row.message_count = balance.message_count
         row.last_activity_reward = balance.last_activity_reward
-        row.updated_at = balance.updated_at or datetime.utcnow()
 
         self._db.flush()
         self._db.refresh(row)

@@ -1,6 +1,7 @@
 from app.equipment.domain.model.user_equipment import UserEquipment
 from app.equipment.infrastructure.db.user_equipment import UserEquipment as OrmUserEquipment
 from app.shop.infrastructure.mapper.shop_item_mapper import ShopItemMapper
+from app.stream.infrastructure.mappers.stream_mapper import normalize_datetime
 
 
 class UserEquipmentMapper:
@@ -15,7 +16,7 @@ class UserEquipmentMapper:
             user_name=user_equipment.user_name,
             shop_item_id=user_equipment.shop_item_id,
             shop_item=shop_item,
-            expires_at=user_equipment.expires_at,
+            expires_at=normalize_datetime(user_equipment.expires_at),
         )
 
     def map_to_db(self, user_equipment: UserEquipment) -> OrmUserEquipment:

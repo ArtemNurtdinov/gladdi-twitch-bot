@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.guess.application.handle_guess_use_case import HandleGuessUseCase
@@ -27,7 +27,7 @@ class GuessLetterCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_nick=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             letter_input=letter,
             message=message,
         )

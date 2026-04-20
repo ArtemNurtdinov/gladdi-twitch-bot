@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
@@ -25,7 +25,7 @@ class EquipmentCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_name=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             command_shop=self.command_shop,
             message=message,
         )

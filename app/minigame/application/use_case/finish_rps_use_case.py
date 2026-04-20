@@ -1,6 +1,6 @@
 import random
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.economy.domain.models import TransactionType
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
@@ -75,7 +75,7 @@ class FinishRpsUseCase:
 
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
-                channel_name=channel_name, user_name=self._bot_name, content=message, current_time=datetime.utcnow()
+                channel_name=channel_name, user_name=self._bot_name, content=message, current_time=datetime.now(UTC)
             )
 
         await self._send_channel_message(message)

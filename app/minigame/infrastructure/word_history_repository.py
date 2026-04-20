@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -22,5 +22,5 @@ class WordHistoryRepositoryImpl(WordHistoryRepository):
         return [word.lower() for word in rows]
 
     def add_word(self, channel_name: str, word: str):
-        record = OrmWordHistory(channel_name=channel_name, word=word, created_at=datetime.utcnow())
+        record = OrmWordHistory(channel_name=channel_name, word=word, created_at=datetime.now(UTC))
         self._db.add(record)

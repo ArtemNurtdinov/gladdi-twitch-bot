@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
@@ -35,7 +35,7 @@ class HandleMinigameTickUseCase:
         self._finish_expired_games_use_case = finish_expired_games_use_case
 
     async def handle(self, channel_name: str):
-        current_time = datetime.utcnow()
+        current_time = datetime.now(UTC)
         active_rps_game = self._minigame_repository.get_active_rps_game(channel_name)
 
         if active_rps_game and active_rps_game.is_active and current_time > active_rps_game.end_time:
@@ -57,7 +57,6 @@ class HandleMinigameTickUseCase:
         if guess_game or word_game or rps_game:
             return
 
-        current_time = datetime.utcnow()
         last_game_time = self._minigame_repository.get_last_game_time(channel_name)
 
         if last_game_time:

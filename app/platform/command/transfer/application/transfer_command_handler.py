@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.transfer.application.handle_transfer_use_case import HandleTransferUseCase
@@ -34,7 +34,7 @@ class TransferCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_nick=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             recipient_input=recipient,
             amount_input=amount,
             command_prefix=self.command_prefix,

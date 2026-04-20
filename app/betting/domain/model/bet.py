@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from datetime import datetime
 
 from app.betting.domain.model.rarity import RarityLevel
 
@@ -12,4 +11,3 @@ class Bet:
     slot_result: str
     result_type: str
     rarity_level: RarityLevel
-    created_at: datetime

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.shop.application.handle_shop_use_case import HandleShopUseCase
@@ -28,7 +28,7 @@ class ShopCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_nick=bot_nick,
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             command_prefix=self.command_prefix,
             command_name=self.command_shop_name,
             command_buy_name=self.command_buy_name,

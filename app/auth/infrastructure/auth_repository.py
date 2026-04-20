@@ -14,10 +14,10 @@ from app.auth.domain.model.user import (
 )
 from app.auth.domain.models import (
     UserCreateData,
-    UserUpdateData,
 )
 from app.auth.infrastructure.db.access_token import AccessToken as OrmAccessToken
 from app.auth.infrastructure.db.user import User as OrmUser
+from app.stream.infrastructure.mappers.stream_mapper import normalize_datetime
 
 
 def _to_domain_user(orm_user: OrmUser) -> DomainUser:
@@ -34,30 +34,14 @@ def _to_domain_user(orm_user: OrmUser) -> DomainUser:
     )
 
 
-def _apply_user_updates(orm_user: OrmUser, updates: UserUpdateData, hashed_password: str | None):
-    if updates.email is not None:
-        orm_user.email = updates.email
-    if updates.first_name is not None:
-        orm_user.first_name = updates.first_name
-    if updates.last_name is not None:
-        orm_user.last_name = updates.last_name
-    if updates.role is not None:
-        orm_user.role = updates.role
-    if updates.is_active is not None:
-        orm_user.is_active = updates.is_active
-    if hashed_password is not None:
-        orm_user.hashed_password = hashed_password
-    orm_user.updated_at = datetime.utcnow()
-
-
 def _to_domain_token(token: OrmAccessToken) -> DomainAccessToken:
     return DomainAccessToken(
         id=token.id,
         user_id=token.user_id,
         token=token.token,
-        expires_at=token.expires_at,
+        expires_at=normalize_datetime(token.expires_at),
         is_active=token.is_active,
-        created_at=token.created_at,
+        created_at=normalize_datetime(token.expires_at),
     )
 
 
@@ -75,11 +59,6 @@ class AuthRepositoryImpl(AuthRepository):
         user = self._db.execute(stmt).scalars().first()
         return _to_domain_user(user) if user else None
 
-    def list_users(self, skip: int, limit: int) -> list[DomainUser]:
-        stmt = select(OrmUser).offset(skip).limit(limit)
-        users = self._db.execute(stmt).scalars().all()
-        return [_to_domain_user(u) for u in users]
-
     def create_user(self, data: UserCreateData, hashed_password: str) -> DomainUser:
         orm_user = OrmUser(
             email=data.email,
@@ -94,27 +73,6 @@ class AuthRepositoryImpl(AuthRepository):
         self._db.refresh(orm_user)
         return _to_domain_user(orm_user)
 
-    def update_user(self, user_id: UUID, updates: UserUpdateData) -> DomainUser | None:
-        stmt = select(OrmUser).where(OrmUser.id == user_id)
-        user = self._db.execute(stmt).scalars().first()
-        if not user:
-            return None
-        hashed_password = None
-        if updates.password:
-            hashed_password = updates.password
-        _apply_user_updates(user, updates, hashed_password)
-        self._db.flush()
-        self._db.refresh(user)
-        return _to_domain_user(user)
-
-    def delete_user(self, user_id: UUID) -> bool:
-        stmt = select(OrmUser).where(OrmUser.id == user_id)
-        user = self._db.execute(stmt).scalars().first()
-        if not user:
-            return False
-        self._db.delete(user)
-        return True
-
     def create_token(self, user_id: UUID, token: str, expires_at: datetime) -> DomainAccessToken:
         orm_token = OrmAccessToken(user_id=user_id, token=token, expires_at=expires_at)
         self._db.add(orm_token)
@@ -122,33 +80,7 @@ class AuthRepositoryImpl(AuthRepository):
         self._db.refresh(orm_token)
         return _to_domain_token(orm_token)
 
-    def list_tokens(self, skip: int, limit: int) -> list[DomainAccessToken]:
-        stmt = select(OrmAccessToken).offset(skip).limit(limit)
-        tokens = self._db.execute(stmt).scalars().all()
-        return [_to_domain_token(t) for t in tokens]
-
-    def get_token_by_id(self, token_id: UUID) -> DomainAccessToken | None:
-        stmt = select(OrmAccessToken).where(OrmAccessToken.id == token_id)
-        token = self._db.execute(stmt).scalars().first()
-        return _to_domain_token(token) if token else None
-
     def find_active_token(self, token: str, current_time: datetime) -> DomainAccessToken | None:
         stmt = select(OrmAccessToken).where(OrmAccessToken.token == token).where(OrmAccessToken.is_active)
         record = self._db.execute(stmt).scalars().first()
         return _to_domain_token(record) if record else None
-
-    def deactivate_token(self, token_id: UUID) -> bool:
-        stmt = select(OrmAccessToken).where(OrmAccessToken.id == token_id)
-        token = self._db.execute(stmt).scalars().first()
-        if not token:
-            return False
-        token.is_active = False
-        return True
-
-    def delete_token(self, token_id: UUID) -> bool:
-        stmt = select(OrmAccessToken).where(OrmAccessToken.id == token_id)
-        token = self._db.execute(stmt).scalars().first()
-        if not token:
-            return False
-        self._db.delete(token)
-        return True

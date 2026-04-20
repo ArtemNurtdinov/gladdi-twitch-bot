@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.core.logger.domain.logger import Logger
 from app.joke.application.model.post_joke import PostJokeDTO
@@ -34,7 +34,7 @@ class PostJokeJob(BackgroundJob):
                 post_joke = PostJokeDTO(
                     channel_name=self._channel_name,
                     bot_nick=self._bot_name.lower(),
-                    occurred_at=datetime.utcnow(),
+                    occurred_at=datetime.now(UTC),
                 )
 
                 result = await self._handle_post_joke_use_case.handle(post_joke=post_joke)

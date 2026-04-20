@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.platform.domain.repository import PlatformRepository
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
@@ -11,7 +11,7 @@ class ViewerCacheService(ViewerCachePort):
         self._cache: dict[str, tuple[str, datetime]] = {}
 
     async def get_viewer_id(self, login: str) -> str | None:
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         cached = self._cache.get(login)
         if cached:
             user_id, cached_at = cached

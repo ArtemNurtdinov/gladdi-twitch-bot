@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.platform.command.bonus.application.model import BonusDTO
@@ -16,7 +16,7 @@ class BonusCommandHandlerImpl(CommandHandler):
             display_name=user_name,
             user_name=user_name.lower(),
             bot_name=self._bot_name.lower(),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(UTC),
             message=message,
         )
 
