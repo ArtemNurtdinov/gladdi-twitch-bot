@@ -14,7 +14,7 @@ class LLMRepositoryImpl(LLMRepository):
 
     async def generate_ai_response(self, user_messages: list[AIMessage], assistant: AIAssistant) -> AIAssistantResponse:
         messages = [{"role": message.role.value, "content": message.content} for message in user_messages]
-        payload = {"messages": messages, "assistant": assistant.value}
+        payload = {"messages": messages, "assistant": assistant}
         api_url = f"{self._llmbox_host}/generate-ai-response"
 
         try:

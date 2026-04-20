@@ -38,4 +38,4 @@ class PromptService:
         )
 
     def get_reply_prompt(self, user_display_name: str, message: str) -> str:
-        return f"Пользователь {user_display_name} обращается к тебе: {message}"
+        return f"Пользователь {user_display_name} пишет: {message}"
