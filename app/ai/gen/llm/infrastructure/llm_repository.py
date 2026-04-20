@@ -12,9 +12,9 @@ class LLMRepositoryImpl(LLMRepository):
     def __init__(self, llmbox_host: str):
         self._llmbox_host = llmbox_host
 
-    async def generate_ai_response(self, user_messages: list[AIMessage], assistant: AIAssistant) -> AIAssistantResponse:
+    async def generate_ai_response(self, channel_name: str, user_messages: list[AIMessage]) -> AIAssistantResponse:
         messages = [{"role": message.role.value, "content": message.content} for message in user_messages]
-        payload = {"messages": messages, "assistant": assistant}
+        payload = {"messages": messages, "assistant": self._get_assistant}
         api_url = f"{self._llmbox_host}/generate-ai-response"
 
         try:
@@ -44,3 +44,6 @@ class LLMRepositoryImpl(LLMRepository):
         )
 
         return AIAssistantResponse(message=validated.assistant_message, usage=usage)
+
+    def _get_assistant(self, channel_name: str) -> AIAssistant:
+        return AIAssistant.GPT_OSS_120B

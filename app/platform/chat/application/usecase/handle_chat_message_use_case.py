@@ -21,7 +21,7 @@ class HandleChatMessageUseCase:
         self._generate_response_use_case = generate_response_use_case
 
     async def handle(self, chat_message: ChatMessageDTO) -> str | None:
-        intent = await self._get_intent_from_text_use_case.get_intent_from_text(chat_message.message)
+        intent = await self._get_intent_from_text_use_case.get_intent_from_text(chat_message.channel_name, chat_message.message)
 
         with self._chat_message_uow.create() as uow:
             uow.chat_repo.save(

@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
-from app.ai.gen.llm.domain.model.assistant import AIAssistant
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.core.logger.domain.logger import Logger
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
@@ -67,7 +66,7 @@ class StartWordGameUseCase:
             system_prompt = self._system_prompt_repository_provider.get(session).get_system_prompt(channel_name)
         ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt), AIMessage(role=Role.USER, content=prompt)]
 
-        assistant_response = await self._llm_repository.generate_ai_response(ai_messages, AIAssistant.GPT_OSS_120B)
+        assistant_response = await self._llm_repository.generate_ai_response(channel_name, ai_messages)
         assistant_message = assistant_response.message
 
         with self._minigame_uow.create() as uow:

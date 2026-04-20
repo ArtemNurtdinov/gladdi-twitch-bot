@@ -2,7 +2,6 @@ import requests
 
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
-from app.ai.gen.llm.domain.model.assistant import AIAssistant
 from app.ai.intent.domain.intent_detector import IntentDetectorClient
 from app.ai.intent.domain.models import Intent
 
@@ -26,7 +25,7 @@ class IntentDetectorClientImpl(IntentDetectorClient):
 
         raise Exception(f"Ошибка запроса: {response.status_code} - {response.text}")
 
-    async def validate_intent_via_llm(self, detected_intent: Intent, text: str, llm_repository: LLMRepository) -> Intent:
+    async def validate_intent_via_llm(self, channel_name: str, detected_intent: Intent, text: str, llm_repository: LLMRepository) -> Intent:
         intent_descriptions = {
             "games_history": "вопросы о прошедших играх, их истории, результатах и т.п.",
             "jackbox": "вопросы о Jackbox, просьбы поиграть, обсуждение этой игры",
@@ -48,7 +47,7 @@ class IntentDetectorClientImpl(IntentDetectorClient):
             "Если intent определён верно, просто напиши его (одно слово, без пояснений). "
             "Если определён неверно — напиши правильный intent (одно слово, без пояснений)."
         )
-        ai_response = await llm_repository.generate_ai_response([AIMessage(role=Role.USER, content=prompt)], AIAssistant.GPT_OSS_120B)
+        ai_response = await llm_repository.generate_ai_response(channel_name, [AIMessage(role=Role.USER, content=prompt)])
         ai_message = ai_response.message.strip().lower()
         for intent in Intent:
             if ai_message == intent.value:
