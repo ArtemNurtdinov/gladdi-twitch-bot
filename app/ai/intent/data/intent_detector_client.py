@@ -2,6 +2,7 @@ import requests
 
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
+from app.ai.gen.llm.domain.model.assistant import AIAssistant
 from app.ai.intent.domain.intent_detector import IntentDetectorClient
 from app.ai.intent.domain.models import Intent
 
@@ -47,7 +48,10 @@ class IntentDetectorClientImpl(IntentDetectorClient):
             "Если intent определён верно, просто напиши его (одно слово, без пояснений). "
             "Если определён неверно — напиши правильный intent (одно слово, без пояснений)."
         )
-        ai_response = await llm_repository.generate_ai_response(channel_name, [AIMessage(role=Role.USER, content=prompt)])
+        assistant = await llm_repository.get_assistant(channel_name)
+        if assistant is None:
+            assistant = AIAssistant.GPT_OSS_120B
+        ai_response = await llm_repository.generate_ai_response(assistant, [AIMessage(role=Role.USER, content=prompt)])
         ai_message = ai_response.message.strip().lower()
         for intent in Intent:
             if ai_message == intent.value:
