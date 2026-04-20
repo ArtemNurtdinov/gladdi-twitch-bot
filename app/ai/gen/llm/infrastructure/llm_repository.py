@@ -4,16 +4,17 @@ from pydantic import ValidationError
 from app.ai.gen.conversation.domain.models import AIAssistantResponse, AIMessage, Usage
 from app.ai.gen.llm.domain.exceptions.llm_exceptions import LLMClientError, LLMResponseFormatError
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
-from app.ai.gen.llm.infrastructure.llm_schemas import AIResponseSchema
+from app.ai.gen.llm.domain.model.assistant import AIAssistant
+from app.ai.gen.llm.infrastructure.model.response.llm import AIResponseSchema
 
 
 class LLMRepositoryImpl(LLMRepository):
     def __init__(self, llmbox_host: str):
         self._llmbox_host = llmbox_host
 
-    async def generate_ai_response(self, user_messages: list[AIMessage]) -> AIAssistantResponse:
+    async def generate_ai_response(self, user_messages: list[AIMessage], assistant: AIAssistant) -> AIAssistantResponse:
         messages = [{"role": message.role.value, "content": message.content} for message in user_messages]
-        payload = {"messages": messages, "assistant": "qwen3_235b"}
+        payload = {"messages": messages, "assistant": assistant.value}
         api_url = f"{self._llmbox_host}/generate-ai-response"
 
         try:
