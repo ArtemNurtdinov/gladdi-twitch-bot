@@ -4,7 +4,7 @@ from app.ai.gen.di.container import AIContainer
 from app.ai.gen.llm.domain.model.assistant import AIAssistant
 from app.ai.gen.llm.presentation.model.assistant_response import AssistantResponse, AssistantUpdate
 from app.core.network.api.model.base_response import BaseResponse
-from core.db import db_ro_session
+from core.db import db_ro_session, db_rw_session
 
 router = APIRouter()
 
@@ -37,7 +37,7 @@ async def save_assistant(
             detail=f"Неизвестный ассистент: {body.assistant}. Доступные: {[a.value for a in AIAssistant]}",
         )
 
-    with db_ro_session() as session:
+    with db_rw_session() as session:
         await ai_container.save_assistant_use_case_provider.get(session).save_assistant(channel_name, assistant)
 
     return BaseResponse(message="Ассистент успешно сохранён")

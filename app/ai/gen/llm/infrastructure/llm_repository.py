@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 import httpx
 from pydantic import ValidationError
@@ -65,4 +65,4 @@ class LLMRepositoryImpl(LLMRepository):
         if row:
             row.assistant = assistant.value
         else:
-            self._session.add(AssistantRow(channel_name=channel_name, assistant=assistant.value, updated_at=datetime.utcnow()))
+            self._session.add(AssistantRow(channel_name=channel_name, assistant=assistant.value, updated_at=datetime.now(UTC)))
