@@ -238,7 +238,7 @@ class PlatformRepositoryImpl(PlatformRepository):
                         user_id=item.user_id,
                         user_name=item.user_login,
                         display_name=item.user_name,
-                        followed_at=item.followed_at.replace(tzinfo=None),
+                        followed_at=item.followed_at,
                     )
                     for item in followers_page
                 ]

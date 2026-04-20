@@ -44,16 +44,13 @@ class FollowersRepositoryImpl(FollowersRepository):
         rows = self._db.execute(stmt).scalars().all()
         return [self._to_domain(row) for row in rows]
 
-    def list_unfollowed_since(self, channel_name: str, since: datetime, until: datetime | None = None) -> list[ChannelFollower]:
+    def list_unfollowed_since(self, channel_name: str) -> list[ChannelFollower]:
         stmt = (
             select(ChannelFollowerRow)
             .where(ChannelFollowerRow.channel_name == channel_name)
             .where(ChannelFollowerRow.is_active.is_(False))
             .where(ChannelFollowerRow.unfollowed_at.is_not(None))
-            .where(ChannelFollowerRow.unfollowed_at >= since)
         )
-        if until:
-            stmt = stmt.where(ChannelFollowerRow.unfollowed_at <= until)
         rows = self._db.execute(stmt).scalars().all()
         return [self._to_domain(row) for row in rows]
 
@@ -75,6 +72,8 @@ class FollowersRepositoryImpl(FollowersRepository):
         followed_at: datetime | None,
         seen_at: datetime,
     ):
+        followed_at_naive = followed_at.replace(tzinfo=None)
+        seen_at_naive = seen_at.replace(tzinfo=None)
         stmt = (
             select(ChannelFollowerRow).where(ChannelFollowerRow.channel_name == channel_name).where(ChannelFollowerRow.user_id == user_id)
         )
@@ -82,23 +81,20 @@ class FollowersRepositoryImpl(FollowersRepository):
         if row:
             row.user_name = user_name
             row.display_name = display_name
-            row.followed_at = followed_at
-            row.last_seen_at = seen_at
+            row.followed_at = followed_at_naive
+            row.last_seen_at = seen_at_naive
             row.unfollowed_at = None
             row.is_active = True
-            row.updated_at = seen_at
         else:
             row = ChannelFollowerRow(
                 channel_name=channel_name,
                 user_id=user_id,
                 user_name=user_name,
                 display_name=display_name,
-                followed_at=followed_at,
-                first_seen_at=seen_at,
-                last_seen_at=seen_at,
+                followed_at=followed_at_naive,
+                first_seen_at=seen_at_naive,
+                last_seen_at=seen_at_naive,
                 is_active=True,
-                created_at=seen_at,
-                updated_at=seen_at,
             )
             self._db.add(row)
 
