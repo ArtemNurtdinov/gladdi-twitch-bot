@@ -2,6 +2,8 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
+from app.ai.gen.di.container import AIContainer
+from app.ai.gen.llm.presentation import llm_routes
 from app.ai.gen.prompt.presentation import system_prompt_routes
 from app.auth.di.container import AuthContainer
 from app.auth.presentation import auth_routes
@@ -54,6 +56,12 @@ class Application:
         self.fast_api.state.joke_container = JokeContainer(
             session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
         )
+        self.fast_api.state.ai_container = AIContainer(
+            session_factory_ro=db_ro_session,
+            session_factory_rw=db_rw_session,
+            llmbox_host=self.container.config.llmbox.host,
+            intent_detector_host=self.container.config.intent_detector.host,
+        )
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,
@@ -74,6 +82,7 @@ class Application:
         self.fast_api.include_router(followers_routes.router, prefix="/api/v1/followers", tags=["Followers"])
         self.fast_api.include_router(viewer_routes.router, prefix="/api/v1", tags=["Users"])
         self.fast_api.include_router(shop_routes.router, prefix="/api/v1/shop", tags=["Shop"])
+        self.fast_api.include_router(llm_routes.router, prefix="/api/v1/assistant", tags=["Assistant"])
 
     def _setup_health_checks(self):
         @self.fast_api.get("/", tags=["Health"])

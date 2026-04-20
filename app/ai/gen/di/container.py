@@ -5,6 +5,8 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.conversation.infrastructure.conversation_repository import ConversationRepositoryImpl
 from app.ai.gen.llm.application.uow.chat_response_uow import ChatResponseUnitOfWorkFactory
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.llm.application.usecase.get_assistant_use_case import GetAssistantUseCase
+from app.ai.gen.llm.application.usecase.save_assistant_use_case import SaveAssistantUseCase
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.llm.infrastructure.llm_repository import LLMRepositoryImpl
 from app.ai.gen.llm.infrastructure.uow.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
@@ -30,6 +32,8 @@ class AIContainer:
         self.conversation_service_provider = Provider(self._conversation_service)
         self.llm_repository_provider = Provider(self._llm_repository)
         self.generate_response_use_case_provider = Provider(self._generate_response_use_case)
+        self.get_assistant_use_case_provider = Provider(self._get_assistant_use_case)
+        self.save_assistant_use_case_provider = Provider(self._save_assistant_use_case)
 
     def _llm_repository(self, session: Session) -> LLMRepository:
         return LLMRepositoryImpl(self._llmbox_host, session)
@@ -65,3 +69,11 @@ class AIContainer:
         return GenerateResponseUseCase(
             chat_response_uow_factory, llm_repository, self.system_prompt_repo_provider, self._session_factory_ro
         )
+
+    def _get_assistant_use_case(self, session: Session) -> GetAssistantUseCase:
+        llm_repository = self._llm_repository(session)
+        return GetAssistantUseCase(llm_repository)
+
+    def _save_assistant_use_case(self, session: Session) -> SaveAssistantUseCase:
+        llm_repository = self._llm_repository(session)
+        return SaveAssistantUseCase(llm_repository)

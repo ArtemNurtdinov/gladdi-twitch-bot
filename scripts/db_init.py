@@ -1,6 +1,7 @@
 from sqlalchemy import text
 
 from app.ai.gen.conversation.infrastructure.db.ai_message import AIMessage
+from app.ai.gen.llm.infrastructure.db.assistant import AssistantRow
 from app.ai.gen.prompt.infrastructure.db.system_prompt import SystemPromptRow
 from app.auth.application.dto import UserCreateDto, UserRole
 from app.auth.application.mapper.user_mapper import UserMapper
@@ -13,6 +14,7 @@ from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from app.battle.infrastructure.db.battle_history import BattleHistory
 from app.betting.infrastructure.db.bet_history import BetHistory
 from app.chat.infrastructure.db.chat_message import ChatMessage
+from app.core.di.application_container import ApplicationContainer
 from app.economy.infrastructure.db.transaction_history import TransactionHistory
 from app.economy.infrastructure.db.user_balance import UserBalance
 from app.equipment.infrastructure.db.user_equipment import UserEquipment
@@ -22,7 +24,7 @@ from app.minigame.infrastructure.db.word_history import WordHistory
 from app.shop.infrastructure.db.model.shop_item import ShopItem
 from app.stream.infrastructure.db.stream import Stream
 from app.viewer.session.infrastructure.db.model.viewer_session import StreamViewerSession
-from core.db import db_ro_session, db_rw_session, get_engine
+from core.db import db_ro_session, db_rw_session, get_engine, init_db
 
 
 def test_connection():
@@ -63,6 +65,7 @@ def create_tables():
             SystemPromptRow.__table__.create(bind=connection, checkfirst=True)
             ShopItem.__table__.create(bind=connection, checkfirst=True)
             JokesConfigurationRow.__table__.create(bind=connection, checkfirst=True)
+            AssistantRow.__table__.create(bind=connection, checkfirst=True)
         print("Таблицы успешно созданы!")
 
         with get_engine().connect() as connection:
@@ -111,6 +114,8 @@ def create_admin():
 
 
 if __name__ == "__main__":
+    app_container = ApplicationContainer()
+    init_db(app_container.config.db)
     test_connection()
     create_tables()
     create_admin()
