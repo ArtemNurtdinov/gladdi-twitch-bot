@@ -99,6 +99,7 @@ class FollowersRepositoryImpl(FollowersRepository):
             self._db.add(row)
 
     def mark_unfollowed(self, channel_name: str, user_ids: list[str], unfollowed_at: datetime):
+        unfollowed_at_naive = unfollowed_at.replace(tzinfo=None)
         if not user_ids:
             return
         stmt = (
@@ -107,9 +108,9 @@ class FollowersRepositoryImpl(FollowersRepository):
             .where(ChannelFollowerRow.user_id.in_(user_ids))
             .values(
                 is_active=False,
-                unfollowed_at=unfollowed_at,
-                last_seen_at=unfollowed_at,
-                updated_at=unfollowed_at,
+                unfollowed_at=unfollowed_at_naive,
+                last_seen_at=unfollowed_at_naive,
+                updated_at=unfollowed_at_naive,
             )
         )
         self._db.execute(stmt)
