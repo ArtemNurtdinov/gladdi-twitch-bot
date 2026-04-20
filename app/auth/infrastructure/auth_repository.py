@@ -74,7 +74,8 @@ class AuthRepositoryImpl(AuthRepository):
         return _to_domain_user(orm_user)
 
     def create_token(self, user_id: UUID, token: str, expires_at: datetime) -> DomainAccessToken:
-        orm_token = OrmAccessToken(user_id=user_id, token=token, expires_at=expires_at)
+        expires_at_naive = expires_at.replace(tzinfo=None)
+        orm_token = OrmAccessToken(user_id=user_id, token=token, expires_at=expires_at_naive)
         self._db.add(orm_token)
         self._db.flush()
         self._db.refresh(orm_token)

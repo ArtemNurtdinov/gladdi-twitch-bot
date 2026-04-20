@@ -20,9 +20,10 @@ class UserEquipmentMapper:
         )
 
     def map_to_db(self, user_equipment: UserEquipment) -> OrmUserEquipment:
+        expires_at_naive = user_equipment.expires_at.replace(tzinfo=None)
         return OrmUserEquipment(
             channel_name=user_equipment.channel_name,
             user_name=user_equipment.user_name,
             shop_item_id=user_equipment.shop_item_id,
-            expires_at=user_equipment.expires_at,
+            expires_at=expires_at_naive,
         )

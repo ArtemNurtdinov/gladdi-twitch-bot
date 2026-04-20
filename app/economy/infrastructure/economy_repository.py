@@ -62,13 +62,16 @@ class EconomyRepositoryImpl(EconomyRepository):
             row = UserBalance(channel_name=balance.channel_name, user_name=balance.user_name)
             self._db.add(row)
 
+        last_daily_claim_naive = balance.last_daily_claim.replace(tzinfo=None)
+        last_activity_reward_naive = balance.last_activity_reward.replace(tzinfo=None)
+
         row.balance = balance.balance
         row.total_earned = balance.total_earned
         row.total_spent = balance.total_spent
-        row.last_daily_claim = balance.last_daily_claim
+        row.last_daily_claim = last_daily_claim_naive
         row.last_bonus_stream_id = balance.last_bonus_stream_id
         row.message_count = balance.message_count
-        row.last_activity_reward = balance.last_activity_reward
+        row.last_activity_reward = last_activity_reward_naive
 
         self._db.flush()
         self._db.refresh(row)
