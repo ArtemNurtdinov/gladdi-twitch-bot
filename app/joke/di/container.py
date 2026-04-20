@@ -24,7 +24,9 @@ from core.types import SessionFactory
 
 
 class JokeContainer:
-    def __init__(self, logger: Logger):
+    def __init__(self, session_factory_rw: SessionFactory, session_factory_ro: SessionFactory, logger: Logger):
+        self._session_factory_rw = session_factory_rw
+        self._session_factory_ro = session_factory_ro
         self.jokes_configuration_db_mapper = JokesConfigurationDbMapper()
         self.jokes_configuration_dto_mapper = JokesConfigurationDTOMapper()
         self.jokes_configuration_schema_mapper = JokesConfigurationSchemaMapper()
@@ -64,7 +66,7 @@ class JokeContainer:
         chat_use_case: ChatUseCase,
         user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
-        generate_response_use_case: GenerateResponseUseCase,
+        generate_response_use_case: Provider[GenerateResponseUseCase],
     ) -> HandlePostJokeUseCase:
         joke_uow_factory = self.joke_uow_factory(session_factory_rw, session_factory_ro, conversation_service_provider, chat_use_case)
         return HandlePostJokeUseCase(
@@ -72,6 +74,7 @@ class JokeContainer:
             platform_repository=platform_repository,
             chat_response_use_case=generate_response_use_case,
             joke_uow=joke_uow_factory,
+            db_ro_session=self._session_factory_ro,
         )
 
     def post_joke_job(
@@ -85,7 +88,7 @@ class JokeContainer:
         chat_use_case: ChatUseCase,
         user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
-        generate_response_use_case: GenerateResponseUseCase,
+        generate_response_use_case: Provider[GenerateResponseUseCase],
     ) -> PostJokeJob:
         handle_post_joke_use_case = self.handle_post_joke_use_case(
             session_factory_rw,

@@ -549,7 +549,7 @@ class PlatformContainer:
         minigame_repository: MinigameRepository,
         minigame_uow_factory: MinigameUnitOfWorkFactory,
         system_prompt_repository_provider: Provider[SystemPromptRepository],
-        llm_repository: LLMRepository,
+        llm_repository: Provider[LLMRepository],
         command_guess_word: str,
         command_guess_letter: str,
         send_channel_message: Callable[[str], Awaitable[None]],
@@ -620,7 +620,7 @@ class PlatformContainer:
         conversation_service_provider: Provider[ConversationService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         system_prompt_repository_provider: Provider[SystemPromptRepository],
-        llm_repository: LLMRepository,
+        llm_repository: Provider[LLMRepository],
         prefix: str,
         number_guess_name: str,
         command_guess_word: str,
@@ -713,7 +713,7 @@ class PlatformContainer:
 
     def handle_follow_age_use_case(
         self,
-        generate_response_use_case: GenerateResponseUseCase,
+        generate_response_use_case: Provider[GenerateResponseUseCase],
         chat_repo_provider: Provider[ChatRepository],
         conversation_service_provider: Provider[ConversationService],
         system_prompt_repository_provider: Provider[SystemPromptRepository],
@@ -722,13 +722,13 @@ class PlatformContainer:
         follow_age_uow_factory = self.follow_age_uow_factory(
             chat_repo_provider, conversation_service_provider, system_prompt_repository_provider, platform_repository
         )
-        return HandleFollowAgeUseCase(generate_response_use_case, follow_age_uow_factory)
+        return HandleFollowAgeUseCase(generate_response_use_case, follow_age_uow_factory, self._session_factory_ro)
 
     def followage_command_handler(
         self,
         command_prefix: str,
         command_name: str,
-        generate_response_use_case: GenerateResponseUseCase,
+        generate_response_use_case: Provider[GenerateResponseUseCase],
         chat_repo_provider: Provider[ChatRepository],
         conversation_service_provider: Provider[ConversationService],
         system_prompt_repository_provider: Provider[SystemPromptRepository],
@@ -802,7 +802,7 @@ class PlatformContainer:
         minigame_repository: MinigameRepository,
         notification_repository: NotificationRepository,
         notification_group_id: int,
-        generate_response_use_case: GenerateResponseUseCase,
+        generate_response_use_case: Provider[GenerateResponseUseCase],
         state: ChatSummaryState,
         stream_repository_provider: Provider[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
@@ -828,6 +828,7 @@ class PlatformContainer:
             notification_group_id,
             generate_response_use_case,
             state,
+            self._session_factory_ro,
             self._logger,
         )
 
@@ -839,7 +840,7 @@ class PlatformContainer:
         minigame_repository: MinigameRepository,
         notification_repository: NotificationRepository,
         notification_group_id: int,
-        generate_response_use_case: GenerateResponseUseCase,
+        generate_response_use_case: Provider[GenerateResponseUseCase],
         state: ChatSummaryState,
         stream_repository_provider: Provider[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],

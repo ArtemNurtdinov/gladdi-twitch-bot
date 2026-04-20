@@ -5,23 +5,30 @@ from app.ai.intent.domain.models import Intent
 from app.chat.domain.model.chat_message import ChatMessage
 from app.platform.command.ask.application.ask_uow import AskUnitOfWorkFactory
 from app.platform.command.ask.application.model import AskCommandDTO
+from core.provider import Provider
+from core.types import SessionFactory
 
 
 class HandleAskUseCase:
     def __init__(
         self,
-        get_intent_from_text_use_case: GetIntentFromTextUseCase,
+        get_intent_from_text_use_case_provider: Provider[GetIntentFromTextUseCase],
         prompt_service: PromptService,
         unit_of_work_factory: AskUnitOfWorkFactory,
-        chat_response_use_case: GenerateResponseUseCase,
+        chat_response_use_case: Provider[GenerateResponseUseCase],
+        session_factory_ro: SessionFactory,
     ):
-        self._get_intent_from_text_use_case = get_intent_from_text_use_case
+        self._get_intent_from_text_use_case = get_intent_from_text_use_case_provider
         self._prompt_service = prompt_service
         self._unit_of_work_factory = unit_of_work_factory
         self._chat_response_use_case = chat_response_use_case
+        self._db_ro_session = session_factory_ro
 
     async def handle(self, command_ask: AskCommandDTO) -> str:
-        intent = await self._get_intent_from_text_use_case.get_intent_from_text(command_ask.channel_name, command_ask.message)
+        with self._db_ro_session() as session:
+            intent = await self._get_intent_from_text_use_case.get(session).get_intent_from_text(
+                command_ask.channel_name, command_ask.message
+            )
 
         if intent == Intent.JACKBOX:
             prompt = self._prompt_service.get_jackbox_prompt(command_ask.display_name, command_ask.message)
@@ -34,7 +41,10 @@ class HandleAskUseCase:
         else:
             prompt = self._prompt_service.get_reply_prompt(command_ask.display_name, command_ask.message)
 
-        assistant_message = await self._chat_response_use_case.generate_response(prompt=prompt, channel_name=command_ask.channel_name)
+        with self._db_ro_session() as session:
+            assistant_message = await self._chat_response_use_case.get(session).generate_response(
+                prompt=prompt, channel_name=command_ask.channel_name
+            )
 
         with self._unit_of_work_factory.create() as uow:
             uow.conversation_service.save_conversation_to_db(

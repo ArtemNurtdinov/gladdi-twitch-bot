@@ -3,14 +3,22 @@ from datetime import timedelta
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.summarizer_job import SummarizerJobDTO
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
+from core.provider import Provider
+from core.types import SessionFactory
 
 
 class HandleChatSummarizerUseCase:
     _INTERVAL_MINUTES: int = 20
 
-    def __init__(self, chat_summarizer_uow: ChatSummarizerUnitOfWorkFactory, chat_response_use_case: GenerateResponseUseCase):
+    def __init__(
+        self,
+        chat_summarizer_uow: ChatSummarizerUnitOfWorkFactory,
+        chat_response_use_case: Provider[GenerateResponseUseCase],
+        session_ro_factory: SessionFactory,
+    ):
         self._chat_summarizer_uow = chat_summarizer_uow
         self._chat_response_use_case = chat_response_use_case
+        self._session_ro = session_ro_factory
 
     async def handle(self, summarizer_job: SummarizerJobDTO) -> str | None:
         with self._chat_summarizer_uow.create(read_only=True) as uow:
@@ -29,5 +37,6 @@ class HandleChatSummarizerUseCase:
             f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
             f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
         )
-        result = await self._chat_response_use_case.generate_response(prompt, summarizer_job.channel_name)
+        with self._session_ro() as session:
+            result = await self._chat_response_use_case.get(session).generate_response(prompt, summarizer_job.channel_name)
         return result

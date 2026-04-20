@@ -15,7 +15,7 @@ from app.joke.presentation.api import joke_routes
 from app.shop.presentation.api import shop_routes
 from app.stream.presentation import stream_routes
 from app.viewer.presentation.api import viewer_routes
-from core.db import init_db
+from core.db import db_ro_session, db_rw_session, init_db
 
 
 class Application:
@@ -51,7 +51,9 @@ class Application:
         self.fast_api.state.logger = self.container.logger
         self.fast_api.state.config = self.container.config
         self.fast_api.state.auth_container = AuthContainer(self.container.config.application)
-        self.fast_api.state.joke_container = JokeContainer(self.container.logger)
+        self.fast_api.state.joke_container = JokeContainer(
+            session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
+        )
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,

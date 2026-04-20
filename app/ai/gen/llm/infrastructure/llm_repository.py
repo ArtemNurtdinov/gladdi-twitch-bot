@@ -1,5 +1,6 @@
 import httpx
 from pydantic import ValidationError
+from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.models import AIAssistantResponse, AIMessage, Usage
 from app.ai.gen.llm.domain.exceptions.llm_exceptions import LLMClientError, LLMResponseFormatError
@@ -9,8 +10,9 @@ from app.ai.gen.llm.infrastructure.model.response.llm import AIResponseSchema
 
 
 class LLMRepositoryImpl(LLMRepository):
-    def __init__(self, llmbox_host: str):
+    def __init__(self, llmbox_host: str, session: Session):
         self._llmbox_host = llmbox_host
+        self._session = session
 
     async def generate_ai_response(self, channel_name: str, user_messages: list[AIMessage]) -> AIAssistantResponse:
         messages = [{"role": message.role.value, "content": message.content} for message in user_messages]

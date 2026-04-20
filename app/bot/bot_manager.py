@@ -123,7 +123,7 @@ class BotManager:
                 intent_detector_host=self._intent_detector_config.host,
             )
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            joke_container = JokeContainer(self._logger)
+            joke_container = JokeContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             stream_container = StreamContainer()
             follow_container = FollowContainer()
             economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
@@ -161,7 +161,7 @@ class BotManager:
             followage_command_handler = platform_container.followage_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_followage,
-                generate_response_use_case=ai_container.generate_response_use_case(),
+                generate_response_use_case=ai_container.generate_response_use_case_provider,
                 chat_repo_provider=chat_container.chat_repository_provider,
                 conversation_service_provider=ai_container.conversation_service_provider,
                 system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
@@ -179,10 +179,11 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_gladdi,
                 handle_ask_use_case=HandleAskUseCase(
-                    get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case(),
+                    get_intent_from_text_use_case_provider=ai_container.get_intent_from_text_use_case_provider(),
                     prompt_service=ai_container.prompt_service,
                     unit_of_work_factory=ask_ouw_factory,
-                    chat_response_use_case=ai_container.generate_response_use_case(),
+                    chat_response_use_case=ai_container.generate_response_use_case_provider,
+                    session_factory_ro=db_ro_session,
                 ),
                 bot_nick=bot_name,
             )
@@ -197,8 +198,9 @@ class BotManager:
                         conversation_service_provider=ai_container.conversation_service_provider,
                         get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     ),
-                    chat_response_use_case=ai_container.generate_response_use_case(),
+                    chat_response_use_case=ai_container.generate_response_use_case_provider,
                     calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
+                    db_ro_session=db_ro_session,
                 ),
                 chat_moderation=moderation_service,
                 bot_name=bot_name,
@@ -380,9 +382,10 @@ class BotManager:
                     conversation_service_provider=ai_container.conversation_service_provider,
                     system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                 ),
-                get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case(),
+                get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case_provider(),
                 prompt_service=ai_container.prompt_service,
-                generate_response_use_case=ai_container.generate_response_use_case(),
+                generate_response_use_case=ai_container.generate_response_use_case_provider,
+                db_ro_session=db_ro_session,
             )
 
             handle_reply_use_case = HandleReplyUseCase(
@@ -394,7 +397,8 @@ class BotManager:
                     system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
                 ),
                 prompt_service=ai_container.prompt_service,
-                generate_response_use_case=ai_container.generate_response_use_case(),
+                generate_response_use_case=ai_container.generate_response_use_case_provider,
+                db_ro_session=db_ro_session,
             )
 
             chat_client: PlatformChatClient = TwitchChatClient(
@@ -433,7 +437,7 @@ class BotManager:
                 chat_use_case=chat_container.chat_use_case(),
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),
-                generate_response_use_case=ai_container.generate_response_use_case(),
+                generate_response_use_case=ai_container.generate_response_use_case_provider,
             )
 
             token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
@@ -445,7 +449,7 @@ class BotManager:
                 minigame_repository=minigame_repository,
                 notification_repository=notification_container.notification_repository(),
                 notification_group_id=self._telegram_config.group_id,
-                generate_response_use_case=ai_container.generate_response_use_case(),
+                generate_response_use_case=ai_container.generate_response_use_case_provider,
                 state=chat_summary_state,
                 stream_repository_provider=stream_container.stream_repository_provider,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
@@ -458,7 +462,7 @@ class BotManager:
             chat_summarizer_job: ChatSummarizerJob = chat_container.chat_summarizer_job(
                 channel_name=channel_name,
                 stream_repository_provider=stream_container.stream_repository_provider,
-                generate_response_use_case=ai_container.generate_response_use_case(),
+                generate_response_use_case=ai_container.generate_response_use_case_provider,
                 chat_summary_state=chat_summary_state,
             )
 
@@ -474,7 +478,7 @@ class BotManager:
                     conversation_service_provider=ai_container.conversation_service_provider,
                     get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
-                    llm_repository=ai_container.llm_repository,
+                    llm_repository=ai_container.llm_repository_provider,
                     prefix=self._config.prefix,
                     number_guess_name=self._config.command_guess,
                     command_guess_word=self._config.command_guess_word,

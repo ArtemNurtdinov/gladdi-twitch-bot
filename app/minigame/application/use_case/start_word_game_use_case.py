@@ -1,6 +1,6 @@
 import json
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
@@ -26,7 +26,7 @@ class StartWordGameUseCase:
         minigame_uow: MinigameUnitOfWorkFactory,
         db_ro_session: SessionFactory,
         system_prompt_repository_provider: Provider[SystemPromptRepository],
-        llm_repository: LLMRepository,
+        llm_repository: Provider[LLMRepository],
         command_guess_word: str,
         command_guess_letter: str,
         send_channel_message: Callable[[str], Awaitable[None]],
@@ -64,9 +64,9 @@ class StartWordGameUseCase:
 
         with self._db_ro_session() as session:
             system_prompt = self._system_prompt_repository_provider.get(session).get_system_prompt(channel_name)
-        ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt), AIMessage(role=Role.USER, content=prompt)]
+            ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt), AIMessage(role=Role.USER, content=prompt)]
+            assistant_response = await self._llm_repository.get(session).generate_ai_response(channel_name, ai_messages)
 
-        assistant_response = await self._llm_repository.generate_ai_response(channel_name, ai_messages)
         assistant_message = assistant_response.message
 
         with self._minigame_uow.create() as uow:
@@ -77,7 +77,7 @@ class StartWordGameUseCase:
         hint = str(data.get("hint", "")).strip()
         final_word = word.strip().lower()
 
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         end_time = start_time + timedelta(minutes=self.WORD_GAME_DURATION_MINUTES)
         game = WordGuessGame(
             channel_name,
@@ -110,5 +110,5 @@ class StartWordGameUseCase:
 
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
-                channel_name=channel_name, user_name=self._bot_name, content=game_message, current_time=datetime.utcnow()
+                channel_name=channel_name, user_name=self._bot_name, content=game_message, current_time=datetime.now(UTC)
             )

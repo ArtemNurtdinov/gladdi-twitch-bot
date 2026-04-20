@@ -2,12 +2,20 @@ from app.ai.gen.llm.application.usecase.generate_response_use_case import Genera
 from app.chat.domain.model.chat_message import ChatMessage
 from app.platform.command.followage.application.model import FollowageDTO
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
+from core.provider import Provider
+from core.types import SessionFactory
 
 
 class HandleFollowAgeUseCase:
-    def __init__(self, chat_response_use_case: GenerateResponseUseCase, follow_age_uow_factory: FollowAgeUnitOfWorkFactory):
+    def __init__(
+        self,
+        chat_response_use_case: Provider[GenerateResponseUseCase],
+        follow_age_uow_factory: FollowAgeUnitOfWorkFactory,
+        session_factory_ro: SessionFactory,
+    ):
         self._chat_response_use_case = chat_response_use_case
         self._follow_age_uow_factory = follow_age_uow_factory
+        self._db_ro_session = session_factory_ro
 
     async def handle(self, command_follow_age: FollowageDTO) -> str:
         channel_name = command_follow_age.channel_name
@@ -50,7 +58,8 @@ class HandleFollowAgeUseCase:
             f"Сообщи ему об этом кратко и оригинально."
         )
 
-        assistant_message = await self._chat_response_use_case.generate_response(prompt=prompt, channel_name=channel_name)
+        with self._db_ro_session() as session:
+            assistant_message = await self._chat_response_use_case.get(session).generate_response(prompt=prompt, channel_name=channel_name)
 
         with self._follow_age_uow_factory.create() as uow:
             uow.conversation_service.save_conversation_to_db(

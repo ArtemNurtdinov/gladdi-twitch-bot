@@ -7,6 +7,8 @@ from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.domain.model.configuration import JokesConfiguration
 from app.platform.domain.repository import PlatformRepository
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
+from core.provider import Provider
+from core.types import SessionFactory
 
 
 class HandlePostJokeUseCase:
@@ -14,13 +16,15 @@ class HandlePostJokeUseCase:
         self,
         user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
-        chat_response_use_case: GenerateResponseUseCase,
+        chat_response_use_case: Provider[GenerateResponseUseCase],
         joke_uow: JokeUnitOfWorkFactory,
+        db_ro_session: SessionFactory,
     ):
         self._user_cache = user_cache
         self._platform_repository = platform_repository
         self._chat_response_use_case = chat_response_use_case
         self._joke_uow = joke_uow
+        self._db_ro_session = db_ro_session
 
     async def handle(self, post_joke: PostJokeDTO) -> str | None:
         with self._joke_uow.create(read_only=True) as uow:
@@ -46,7 +50,8 @@ class HandlePostJokeUseCase:
             return None
 
         prompt = f"Придумай анекдот, связанный с категорией трансляции: {stream_info.game_name}."
-        joke_text = await self._chat_response_use_case.generate_response(prompt, post_joke.channel_name)
+        with self._db_ro_session() as session:
+            joke_text = await self._chat_response_use_case.get(session).generate_response(prompt, post_joke.channel_name)
 
         with self._joke_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(channel_name=post_joke.channel_name, user_message=prompt, ai_message=joke_text)
