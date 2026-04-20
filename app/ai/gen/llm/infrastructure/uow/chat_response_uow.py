@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.ai.gen.application.uow.chat_response_uow import ChatResponseUnitOfWork, ChatResponseUnitOfWorkFactory
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.llm.application.uow.chat_response_uow import ChatResponseUnitOfWork, ChatResponseUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from core.provider import Provider
 from core.types import SessionFactory
@@ -19,9 +19,7 @@ class SqlAlchemyChatResponseUnitOfWork(SqlAlchemyUnitOfWorkBase, ChatResponseUni
         return self._conversation_service
 
 
-class SqlAlchemyChatResponseUnitOfWorkFactory(
-    SqlAlchemyUnitOfWorkFactory[ChatResponseUnitOfWork], ChatResponseUnitOfWorkFactory
-):
+class SqlAlchemyChatResponseUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatResponseUnitOfWork], ChatResponseUnitOfWorkFactory):
     def __init__(
         self,
         session_factory_rw: SessionFactory,

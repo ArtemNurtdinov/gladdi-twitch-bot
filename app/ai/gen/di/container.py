@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
 
-from app.ai.gen.application.uow.chat_response_uow import ChatResponseUnitOfWorkFactory
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.conversation.domain.conversation_repository import ConversationRepository
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.conversation.infrastructure.conversation_repository import ConversationRepositoryImpl
-from app.ai.gen.infrastructure.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
+from app.ai.gen.llm.application.uow.chat_response_uow import ChatResponseUnitOfWorkFactory
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.llm.infrastructure.llm_repository import LLMRepositoryImpl
+from app.ai.gen.llm.infrastructure.uow.chat_response_uow import SqlAlchemyChatResponseUnitOfWorkFactory
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.ai.gen.prompt.infrastructure.system_prompt_repository import SystemPromptRepositoryImpl
 from app.ai.gen.prompt.prompt_service import PromptService

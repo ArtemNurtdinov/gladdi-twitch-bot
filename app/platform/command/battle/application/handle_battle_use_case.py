@@ -1,6 +1,6 @@
 import random
 
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase

@@ -2,8 +2,8 @@ from collections.abc import Awaitable, Callable
 
 from sqlalchemy.orm import Session
 
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.core.logger.domain.logger import Logger
 from app.joke.application.job.post_joke_job import PostJokeJob

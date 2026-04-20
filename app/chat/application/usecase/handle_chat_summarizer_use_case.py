@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.summarizer_job import SummarizerJobDTO
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
 

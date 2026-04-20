@@ -1,4 +1,4 @@
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
@@ -69,14 +69,7 @@ class HandleChatMessageUseCase:
         if prompt is None:
             return None
 
-        with self._chat_message_uow.create(read_only=True) as uow_ro:
-            system_prompt = uow_ro.system_prompt_repository.get_system_prompt(chat_message.channel_name)
-            history = uow_ro.conversation_service.get_last_messages(
-                channel_name=chat_message.channel_name,
-                system_prompt=system_prompt.prompt,
-            )
-
-        result = await self._generate_response_use_case.generate_response_from_history(history, prompt)
+        result = await self._generate_response_use_case.generate_response(prompt, chat_message.channel_name)
 
         with self._chat_message_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(

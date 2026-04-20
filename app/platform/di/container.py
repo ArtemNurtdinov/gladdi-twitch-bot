@@ -1,8 +1,8 @@
 from collections.abc import Awaitable, Callable
 from functools import cached_property
 
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase

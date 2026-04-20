@@ -1,4 +1,4 @@
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.chat.domain.model.chat_message import ChatMessage
 from app.platform.command.followage.application.model import FollowageDTO
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
@@ -50,14 +50,7 @@ class HandleFollowAgeUseCase:
             f"Сообщи ему об этом кратко и оригинально."
         )
 
-        with self._follow_age_uow_factory.create(read_only=True) as uow:
-            system_prompt = uow.system_prompt_repository.get_system_prompt(channel_name)
-            history = uow.conversation_service.get_last_messages(
-                channel_name=command_follow_age.channel_name,
-                system_prompt=system_prompt.prompt,
-            )
-
-        assistant_message = await self._chat_response_use_case.generate_response_from_history(history=history, prompt=prompt)
+        assistant_message = await self._chat_response_use_case.generate_response(prompt=prompt, channel_name=channel_name)
 
         with self._follow_age_uow_factory.create() as uow:
             uow.conversation_service.save_conversation_to_db(

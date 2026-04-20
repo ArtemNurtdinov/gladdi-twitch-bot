@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from random import randint
 
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.domain.model.configuration import JokesConfiguration

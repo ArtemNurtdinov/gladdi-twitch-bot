@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.ai.gen.application.use_cases.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
