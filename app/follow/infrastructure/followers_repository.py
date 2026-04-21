@@ -72,7 +72,7 @@ class FollowersRepositoryImpl(FollowersRepository):
         followed_at: datetime | None,
         seen_at: datetime,
     ):
-        followed_at_naive = followed_at.replace(tzinfo=None)
+        followed_at_naive = followed_at.replace(tzinfo=None) if followed_at else None
         seen_at_naive = seen_at.replace(tzinfo=None)
         stmt = (
             select(ChannelFollowerRow).where(ChannelFollowerRow.channel_name == channel_name).where(ChannelFollowerRow.user_id == user_id)

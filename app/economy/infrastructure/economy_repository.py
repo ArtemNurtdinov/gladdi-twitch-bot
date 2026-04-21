@@ -26,8 +26,6 @@ class EconomyRepositoryImpl(EconomyRepository):
             last_bonus_stream_id=row.last_bonus_stream_id,
             message_count=row.message_count,
             last_activity_reward=normalize_datetime(row.last_activity_reward),
-            created_at=normalize_datetime(row.created_at),
-            updated_at=normalize_datetime(row.updated_at),
         )
 
     def get_balance(self, channel_name: str, user_name: str) -> UserBalanceInfo | None:

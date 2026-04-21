@@ -41,7 +41,6 @@ class EconomyPolicy:
         user_balance = self.get_user_balance(channel_name, user_name)
 
         user_balance.message_count += 1
-        user_balance.updated_at = datetime.now(UTC)
 
         if not self._should_grant_activity_reward(user_balance):
             self._repo.save_balance(user_balance)
@@ -52,7 +51,6 @@ class EconomyPolicy:
         balance_before = user_balance.balance
         user_balance.balance += self.ACTIVITY_REWARD
         user_balance.total_earned += self.ACTIVITY_REWARD
-        user_balance.updated_at = datetime.now(UTC)
 
         self._repo.save_balance(user_balance)
         self._repo.add_transaction(
@@ -99,7 +97,6 @@ class EconomyPolicy:
         balance_before = user_balance.balance or 0
         user_balance.balance = (user_balance.balance or 0) + amount
         user_balance.total_earned = (user_balance.total_earned or 0) + max(0, amount)
-        user_balance.updated_at = datetime.now(UTC)
 
         saved = self._repo.save_balance(user_balance)
         self._repo.add_transaction(
@@ -130,7 +127,6 @@ class EconomyPolicy:
         balance_before = current_balance
         user_balance.balance = current_balance - amount
         user_balance.total_spent = (user_balance.total_spent or 0) + amount
-        user_balance.updated_at = datetime.now(UTC)
 
         saved = self._repo.save_balance(user_balance)
         self._repo.add_transaction(
@@ -174,11 +170,9 @@ class EconomyPolicy:
 
         sender_balance.balance -= amount
         sender_balance.total_spent += amount
-        sender_balance.updated_at = datetime.now(UTC)
 
         receiver_balance.balance += amount
         receiver_balance.total_earned += amount
-        receiver_balance.updated_at = datetime.now(UTC)
 
         sender_saved = self._repo.save_balance(sender_balance)
         receiver_saved = self._repo.save_balance(receiver_balance)
