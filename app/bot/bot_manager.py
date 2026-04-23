@@ -56,7 +56,6 @@ from app.task.domain.runner import TaskRunner
 from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.di.container import ViewerContainer
 from core.db import db_ro_session, db_rw_session
-from core.provider import Provider
 
 
 class BotManager:
@@ -67,12 +66,15 @@ class BotManager:
         llmbox_config: LLMBoxConfig,
         intent_detector_config: IntentDetectorConfig,
         logger: Logger,
+        shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
     ):
         self._config = config
         self._telegram_config = telegram_config
         self._llmbox_config = llmbox_config
         self._intent_detector_config = intent_detector_config
         self._logger = logger.create_child(__name__)
+
+        self._shop_item_repository_factory = shop_item_repository_factory
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -120,7 +122,6 @@ class BotManager:
         joke_container: JokeContainer,
         platform_auth: PlatformAuth,
         token_checker_job: TokenCheckerJob,
-        shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
     ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
@@ -173,7 +174,7 @@ class BotManager:
             )
 
             ask_ouw_factory = ask_container.ask_uow_factory(
-                chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
+                chat_repository_factory=SessionScopedFactory(lambda session: ChatRepositoryImpl(session)),
                 conversation_service_factory=conversation_service_factory,
                 system_prompt_repository_factory=system_prompt_repository_factory,
             )
@@ -252,7 +253,7 @@ class BotManager:
                 add_equipment_use_case=equipment_container.add_equipment_use_case(),
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
                 chat_use_case=chat_container.chat_use_case(),
-                shop_item_repository_factory=shop_item_repository_factory,
+                shop_item_repository_factory=self._shop_item_repository_factory,
                 bot_name=bot_name,
             )
 
@@ -263,7 +264,7 @@ class BotManager:
                 add_equipment_use_case=equipment_container.add_equipment_use_case(),
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
                 chat_use_case=chat_container.chat_use_case(),
-                shop_item_repository_factory=shop_item_repository_factory,
+                shop_item_repository_factory=self._shop_item_repository_factory,
                 bot_name=bot_name,
             )
 

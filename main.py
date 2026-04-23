@@ -63,14 +63,17 @@ class Application:
             llmbox_host=self.container.config.llmbox.host,
             intent_detector_host=self.container.config.intent_detector.host,
         )
+
+        shop_container = ShopContainer()
+
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,
             llmbox_config=self.container.config.llmbox,
             intent_detector_config=self.container.config.intent_detector,
             logger=self.container.logger,
+            shop_item_repository_factory=shop_container.shop_item_repository_factory,
         )
-        self.fast_api.state.shop_container = ShopContainer()
 
     def _setup_routes(self):
         self.fast_api.include_router(auth_routes.router, prefix="/api/v1/auth", tags=["Authentication"])

@@ -8,7 +8,6 @@ from app.chat.domain.repo import ChatRepository
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.platform.command.ask.application.ask_uow import AskUnitOfWork, AskUnitOfWorkFactory
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -44,7 +43,7 @@ class SqlAlchemyAskUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[AskUnitOfWork],
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        chat_repo_provider: Provider[ChatRepository],
+        chat_repository_factory: SessionScopedFactory[ChatRepository],
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
     ):
@@ -53,14 +52,14 @@ class SqlAlchemyAskUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[AskUnitOfWork],
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._chat_repo_provider = chat_repo_provider
+        self._chat_repository_factory = chat_repository_factory
         self._conversation_service_factory = conversation_service_factory
         self._system_prompt_repository_factory = system_prompt_repository_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> AskUnitOfWork:
         return SqlAlchemyAskUnitOfWork(
             session=db,
-            chat_repo=self._chat_repo_provider.get(db),
+            chat_repo=self._chat_repository_factory.get(db),
             conversation_service=self._conversation_service_factory.get(db),
             system_prompt_repository=self._system_prompt_repository_factory.get(db),
             read_only=read_only,

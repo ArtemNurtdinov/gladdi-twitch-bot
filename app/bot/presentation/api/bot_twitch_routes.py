@@ -74,7 +74,6 @@ async def oauth_callback(
     logger: Logger = Depends(get_logger),
     ai_container: AIContainer = Depends(get_ai_container),
     joke_container: JokeContainer = Depends(get_joke_container),
-    shop_container: ShopContainer = Depends(get_shop_container),
 ) -> BotActionResultResponse:
     data = {
         "client_id": config.twitch.client_id,
@@ -113,7 +112,6 @@ async def oauth_callback(
         joke_container=joke_container,
         platform_auth=platform_auth_container.platform_auth,
         token_checker_job=platform_auth_container.token_checker_job,
-        shop_item_repository_factory=shop_container.shop_item_repository_factory,
     )
 
 
