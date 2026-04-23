@@ -121,6 +121,7 @@ class BotManager:
         get_intent_from_text_use_case_factory: SessionScopedFactory[GetIntentFromTextUseCase],
         llm_repository_factory: SessionScopedFactory[LLMRepository],
         prompt_service: PromptService,
+        joke_container: JokeContainer,
     ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
@@ -129,7 +130,6 @@ class BotManager:
             platform_auth_container = PlatformAuthContainer(access_token, refresh_token, client_id, client_secret, self._logger)
             viewer_container = ViewerContainer()
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            joke_container = JokeContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             stream_container = StreamContainer()
             follow_container = FollowContainer()
             economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
@@ -437,8 +437,6 @@ class BotManager:
                 channel_name=channel_name,
                 send_channel_message=chat_client.send_channel_message,
                 bot_name=bot_name,
-                session_factory_rw=db_rw_session,
-                session_factory_ro=db_ro_session,
                 conversation_service_factory=conversation_service_factory,
                 chat_use_case=chat_container.chat_use_case(),
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),

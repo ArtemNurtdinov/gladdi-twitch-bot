@@ -11,6 +11,8 @@ from app.bot.presentation.api.model.response.action import BotActionResultRespon
 from app.bot.presentation.api.model.response.start_bot import AuthStartResponse
 from app.core.config.domain.model.application import ApplicationConfig
 from app.core.config.domain.model.configuration import Config
+from app.joke.di.container import JokeContainer
+from app.joke.presentation.api.joke_routes import get_joke_container
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -62,6 +64,7 @@ async def oauth_callback(
     bot_manager: BotManager = Depends(get_bot_manager),
     config: Config = Depends(get_config),
     ai_container: AIContainer = Depends(get_ai_container),
+    joke_container: JokeContainer = Depends(get_joke_container),
 ) -> BotActionResultResponse:
     data = {
         "client_id": config.twitch.client_id,
@@ -93,6 +96,7 @@ async def oauth_callback(
         get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
         prompt_service=ai_container.prompt_service,
         llm_repository_factory=ai_container.llm_repository_factory,
+        joke_container=joke_container,
     )
 
 

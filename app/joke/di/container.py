@@ -83,8 +83,6 @@ class JokeContainer:
         channel_name: str,
         send_channel_message: Callable[[str], Awaitable[None]],
         bot_name: str,
-        session_factory_rw: SessionFactory,
-        session_factory_ro: SessionFactory,
         conversation_service_factory: SessionScopedFactory[ConversationService],
         chat_use_case: ChatUseCase,
         user_cache: ViewerCachePort,
@@ -92,8 +90,8 @@ class JokeContainer:
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
     ) -> PostJokeJob:
         handle_post_joke_use_case = self.handle_post_joke_use_case(
-            session_factory_rw,
-            session_factory_ro,
+            self._session_factory_rw,
+            self._session_factory_ro,
             conversation_service_factory,
             chat_use_case,
             user_cache,
