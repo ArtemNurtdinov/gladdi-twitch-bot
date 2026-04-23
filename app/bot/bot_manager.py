@@ -1,7 +1,12 @@
 import asyncio
 from datetime import UTC, datetime
 
-from app.ai.gen.di.container import AIContainer
+from app.ai.gen.conversation.domain.conversation_service import ConversationService
+from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.llm.domain.llm_repository import LLMRepository
+from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
+from app.ai.gen.prompt.prompt_service import PromptService
+from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.battle.di.container import BattleContainer
 from app.betting.di.container import BettingContainer
 from app.bot.domain.model.status import BotStatus
@@ -11,6 +16,7 @@ from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.di.container import ChatContainer
 from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.config.domain.model.bot import BotConfig
 from app.core.config.domain.model.intent_detector import IntentDetectorConfig
 from app.core.config.domain.model.llmbox import LLMBoxConfig
@@ -109,6 +115,12 @@ class BotManager:
         client_id: str,
         client_secret: str,
         channel_name: str,
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
+        get_intent_from_text_use_case_factory: SessionScopedFactory[GetIntentFromTextUseCase],
+        llm_repository_factory: SessionScopedFactory[LLMRepository],
+        prompt_service: PromptService,
     ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
@@ -116,12 +128,6 @@ class BotManager:
 
             platform_auth_container = PlatformAuthContainer(access_token, refresh_token, client_id, client_secret, self._logger)
             viewer_container = ViewerContainer()
-            ai_container = AIContainer(
-                session_factory_rw=db_rw_session,
-                session_factory_ro=db_ro_session,
-                llmbox_host=self._llmbox_config.host,
-                intent_detector_host=self._intent_detector_config.host,
-            )
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             joke_container = JokeContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             stream_container = StreamContainer()
@@ -161,28 +167,28 @@ class BotManager:
             followage_command_handler = platform_container.followage_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_followage,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                generate_response_use_case_factory=generate_response_use_case_factory,
                 chat_repo_provider=chat_container.chat_repository_provider,
-                conversation_service_factory=ai_container.conversation_service_factory,
-                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+                conversation_service_factory=conversation_service_factory,
+                system_prompt_repository_factory=system_prompt_repository_factory,
                 platform_repository=platform_container.platform_repository(),
                 bot_name=bot_name,
             )
 
             ask_ouw_factory = ask_container.ask_uow_factory(
                 chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
-                conversation_service_factory=ai_container.conversation_service_factory,
-                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+                conversation_service_factory=conversation_service_factory,
+                system_prompt_repository_factory=system_prompt_repository_factory,
             )
 
             ask_command_handler: CommandHandler = AskCommandHandlerImpl(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_gladdi,
                 handle_ask_use_case=HandleAskUseCase(
-                    get_intent_from_text_use_case_provider=ai_container.get_intent_from_text_use_case_provider(),
-                    prompt_service=ai_container.prompt_service,
+                    get_intent_from_text_use_case_factory=get_intent_from_text_use_case_factory,
+                    prompt_service=prompt_service,
                     unit_of_work_factory=ask_ouw_factory,
-                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                    generate_response_use_case_factory=generate_response_use_case_factory,
                     session_factory_ro=db_ro_session,
                 ),
                 bot_nick=bot_name,
@@ -195,10 +201,10 @@ class BotManager:
                     battle_uow=battle_container.battle_uow_factory(
                         economy_policy_provider=economy_container.economy_policy_provider,
                         chat_use_case=chat_container.chat_use_case(),
-                        conversation_service_factory=ai_container.conversation_service_factory,
+                        conversation_service_factory=conversation_service_factory,
                         get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     ),
-                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                    generate_response_use_case_factory=generate_response_use_case_factory,
                     calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
                     db_ro_session=db_ro_session,
                 ),
@@ -379,12 +385,12 @@ class BotManager:
                     economy_policy_provider=economy_container.economy_policy_provider,
                     stream_repository_provider=stream_container.stream_repository_provider,
                     viewer_repository_provider=viewer_container.viewer_repository_provider,
-                    conversation_service_factory=ai_container.conversation_service_factory,
-                    system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+                    conversation_service_factory=conversation_service_factory,
+                    system_prompt_repository_factory=system_prompt_repository_factory,
                 ),
-                get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case_provider(),
-                prompt_service=ai_container.prompt_service,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                get_intent_from_text_use_case_factory=get_intent_from_text_use_case_factory,
+                prompt_service=prompt_service,
+                generate_response_use_case_factory=generate_response_use_case_factory,
                 db_ro_session=db_ro_session,
             )
 
@@ -393,11 +399,11 @@ class BotManager:
                     economy_policy_provider=economy_container.economy_policy_provider,
                     stream_repository_provider=stream_container.stream_repository_provider,
                     viewer_repository_provider=viewer_container.viewer_repository_provider,
-                    conversation_service_factory=ai_container.conversation_service_factory,
-                    system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+                    conversation_service_factory=conversation_service_factory,
+                    system_prompt_repository_factory=system_prompt_repository_factory,
                 ),
-                prompt_service=ai_container.prompt_service,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                prompt_service=prompt_service,
+                generate_response_use_case_factory=generate_response_use_case_factory,
                 db_ro_session=db_ro_session,
             )
 
@@ -433,11 +439,11 @@ class BotManager:
                 bot_name=bot_name,
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
-                conversation_service_factory=ai_container.conversation_service_factory,
+                conversation_service_factory=conversation_service_factory,
                 chat_use_case=chat_container.chat_use_case(),
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                generate_response_use_case_factory=generate_response_use_case_factory,
             )
 
             token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
@@ -449,20 +455,20 @@ class BotManager:
                 minigame_repository=minigame_repository,
                 notification_repository=notification_container.notification_repository(),
                 notification_group_id=self._telegram_config.group_id,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                generate_response_use_case_factory=generate_response_use_case_factory,
                 state=chat_summary_state,
                 stream_repository_provider=stream_container.stream_repository_provider,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
                 battle_use_case=battle_container.battle_use_case(),
                 economy_policy_provider=economy_container.economy_policy_provider,
                 chat_use_case=chat_container.chat_use_case(),
-                conversation_service_factory=ai_container.conversation_service_factory,
+                conversation_service_factory=conversation_service_factory,
             )
 
             chat_summarizer_job: ChatSummarizerJob = chat_container.chat_summarizer_job(
                 channel_name=channel_name,
                 stream_repository_provider=stream_container.stream_repository_provider,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                generate_response_use_case_factory=generate_response_use_case_factory,
                 chat_summary_state=chat_summary_state,
             )
 
@@ -475,10 +481,10 @@ class BotManager:
                     stream_repository_provider=stream_container.stream_repository_provider,
                     get_used_words_use_case=minigame_container.get_used_words_use_case(),
                     add_used_words_use_case=minigame_container.add_used_word_use_case(),
-                    conversation_service_factory=ai_container.conversation_service_factory,
+                    conversation_service_factory=conversation_service_factory,
                     get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                    system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
-                    llm_repository_factory=ai_container.llm_repository_factory,
+                    system_prompt_repository_factory=system_prompt_repository_factory,
+                    llm_repository_factory=llm_repository_factory,
                     prefix=self._config.prefix,
                     number_guess_name=self._config.command_guess,
                     command_guess_word=self._config.command_guess_word,

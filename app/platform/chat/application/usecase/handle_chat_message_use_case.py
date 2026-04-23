@@ -6,7 +6,6 @@ from app.chat.domain.model.chat_message import ChatMessage
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.platform.chat.application.model.message import ChatMessageDTO
 from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOfWorkFactory
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -14,20 +13,20 @@ class HandleChatMessageUseCase:
     def __init__(
         self,
         chat_message_uow: ChatMessageUnitOfWorkFactory,
-        get_intent_from_text_use_case: Provider[GetIntentFromTextUseCase],
+        get_intent_from_text_use_case_factory: SessionScopedFactory[GetIntentFromTextUseCase],
         prompt_service: PromptService,
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         db_ro_session: SessionFactory,
     ):
         self._chat_message_uow = chat_message_uow
-        self._get_intent_from_text_use_case = get_intent_from_text_use_case
+        self._get_intent_from_text_use_case_factory = get_intent_from_text_use_case_factory
         self._prompt_service = prompt_service
         self._generate_response_use_case_factory = generate_response_use_case_factory
         self._db_ro_session = db_ro_session
 
     async def handle(self, chat_message: ChatMessageDTO) -> str | None:
         with self._db_ro_session() as session:
-            intent = await self._get_intent_from_text_use_case.get(session).get_intent_from_text(
+            intent = await self._get_intent_from_text_use_case_factory.get(session).get_intent_from_text(
                 chat_message.channel_name, chat_message.message
             )
 

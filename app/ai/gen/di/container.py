@@ -35,6 +35,7 @@ class AIContainer:
         self.generate_response_use_case_factory = SessionScopedFactory(self._generate_response_use_case)
         self.get_assistant_use_case_provider = Provider(self._get_assistant_use_case)
         self.save_assistant_use_case_provider = Provider(self._save_assistant_use_case)
+        self.get_intent_from_text_use_case_factory = SessionScopedFactory(self._get_intent_from_text_use_case)
 
     def _llm_repository(self, session: Session) -> LLMRepository:
         return LLMRepositoryImpl(self._llmbox_host, session)
@@ -48,9 +49,6 @@ class AIContainer:
     def _conversation_service(self, session: Session) -> ConversationService:
         conversation_repository = self._conversation_repository(session)
         return ConversationService(conversation_repository)
-
-    def get_intent_from_text_use_case_provider(self) -> Provider[GetIntentFromTextUseCase]:
-        return Provider(self._get_intent_from_text_use_case)
 
     def _get_intent_from_text_use_case(self, session: Session) -> GetIntentFromTextUseCase:
         llm_repository = self._llm_repository(session)

@@ -6,20 +6,19 @@ from app.chat.domain.model.chat_message import ChatMessage
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.platform.command.ask.application.ask_uow import AskUnitOfWorkFactory
 from app.platform.command.ask.application.model import AskCommandDTO
-from core.provider import Provider
 from core.types import SessionFactory
 
 
 class HandleAskUseCase:
     def __init__(
         self,
-        get_intent_from_text_use_case_provider: Provider[GetIntentFromTextUseCase],
+        get_intent_from_text_use_case_factory: SessionScopedFactory[GetIntentFromTextUseCase],
         prompt_service: PromptService,
         unit_of_work_factory: AskUnitOfWorkFactory,
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         session_factory_ro: SessionFactory,
     ):
-        self._get_intent_from_text_use_case = get_intent_from_text_use_case_provider
+        self._get_intent_from_text_use_case_factory = get_intent_from_text_use_case_factory
         self._prompt_service = prompt_service
         self._unit_of_work_factory = unit_of_work_factory
         self._generate_response_use_case_factory = generate_response_use_case_factory
@@ -27,7 +26,7 @@ class HandleAskUseCase:
 
     async def handle(self, command_ask: AskCommandDTO) -> str:
         with self._db_ro_session() as session:
-            intent = await self._get_intent_from_text_use_case.get(session).get_intent_from_text(
+            intent = await self._get_intent_from_text_use_case_factory.get(session).get_intent_from_text(
                 command_ask.channel_name, command_ask.message
             )
 

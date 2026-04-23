@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from app.ai.gen.di.container import AIContainer
 from app.bot.bot_manager import BotManager
 from app.bot.presentation.api.bot_routes import get_bot_manager
 from app.bot.presentation.api.model.request.start_bot import StartBotRequest
@@ -26,6 +27,10 @@ router = APIRouter()
 
 def get_config(request: Request) -> ApplicationConfig:
     return request.app.state.config
+
+
+def get_ai_container(request: Request) -> AIContainer:
+    return request.app.state.ai_container
 
 
 @router.post("/start", summary="Начать авторизацию Twitch", response_model=AuthStartResponse)
@@ -56,6 +61,7 @@ async def oauth_callback(
     state: str | None = None,
     bot_manager: BotManager = Depends(get_bot_manager),
     config: Config = Depends(get_config),
+    ai_container: AIContainer = Depends(get_ai_container),
 ) -> BotActionResultResponse:
     data = {
         "client_id": config.twitch.client_id,
@@ -81,6 +87,12 @@ async def oauth_callback(
         client_id=config.twitch.client_id,
         client_secret=config.twitch.client_secret,
         channel_name=state,
+        generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+        conversation_service_factory=ai_container.conversation_service_factory,
+        system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+        get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
+        prompt_service=ai_container.prompt_service,
+        llm_repository_factory=ai_container.llm_repository_factory,
     )
 
 
