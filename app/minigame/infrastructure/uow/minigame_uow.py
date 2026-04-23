@@ -12,7 +12,6 @@ from app.minigame.application.uow.minigame_uow import MinigameUnitOfWork, Miniga
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.stream.domain.repo import StreamRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -72,7 +71,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_used_words_use_case: GetUsedWordsUseCase,
@@ -85,7 +84,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._economy_policy_provider = economy_policy_provider
+        self._economy_policy_factory = economy_policy_factory
         self._chat_use_case = chat_use_case
         self._stream_repository_factory = stream_repository_factory
         self._get_used_words_use_case = get_used_words_use_case
@@ -96,7 +95,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
     def _build_uow(self, db: Session, read_only: bool) -> MinigameUnitOfWork:
         return SqlAlchemyMinigameUnitOfWork(
             session=db,
-            economy_policy=self._economy_policy_provider.get(db),
+            economy_policy=self._economy_policy_factory.get(db),
             chat_use_case=self._chat_use_case,
             stream_repository=self._stream_repository_factory.get(db),
             get_used_words_use_case=self._get_used_words_use_case,

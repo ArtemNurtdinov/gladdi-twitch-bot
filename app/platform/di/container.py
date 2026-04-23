@@ -132,7 +132,7 @@ class PlatformContainer:
         self,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
     ) -> BonusUnitOfWorkFactory:
         return SqlAlchemyBonusUnitOfWorkFactory(
@@ -140,7 +140,7 @@ class PlatformContainer:
             session_factory_rw=self._session_factory_rw,
             stream_repository_factory=stream_repository_factory,
             get_user_equipment_use_case=get_user_equipment_use_case,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             chat_use_case=chat_use_case,
         )
 
@@ -148,11 +148,11 @@ class PlatformContainer:
         self,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
     ) -> HandleBonusUseCase:
         bonus_uow_factory = self.bonus_uow_factory(
-            stream_repository_factory, get_user_equipment_use_case, economy_policy_provider, chat_use_case
+            stream_repository_factory, get_user_equipment_use_case, economy_policy_factory, chat_use_case
         )
         return HandleBonusUseCase(bonus_uow_factory)
 
@@ -160,12 +160,12 @@ class PlatformContainer:
         self,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         bot_name: str,
     ) -> CommandHandler:
         handle_bonus_use_case = self.handle_bonus_use_case(
-            stream_repository_factory, get_user_equipment_use_case, economy_policy_provider, chat_use_case
+            stream_repository_factory, get_user_equipment_use_case, economy_policy_factory, chat_use_case
         )
         return BonusCommandHandlerImpl(handle_bonus_use_case, bot_name)
 
@@ -203,14 +203,14 @@ class PlatformContainer:
 
     def guess_uow_factory(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         get_user_equipment_use_case: GetUserEquipmentUseCase,
     ) -> GuessUnitOfWorkFactory:
         return SqlAlchemyGuessUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             chat_use_case=chat_use_case,
             get_user_equipment_use_case=get_user_equipment_use_case,
         )
@@ -218,11 +218,11 @@ class PlatformContainer:
     def handle_guess_use_case(
         self,
         minigame_repository: MinigameRepository,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         get_user_equipment_use_case: GetUserEquipmentUseCase,
     ) -> HandleGuessUseCase:
-        guess_uow_factory = self.guess_uow_factory(economy_policy_provider, chat_use_case, get_user_equipment_use_case)
+        guess_uow_factory = self.guess_uow_factory(economy_policy_factory, chat_use_case, get_user_equipment_use_case)
         return HandleGuessUseCase(minigame_repository, guess_uow_factory)
 
     def guess_number_command_handler(
@@ -230,13 +230,13 @@ class PlatformContainer:
         command_prefix: str,
         command_name: str,
         minigame_repository: MinigameRepository,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         bot_name: str,
     ) -> CommandHandler:
         handle_guess_use_case = self.handle_guess_use_case(
-            minigame_repository, economy_policy_provider, chat_use_case, get_user_equipment_use_case
+            minigame_repository, economy_policy_factory, chat_use_case, get_user_equipment_use_case
         )
         return GuessNumberCommandHandlerImpl(
             command_prefix=command_prefix, command_name=command_name, handle_guess_use_case=handle_guess_use_case, bot_name=bot_name
@@ -247,13 +247,13 @@ class PlatformContainer:
         command_prefix: str,
         command_name: str,
         minigame_repository: MinigameRepository,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         bot_name: str,
     ) -> CommandHandler:
         handle_guess_use_case = self.handle_guess_use_case(
-            minigame_repository, economy_policy_provider, chat_use_case, get_user_equipment_use_case
+            minigame_repository, economy_policy_factory, chat_use_case, get_user_equipment_use_case
         )
         return GuessLetterCommandHandlerImpl(
             command_prefix=command_prefix, command_name=command_name, handle_guess_use_case=handle_guess_use_case, bot_name=bot_name
@@ -264,13 +264,13 @@ class PlatformContainer:
         command_prefix: str,
         command_name: str,
         minigame_repository: MinigameRepository,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         bot_name: str,
     ) -> CommandHandler:
         handle_guess_use_case = self.handle_guess_use_case(
-            minigame_repository, economy_policy_provider, chat_use_case, get_user_equipment_use_case
+            minigame_repository, economy_policy_factory, chat_use_case, get_user_equipment_use_case
         )
         return GuessWordCommandHandlerImpl(
             command_prefix=command_prefix, command_name=command_name, handle_guess_use_case=handle_guess_use_case, bot_name=bot_name
@@ -293,31 +293,31 @@ class PlatformContainer:
 
     def roll_uow_factory(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        betting_service_factory: SessionScopedFactory[BettingService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         chat_use_case: ChatUseCase,
     ) -> RollUnitOfWorkFactory:
         return SqlAlchemyRollUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
             session_factory_ro=self._session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            betting_service_provider=betting_service_provider,
+            economy_policy_factory=economy_policy_factory,
+            betting_service_factory=betting_service_factory,
             get_user_equipment_use_case=get_user_equipment_use_case,
             chat_use_case=chat_use_case,
         )
 
     def handle_roll_use_case(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        betting_service_factory: SessionScopedFactory[BettingService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         chat_use_case: ChatUseCase,
         roll_cooldown_use_case: RollCooldownUseCase,
         calculate_timeout_use_case: CalculateTimeoutUseCase,
     ) -> HandleRollUseCase:
         roll_uow_factory = self.roll_uow_factory(
-            economy_policy_provider, betting_service_provider, get_user_equipment_use_case, chat_use_case
+            economy_policy_factory, betting_service_factory, get_user_equipment_use_case, chat_use_case
         )
         return HandleRollUseCase(roll_uow_factory, roll_cooldown_use_case, calculate_timeout_use_case)
 
@@ -325,8 +325,8 @@ class PlatformContainer:
         self,
         command_prefix: str,
         command_name: str,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        betting_service_factory: SessionScopedFactory[BettingService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         chat_use_case: ChatUseCase,
         roll_cooldown_use_case: RollCooldownUseCase,
@@ -335,8 +335,8 @@ class PlatformContainer:
         bot_name: str,
     ) -> CommandHandler:
         handle_roll_use_case = self.handle_roll_use_case(
-            economy_policy_provider,
-            betting_service_provider,
+            economy_policy_factory,
+            betting_service_factory,
             get_user_equipment_use_case,
             chat_use_case,
             roll_cooldown_use_case,
@@ -352,7 +352,7 @@ class PlatformContainer:
 
     def shop_uow_factory(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
@@ -361,7 +361,7 @@ class PlatformContainer:
         return SqlAlchemyShopUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
             session_factory_ro=self._session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             add_equipment_use_case=add_equipment_use_case,
             equipment_exists_use_case=equipment_exists_use_case,
             chat_use_case=chat_use_case,
@@ -370,14 +370,14 @@ class PlatformContainer:
 
     def handle_shop_use_case(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
         shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
     ) -> HandleShopUseCase:
         shop_uow_factory = self.shop_uow_factory(
-            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
+            economy_policy_factory, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
         )
         return HandleShopUseCase(shop_uow_factory)
 
@@ -386,7 +386,7 @@ class PlatformContainer:
         command_prefix: str,
         command_shop_name: str,
         command_buy_name: str,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
@@ -394,7 +394,7 @@ class PlatformContainer:
         bot_name: str,
     ) -> CommandHandler:
         handle_shop_use_case = self.handle_shop_use_case(
-            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
+            economy_policy_factory, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
         )
         return ShopCommandHandlerImpl(
             command_prefix=command_prefix,
@@ -408,7 +408,7 @@ class PlatformContainer:
         self,
         command_prefix: str,
         command_buy_name: str,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
@@ -416,7 +416,7 @@ class PlatformContainer:
         bot_name: str,
     ) -> CommandHandler:
         handle_shop_use_case = self.handle_shop_use_case(
-            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
+            economy_policy_factory, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
         )
         return BuyCommandHandlerImpl(
             command_prefix=command_prefix, command_buy_name=command_buy_name, handle_shop_use_case=handle_shop_use_case, bot_nick=bot_name
@@ -424,107 +424,105 @@ class PlatformContainer:
 
     def stats_uow_factory(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        betting_service_factory: SessionScopedFactory[BettingService],
         battle_use_case: BattleUseCase,
         chat_use_case: ChatUseCase,
     ) -> StatsUnitOfWorkFactory:
         return SqlAlchemyStatsUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
             session_factory_ro=self._session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
-            betting_service_provider=betting_service_provider,
+            economy_policy_factory=economy_policy_factory,
+            betting_service_factory=betting_service_factory,
             battle_use_case=battle_use_case,
             chat_use_case=chat_use_case,
         )
 
     def handle_stats_use_case(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        betting_service_factory: SessionScopedFactory[BettingService],
         battle_use_case: BattleUseCase,
         chat_use_case: ChatUseCase,
     ) -> HandleStatsUseCase:
-        stats_uow_factory = self.stats_uow_factory(economy_policy_provider, betting_service_provider, battle_use_case, chat_use_case)
+        stats_uow_factory = self.stats_uow_factory(economy_policy_factory, betting_service_factory, battle_use_case, chat_use_case)
         return HandleStatsUseCase(stats_uow_factory)
 
     def stats_command_handler(
         self,
         command_prefix: str,
         command_name: str,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        betting_service_factory: SessionScopedFactory[BettingService],
         battle_use_case: BattleUseCase,
         chat_use_case: ChatUseCase,
         bot_name: str,
     ) -> CommandHandler:
-        handle_stats_use_case = self.handle_stats_use_case(
-            economy_policy_provider, betting_service_provider, battle_use_case, chat_use_case
-        )
+        handle_stats_use_case = self.handle_stats_use_case(economy_policy_factory, betting_service_factory, battle_use_case, chat_use_case)
         return StatsCommandHandlerImpl(
             command_prefix=command_prefix, command_name=command_name, handle_stats_use_case=handle_stats_use_case, bot_name=bot_name
         )
 
     def top_bottom_uow_factory(
-        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase
     ) -> TopBottomUnitOfWorkFactory:
         return SqlAlchemyTopBottomUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             chat_use_case=chat_use_case,
         )
 
     def handle_top_bottom_use_case(
-        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase
     ) -> HandleTopBottomUseCase:
-        top_bottom_uow_factory = self.top_bottom_uow_factory(economy_policy_provider, chat_use_case)
+        top_bottom_uow_factory = self.top_bottom_uow_factory(economy_policy_factory, chat_use_case)
         return HandleTopBottomUseCase(top_bottom_uow_factory)
 
     def top_command_handler(
-        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase, bot_name: str
+        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase, bot_name: str
     ) -> CommandHandler:
-        handle_top_bottom_use_case = self.handle_top_bottom_use_case(economy_policy_provider, chat_use_case)
+        handle_top_bottom_use_case = self.handle_top_bottom_use_case(economy_policy_factory, chat_use_case)
         return TopCommandHandlerImpl(handle_top_bottom_use_case, bot_name)
 
     def bottom_command_handler(
-        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase, bot_name: str
+        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase, bot_name: str
     ) -> CommandHandler:
-        handle_top_bottom_use_case = self.handle_top_bottom_use_case(economy_policy_provider, chat_use_case)
+        handle_top_bottom_use_case = self.handle_top_bottom_use_case(economy_policy_factory, chat_use_case)
         return BottomCommandHandlerImpl(handle_top_bottom_use_case, bot_name)
 
     def transfer_uow_factory(
-        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase
     ) -> TransferUnitOfWorkFactory:
         return SqlAlchemyTransferUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             chat_use_case=chat_use_case,
         )
 
     def handle_transfer_use_case(
-        self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase
     ) -> HandleTransferUseCase:
-        transfer_uow_factory = self.transfer_uow_factory(economy_policy_provider, chat_use_case)
+        transfer_uow_factory = self.transfer_uow_factory(economy_policy_factory, chat_use_case)
         return HandleTransferUseCase(transfer_uow_factory)
 
     def transfer_command_handler(
         self,
         command_prefix: str,
         command_name: str,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         bot_name: str,
     ) -> CommandHandler:
-        handle_transfer_use_case = self.handle_transfer_use_case(economy_policy_provider, chat_use_case)
+        handle_transfer_use_case = self.handle_transfer_use_case(economy_policy_factory, chat_use_case)
         return TransferCommandHandlerImpl(
             command_prefix=command_prefix, command_name=command_name, handle_transfer_use_case=handle_transfer_use_case, bot_name=bot_name
         )
 
     def minigame_uow_factory(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_used_words_use_case: GetUsedWordsUseCase,
@@ -535,7 +533,7 @@ class PlatformContainer:
         return SqlAlchemyMinigameUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
             session_factory_ro=self._session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             chat_use_case=chat_use_case,
             stream_repository_factory=stream_repository_factory,
             get_used_words_use_case=get_used_words_use_case,
@@ -613,7 +611,7 @@ class PlatformContainer:
     def handle_minigame_tick_use_case(
         self,
         minigame_repository: MinigameRepository,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_used_words_use_case: GetUsedWordsUseCase,
@@ -631,7 +629,7 @@ class PlatformContainer:
         bot_name: str,
     ) -> HandleMinigameTickUseCase:
         minigame_uow_factory = self.minigame_uow_factory(
-            economy_policy_provider,
+            economy_policy_factory,
             chat_use_case,
             stream_repository_factory,
             get_used_words_use_case,
@@ -670,18 +668,23 @@ class PlatformContainer:
             finish_expired_games_use_case,
         )
 
-    def rps_uow_factory(self, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase) -> RpsUnitOfWorkFactory:
+    def rps_uow_factory(
+        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase
+    ) -> RpsUnitOfWorkFactory:
         return SqlAlchemyRpsUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             chat_use_case=chat_use_case,
         )
 
     def handle_rps_use_case(
-        self, minigame_repository: MinigameRepository, economy_policy_provider: Provider[EconomyPolicy], chat_use_case: ChatUseCase
+        self,
+        minigame_repository: MinigameRepository,
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        chat_use_case: ChatUseCase,
     ) -> HandleRpsUseCase:
-        rps_uow_factory = self.rps_uow_factory(economy_policy_provider, chat_use_case)
+        rps_uow_factory = self.rps_uow_factory(economy_policy_factory, chat_use_case)
         return HandleRpsUseCase(minigame_repository, rps_uow_factory)
 
     def rps_command_handler(
@@ -689,11 +692,11 @@ class PlatformContainer:
         command_prefix: str,
         command_name: str,
         minigame_repository: MinigameRepository,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         bot_name: str,
     ) -> CommandHandler:
-        handle_rps_use_case = self.handle_rps_use_case(minigame_repository, economy_policy_provider, chat_use_case)
+        handle_rps_use_case = self.handle_rps_use_case(minigame_repository, economy_policy_factory, chat_use_case)
         return RpsCommandHandlerImpl(command_prefix, command_name, handle_rps_use_case, bot_name)
 
     def follow_age_uow_factory(
@@ -750,23 +753,28 @@ class PlatformContainer:
             bot_name=bot_name,
         )
 
-    def sync_followers_uow_factory(self, followers_repository_provider: Provider[FollowersRepository]) -> FollowersSyncUnitOfWorkFactory:
+    def sync_followers_uow_factory(
+        self, followers_repository_factory: SessionScopedFactory[FollowersRepository]
+    ) -> FollowersSyncUnitOfWorkFactory:
         return SqlAlchemyFollowersSyncUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            followers_repository_provider=followers_repository_provider,
+            followers_repository_factory=followers_repository_factory,
         )
 
     def handle_followers_sync_use_case(
-        self, platform_repository: PlatformRepository, followers_repository_provider: Provider[FollowersRepository]
+        self, platform_repository: PlatformRepository, followers_repository_factory: SessionScopedFactory[FollowersRepository]
     ) -> HandleFollowersSyncUseCase:
-        sync_followers_uow_factory = self.sync_followers_uow_factory(followers_repository_provider)
+        sync_followers_uow_factory = self.sync_followers_uow_factory(followers_repository_factory)
         return HandleFollowersSyncUseCase(platform_repository, sync_followers_uow_factory)
 
     def followers_sync_job(
-        self, channel_name: str, platform_repository: PlatformRepository, followers_repository_provider: Provider[FollowersRepository]
+        self,
+        channel_name: str,
+        platform_repository: PlatformRepository,
+        followers_repository_factory: SessionScopedFactory[FollowersRepository],
     ) -> FollowersSyncJob:
-        handle_followers_sync_use_case = self.handle_followers_sync_use_case(platform_repository, followers_repository_provider)
+        handle_followers_sync_use_case = self.handle_followers_sync_use_case(platform_repository, followers_repository_factory)
         return FollowersSyncJob(channel_name, handle_followers_sync_use_case, self._logger)
 
     def restore_stream_uow(
@@ -783,7 +791,7 @@ class PlatformContainer:
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         battle_use_case: BattleUseCase,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         conversation_service_factory: SessionScopedFactory[ConversationService],
     ) -> StreamStatusUnitOfWorkFactory:
@@ -793,7 +801,7 @@ class PlatformContainer:
             stream_repository_factory=stream_repository_factory,
             viewer_repository_factory=viewer_repository_factory,
             battle_use_case=battle_use_case,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             chat_use_case=chat_use_case,
             conversation_service_factory=conversation_service_factory,
         )
@@ -810,7 +818,7 @@ class PlatformContainer:
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         battle_use_case: BattleUseCase,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         conversation_service_factory: SessionScopedFactory[ConversationService],
     ) -> HandleStreamStatusUseCase:
@@ -818,7 +826,7 @@ class PlatformContainer:
             stream_repository_factory,
             viewer_repository_factory,
             battle_use_case,
-            economy_policy_provider,
+            economy_policy_factory,
             chat_use_case,
             conversation_service_factory,
         )
@@ -848,7 +856,7 @@ class PlatformContainer:
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         battle_use_case: BattleUseCase,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         conversation_service_factory: SessionScopedFactory[ConversationService],
     ) -> StreamStatusJob:
@@ -863,7 +871,7 @@ class PlatformContainer:
             stream_repository_factory=stream_repository_factory,
             viewer_repository_factory=viewer_repository_factory,
             battle_use_case=battle_use_case,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             chat_use_case=chat_use_case,
             conversation_service_factory=conversation_service_factory,
         )
@@ -873,26 +881,26 @@ class PlatformContainer:
         self,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
     ) -> ViewerTimeUnitOfWorkFactory:
         return SqlAlchemyViewerTimeUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
             stream_repository_factory=stream_repository_factory,
             viewer_repository_factory=viewer_repository_factory,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
         )
 
     def handle_viewer_time_use_case(
         self,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         viewer_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
     ) -> RewardViewerTimeUseCase:
         reward_viewer_time_uow_factory = self.reward_viewer_time_uow_factory(
-            stream_repository_factory, viewer_repository_factory, economy_policy_provider
+            stream_repository_factory, viewer_repository_factory, economy_policy_factory
         )
         return RewardViewerTimeUseCase(reward_viewer_time_uow_factory, viewer_cache, platform_repository)
 
@@ -900,13 +908,13 @@ class PlatformContainer:
         self,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         viewer_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
         channel_name: str,
         bot_name: str,
     ) -> ViewerTimeJob:
         handle_viewer_time_use_case = self.handle_viewer_time_use_case(
-            stream_repository_factory, viewer_repository_factory, economy_policy_provider, viewer_cache, platform_repository
+            stream_repository_factory, viewer_repository_factory, economy_policy_factory, viewer_cache, platform_repository
         )
         return ViewerTimeJob(channel_name, handle_viewer_time_use_case, bot_name, self._logger)

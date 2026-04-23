@@ -9,7 +9,6 @@ from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWork, BonusUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -53,7 +52,7 @@ class SqlAlchemyBonusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BonusUnitOfWo
         session_factory_ro: SessionFactory,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
     ):
         super().__init__(
@@ -63,7 +62,7 @@ class SqlAlchemyBonusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BonusUnitOfWo
         )
         self._stream_repository_factory = stream_repository_factory
         self._get_user_equipment_use_case = get_user_equipment_use_case
-        self._economy_policy_provider = economy_policy_provider
+        self._economy_policy_factory = economy_policy_factory
         self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> BonusUnitOfWork:
@@ -71,7 +70,7 @@ class SqlAlchemyBonusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BonusUnitOfWo
             session=db,
             stream_repository=self._stream_repository_factory.get(db),
             get_user_equipment_use_case=self._get_user_equipment_use_case,
-            economy_policy=self._economy_policy_provider.get(db),
+            economy_policy=self._economy_policy_factory.get(db),
             chat_use_case=self._chat_use_case,
             read_only=read_only,
         )

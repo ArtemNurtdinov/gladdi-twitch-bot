@@ -38,7 +38,7 @@ class BattleContainer:
 
     def battle_uow_factory(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         conversation_service_factory: SessionScopedFactory[ConversationService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
@@ -46,7 +46,7 @@ class BattleContainer:
         return SqlAlchemyBattleUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
             session_factory_ro=self._session_factory_ro,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             chat_use_case=chat_use_case,
             conversation_service_factory=conversation_service_factory,
             battle_use_case=self.battle_use_case(),

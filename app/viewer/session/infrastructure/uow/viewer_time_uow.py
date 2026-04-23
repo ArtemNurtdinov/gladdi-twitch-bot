@@ -8,7 +8,6 @@ from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.domain.repo import StreamRepository
 from app.viewer.session.application.uow.viewer_time_uow import ViewerTimeUnitOfWork, ViewerTimeUnitOfWorkFactory
 from app.viewer.session.domain.repository import ViewerRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -46,7 +45,7 @@ class SqlAlchemyViewerTimeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ViewerTi
         session_factory_ro: SessionFactory,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -55,13 +54,13 @@ class SqlAlchemyViewerTimeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ViewerTi
         )
         self._stream_repository_factory = stream_repository_factory
         self._viewer_repository_factory = viewer_repository_factory
-        self._economy_policy_provider = economy_policy_provider
+        self._economy_policy_factory = economy_policy_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> ViewerTimeUnitOfWork:
         return SqlAlchemyViewerTimeUnitOfWork(
             session=db,
             stream_repository=self._stream_repository_factory.get(db),
             viewer_repository=self._viewer_repository_factory.get(db),
-            economy_policy=self._economy_policy_provider.get(db),
+            economy_policy=self._economy_policy_factory.get(db),
             read_only=read_only,
         )

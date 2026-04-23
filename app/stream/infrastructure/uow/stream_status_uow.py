@@ -11,7 +11,6 @@ from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWork, StreamStatusUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
 from app.viewer.session.domain.repository import ViewerRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -68,7 +67,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         battle_use_case: BattleUseCase,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         conversation_service_factory: SessionScopedFactory[ConversationService],
     ):
@@ -80,7 +79,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         self._stream_repository_factory = stream_repository_factory
         self._viewer_repository_factory = viewer_repository_factory
         self._battle_use_case = battle_use_case
-        self._economy_policy_provider = economy_policy_provider
+        self._economy_policy_factory = economy_policy_factory
         self._chat_use_case = chat_use_case
         self._conversation_service_factory = conversation_service_factory
 
@@ -90,7 +89,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
             stream_repository=self._stream_repository_factory.get(db),
             viewer_repository=self._viewer_repository_factory.get(db),
             battle_use_case=self._battle_use_case,
-            economy_policy=self._economy_policy_provider.get(db),
+            economy_policy=self._economy_policy_factory.get(db),
             chat_use_case=self._chat_use_case,
             conversation_service=self._conversation_service_factory.get(db),
             read_only=read_only,

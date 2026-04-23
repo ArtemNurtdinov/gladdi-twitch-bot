@@ -10,7 +10,6 @@ from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.platform.command.battle.application.battle_uow import BattleUnitOfWork, BattleUnitOfWorkFactory
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -58,7 +57,7 @@ class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOf
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         conversation_service_factory: SessionScopedFactory[ConversationService],
         battle_use_case: BattleUseCase,
@@ -69,7 +68,7 @@ class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOf
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._economy_policy_provider = economy_policy_provider
+        self._economy_policy_factory = economy_policy_factory
         self._chat_use_case = chat_use_case
         self._conversation_service_factory = conversation_service_factory
         self._battle_use_case = battle_use_case
@@ -78,7 +77,7 @@ class SqlAlchemyBattleUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BattleUnitOf
     def _build_uow(self, db: Session, read_only: bool) -> BattleUnitOfWork:
         return SqlAlchemyBattleUnitOfWork(
             session=db,
-            economy_policy=self._economy_policy_provider.get(db),
+            economy_policy=self._economy_policy_factory.get(db),
             chat_use_case=self._chat_use_case,
             conversation_service=self._conversation_service_factory.get(db),
             battle_use_case=self._battle_use_case,

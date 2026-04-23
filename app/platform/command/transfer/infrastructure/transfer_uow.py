@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWork, TransferUnitOfWorkFactory
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -30,7 +30,7 @@ class SqlAlchemyTransferUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[TransferUn
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
     ):
         super().__init__(
@@ -38,13 +38,13 @@ class SqlAlchemyTransferUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[TransferUn
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._economy_policy_provider = economy_policy_provider
+        self._economy_policy_factory = economy_policy_factory
         self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> TransferUnitOfWork:
         return SqlAlchemyTransferUnitOfWork(
             session=db,
-            economy_policy=self._economy_policy_provider.get(db),
+            economy_policy=self._economy_policy_factory.get(db),
             chat_use_case=self._chat_use_case,
             read_only=read_only,
         )

@@ -10,7 +10,6 @@ from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.platform.command.shop.application.shop_uow import ShopUnitOfWork, ShopUnitOfWorkFactory
 from app.shop.domain.repository import ShopItemRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -58,7 +57,7 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
@@ -69,7 +68,7 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._economy_policy_provider = economy_policy_provider
+        self._economy_policy_factory = economy_policy_factory
         self._add_equipment_use_case = add_equipment_use_case
         self._equipment_exists_use_case = equipment_exists_use_case
         self._chat_use_case = chat_use_case
@@ -78,7 +77,7 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
     def _build_uow(self, db: Session, read_only: bool) -> ShopUnitOfWork:
         return SqlAlchemyShopUnitOfWork(
             session=db,
-            economy_policy=self._economy_policy_provider.get(db),
+            economy_policy=self._economy_policy_factory.get(db),
             add_equipment_use_case=self._add_equipment_use_case,
             equipment_exists_use_case=self._equipment_exists_use_case,
             chat_use_case=self._chat_use_case,

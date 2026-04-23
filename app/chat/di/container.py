@@ -78,7 +78,7 @@ class ChatContainer:
 
     def chat_message_uow_factory(
         self,
-        economy_policy_provider: Provider[EconomyPolicy],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         conversation_service_factory: SessionScopedFactory[ConversationService],
@@ -88,7 +88,7 @@ class ChatContainer:
             session_factory_rw=self._session_factory_rw,
             session_factory_ro=self._session_factory_ro,
             chat_repo_provider=self.chat_repository_provider,
-            economy_policy_provider=economy_policy_provider,
+            economy_policy_factory=economy_policy_factory,
             stream_repository_factory=stream_repository_factory,
             viewer_repository_factory=viewer_repository_factory,
             conversation_service_factory=conversation_service_factory,

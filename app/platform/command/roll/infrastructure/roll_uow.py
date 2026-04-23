@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.platform.command.roll.application.roll_uow import RollUnitOfWork, RollUnitOfWorkFactory
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -50,8 +50,8 @@ class SqlAlchemyRollUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[RollUnitOfWork
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        betting_service_factory: SessionScopedFactory[BettingService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         chat_use_case: ChatUseCase,
     ):
@@ -60,16 +60,16 @@ class SqlAlchemyRollUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[RollUnitOfWork
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._economy_policy_provider = economy_policy_provider
-        self._betting_service_provider = betting_service_provider
+        self._economy_policy_factory = economy_policy_factory
+        self._betting_service_factory = betting_service_factory
         self._get_user_equipment_use_case = get_user_equipment_use_case
         self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> RollUnitOfWork:
         return SqlAlchemyRollUnitOfWork(
             session=db,
-            economy_policy=self._economy_policy_provider.get(db),
-            betting_service=self._betting_service_provider.get(db),
+            economy_policy=self._economy_policy_factory.get(db),
+            betting_service=self._betting_service_factory.get(db),
             get_user_equipment_use_case=self._get_user_equipment_use_case,
             chat_use_case=self._chat_use_case,
             read_only=read_only,

@@ -6,9 +6,9 @@ from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.betting.application.betting_service import BettingService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.platform.command.stats.application.stats_uow import StatsUnitOfWork, StatsUnitOfWorkFactory
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -50,8 +50,8 @@ class SqlAlchemyStatsUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[StatsUnitOfWo
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        economy_policy_provider: Provider[EconomyPolicy],
-        betting_service_provider: Provider[BettingService],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        betting_service_factory: SessionScopedFactory[BettingService],
         battle_use_case: BattleUseCase,
         chat_use_case: ChatUseCase,
     ):
@@ -60,8 +60,8 @@ class SqlAlchemyStatsUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[StatsUnitOfWo
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._economy_policy_provider = economy_policy_provider
-        self._betting_service_provider = betting_service_provider
+        self._economy_policy_provider = economy_policy_factory
+        self._betting_service_factory = betting_service_factory
         self._battle_use_case = battle_use_case
         self._chat_use_case = chat_use_case
 
@@ -69,7 +69,7 @@ class SqlAlchemyStatsUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[StatsUnitOfWo
         return SqlAlchemyStatsUnitOfWork(
             session=db,
             economy_policy=self._economy_policy_provider.get(db),
-            betting_service=self._betting_service_provider.get(db),
+            betting_service=self._betting_service_factory.get(db),
             battle_use_case=self._battle_use_case,
             chat_use_case=self._chat_use_case,
             read_only=read_only,
