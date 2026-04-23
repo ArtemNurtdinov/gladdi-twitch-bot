@@ -31,7 +31,7 @@ class AIContainer:
         self.prompt_service = PromptService()
         self.system_prompt_repository_factory = SessionScopedFactory(self._system_prompt_repository)
         self.conversation_service_factory = SessionScopedFactory(self._conversation_service)
-        self.llm_repository_provider = Provider(self._llm_repository)
+        self.llm_repository_factory = SessionScopedFactory(self._llm_repository)
         self.generate_response_use_case_provider = Provider(self._generate_response_use_case)
         self.get_assistant_use_case_provider = Provider(self._get_assistant_use_case)
         self.save_assistant_use_case_provider = Provider(self._save_assistant_use_case)

@@ -11,7 +11,6 @@ from app.core.logger.domain.logger import Logger
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.domain.model.word_guess import WordGuessGame
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -28,7 +27,7 @@ class StartWordGameUseCase:
         minigame_uow: MinigameUnitOfWorkFactory,
         db_ro_session: SessionFactory,
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
-        llm_repository: Provider[LLMRepository],
+        llm_repository_factory: SessionScopedFactory[LLMRepository],
         command_guess_word: str,
         command_guess_letter: str,
         send_channel_message: Callable[[str], Awaitable[None]],
@@ -39,7 +38,7 @@ class StartWordGameUseCase:
         self._minigame_uow = minigame_uow
         self._db_ro_session = db_ro_session
         self._system_prompt_repository_factory = system_prompt_repository_factory
-        self._llm_repository = llm_repository
+        self._llm_repository_factory = llm_repository_factory
         self._prefix = prefix
         self._command_guess_word = command_guess_word
         self._command_guess_letter = command_guess_letter
@@ -67,10 +66,10 @@ class StartWordGameUseCase:
         with self._db_ro_session() as session:
             system_prompt = self._system_prompt_repository_factory.get(session).get_system_prompt(channel_name)
             ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt), AIMessage(role=Role.USER, content=prompt)]
-            assistant = await self._llm_repository.get(session).get_assistant(channel_name)
+            assistant = await self._llm_repository_factory.get(session).get_assistant(channel_name)
             if assistant is None:
                 assistant = AIAssistant.GPT_OSS_120B
-            assistant_response = await self._llm_repository.get(session).generate_ai_response(assistant, ai_messages)
+            assistant_response = await self._llm_repository_factory.get(session).generate_ai_response(assistant, ai_messages)
 
         assistant_message = assistant_response.message
 

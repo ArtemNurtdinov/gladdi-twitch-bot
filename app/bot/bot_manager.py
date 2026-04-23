@@ -478,7 +478,7 @@ class BotManager:
                     conversation_service_factory=ai_container.conversation_service_factory,
                     get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
-                    llm_repository=ai_container.llm_repository_provider,
+                    llm_repository_factory=ai_container.llm_repository_factory,
                     prefix=self._config.prefix,
                     number_guess_name=self._config.command_guess,
                     command_guess_word=self._config.command_guess_word,
