@@ -382,7 +382,7 @@ class BotManager:
                 chat_message_uow=chat_container.chat_message_uow_factory(
                     economy_policy_provider=economy_container.economy_policy_provider,
                     stream_repository_factory=stream_container.stream_repository_factory,
-                    viewer_repository_provider=viewer_container.viewer_repository_provider,
+                    viewer_repository_factory=viewer_container.viewer_repository_factory,
                     conversation_service_factory=conversation_service_factory,
                     system_prompt_repository_factory=system_prompt_repository_factory,
                 ),
@@ -396,7 +396,7 @@ class BotManager:
                 chat_message_uow=chat_container.chat_message_uow_factory(
                     economy_policy_provider=economy_container.economy_policy_provider,
                     stream_repository_factory=stream_container.stream_repository_factory,
-                    viewer_repository_provider=viewer_container.viewer_repository_provider,
+                    viewer_repository_factory=viewer_container.viewer_repository_factory,
                     conversation_service_factory=conversation_service_factory,
                     system_prompt_repository_factory=system_prompt_repository_factory,
                 ),
@@ -452,7 +452,7 @@ class BotManager:
                 generate_response_use_case_factory=generate_response_use_case_factory,
                 state=chat_summary_state,
                 stream_repository_factory=stream_container.stream_repository_factory,
-                viewer_repository_provider=viewer_container.viewer_repository_provider,
+                viewer_repository_factory=viewer_container.viewer_repository_factory,
                 battle_use_case=battle_container.battle_use_case(),
                 economy_policy_provider=economy_container.economy_policy_provider,
                 chat_use_case=chat_container.chat_use_case(),
@@ -492,7 +492,7 @@ class BotManager:
 
             viewer_time_job = platform_container.viewer_time_job(
                 stream_repository_factory=stream_container.stream_repository_factory,
-                viewer_repository_provider=viewer_container.viewer_repository_provider,
+                viewer_repository_factory=viewer_container.viewer_repository_factory,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 viewer_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),

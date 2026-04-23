@@ -80,7 +80,7 @@ class ChatContainer:
         self,
         economy_policy_provider: Provider[EconomyPolicy],
         stream_repository_factory: SessionScopedFactory[StreamRepository],
-        viewer_repository_provider: Provider[ViewerRepository],
+        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
     ) -> ChatMessageUnitOfWorkFactory:
@@ -90,7 +90,7 @@ class ChatContainer:
             chat_repo_provider=self.chat_repository_provider,
             economy_policy_provider=economy_policy_provider,
             stream_repository_factory=stream_repository_factory,
-            viewer_repo_provider=viewer_repository_provider,
+            viewer_repository_factory=viewer_repository_factory,
             conversation_service_factory=conversation_service_factory,
             system_prompt_repository_factory=system_prompt_repository_factory,
         )

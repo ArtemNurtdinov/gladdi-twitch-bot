@@ -68,7 +68,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMes
         chat_repo_provider: Provider[ChatRepository],
         economy_policy_provider: Provider[EconomyPolicy],
         stream_repository_factory: SessionScopedFactory[StreamRepository],
-        viewer_repo_provider: Provider[ViewerRepository],
+        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
     ):
@@ -80,7 +80,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMes
         self._chat_repo_provider = chat_repo_provider
         self._economy_policy_provider = economy_policy_provider
         self._stream_repository_factory = stream_repository_factory
-        self._viewer_repo_provider = viewer_repo_provider
+        self._viewer_repository_factory = viewer_repository_factory
         self._conversation_service_factory = conversation_service_factory
         self._system_prompt_repository_factory = system_prompt_repository_factory
 
@@ -90,7 +90,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMes
             chat_repo=self._chat_repo_provider.get(db),
             economy=self._economy_policy_provider.get(db),
             stream_repo=self._stream_repository_factory.get(db),
-            viewer_repo=self._viewer_repo_provider.get(db),
+            viewer_repo=self._viewer_repository_factory.get(db),
             conversation_service=self._conversation_service_factory.get(db),
             system_prompt_repository=self._system_prompt_repository_factory.get(db),
             read_only=read_only,
