@@ -40,7 +40,7 @@ from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitO
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.notification.domain.repository import NotificationRepository
-from app.platform.auth.di.container import PlatformAuthContainer
+from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
 from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
@@ -113,12 +113,12 @@ class PlatformContainer:
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        platform_auth_container: PlatformAuthContainer,
+        platform_auth: PlatformAuth,
         logger: Logger,
     ):
         self._session_factory_rw = session_factory_rw
         self._session_factory_ro = session_factory_ro
-        self._platform_auth = platform_auth_container.platform_auth
+        self._platform_auth = platform_auth
         self._logger = logger
 
     @cached_property

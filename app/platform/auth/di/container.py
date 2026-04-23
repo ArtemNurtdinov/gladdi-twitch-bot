@@ -13,5 +13,5 @@ class PlatformAuthContainer:
             client_secret=client_secret,
             logger=logger,
         )
-        self.handle_token_checker_use_case = HandleTokenCheckerUseCase(self.platform_auth, logger)
-        self.token_checker_job = TokenCheckerJob(self.handle_token_checker_use_case, logger)
+        self._handle_token_checker_use_case = HandleTokenCheckerUseCase(self.platform_auth, logger)
+        self.token_checker_job = TokenCheckerJob(self._handle_token_checker_use_case, logger)

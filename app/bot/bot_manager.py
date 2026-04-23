@@ -33,7 +33,7 @@ from app.minigame.di.container import MinigameContainer
 from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.container import NotificationContainer
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
-from app.platform.auth.di.container import PlatformAuthContainer
+from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
 from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
@@ -110,10 +110,6 @@ class BotManager:
 
     async def start_bot(
         self,
-        access_token: str,
-        refresh_token: str,
-        client_id: str,
-        client_secret: str,
         channel_name: str,
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         conversation_service_factory: SessionScopedFactory[ConversationService],
@@ -122,12 +118,13 @@ class BotManager:
         llm_repository_factory: SessionScopedFactory[LLMRepository],
         prompt_service: PromptService,
         joke_container: JokeContainer,
+        platform_auth: PlatformAuth,
+        token_checker_job: TokenCheckerJob,
     ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            platform_auth_container = PlatformAuthContainer(access_token, refresh_token, client_id, client_secret, self._logger)
             viewer_container = ViewerContainer()
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             stream_container = StreamContainer()
@@ -142,7 +139,7 @@ class BotManager:
             platform_container = PlatformContainer(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
-                platform_auth_container=platform_auth_container,
+                platform_auth=platform_auth,
                 logger=self._logger,
             )
             notification_container = NotificationContainer(self._telegram_config.bot_token)
@@ -408,7 +405,7 @@ class BotManager:
             )
 
             chat_client: PlatformChatClient = TwitchChatClient(
-                auth=platform_auth_container.platform_auth,
+                auth=platform_auth,
                 handle_chat_message_use_case=handle_chat_message_use_case,
                 handle_reply_use_case=handle_reply_use_case,
                 command_router=command_router,
@@ -443,8 +440,6 @@ class BotManager:
                 platform_repository=platform_container.platform_repository(),
                 generate_response_use_case_factory=generate_response_use_case_factory,
             )
-
-            token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
 
             stream_status_job = platform_container.stream_status_job(
                 channel_name=channel_name,
