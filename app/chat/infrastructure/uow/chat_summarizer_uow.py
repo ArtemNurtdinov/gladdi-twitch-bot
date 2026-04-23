@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWork, ChatSummarizerUnitOfWorkFactory
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.stream.domain.repo import StreamRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -30,7 +30,7 @@ class SqlAlchemyChatSummarizerUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Chat
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         chat_use_case: ChatUseCase,
     ):
         super().__init__(
@@ -38,13 +38,13 @@ class SqlAlchemyChatSummarizerUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Chat
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._stream_repository_provider = stream_repository_provider
+        self._stream_repository_factory = stream_repository_factory
         self._chat_use_case = chat_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> ChatSummarizerUnitOfWork:
         return SqlAlchemyChatSummarizerUnitOfWork(
             session=db,
-            stream_repository=self._stream_repository_provider.get(db),
+            stream_repository=self._stream_repository_factory.get(db),
             chat_use_case=self._chat_use_case,
             read_only=read_only,
         )

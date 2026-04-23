@@ -230,7 +230,7 @@ class BotManager:
             )
 
             bonus_command_handler = platform_container.bonus_command_handler(
-                stream_repository_provider=stream_container.stream_repository_provider,
+                stream_repository_factory=stream_container.stream_repository_factory,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 economy_policy_provider=economy_container.economy_policy_provider,
                 chat_use_case=chat_container.chat_use_case(),
@@ -381,7 +381,7 @@ class BotManager:
             handle_chat_message_use_case = HandleChatMessageUseCase(
                 chat_message_uow=chat_container.chat_message_uow_factory(
                     economy_policy_provider=economy_container.economy_policy_provider,
-                    stream_repository_provider=stream_container.stream_repository_provider,
+                    stream_repository_factory=stream_container.stream_repository_factory,
                     viewer_repository_provider=viewer_container.viewer_repository_provider,
                     conversation_service_factory=conversation_service_factory,
                     system_prompt_repository_factory=system_prompt_repository_factory,
@@ -395,7 +395,7 @@ class BotManager:
             handle_reply_use_case = HandleReplyUseCase(
                 chat_message_uow=chat_container.chat_message_uow_factory(
                     economy_policy_provider=economy_container.economy_policy_provider,
-                    stream_repository_provider=stream_container.stream_repository_provider,
+                    stream_repository_factory=stream_container.stream_repository_factory,
                     viewer_repository_provider=viewer_container.viewer_repository_provider,
                     conversation_service_factory=conversation_service_factory,
                     system_prompt_repository_factory=system_prompt_repository_factory,
@@ -419,7 +419,7 @@ class BotManager:
             )
 
             HandleRestoreStreamContextUseCase(
-                restore_stream_uow=platform_container.restore_stream_uow(stream_container.stream_repository_provider),
+                restore_stream_uow=platform_container.restore_stream_uow(stream_container.stream_repository_factory),
                 minigame_repository=minigame_repository,
                 logger=self._logger,
             ).handle(channel_name)
@@ -451,7 +451,7 @@ class BotManager:
                 notification_group_id=self._telegram_config.group_id,
                 generate_response_use_case_factory=generate_response_use_case_factory,
                 state=chat_summary_state,
-                stream_repository_provider=stream_container.stream_repository_provider,
+                stream_repository_factory=stream_container.stream_repository_factory,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
                 battle_use_case=battle_container.battle_use_case(),
                 economy_policy_provider=economy_container.economy_policy_provider,
@@ -461,7 +461,7 @@ class BotManager:
 
             chat_summarizer_job: ChatSummarizerJob = chat_container.chat_summarizer_job(
                 channel_name=channel_name,
-                stream_repository_provider=stream_container.stream_repository_provider,
+                stream_repository_factory=stream_container.stream_repository_factory,
                 generate_response_use_case_factory=generate_response_use_case_factory,
                 chat_summary_state=chat_summary_state,
             )
@@ -472,7 +472,7 @@ class BotManager:
                     minigame_repository=minigame_repository,
                     economy_policy_provider=economy_container.economy_policy_provider,
                     chat_use_case=chat_container.chat_use_case(),
-                    stream_repository_provider=stream_container.stream_repository_provider,
+                    stream_repository_factory=stream_container.stream_repository_factory,
                     get_used_words_use_case=minigame_container.get_used_words_use_case(),
                     add_used_words_use_case=minigame_container.add_used_word_use_case(),
                     conversation_service_factory=conversation_service_factory,
@@ -491,7 +491,7 @@ class BotManager:
             )
 
             viewer_time_job = platform_container.viewer_time_job(
-                stream_repository_provider=stream_container.stream_repository_provider,
+                stream_repository_factory=stream_container.stream_repository_factory,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
                 economy_policy_provider=economy_container.economy_policy_provider,
                 viewer_cache=viewer_container.viewer_cache(platform_container.platform_repository()),

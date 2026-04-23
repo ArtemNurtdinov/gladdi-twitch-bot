@@ -130,7 +130,7 @@ class PlatformContainer:
 
     def bonus_uow_factory(
         self,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
@@ -138,7 +138,7 @@ class PlatformContainer:
         return SqlAlchemyBonusUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            stream_repository_provider=stream_repository_provider,
+            stream_repository_factory=stream_repository_factory,
             get_user_equipment_use_case=get_user_equipment_use_case,
             economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
@@ -146,26 +146,26 @@ class PlatformContainer:
 
     def handle_bonus_use_case(
         self,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
     ) -> HandleBonusUseCase:
         bonus_uow_factory = self.bonus_uow_factory(
-            stream_repository_provider, get_user_equipment_use_case, economy_policy_provider, chat_use_case
+            stream_repository_factory, get_user_equipment_use_case, economy_policy_provider, chat_use_case
         )
         return HandleBonusUseCase(bonus_uow_factory)
 
     def bonus_command_handler(
         self,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
         bot_name: str,
     ) -> CommandHandler:
         handle_bonus_use_case = self.handle_bonus_use_case(
-            stream_repository_provider, get_user_equipment_use_case, economy_policy_provider, chat_use_case
+            stream_repository_factory, get_user_equipment_use_case, economy_policy_provider, chat_use_case
         )
         return BonusCommandHandlerImpl(handle_bonus_use_case, bot_name)
 
@@ -526,7 +526,7 @@ class PlatformContainer:
         self,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_used_words_use_case: GetUsedWordsUseCase,
         add_used_words_use_case: AddUsedWordsUseCase,
         conversation_service_factory: SessionScopedFactory[ConversationService],
@@ -537,7 +537,7 @@ class PlatformContainer:
             session_factory_ro=self._session_factory_ro,
             economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
-            stream_repository_provider=stream_repository_provider,
+            stream_repository_factory=stream_repository_factory,
             get_used_words_use_case=get_used_words_use_case,
             add_used_words_use_case=add_used_words_use_case,
             conversation_service_factory=conversation_service_factory,
@@ -615,7 +615,7 @@ class PlatformContainer:
         minigame_repository: MinigameRepository,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_used_words_use_case: GetUsedWordsUseCase,
         add_used_words_use_case: AddUsedWordsUseCase,
         conversation_service_factory: SessionScopedFactory[ConversationService],
@@ -633,7 +633,7 @@ class PlatformContainer:
         minigame_uow_factory = self.minigame_uow_factory(
             economy_policy_provider,
             chat_use_case,
-            stream_repository_provider,
+            stream_repository_factory,
             get_used_words_use_case,
             add_used_words_use_case,
             conversation_service_factory,
@@ -769,16 +769,18 @@ class PlatformContainer:
         handle_followers_sync_use_case = self.handle_followers_sync_use_case(platform_repository, followers_repository_provider)
         return FollowersSyncJob(channel_name, handle_followers_sync_use_case, self._logger)
 
-    def restore_stream_uow(self, stream_repository_provider: Provider[StreamRepository]) -> RestoreStreamContextUnitOfWorkFactory:
+    def restore_stream_uow(
+        self, stream_repository_factory: SessionScopedFactory[StreamRepository]
+    ) -> RestoreStreamContextUnitOfWorkFactory:
         return SqlAlchemyRestoreStreamContextUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            stream_repository_provider=stream_repository_provider,
+            stream_repository_factory=stream_repository_factory,
         )
 
     def stream_status_uow_factory(
         self,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
         battle_use_case: BattleUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
@@ -788,7 +790,7 @@ class PlatformContainer:
         return SqlAlchemyStreamStatusUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
             session_factory_ro=self._session_factory_ro,
-            stream_repository_provider=stream_repository_provider,
+            stream_repository_factory=stream_repository_factory,
             viewer_repository_provider=viewer_repository_provider,
             battle_use_case=battle_use_case,
             economy_policy_provider=economy_policy_provider,
@@ -805,7 +807,7 @@ class PlatformContainer:
         notification_group_id: int,
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         state: ChatSummaryState,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
         battle_use_case: BattleUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
@@ -813,7 +815,7 @@ class PlatformContainer:
         conversation_service_factory: SessionScopedFactory[ConversationService],
     ) -> HandleStreamStatusUseCase:
         stream_status_uow_factory = self.stream_status_uow_factory(
-            stream_repository_provider,
+            stream_repository_factory,
             viewer_repository_provider,
             battle_use_case,
             economy_policy_provider,
@@ -843,7 +845,7 @@ class PlatformContainer:
         notification_group_id: int,
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         state: ChatSummaryState,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
         battle_use_case: BattleUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
@@ -858,7 +860,7 @@ class PlatformContainer:
             notification_group_id=notification_group_id,
             generate_response_use_case_factory=generate_response_use_case_factory,
             state=state,
-            stream_repository_provider=stream_repository_provider,
+            stream_repository_factory=stream_repository_factory,
             viewer_repository_provider=viewer_repository_provider,
             battle_use_case=battle_use_case,
             economy_policy_provider=economy_policy_provider,
@@ -869,34 +871,34 @@ class PlatformContainer:
 
     def reward_viewer_time_uow_factory(
         self,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
         economy_policy_provider: Provider[EconomyPolicy],
     ) -> ViewerTimeUnitOfWorkFactory:
         return SqlAlchemyViewerTimeUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            stream_repository_provider=stream_repository_provider,
+            stream_repository_factory=stream_repository_factory,
             viewer_repository_provider=viewer_repository_provider,
             economy_policy_provider=economy_policy_provider,
         )
 
     def handle_viewer_time_use_case(
         self,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
         economy_policy_provider: Provider[EconomyPolicy],
         viewer_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
     ) -> RewardViewerTimeUseCase:
         reward_viewer_time_uow_factory = self.reward_viewer_time_uow_factory(
-            stream_repository_provider, viewer_repository_provider, economy_policy_provider
+            stream_repository_factory, viewer_repository_provider, economy_policy_provider
         )
         return RewardViewerTimeUseCase(reward_viewer_time_uow_factory, viewer_cache, platform_repository)
 
     def viewer_time_job(
         self,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
         economy_policy_provider: Provider[EconomyPolicy],
         viewer_cache: ViewerCachePort,
@@ -905,6 +907,6 @@ class PlatformContainer:
         bot_name: str,
     ) -> ViewerTimeJob:
         handle_viewer_time_use_case = self.handle_viewer_time_use_case(
-            stream_repository_provider, viewer_repository_provider, economy_policy_provider, viewer_cache, platform_repository
+            stream_repository_factory, viewer_repository_provider, economy_policy_provider, viewer_cache, platform_repository
         )
         return ViewerTimeJob(channel_name, handle_viewer_time_use_case, bot_name, self._logger)

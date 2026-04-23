@@ -65,7 +65,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
         battle_use_case: BattleUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
@@ -77,7 +77,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._stream_repository_provider = stream_repository_provider
+        self._stream_repository_factory = stream_repository_factory
         self._viewer_repository_provider = viewer_repository_provider
         self._battle_use_case = battle_use_case
         self._economy_policy_provider = economy_policy_provider
@@ -87,7 +87,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
     def _build_uow(self, db: Session, read_only: bool) -> StreamStatusUnitOfWork:
         return SqlAlchemyStreamStatusUnitOfWork(
             session=db,
-            stream_repository=self._stream_repository_provider.get(db),
+            stream_repository=self._stream_repository_factory.get(db),
             viewer_repository=self._viewer_repository_provider.get(db),
             battle_use_case=self._battle_use_case,
             economy_policy=self._economy_policy_provider.get(db),

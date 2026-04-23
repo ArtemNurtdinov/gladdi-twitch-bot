@@ -3,12 +3,12 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.stream.application.uow.restore_stream_context_uow import (
     RestoreStreamContextUnitOfWork,
     RestoreStreamContextUnitOfWorkFactory,
 )
 from app.stream.domain.repo import StreamRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -29,18 +29,18 @@ class SqlAlchemyRestoreStreamContextUnitOfWorkFactory(
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._stream_repository_provider = stream_repository_provider
+        self._stream_repository_factory = stream_repository_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> RestoreStreamContextUnitOfWork:
         return SqlAlchemyRestoreStreamContextUnitOfWork(
             session=db,
-            stream_repository=self._stream_repository_provider.get(db),
+            stream_repository=self._stream_repository_factory.get(db),
             read_only=read_only,
         )

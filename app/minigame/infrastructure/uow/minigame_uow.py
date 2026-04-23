@@ -74,7 +74,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
         session_factory_ro: SessionFactory,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_used_words_use_case: GetUsedWordsUseCase,
         add_used_words_use_case: AddUsedWordsUseCase,
         conversation_service_factory: SessionScopedFactory[ConversationService],
@@ -87,7 +87,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
         )
         self._economy_policy_provider = economy_policy_provider
         self._chat_use_case = chat_use_case
-        self._stream_repository_provider = stream_repository_provider
+        self._stream_repository_factory = stream_repository_factory
         self._get_used_words_use_case = get_used_words_use_case
         self._add_used_words_use_case = add_used_words_use_case
         self._conversation_service_factory = conversation_service_factory
@@ -98,7 +98,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
             session=db,
             economy_policy=self._economy_policy_provider.get(db),
             chat_use_case=self._chat_use_case,
-            stream_repository=self._stream_repository_provider.get(db),
+            stream_repository=self._stream_repository_factory.get(db),
             get_used_words_use_case=self._get_used_words_use_case,
             add_used_words_use_case=self._add_used_words_use_case,
             conversation_service=self._conversation_service_factory.get(db),

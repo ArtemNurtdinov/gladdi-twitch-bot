@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWork, BonusUnitOfWorkFactory
@@ -50,7 +51,7 @@ class SqlAlchemyBonusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BonusUnitOfWo
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
@@ -60,7 +61,7 @@ class SqlAlchemyBonusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BonusUnitOfWo
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._stream_repository_provider = stream_repository_provider
+        self._stream_repository_factory = stream_repository_factory
         self._get_user_equipment_use_case = get_user_equipment_use_case
         self._economy_policy_provider = economy_policy_provider
         self._chat_use_case = chat_use_case
@@ -68,7 +69,7 @@ class SqlAlchemyBonusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[BonusUnitOfWo
     def _build_uow(self, db: Session, read_only: bool) -> BonusUnitOfWork:
         return SqlAlchemyBonusUnitOfWork(
             session=db,
-            stream_repository=self._stream_repository_provider.get(db),
+            stream_repository=self._stream_repository_factory.get(db),
             get_user_equipment_use_case=self._get_user_equipment_use_case,
             economy_policy=self._economy_policy_provider.get(db),
             chat_use_case=self._chat_use_case,

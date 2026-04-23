@@ -17,7 +17,7 @@ async def get_streams(
     try:
         stream_container = StreamContainer()
         with db_ro_session() as session:
-            items, total = stream_container.stream_use_case(session).get_streams(skip, limit)
+            items, total = stream_container.stream_use_case_factory.get(session).get_streams(skip, limit)
         return StreamListResponse(
             items=[StreamResponse.model_validate(asdict(item)) for item in items],
             total=total,
@@ -34,7 +34,7 @@ async def get_stream_detail(
 ) -> StreamDetailResponse:
     stream_container = StreamContainer()
     with db_ro_session() as session:
-        stream_details = stream_container.stream_use_case(session).get_stream_detail(stream_id)
+        stream_details = stream_container.stream_use_case_factory.get(session).get_stream_detail(stream_id)
     if not stream_details:
         raise HTTPException(status_code=404, detail="Стрим не найден")
 

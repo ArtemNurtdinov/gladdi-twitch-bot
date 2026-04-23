@@ -45,39 +45,41 @@ class ChatContainer:
         chat_use_case_uow_factory = self.chat_use_case_uow_factory()
         return ChatUseCase(chat_use_case_uow_factory)
 
-    def chat_summarizer_uow_factory(self, stream_repository_provider: Provider[StreamRepository]) -> ChatSummarizerUnitOfWorkFactory:
+    def chat_summarizer_uow_factory(
+        self, stream_repository_factory: SessionScopedFactory[StreamRepository]
+    ) -> ChatSummarizerUnitOfWorkFactory:
         chat_use_case = self.chat_use_case()
         return SqlAlchemyChatSummarizerUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            stream_repository_provider=stream_repository_provider,
+            stream_repository_factory=stream_repository_factory,
             chat_use_case=chat_use_case,
         )
 
     def handle_chat_summarizer_use_case(
         self,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
     ) -> HandleChatSummarizerUseCase:
-        chat_summarizer_uow_factory = self.chat_summarizer_uow_factory(stream_repository_provider)
+        chat_summarizer_uow_factory = self.chat_summarizer_uow_factory(stream_repository_factory)
         return HandleChatSummarizerUseCase(chat_summarizer_uow_factory, generate_response_use_case_factory, self._session_factory_ro)
 
     def chat_summarizer_job(
         self,
         channel_name: str,
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         chat_summary_state: ChatSummaryState,
     ) -> ChatSummarizerJob:
         handle_chat_summarizer_use_case = self.handle_chat_summarizer_use_case(
-            stream_repository_provider, generate_response_use_case_factory
+            stream_repository_factory, generate_response_use_case_factory
         )
         return ChatSummarizerJob(channel_name, handle_chat_summarizer_use_case, chat_summary_state, self._logger)
 
     def chat_message_uow_factory(
         self,
         economy_policy_provider: Provider[EconomyPolicy],
-        stream_repository_provider: Provider[StreamRepository],
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
@@ -87,7 +89,7 @@ class ChatContainer:
             session_factory_ro=self._session_factory_ro,
             chat_repo_provider=self.chat_repository_provider,
             economy_policy_provider=economy_policy_provider,
-            stream_repo_provider=stream_repository_provider,
+            stream_repository_factory=stream_repository_factory,
             viewer_repo_provider=viewer_repository_provider,
             conversation_service_factory=conversation_service_factory,
             system_prompt_repository_factory=system_prompt_repository_factory,
