@@ -19,7 +19,7 @@ async def get_assistant(
     ai_container: AIContainer = Depends(get_ai_container),
 ):
     with db_ro_session() as session:
-        assistant = await ai_container.get_assistant_use_case_provider.get(session).get_assistant(channel_name)
+        assistant = await ai_container.get_assistant_use_case_factory.get(session).get_assistant(channel_name)
     return AssistantResponse(channel_name=channel_name, assistant=assistant.value)
 
 
@@ -38,6 +38,6 @@ async def save_assistant(
         )
 
     with db_rw_session() as session:
-        await ai_container.save_assistant_use_case_provider.get(session).save_assistant(channel_name, assistant)
+        await ai_container.save_assistant_use_case_factory.get(session).save_assistant(channel_name, assistant)
 
     return BaseResponse(message="Ассистент успешно сохранён")

@@ -20,7 +20,6 @@ from app.joke.infrastructure.uow.joke_uow import SqlAlchemyJokeUnitOfWorkFactory
 from app.joke.presentation.api.mapper.jokes_configuration_mapper import JokesConfigurationMapper as JokesConfigurationSchemaMapper
 from app.platform.domain.repository import PlatformRepository
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -56,7 +55,7 @@ class JokeContainer:
             session_factory_ro=session_factory_ro,
             conversation_service_factory=conversation_service_factory,
             chat_use_case=chat_use_case,
-            jokes_configuration_repository_provider=Provider(self._jokes_configuration_repository),
+            jokes_configuration_repository_factory=SessionScopedFactory(self._jokes_configuration_repository),
         )
 
     def handle_post_joke_use_case(

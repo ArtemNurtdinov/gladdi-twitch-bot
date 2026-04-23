@@ -18,7 +18,6 @@ from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
 from app.ai.intent.infrastructure.intent_uow import SimpleIntentUnitOfWorkFactory
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from core.db import db_ro_session, db_rw_session
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -33,8 +32,8 @@ class AIContainer:
         self.conversation_service_factory = SessionScopedFactory(self._conversation_service)
         self.llm_repository_factory = SessionScopedFactory(self._llm_repository)
         self.generate_response_use_case_factory = SessionScopedFactory(self._generate_response_use_case)
-        self.get_assistant_use_case_provider = Provider(self._get_assistant_use_case)
-        self.save_assistant_use_case_provider = Provider(self._save_assistant_use_case)
+        self.get_assistant_use_case_factory = SessionScopedFactory(self._get_assistant_use_case)
+        self.save_assistant_use_case_factory = SessionScopedFactory(self._save_assistant_use_case)
         self.get_intent_from_text_use_case_factory = SessionScopedFactory(self._get_intent_from_text_use_case)
 
     def _llm_repository(self, session: Session) -> LLMRepository:

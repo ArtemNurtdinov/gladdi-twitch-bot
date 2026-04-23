@@ -20,7 +20,6 @@ from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOf
 from app.platform.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
 from app.viewer.session.domain.repository import ViewerRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -28,7 +27,7 @@ class ChatContainer:
     def __init__(self, session_factory_rw: SessionFactory, session_factory_ro: SessionFactory, logger: Logger):
         self._session_factory_rw = session_factory_rw
         self._session_factory_ro = session_factory_ro
-        self.chat_repository_provider = Provider(self.chat_repository)
+        self.chat_repository_factory = SessionScopedFactory(self.chat_repository)
         self._logger = logger.create_child(__name__)
 
     def chat_repository(self, session: Session) -> ChatRepository:
@@ -38,7 +37,7 @@ class ChatContainer:
         return SqlAlchemyChatUseCaseUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
             session_factory_ro=self._session_factory_ro,
-            chat_repo_provider=self.chat_repository_provider,
+            chat_repository_factory=self.chat_repository_factory,
         )
 
     def chat_use_case(self) -> ChatUseCase:
@@ -87,7 +86,7 @@ class ChatContainer:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
             session_factory_ro=self._session_factory_ro,
-            chat_repo_provider=self.chat_repository_provider,
+            chat_repository_factory=self.chat_repository_factory,
             economy_policy_factory=economy_policy_factory,
             stream_repository_factory=stream_repository_factory,
             viewer_repository_factory=viewer_repository_factory,

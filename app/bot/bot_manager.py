@@ -166,7 +166,7 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_followage,
                 generate_response_use_case_factory=generate_response_use_case_factory,
-                chat_repo_provider=chat_container.chat_repository_provider,
+                chat_repository_factory=chat_container.chat_repository_factory,
                 conversation_service_factory=conversation_service_factory,
                 system_prompt_repository_factory=system_prompt_repository_factory,
                 platform_repository=platform_container.platform_repository(),

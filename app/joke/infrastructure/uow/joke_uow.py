@@ -8,7 +8,6 @@ from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, S
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.joke.application.uow.joke_uow import JokeUnitOfWork, JokeUnitOfWorkFactory
 from app.joke.domain.repository import JokesConfigurationRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -46,7 +45,7 @@ class SqlAlchemyJokeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[JokeUnitOfWork
         session_factory_ro: SessionFactory,
         conversation_service_factory: SessionScopedFactory[ConversationService],
         chat_use_case: ChatUseCase,
-        jokes_configuration_repository_provider: Provider[JokesConfigurationRepository],
+        jokes_configuration_repository_factory: SessionScopedFactory[JokesConfigurationRepository],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -55,13 +54,13 @@ class SqlAlchemyJokeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[JokeUnitOfWork
         )
         self._conversation_service_factory = conversation_service_factory
         self._chat_use_case = chat_use_case
-        self._jokes_configuration_repository_provider = jokes_configuration_repository_provider
+        self._jokes_configuration_repository_factory = jokes_configuration_repository_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> JokeUnitOfWork:
         return SqlAlchemyJokeUnitOfWork(
             session=db,
             conversation_service=self._conversation_service_factory.get(db),
             chat_use_case=self._chat_use_case,
-            jokes_configuration_repository=self._jokes_configuration_repository_provider.get(db),
+            jokes_configuration_repository=self._jokes_configuration_repository_factory.get(db),
             read_only=read_only,
         )

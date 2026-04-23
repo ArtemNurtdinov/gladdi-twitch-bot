@@ -104,7 +104,6 @@ from app.viewer.session.application.uow.viewer_time_uow import ViewerTimeUnitOfW
 from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from app.viewer.session.domain.repository import ViewerRepository
 from app.viewer.session.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -701,7 +700,7 @@ class PlatformContainer:
 
     def follow_age_uow_factory(
         self,
-        chat_repo_provider: Provider[ChatRepository],
+        chat_repository_factory: SessionScopedFactory[ChatRepository],
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
@@ -709,7 +708,7 @@ class PlatformContainer:
         return SqlAlchemyFollowAgeUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
-            chat_repo_provider=chat_repo_provider,
+            chat_repository_factory=chat_repository_factory,
             conversation_service_factory=conversation_service_factory,
             system_prompt_repository_factory=system_prompt_repository_factory,
             platform_repository=platform_repository,
@@ -718,13 +717,13 @@ class PlatformContainer:
     def handle_follow_age_use_case(
         self,
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
-        chat_repo_provider: Provider[ChatRepository],
+        chat_repository_factory: SessionScopedFactory[ChatRepository],
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
     ) -> HandleFollowAgeUseCase:
         follow_age_uow_factory = self.follow_age_uow_factory(
-            chat_repo_provider, conversation_service_factory, system_prompt_repository_factory, platform_repository
+            chat_repository_factory, conversation_service_factory, system_prompt_repository_factory, platform_repository
         )
         return HandleFollowAgeUseCase(generate_response_use_case_factory, follow_age_uow_factory, self._session_factory_ro)
 
@@ -733,7 +732,7 @@ class PlatformContainer:
         command_prefix: str,
         command_name: str,
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
-        chat_repo_provider: Provider[ChatRepository],
+        chat_repository_factory: SessionScopedFactory[ChatRepository],
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
@@ -741,7 +740,7 @@ class PlatformContainer:
     ) -> CommandHandler:
         handle_follow_age_use_case = self.handle_follow_age_use_case(
             generate_response_use_case_factory,
-            chat_repo_provider,
+            chat_repository_factory,
             conversation_service_factory,
             system_prompt_repository_factory,
             platform_repository,

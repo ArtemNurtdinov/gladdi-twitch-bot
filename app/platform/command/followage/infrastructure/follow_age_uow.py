@@ -9,7 +9,6 @@ from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, S
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWork, FollowAgeUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -51,7 +50,7 @@ class SqlAlchemyFollowAgeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[FollowAge
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        chat_repo_provider: Provider[ChatRepository],
+        chat_repository_factory: SessionScopedFactory[ChatRepository],
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
@@ -61,7 +60,7 @@ class SqlAlchemyFollowAgeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[FollowAge
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._chat_repo_provider = chat_repo_provider
+        self._chat_repository_factory = chat_repository_factory
         self._conversation_service_factory = conversation_service_factory
         self._system_prompt_repository_factory = system_prompt_repository_factory
         self._platform_repository = platform_repository
@@ -70,7 +69,7 @@ class SqlAlchemyFollowAgeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[FollowAge
         return SqlAlchemyFollowAgeUnitOfWork(
             session=db,
             conversation_service=self._conversation_service_factory.get(db),
-            chat_repository=self._chat_repo_provider.get(db),
+            chat_repository=self._chat_repository_factory.get(db),
             system_prompt_repository=self._system_prompt_repository_factory.get(db),
             platform_repository=self._platform_repository,
             read_only=read_only,
