@@ -161,7 +161,7 @@ class BotManager:
             followage_command_handler = platform_container.followage_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_followage,
-                generate_response_use_case=ai_container.generate_response_use_case_provider,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
                 chat_repo_provider=chat_container.chat_repository_provider,
                 conversation_service_factory=ai_container.conversation_service_factory,
                 system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
@@ -182,7 +182,7 @@ class BotManager:
                     get_intent_from_text_use_case_provider=ai_container.get_intent_from_text_use_case_provider(),
                     prompt_service=ai_container.prompt_service,
                     unit_of_work_factory=ask_ouw_factory,
-                    chat_response_use_case=ai_container.generate_response_use_case_provider,
+                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
                     session_factory_ro=db_ro_session,
                 ),
                 bot_nick=bot_name,
@@ -198,7 +198,7 @@ class BotManager:
                         conversation_service_factory=ai_container.conversation_service_factory,
                         get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     ),
-                    chat_response_use_case=ai_container.generate_response_use_case_provider,
+                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
                     calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
                     db_ro_session=db_ro_session,
                 ),
@@ -384,7 +384,7 @@ class BotManager:
                 ),
                 get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case_provider(),
                 prompt_service=ai_container.prompt_service,
-                generate_response_use_case=ai_container.generate_response_use_case_provider,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
                 db_ro_session=db_ro_session,
             )
 
@@ -397,7 +397,7 @@ class BotManager:
                     system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
                 ),
                 prompt_service=ai_container.prompt_service,
-                generate_response_use_case=ai_container.generate_response_use_case_provider,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
                 db_ro_session=db_ro_session,
             )
 
@@ -437,7 +437,7 @@ class BotManager:
                 chat_use_case=chat_container.chat_use_case(),
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),
-                generate_response_use_case=ai_container.generate_response_use_case_provider,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
             )
 
             token_checker_job: TokenCheckerJob = platform_auth_container.token_checker_job
@@ -449,7 +449,7 @@ class BotManager:
                 minigame_repository=minigame_repository,
                 notification_repository=notification_container.notification_repository(),
                 notification_group_id=self._telegram_config.group_id,
-                generate_response_use_case=ai_container.generate_response_use_case_provider,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
                 state=chat_summary_state,
                 stream_repository_provider=stream_container.stream_repository_provider,
                 viewer_repository_provider=viewer_container.viewer_repository_provider,
@@ -462,7 +462,7 @@ class BotManager:
             chat_summarizer_job: ChatSummarizerJob = chat_container.chat_summarizer_job(
                 channel_name=channel_name,
                 stream_repository_provider=stream_container.stream_repository_provider,
-                generate_response_use_case=ai_container.generate_response_use_case_provider,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
                 chat_summary_state=chat_summary_state,
             )
 

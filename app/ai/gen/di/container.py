@@ -32,7 +32,7 @@ class AIContainer:
         self.system_prompt_repository_factory = SessionScopedFactory(self._system_prompt_repository)
         self.conversation_service_factory = SessionScopedFactory(self._conversation_service)
         self.llm_repository_factory = SessionScopedFactory(self._llm_repository)
-        self.generate_response_use_case_provider = Provider(self._generate_response_use_case)
+        self.generate_response_use_case_factory = SessionScopedFactory(self._generate_response_use_case)
         self.get_assistant_use_case_provider = Provider(self._get_assistant_use_case)
         self.save_assistant_use_case_provider = Provider(self._save_assistant_use_case)
 
@@ -61,14 +61,14 @@ class AIContainer:
         return SqlAlchemyChatResponseUnitOfWorkFactory(
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
-            conversation_service_provider=self.conversation_service_provider,
+            conversation_service_factory=self.conversation_service_factory,
         )
 
     def _generate_response_use_case(self, session: Session) -> GenerateResponseUseCase:
         llm_repository = self._llm_repository(session)
         chat_response_uow_factory = self.chat_response_uow_factory()
         return GenerateResponseUseCase(
-            chat_response_uow_factory, llm_repository, self.system_prompt_repo_provider, self._session_factory_ro
+            chat_response_uow_factory, llm_repository, self.system_prompt_repository_factory, self._session_factory_ro
         )
 
     def _get_assistant_use_case(self, session: Session) -> GetAssistantUseCase:

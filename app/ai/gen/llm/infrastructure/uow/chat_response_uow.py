@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.llm.application.uow.chat_response_uow import ChatResponseUnitOfWork, ChatResponseUnitOfWorkFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from core.provider import Provider
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from core.types import SessionFactory
 
 
@@ -24,18 +24,18 @@ class SqlAlchemyChatResponseUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatRe
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
             builder=self._build_uow,
         )
-        self._conversation_service_provider = conversation_service_provider
+        self._conversation_service_factory = conversation_service_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> ChatResponseUnitOfWork:
         return SqlAlchemyChatResponseUnitOfWork(
             session=db,
-            conversation_service=self._conversation_service_provider.get(db),
+            conversation_service=self._conversation_service_factory.get(db),
             read_only=read_only,
         )

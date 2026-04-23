@@ -1,19 +1,19 @@
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.chat.domain.model.chat_message import ChatMessage
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.platform.command.followage.application.model import FollowageDTO
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
-from core.provider import Provider
 from core.types import SessionFactory
 
 
 class HandleFollowAgeUseCase:
     def __init__(
         self,
-        chat_response_use_case: Provider[GenerateResponseUseCase],
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         follow_age_uow_factory: FollowAgeUnitOfWorkFactory,
         session_factory_ro: SessionFactory,
     ):
-        self._chat_response_use_case = chat_response_use_case
+        self._generate_response_use_case_factory = generate_response_use_case_factory
         self._follow_age_uow_factory = follow_age_uow_factory
         self._db_ro_session = session_factory_ro
 
@@ -59,7 +59,9 @@ class HandleFollowAgeUseCase:
         )
 
         with self._db_ro_session() as session:
-            assistant_message = await self._chat_response_use_case.get(session).generate_response(prompt=prompt, channel_name=channel_name)
+            assistant_message = await self._generate_response_use_case_factory.get(session).generate_response(
+                prompt=prompt, channel_name=channel_name
+            )
 
         with self._follow_age_uow_factory.create() as uow:
             uow.conversation_service.save_conversation_to_db(

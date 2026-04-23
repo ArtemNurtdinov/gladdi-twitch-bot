@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.model.chat_summary_state import ChatSummaryState
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.logger.domain.logger import Logger
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_repository import MinigameRepository
@@ -12,7 +13,6 @@ from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkF
 from app.stream.domain.model.info import StreamInfo
 from app.stream.domain.model.stat import StreamStatistics
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -25,7 +25,7 @@ class HandleStreamStatusUseCase:
         minigame_repository: MinigameRepository,
         notification_repository: NotificationRepository,
         notification_group_id: int,
-        generate_response_use_case: Provider[GenerateResponseUseCase],
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         state: ChatSummaryState,
         session_ro_factory: SessionFactory,
         logger: Logger,
@@ -36,7 +36,7 @@ class HandleStreamStatusUseCase:
         self._minigame_repository = minigame_repository
         self._notification_repository = notification_repository
         self._notification_group_id = notification_group_id
-        self._generate_response_use_case = generate_response_use_case
+        self._generate_response_use_case_factory = generate_response_use_case_factory
         self._state = state
         self._session_ro = session_ro_factory
         self._logger = logger.create_child(__name__)
@@ -145,7 +145,7 @@ class HandleStreamStatusUseCase:
             f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
         )
         with self._session_ro() as session:
-            result = await self._generate_response_use_case.get(session).generate_response(prompt, channel_name)
+            result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
         try:
             await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
         except Exception as e:
@@ -177,7 +177,7 @@ class HandleStreamStatusUseCase:
                 f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
             )
             with self._session_ro() as session:
-                result = await self._generate_response_use_case.get(session).generate_response(prompt, channel_name)
+                result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
             self._state.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
@@ -217,7 +217,7 @@ class HandleStreamStatusUseCase:
 
         prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции"
         with self._session_ro() as session:
-            result = await self._generate_response_use_case.get(session).generate_response(prompt, channel_name)
+            result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
 
         with self._stream_status_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(channel_name, prompt, result)

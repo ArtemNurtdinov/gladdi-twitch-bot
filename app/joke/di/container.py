@@ -67,13 +67,13 @@ class JokeContainer:
         chat_use_case: ChatUseCase,
         user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
-        generate_response_use_case: Provider[GenerateResponseUseCase],
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
     ) -> HandlePostJokeUseCase:
         joke_uow_factory = self.joke_uow_factory(session_factory_rw, session_factory_ro, conversation_service_factory, chat_use_case)
         return HandlePostJokeUseCase(
             user_cache=user_cache,
             platform_repository=platform_repository,
-            chat_response_use_case=generate_response_use_case,
+            generate_response_use_case_factory=generate_response_use_case_factory,
             joke_uow=joke_uow_factory,
             db_ro_session=self._session_factory_ro,
         )
@@ -89,7 +89,7 @@ class JokeContainer:
         chat_use_case: ChatUseCase,
         user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
-        generate_response_use_case: Provider[GenerateResponseUseCase],
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
     ) -> PostJokeJob:
         handle_post_joke_use_case = self.handle_post_joke_use_case(
             session_factory_rw,
@@ -98,7 +98,7 @@ class JokeContainer:
             chat_use_case,
             user_cache,
             platform_repository,
-            generate_response_use_case,
+            generate_response_use_case_factory,
         )
         return PostJokeJob(
             channel_name=channel_name,

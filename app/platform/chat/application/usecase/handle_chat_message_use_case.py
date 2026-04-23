@@ -3,6 +3,7 @@ from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.domain.models import Intent
 from app.chat.domain.model.chat_message import ChatMessage
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.platform.chat.application.model.message import ChatMessageDTO
 from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOfWorkFactory
 from core.provider import Provider
@@ -15,13 +16,13 @@ class HandleChatMessageUseCase:
         chat_message_uow: ChatMessageUnitOfWorkFactory,
         get_intent_from_text_use_case: Provider[GetIntentFromTextUseCase],
         prompt_service: PromptService,
-        generate_response_use_case: Provider[GenerateResponseUseCase],
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         db_ro_session: SessionFactory,
     ):
         self._chat_message_uow = chat_message_uow
         self._get_intent_from_text_use_case = get_intent_from_text_use_case
         self._prompt_service = prompt_service
-        self._generate_response_use_case = generate_response_use_case
+        self._generate_response_use_case_factory = generate_response_use_case_factory
         self._db_ro_session = db_ro_session
 
     async def handle(self, chat_message: ChatMessageDTO) -> str | None:
@@ -77,7 +78,7 @@ class HandleChatMessageUseCase:
             return None
 
         with self._db_ro_session() as session:
-            result = await self._generate_response_use_case.get(session).generate_response(prompt, chat_message.channel_name)
+            result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, chat_message.channel_name)
 
         with self._chat_message_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(

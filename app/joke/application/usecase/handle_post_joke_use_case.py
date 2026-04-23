@@ -2,12 +2,12 @@ from datetime import UTC, datetime, timedelta
 from random import randint
 
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.domain.model.configuration import JokesConfiguration
 from app.platform.domain.repository import PlatformRepository
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
-from core.provider import Provider
 from core.types import SessionFactory
 
 
@@ -16,13 +16,13 @@ class HandlePostJokeUseCase:
         self,
         user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
-        chat_response_use_case: Provider[GenerateResponseUseCase],
+        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         joke_uow: JokeUnitOfWorkFactory,
         db_ro_session: SessionFactory,
     ):
         self._user_cache = user_cache
         self._platform_repository = platform_repository
-        self._chat_response_use_case = chat_response_use_case
+        self._generate_response_use_case_factory = generate_response_use_case_factory
         self._joke_uow = joke_uow
         self._db_ro_session = db_ro_session
 
@@ -51,7 +51,7 @@ class HandlePostJokeUseCase:
 
         prompt = f"Придумай анекдот, связанный с категорией трансляции: {stream_info.game_name}."
         with self._db_ro_session() as session:
-            joke_text = await self._chat_response_use_case.get(session).generate_response(prompt, post_joke.channel_name)
+            joke_text = await self._generate_response_use_case_factory.get(session).generate_response(prompt, post_joke.channel_name)
 
         with self._joke_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(channel_name=post_joke.channel_name, user_message=prompt, ai_message=joke_text)
