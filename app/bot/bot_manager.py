@@ -163,16 +163,16 @@ class BotManager:
                 command_name=self._config.command_followage,
                 generate_response_use_case=ai_container.generate_response_use_case_provider,
                 chat_repo_provider=chat_container.chat_repository_provider,
-                conversation_service_provider=ai_container.conversation_service_provider,
-                system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                conversation_service_factory=ai_container.conversation_service_factory,
+                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
                 platform_repository=platform_container.platform_repository(),
                 bot_name=bot_name,
             )
 
             ask_ouw_factory = ask_container.ask_uow_factory(
                 chat_repository_provider=Provider(lambda session: ChatRepositoryImpl(session)),
-                conversation_service_provider=ai_container.conversation_service_provider,
-                system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                conversation_service_factory=ai_container.conversation_service_factory,
+                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
             )
 
             ask_command_handler: CommandHandler = AskCommandHandlerImpl(
@@ -195,7 +195,7 @@ class BotManager:
                     battle_uow=battle_container.battle_uow_factory(
                         economy_policy_provider=economy_container.economy_policy_provider,
                         chat_use_case=chat_container.chat_use_case(),
-                        conversation_service_provider=ai_container.conversation_service_provider,
+                        conversation_service_factory=ai_container.conversation_service_factory,
                         get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     ),
                     chat_response_use_case=ai_container.generate_response_use_case_provider,
@@ -379,8 +379,8 @@ class BotManager:
                     economy_policy_provider=economy_container.economy_policy_provider,
                     stream_repository_provider=stream_container.stream_repository_provider,
                     viewer_repository_provider=viewer_container.viewer_repository_provider,
-                    conversation_service_provider=ai_container.conversation_service_provider,
-                    system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                    conversation_service_factory=ai_container.conversation_service_factory,
+                    system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
                 ),
                 get_intent_from_text_use_case=ai_container.get_intent_from_text_use_case_provider(),
                 prompt_service=ai_container.prompt_service,
@@ -393,8 +393,8 @@ class BotManager:
                     economy_policy_provider=economy_container.economy_policy_provider,
                     stream_repository_provider=stream_container.stream_repository_provider,
                     viewer_repository_provider=viewer_container.viewer_repository_provider,
-                    conversation_service_provider=ai_container.conversation_service_provider,
-                    system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                    conversation_service_factory=ai_container.conversation_service_factory,
+                    system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
                 ),
                 prompt_service=ai_container.prompt_service,
                 generate_response_use_case=ai_container.generate_response_use_case_provider,
@@ -433,7 +433,7 @@ class BotManager:
                 bot_name=bot_name,
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
-                conversation_service_provider=ai_container.conversation_service_provider,
+                conversation_service_factory=ai_container.conversation_service_factory,
                 chat_use_case=chat_container.chat_use_case(),
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),
@@ -456,7 +456,7 @@ class BotManager:
                 battle_use_case=battle_container.battle_use_case(),
                 economy_policy_provider=economy_container.economy_policy_provider,
                 chat_use_case=chat_container.chat_use_case(),
-                conversation_service_provider=ai_container.conversation_service_provider,
+                conversation_service_factory=ai_container.conversation_service_factory,
             )
 
             chat_summarizer_job: ChatSummarizerJob = chat_container.chat_summarizer_job(
@@ -475,9 +475,9 @@ class BotManager:
                     stream_repository_provider=stream_container.stream_repository_provider,
                     get_used_words_use_case=minigame_container.get_used_words_use_case(),
                     add_used_words_use_case=minigame_container.add_used_word_use_case(),
-                    conversation_service_provider=ai_container.conversation_service_provider,
+                    conversation_service_factory=ai_container.conversation_service_factory,
                     get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                    system_prompt_repository_provider=ai_container.system_prompt_repo_provider,
+                    system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
                     llm_repository=ai_container.llm_repository_provider,
                     prefix=self._config.prefix,
                     number_guess_name=self._config.command_guess,

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.logger.domain.logger import Logger
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.application.mapper.jokes_configuration_mapper import JokesConfigurationMapper as JokesConfigurationDTOMapper
@@ -47,13 +48,13 @@ class JokeContainer:
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
         chat_use_case: ChatUseCase,
     ) -> JokeUnitOfWorkFactory:
         return SqlAlchemyJokeUnitOfWorkFactory(
             session_factory_rw=session_factory_rw,
             session_factory_ro=session_factory_ro,
-            conversation_service_provider=conversation_service_provider,
+            conversation_service_factory=conversation_service_factory,
             chat_use_case=chat_use_case,
             jokes_configuration_repository_provider=Provider(self._jokes_configuration_repository),
         )
@@ -62,13 +63,13 @@ class JokeContainer:
         self,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
         chat_use_case: ChatUseCase,
         user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
         generate_response_use_case: Provider[GenerateResponseUseCase],
     ) -> HandlePostJokeUseCase:
-        joke_uow_factory = self.joke_uow_factory(session_factory_rw, session_factory_ro, conversation_service_provider, chat_use_case)
+        joke_uow_factory = self.joke_uow_factory(session_factory_rw, session_factory_ro, conversation_service_factory, chat_use_case)
         return HandlePostJokeUseCase(
             user_cache=user_cache,
             platform_repository=platform_repository,
@@ -84,7 +85,7 @@ class JokeContainer:
         bot_name: str,
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
         chat_use_case: ChatUseCase,
         user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
@@ -93,7 +94,7 @@ class JokeContainer:
         handle_post_joke_use_case = self.handle_post_joke_use_case(
             session_factory_rw,
             session_factory_ro,
-            conversation_service_provider,
+            conversation_service_factory,
             chat_use_case,
             user_cache,
             platform_repository,

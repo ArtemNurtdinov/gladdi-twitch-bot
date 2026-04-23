@@ -6,6 +6,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.domain.repo import ChatRepository
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOfWork, ChatMessageUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
@@ -68,8 +69,8 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMes
         economy_policy_provider: Provider[EconomyPolicy],
         stream_repo_provider: Provider[StreamRepository],
         viewer_repo_provider: Provider[ViewerRepository],
-        conversation_service_provider: Provider[ConversationService],
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -80,8 +81,8 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMes
         self._economy_policy_provider = economy_policy_provider
         self._stream_repo_provider = stream_repo_provider
         self._viewer_repo_provider = viewer_repo_provider
-        self._conversation_service_provider = conversation_service_provider
-        self._system_prompt_repository_provider = system_prompt_repository_provider
+        self._conversation_service_factory = conversation_service_factory
+        self._system_prompt_repository_factory = system_prompt_repository_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> ChatMessageUnitOfWork:
         return SqlAlchemyChatMessageUnitOfWork(
@@ -90,7 +91,7 @@ class SqlAlchemyChatMessageUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ChatMes
             economy=self._economy_policy_provider.get(db),
             stream_repo=self._stream_repo_provider.get(db),
             viewer_repo=self._viewer_repo_provider.get(db),
-            conversation_service=self._conversation_service_provider.get(db),
-            system_prompt_repository=self._system_prompt_repository_provider.get(db),
+            conversation_service=self._conversation_service_factory.get(db),
+            system_prompt_repository=self._system_prompt_repository_factory.get(db),
             read_only=read_only,
         )

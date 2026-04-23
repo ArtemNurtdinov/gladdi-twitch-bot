@@ -6,6 +6,7 @@ from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.llm.domain.model.assistant import AIAssistant
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.logger.domain.logger import Logger
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.domain.minigame_repository import MinigameRepository
@@ -26,7 +27,7 @@ class StartWordGameUseCase:
         prefix: str,
         minigame_uow: MinigameUnitOfWorkFactory,
         db_ro_session: SessionFactory,
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         llm_repository: Provider[LLMRepository],
         command_guess_word: str,
         command_guess_letter: str,
@@ -37,7 +38,7 @@ class StartWordGameUseCase:
         self._minigame_repository = minigame_repository
         self._minigame_uow = minigame_uow
         self._db_ro_session = db_ro_session
-        self._system_prompt_repository_provider = system_prompt_repository_provider
+        self._system_prompt_repository_factory = system_prompt_repository_factory
         self._llm_repository = llm_repository
         self._prefix = prefix
         self._command_guess_word = command_guess_word
@@ -64,7 +65,7 @@ class StartWordGameUseCase:
         )
 
         with self._db_ro_session() as session:
-            system_prompt = self._system_prompt_repository_provider.get(session).get_system_prompt(channel_name)
+            system_prompt = self._system_prompt_repository_factory.get(session).get_system_prompt(channel_name)
             ai_messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt), AIMessage(role=Role.USER, content=prompt)]
             assistant = await self._llm_repository.get(session).get_assistant(channel_name)
             if assistant is None:

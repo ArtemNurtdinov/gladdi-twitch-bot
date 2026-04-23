@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWork, MinigameUnitOfWorkFactory
@@ -76,7 +77,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
         stream_repository_provider: Provider[StreamRepository],
         get_used_words_use_case: GetUsedWordsUseCase,
         add_used_words_use_case: AddUsedWordsUseCase,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
     ):
         super().__init__(
@@ -89,7 +90,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
         self._stream_repository_provider = stream_repository_provider
         self._get_used_words_use_case = get_used_words_use_case
         self._add_used_words_use_case = add_used_words_use_case
-        self._conversation_service_provider = conversation_service_provider
+        self._conversation_service_factory = conversation_service_factory
         self._get_user_equipment_use_case = get_user_equipment_use_case
 
     def _build_uow(self, db: Session, read_only: bool) -> MinigameUnitOfWork:
@@ -100,7 +101,7 @@ class SqlAlchemyMinigameUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[MinigameUn
             stream_repository=self._stream_repository_provider.get(db),
             get_used_words_use_case=self._get_used_words_use_case,
             add_used_words_use_case=self._add_used_words_use_case,
-            conversation_service=self._conversation_service_provider.get(db),
+            conversation_service=self._conversation_service_factory.get(db),
             get_user_equipment_use_case=self._get_user_equipment_use_case,
             read_only=read_only,
         )

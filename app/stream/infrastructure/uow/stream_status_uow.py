@@ -6,6 +6,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWork, StreamStatusUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
@@ -69,7 +70,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         battle_use_case: BattleUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -81,7 +82,7 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
         self._battle_use_case = battle_use_case
         self._economy_policy_provider = economy_policy_provider
         self._chat_use_case = chat_use_case
-        self._conversation_service_provider = conversation_service_provider
+        self._conversation_service_factory = conversation_service_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> StreamStatusUnitOfWork:
         return SqlAlchemyStreamStatusUnitOfWork(
@@ -91,6 +92,6 @@ class SqlAlchemyStreamStatusUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[Stream
             battle_use_case=self._battle_use_case,
             economy_policy=self._economy_policy_provider.get(db),
             chat_use_case=self._chat_use_case,
-            conversation_service=self._conversation_service_provider.get(db),
+            conversation_service=self._conversation_service_factory.get(db),
             read_only=read_only,
         )

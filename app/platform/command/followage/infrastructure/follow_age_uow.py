@@ -6,6 +6,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.domain.repo import ChatRepository
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWork, FollowAgeUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
 from core.provider import Provider
@@ -51,8 +52,8 @@ class SqlAlchemyFollowAgeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[FollowAge
         session_factory_rw: SessionFactory,
         session_factory_ro: SessionFactory,
         chat_repo_provider: Provider[ChatRepository],
-        conversation_service_provider: Provider[ConversationService],
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
     ):
         super().__init__(
@@ -61,16 +62,16 @@ class SqlAlchemyFollowAgeUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[FollowAge
             builder=self._build_uow,
         )
         self._chat_repo_provider = chat_repo_provider
-        self._conversation_service_provider = conversation_service_provider
-        self._system_prompt_repository_provider = system_prompt_repository_provider
+        self._conversation_service_factory = conversation_service_factory
+        self._system_prompt_repository_factory = system_prompt_repository_factory
         self._platform_repository = platform_repository
 
     def _build_uow(self, db: Session, read_only: bool) -> FollowAgeUnitOfWork:
         return SqlAlchemyFollowAgeUnitOfWork(
             session=db,
-            conversation_service=self._conversation_service_provider.get(db),
+            conversation_service=self._conversation_service_factory.get(db),
             chat_repository=self._chat_repo_provider.get(db),
-            system_prompt_repository=self._system_prompt_repository_provider.get(db),
+            system_prompt_repository=self._system_prompt_repository_factory.get(db),
             platform_repository=self._platform_repository,
             read_only=read_only,
         )

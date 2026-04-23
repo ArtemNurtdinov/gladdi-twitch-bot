@@ -10,6 +10,7 @@ from app.betting.application.betting_service import BettingService
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
 from app.economy.domain.economy_policy import EconomyPolicy
@@ -528,7 +529,7 @@ class PlatformContainer:
         stream_repository_provider: Provider[StreamRepository],
         get_used_words_use_case: GetUsedWordsUseCase,
         add_used_words_use_case: AddUsedWordsUseCase,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
     ) -> MinigameUnitOfWorkFactory:
         return SqlAlchemyMinigameUnitOfWorkFactory(
@@ -539,7 +540,7 @@ class PlatformContainer:
             stream_repository_provider=stream_repository_provider,
             get_used_words_use_case=get_used_words_use_case,
             add_used_words_use_case=add_used_words_use_case,
-            conversation_service_provider=conversation_service_provider,
+            conversation_service_factory=conversation_service_factory,
             get_user_equipment_use_case=get_user_equipment_use_case,
         )
 
@@ -548,7 +549,7 @@ class PlatformContainer:
         prefix: str,
         minigame_repository: MinigameRepository,
         minigame_uow_factory: MinigameUnitOfWorkFactory,
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         llm_repository: Provider[LLMRepository],
         command_guess_word: str,
         command_guess_letter: str,
@@ -560,7 +561,7 @@ class PlatformContainer:
             prefix,
             minigame_uow_factory,
             self._session_factory_ro,
-            system_prompt_repository_provider,
+            system_prompt_repository_factory,
             llm_repository,
             command_guess_word,
             command_guess_letter,
@@ -617,9 +618,9 @@ class PlatformContainer:
         stream_repository_provider: Provider[StreamRepository],
         get_used_words_use_case: GetUsedWordsUseCase,
         add_used_words_use_case: AddUsedWordsUseCase,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         llm_repository: Provider[LLMRepository],
         prefix: str,
         number_guess_name: str,
@@ -635,7 +636,7 @@ class PlatformContainer:
             stream_repository_provider,
             get_used_words_use_case,
             add_used_words_use_case,
-            conversation_service_provider,
+            conversation_service_factory,
             get_user_equipment_use_case,
         )
         start_number_guess_game_use_case = self.start_number_guess_game_use_case(
@@ -645,7 +646,7 @@ class PlatformContainer:
             prefix,
             minigame_repository,
             minigame_uow_factory,
-            system_prompt_repository_provider,
+            system_prompt_repository_factory,
             llm_repository,
             command_guess_word,
             command_guess_letter,
@@ -698,16 +699,16 @@ class PlatformContainer:
     def follow_age_uow_factory(
         self,
         chat_repo_provider: Provider[ChatRepository],
-        conversation_service_provider: Provider[ConversationService],
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
     ) -> FollowAgeUnitOfWorkFactory:
         return SqlAlchemyFollowAgeUnitOfWorkFactory(
             session_factory_ro=self._session_factory_ro,
             session_factory_rw=self._session_factory_rw,
             chat_repo_provider=chat_repo_provider,
-            conversation_service_provider=conversation_service_provider,
-            system_prompt_repository_provider=system_prompt_repository_provider,
+            conversation_service_factory=conversation_service_factory,
+            system_prompt_repository_factory=system_prompt_repository_factory,
             platform_repository=platform_repository,
         )
 
@@ -715,12 +716,12 @@ class PlatformContainer:
         self,
         generate_response_use_case: Provider[GenerateResponseUseCase],
         chat_repo_provider: Provider[ChatRepository],
-        conversation_service_provider: Provider[ConversationService],
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
     ) -> HandleFollowAgeUseCase:
         follow_age_uow_factory = self.follow_age_uow_factory(
-            chat_repo_provider, conversation_service_provider, system_prompt_repository_provider, platform_repository
+            chat_repo_provider, conversation_service_factory, system_prompt_repository_factory, platform_repository
         )
         return HandleFollowAgeUseCase(generate_response_use_case, follow_age_uow_factory, self._session_factory_ro)
 
@@ -730,16 +731,16 @@ class PlatformContainer:
         command_name: str,
         generate_response_use_case: Provider[GenerateResponseUseCase],
         chat_repo_provider: Provider[ChatRepository],
-        conversation_service_provider: Provider[ConversationService],
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
         bot_name: str,
     ) -> CommandHandler:
         handle_follow_age_use_case = self.handle_follow_age_use_case(
             generate_response_use_case,
             chat_repo_provider,
-            conversation_service_provider,
-            system_prompt_repository_provider,
+            conversation_service_factory,
+            system_prompt_repository_factory,
             platform_repository,
         )
         return FollowageCommandHandlerImpl(
@@ -782,7 +783,7 @@ class PlatformContainer:
         battle_use_case: BattleUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
     ) -> StreamStatusUnitOfWorkFactory:
         return SqlAlchemyStreamStatusUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
@@ -792,7 +793,7 @@ class PlatformContainer:
             battle_use_case=battle_use_case,
             economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
-            conversation_service_provider=conversation_service_provider,
+            conversation_service_factory=conversation_service_factory,
         )
 
     def handle_stream_status_use_case(
@@ -809,7 +810,7 @@ class PlatformContainer:
         battle_use_case: BattleUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
     ) -> HandleStreamStatusUseCase:
         stream_status_uow_factory = self.stream_status_uow_factory(
             stream_repository_provider,
@@ -817,7 +818,7 @@ class PlatformContainer:
             battle_use_case,
             economy_policy_provider,
             chat_use_case,
-            conversation_service_provider,
+            conversation_service_factory,
         )
         return HandleStreamStatusUseCase(
             user_cache,
@@ -847,7 +848,7 @@ class PlatformContainer:
         battle_use_case: BattleUseCase,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
     ) -> StreamStatusJob:
         handle_stream_status_use_case = self.handle_stream_status_use_case(
             user_cache=user_cache,
@@ -862,7 +863,7 @@ class PlatformContainer:
             battle_use_case=battle_use_case,
             economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
-            conversation_service_provider=conversation_service_provider,
+            conversation_service_factory=conversation_service_factory,
         )
         return StreamStatusJob(channel_name, handle_stream_status_use_case, self._logger)
 

@@ -16,6 +16,7 @@ from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
 from app.ai.intent.infrastructure.intent_uow import SimpleIntentUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from core.db import db_ro_session, db_rw_session
 from core.provider import Provider
 from core.types import SessionFactory
@@ -28,8 +29,8 @@ class AIContainer:
         self._llmbox_host = llmbox_host
         self.intent_detector = IntentDetectorClientImpl(intent_detector_host)
         self.prompt_service = PromptService()
-        self.system_prompt_repo_provider = Provider(self._system_prompt_repository)
-        self.conversation_service_provider = Provider(self._conversation_service)
+        self.system_prompt_repository_factory = SessionScopedFactory(self._system_prompt_repository)
+        self.conversation_service_factory = SessionScopedFactory(self._conversation_service)
         self.llm_repository_provider = Provider(self._llm_repository)
         self.generate_response_use_case_provider = Provider(self._generate_response_use_case)
         self.get_assistant_use_case_provider = Provider(self._get_assistant_use_case)

@@ -13,6 +13,7 @@ from app.chat.domain.repo import ChatRepository
 from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
 from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
 from app.chat.infrastructure.uow.chat_use_case_uow import SqlAlchemyChatUseCaseUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.logger.domain.logger import Logger
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOfWorkFactory
@@ -74,8 +75,8 @@ class ChatContainer:
         economy_policy_provider: Provider[EconomyPolicy],
         stream_repository_provider: Provider[StreamRepository],
         viewer_repository_provider: Provider[ViewerRepository],
-        conversation_service_provider: Provider[ConversationService],
-        system_prompt_repository_provider: Provider[SystemPromptRepository],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
+        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
     ) -> ChatMessageUnitOfWorkFactory:
         return SqlAlchemyChatMessageUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
@@ -84,6 +85,6 @@ class ChatContainer:
             economy_policy_provider=economy_policy_provider,
             stream_repo_provider=stream_repository_provider,
             viewer_repo_provider=viewer_repository_provider,
-            conversation_service_provider=conversation_service_provider,
-            system_prompt_repository_provider=system_prompt_repository_provider,
+            conversation_service_factory=conversation_service_factory,
+            system_prompt_repository_factory=system_prompt_repository_factory,
         )

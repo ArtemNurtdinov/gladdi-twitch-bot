@@ -7,6 +7,7 @@ from app.battle.domain.repo import BattleRepository
 from app.battle.infrastructure.battle_repository import BattleRepositoryImpl
 from app.battle.infrastructure.battle_use_case_uow import SqlAlchemyBattleUseCaseUnitOfWorkFactory
 from app.chat.application.usecase.chat_use_case import ChatUseCase
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.platform.command.battle.application.battle_uow import BattleUnitOfWorkFactory
@@ -39,7 +40,7 @@ class BattleContainer:
         self,
         economy_policy_provider: Provider[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        conversation_service_provider: Provider[ConversationService],
+        conversation_service_factory: SessionScopedFactory[ConversationService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
     ) -> BattleUnitOfWorkFactory:
         return SqlAlchemyBattleUnitOfWorkFactory(
@@ -47,7 +48,7 @@ class BattleContainer:
             session_factory_ro=self._session_factory_ro,
             economy_policy_provider=economy_policy_provider,
             chat_use_case=chat_use_case,
-            conversation_service_provider=conversation_service_provider,
+            conversation_service_factory=conversation_service_factory,
             battle_use_case=self.battle_use_case(),
             get_user_equipment_use_case=get_user_equipment_use_case,
         )
