@@ -16,6 +16,7 @@ from app.core.logger.domain.logger import Logger
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api.joke_routes import get_joke_container
 from app.platform.auth.di.container import PlatformAuthContainer
+from app.shop.di.container import ShopContainer
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -36,6 +37,10 @@ def get_config(request: Request) -> ApplicationConfig:
 
 def get_ai_container(request: Request) -> AIContainer:
     return request.app.state.ai_container
+
+
+def get_shop_container(request: Request) -> ShopContainer:
+    return request.app.state.shop_container
 
 
 @router.post("/start", summary="Начать авторизацию Twitch", response_model=AuthStartResponse)
@@ -69,6 +74,7 @@ async def oauth_callback(
     logger: Logger = Depends(get_logger),
     ai_container: AIContainer = Depends(get_ai_container),
     joke_container: JokeContainer = Depends(get_joke_container),
+    shop_container: ShopContainer = Depends(get_shop_container),
 ) -> BotActionResultResponse:
     data = {
         "client_id": config.twitch.client_id,
@@ -107,6 +113,7 @@ async def oauth_callback(
         joke_container=joke_container,
         platform_auth=platform_auth_container.platform_auth,
         token_checker_job=platform_auth_container.token_checker_job,
+        shop_item_repository_factory=shop_container.shop_item_repository_factory,
     )
 
 

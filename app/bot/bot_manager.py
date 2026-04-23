@@ -48,7 +48,7 @@ from app.platform.command.battle.application.handle_battle_use_case import Handl
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.di.container import PlatformContainer
-from app.shop.di.container import ShopContainer
+from app.shop.domain.repository import ShopItemRepository
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.di.container import StreamContainer
 from app.task.domain.model.task import Task
@@ -120,6 +120,7 @@ class BotManager:
         joke_container: JokeContainer,
         platform_auth: PlatformAuth,
         token_checker_job: TokenCheckerJob,
+        shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
     ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
@@ -131,7 +132,6 @@ class BotManager:
             follow_container = FollowContainer()
             economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            shop_container = ShopContainer()
             minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             betting_container = BettingContainer()
@@ -252,7 +252,7 @@ class BotManager:
                 add_equipment_use_case=equipment_container.add_equipment_use_case(),
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
                 chat_use_case=chat_container.chat_use_case(),
-                shop_item_repository_provider=shop_container.shop_item_repository_provider,
+                shop_item_repository_factory=shop_item_repository_factory,
                 bot_name=bot_name,
             )
 
@@ -263,7 +263,7 @@ class BotManager:
                 add_equipment_use_case=equipment_container.add_equipment_use_case(),
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
                 chat_use_case=chat_container.chat_use_case(),
-                shop_item_repository_provider=shop_container.shop_item_repository_provider,
+                shop_item_repository_factory=shop_item_repository_factory,
                 bot_name=bot_name,
             )
 

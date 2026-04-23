@@ -356,7 +356,7 @@ class PlatformContainer:
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
-        shop_item_repository_provider: Provider[ShopItemRepository],
+        shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
     ) -> ShopUnitOfWorkFactory:
         return SqlAlchemyShopUnitOfWorkFactory(
             session_factory_rw=self._session_factory_rw,
@@ -365,7 +365,7 @@ class PlatformContainer:
             add_equipment_use_case=add_equipment_use_case,
             equipment_exists_use_case=equipment_exists_use_case,
             chat_use_case=chat_use_case,
-            shop_item_repository_provider=shop_item_repository_provider,
+            shop_item_repository_factory=shop_item_repository_factory,
         )
 
     def handle_shop_use_case(
@@ -374,10 +374,10 @@ class PlatformContainer:
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
-        shop_item_repository_provider: Provider[ShopItemRepository],
+        shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
     ) -> HandleShopUseCase:
         shop_uow_factory = self.shop_uow_factory(
-            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_provider
+            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
         )
         return HandleShopUseCase(shop_uow_factory)
 
@@ -390,11 +390,11 @@ class PlatformContainer:
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
-        shop_item_repository_provider: Provider[ShopItemRepository],
+        shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
         bot_name: str,
     ) -> CommandHandler:
         handle_shop_use_case = self.handle_shop_use_case(
-            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_provider
+            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
         )
         return ShopCommandHandlerImpl(
             command_prefix=command_prefix,
@@ -412,11 +412,11 @@ class PlatformContainer:
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
-        shop_item_repository_provider: Provider[ShopItemRepository],
+        shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
         bot_name: str,
     ) -> CommandHandler:
         handle_shop_use_case = self.handle_shop_use_case(
-            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_provider
+            economy_policy_provider, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
         )
         return BuyCommandHandlerImpl(
             command_prefix=command_prefix, command_buy_name=command_buy_name, handle_shop_use_case=handle_shop_use_case, bot_nick=bot_name

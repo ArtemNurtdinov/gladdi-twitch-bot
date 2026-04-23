@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
@@ -61,7 +62,7 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
-        shop_item_repository_provider: Provider[ShopItemRepository],
+        shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
     ):
         super().__init__(
             session_factory_rw=session_factory_rw,
@@ -72,7 +73,7 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
         self._add_equipment_use_case = add_equipment_use_case
         self._equipment_exists_use_case = equipment_exists_use_case
         self._chat_use_case = chat_use_case
-        self._shop_item_repository_provider = shop_item_repository_provider
+        self._shop_item_repository_factory = shop_item_repository_factory
 
     def _build_uow(self, db: Session, read_only: bool) -> ShopUnitOfWork:
         return SqlAlchemyShopUnitOfWork(
@@ -81,6 +82,6 @@ class SqlAlchemyShopUnitOfWorkFactory(SqlAlchemyUnitOfWorkFactory[ShopUnitOfWork
             add_equipment_use_case=self._add_equipment_use_case,
             equipment_exists_use_case=self._equipment_exists_use_case,
             chat_use_case=self._chat_use_case,
-            shop_item_repository=self._shop_item_repository_provider.get(db),
+            shop_item_repository=self._shop_item_repository_factory.get(db),
             read_only=read_only,
         )

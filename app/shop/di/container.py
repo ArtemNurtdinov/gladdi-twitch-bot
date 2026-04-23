@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.shop.application.mapper.effect_mapper import EffectMapper as EffectAppMapper
 from app.shop.application.mapper.shop_item_mapper import ShopItemMapper as ShopItemAppMapper
 from app.shop.application.usecase.create_shop_item_use_case import CreateShopItemUseCase
@@ -12,7 +13,6 @@ from app.shop.infrastructure.mapper.shop_item_mapper import ShopItemMapper
 from app.shop.infrastructure.repository import ShopItemRepositoryImpl
 from app.shop.presentation.api.mapper.shop_item_effect_schema_mapper import ShopItemEffectSchemaMapper
 from app.shop.presentation.api.mapper.shop_item_schema_mapper import ShopItemSchemaMapper
-from core.provider import Provider
 
 
 class ShopContainer:
@@ -22,7 +22,7 @@ class ShopContainer:
         self._shop_item_app_mapper = ShopItemAppMapper(self._shop_item_effect_app_mapper)
         self._shop_item_effect_schema_mapper = ShopItemEffectSchemaMapper()
         self.shop_item_schema_mapper = ShopItemSchemaMapper(self._shop_item_effect_schema_mapper)
-        self.shop_item_repository_provider = Provider(self.shop_item_repository)
+        self.shop_item_repository_factory = SessionScopedFactory(self.shop_item_repository)
 
     def shop_item_repository(self, session: Session) -> ShopItemRepository:
         return ShopItemRepositoryImpl(session, self._shop_item_infra_mapper)
