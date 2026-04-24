@@ -9,10 +9,8 @@ from app.bot.presentation.api.bot_routes import get_bot_manager
 from app.bot.presentation.api.model.request.start_bot import StartBotRequest
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.start_bot import AuthStartResponse
-from app.chat.presentation.chat_routes import get_logger
 from app.core.config.domain.model.application import ApplicationConfig
 from app.core.config.domain.model.configuration import Config
-from app.core.logger.domain.logger import Logger
 from app.economy.di.container import EconomyContainer
 from app.follow.di.container import FollowContainer
 from app.joke.di.container import JokeContainer
@@ -95,7 +93,6 @@ async def oauth_callback(
     state: str | None = None,
     bot_manager: BotManager = Depends(get_bot_manager),
     config: Config = Depends(get_config),
-    logger: Logger = Depends(get_logger),
     ai_container: AIContainer = Depends(get_ai_container),
     joke_container: JokeContainer = Depends(get_joke_container),
     platform_container: PlatformContainer = Depends(get_platform_container),
@@ -125,8 +122,6 @@ async def oauth_callback(
         generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
         conversation_service_factory=ai_container.conversation_service_factory,
         system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
-        get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
-        prompt_service=ai_container.prompt_service,
         llm_repository_factory=ai_container.llm_repository_factory,
         joke_container=joke_container,
         platform_auth=platform_container.platform_auth,

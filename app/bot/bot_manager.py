@@ -5,8 +5,6 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
-from app.ai.gen.prompt.prompt_service import PromptService
-from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
@@ -194,9 +192,7 @@ class BotManager:
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
-        get_intent_from_text_use_case_factory: SessionScopedFactory[GetIntentFromTextUseCase],
         llm_repository_factory: SessionScopedFactory[LLMRepository],
-        prompt_service: PromptService,
         joke_container: JokeContainer,
         platform_auth: PlatformAuth,
         token_checker_job: TokenCheckerJob,
