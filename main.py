@@ -25,12 +25,15 @@ from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.container import NotificationContainer
 from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
+from app.platform.chat.infrastructure.twitch_platform_client import TwitchPlatformChatClient
+from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.ask.application.ask_command_handler import AskCommandHandler
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.platform.command.ask.di.container import AskContainer
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandler
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandler
 from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
+from app.platform.command.domain.command_router import CommandRouter
 from app.platform.di.container import PlatformContainer
 from app.shop.di.container import ShopContainer
 from app.shop.presentation.api import shop_routes
@@ -136,6 +139,200 @@ class Application:
             system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
         )
 
+        followage_command_handler = platform_container.followage_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_followage,
+            generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+            chat_repository_factory=chat_container.chat_repository_factory,
+            conversation_service_factory=ai_container.conversation_service_factory,
+            system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+            platform_repository=platform_repository,
+        )
+
+        ask_command_handler = AskCommandHandler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_gladdi,
+            handle_ask_use_case=HandleAskUseCase(
+                get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
+                prompt_service=ai_container.prompt_service,
+                ask_uow_factory=ask_container.ask_uow_factory(
+                    chat_repository_factory=chat_container.chat_repository_factory,
+                    conversation_service_factory=ai_container.conversation_service_factory,
+                    system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+                ),
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                session_factory_ro=db_ro_session,
+            ),
+        )
+
+        battle_command_handler = BattleCommandHandler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_fight,
+            handle_battle_use_case=HandleBattleUseCase(
+                battle_uow=battle_container.battle_uow_factory(
+                    economy_policy_factory=economy_container.economy_policy_factory,
+                    chat_use_case=chat_container.chat_use_case(),
+                    conversation_service_factory=ai_container.conversation_service_factory,
+                    get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                ),
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
+                db_ro_session=db_ro_session,
+            ),
+            chat_moderation=moderation_service,
+        )
+
+        roll_command_handler = platform_container.roll_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_roll,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            betting_service_factory=betting_container.betting_service_factory,
+            get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+            chat_use_case=chat_container.chat_use_case(),
+            roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
+            calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
+            chat_moderation_port=moderation_service,
+        )
+
+        balance_command_handler = BalanceCommandHandler(
+            handle_balance_use_case=economy_container.handle_balance_use_case(chat_container.chat_use_case())
+        )
+
+        bonus_command_handler = platform_container.bonus_command_handler(
+            stream_repository_factory=stream_container.stream_repository_factory,
+            get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+            economy_policy_factory=economy_container.economy_policy_factory,
+            chat_use_case=chat_container.chat_use_case(),
+        )
+
+        transfer_command_handler = platform_container.transfer_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_transfer,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            chat_use_case=chat_container.chat_use_case(),
+        )
+
+        shop_command_handler = platform_container.shop_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_shop_name=self.container.config.bot.command_shop,
+            command_buy_name=self.container.config.bot.command_buy,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            add_equipment_use_case=equipment_container.add_equipment_use_case(),
+            equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
+            chat_use_case=chat_container.chat_use_case(),
+            shop_item_repository_factory=shop_container.shop_item_repository_factory,
+        )
+
+        buy_command_handler = platform_container.buy_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_buy_name=self.container.config.bot.command_buy,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            add_equipment_use_case=equipment_container.add_equipment_use_case(),
+            equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
+            chat_use_case=chat_container.chat_use_case(),
+            shop_item_repository_factory=shop_container.shop_item_repository_factory,
+        )
+
+        equipment_command_handler = platform_container.equipment_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_shop=self.container.config.bot.command_shop,
+            get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+            chat_use_case=chat_container.chat_use_case(),
+        )
+
+        top_command_handler = platform_container.top_command_handler(
+            economy_policy_factory=economy_container.economy_policy_factory,
+            chat_use_case=chat_container.chat_use_case(),
+        )
+
+        bottom_command_handler = platform_container.bottom_command_handler(
+            economy_policy_factory=economy_container.economy_policy_factory, chat_use_case=chat_container.chat_use_case()
+        )
+
+        help_command_handler = platform_container.help_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            chat_use_case=chat_container.chat_use_case(),
+            commands={
+                self.container.config.bot.command_balance,
+                self.container.config.bot.command_bonus,
+                self.container.config.bot.command_roll,
+                self.container.config.bot.command_transfer,
+                self.container.config.bot.command_shop,
+                self.container.config.bot.command_buy,
+                self.container.config.bot.command_equipment,
+                self.container.config.bot.command_top,
+                self.container.config.bot.command_bottom,
+                self.container.config.bot.command_stats,
+                self.container.config.bot.command_fight,
+                self.container.config.bot.command_gladdi,
+                self.container.config.bot.command_followage,
+            },
+        )
+
+        stats_command_handler = platform_container.stats_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_stats,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            betting_service_factory=betting_container.betting_service_factory,
+            battle_use_case=battle_container.battle_use_case(),
+            chat_use_case=chat_container.chat_use_case(),
+        )
+
+        guess_number_command_handler = platform_container.guess_number_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_guess,
+            minigame_repository=minigame_repository,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            chat_use_case=chat_container.chat_use_case(),
+            get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+        )
+
+        guess_letter_command_handler = platform_container.guess_letter_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_guess_letter,
+            minigame_repository=minigame_repository,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            chat_use_case=chat_container.chat_use_case(),
+            get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+        )
+
+        guess_word_command_handler = platform_container.guess_word_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_guess_word,
+            minigame_repository=minigame_repository,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            chat_use_case=chat_container.chat_use_case(),
+            get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+        )
+
+        rps_command_handler = platform_container.rps_command_handler(
+            command_prefix=self.container.config.bot.prefix,
+            command_name=self.container.config.bot.command_rps,
+            minigame_repository=minigame_repository,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            chat_use_case=chat_container.chat_use_case(),
+        )
+
+        command_router: CommandRouter = CommandRouterImpl(self.container.config.bot.prefix)
+        command_router.register_command_handler(self.container.config.bot.command_followage, followage_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_gladdi, ask_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_fight, battle_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_roll, roll_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_balance, balance_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_bonus, bonus_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_transfer, transfer_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_shop, shop_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_buy, buy_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_equipment, equipment_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_top, top_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_bottom, bottom_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_help, help_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_stats, stats_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_guess, guess_number_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_guess_letter, guess_letter_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_guess_word, guess_word_command_handler)
+        command_router.register_command_handler(self.container.config.bot.command_rps, rps_command_handler)
+
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,
@@ -159,180 +356,30 @@ class Application:
                 generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
             ),
             viewer_cache=viewer_cache,
-            followage_command_handler=platform_container.followage_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_followage,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-                chat_repository_factory=chat_container.chat_repository_factory,
-                conversation_service_factory=ai_container.conversation_service_factory,
-                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
-                platform_repository=platform_repository,
-            ),
-            ask_command_handler=AskCommandHandler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_gladdi,
-                handle_ask_use_case=HandleAskUseCase(
-                    get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
-                    prompt_service=ai_container.prompt_service,
-                    ask_uow_factory=ask_container.ask_uow_factory(
-                        chat_repository_factory=chat_container.chat_repository_factory,
-                        conversation_service_factory=ai_container.conversation_service_factory,
-                        system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
-                    ),
-                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-                    session_factory_ro=db_ro_session,
-                ),
-            ),
-            battle_command_handler=BattleCommandHandler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_fight,
-                handle_battle_use_case=HandleBattleUseCase(
-                    battle_uow=battle_container.battle_uow_factory(
-                        economy_policy_factory=economy_container.economy_policy_factory,
-                        chat_use_case=chat_container.chat_use_case(),
-                        conversation_service_factory=ai_container.conversation_service_factory,
-                        get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                    ),
-                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-                    calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
-                    db_ro_session=db_ro_session,
-                ),
-                chat_moderation=moderation_service,
-            ),
-            roll_command_handler=platform_container.roll_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_roll,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                betting_service_factory=betting_container.betting_service_factory,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
-                roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
-                calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
-                chat_moderation_port=moderation_service,
-            ),
-            balance_command_handler=BalanceCommandHandler(
-                handle_balance_use_case=economy_container.handle_balance_use_case(chat_container.chat_use_case())
-            ),
-            bonus_command_handler=platform_container.bonus_command_handler(
-                stream_repository_factory=stream_container.stream_repository_factory,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
-            ),
-            transfer_command_handler=platform_container.transfer_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_transfer,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
-            ),
-            shop_command_handler=platform_container.shop_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_shop_name=self.container.config.bot.command_shop,
-                command_buy_name=self.container.config.bot.command_buy,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                add_equipment_use_case=equipment_container.add_equipment_use_case(),
-                equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
-                shop_item_repository_factory=shop_container.shop_item_repository_factory,
-            ),
-            buy_command_handler=platform_container.buy_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_buy_name=self.container.config.bot.command_buy,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                add_equipment_use_case=equipment_container.add_equipment_use_case(),
-                equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
-                shop_item_repository_factory=shop_container.shop_item_repository_factory,
-            ),
-            equipment_command_handler=platform_container.equipment_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_shop=self.container.config.bot.command_shop,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
-            ),
-            top_command_handler=platform_container.top_command_handler(
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
-            ),
-            bottom_command_handler=platform_container.bottom_command_handler(
-                economy_policy_factory=economy_container.economy_policy_factory, chat_use_case=chat_container.chat_use_case()
-            ),
-            help_command_handler=platform_container.help_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                chat_use_case=chat_container.chat_use_case(),
-                commands={
-                    self.container.config.bot.command_balance,
-                    self.container.config.bot.command_bonus,
-                    self.container.config.bot.command_roll,
-                    self.container.config.bot.command_transfer,
-                    self.container.config.bot.command_shop,
-                    self.container.config.bot.command_buy,
-                    self.container.config.bot.command_equipment,
-                    self.container.config.bot.command_top,
-                    self.container.config.bot.command_bottom,
-                    self.container.config.bot.command_stats,
-                    self.container.config.bot.command_fight,
-                    self.container.config.bot.command_gladdi,
-                    self.container.config.bot.command_followage,
-                },
-            ),
-            stats_command_handler=platform_container.stats_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_stats,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                betting_service_factory=betting_container.betting_service_factory,
-                battle_use_case=battle_container.battle_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
-            ),
-            guess_number_command_handler=platform_container.guess_number_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_guess,
-                minigame_repository=minigame_repository,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-            ),
-            guess_letter_command_handler=platform_container.guess_letter_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_guess_letter,
-                minigame_repository=minigame_repository,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-            ),
-            guess_word_command_handler=platform_container.guess_word_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_guess_word,
-                minigame_repository=minigame_repository,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-            ),
-            rps_command_handler=platform_container.rps_command_handler(
-                command_prefix=self.container.config.bot.prefix,
-                command_name=self.container.config.bot.command_rps,
-                minigame_repository=minigame_repository,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
-            ),
-            handle_chat_message_use_case=HandleChatMessageUseCase(
-                chat_message_uow=chat_message_uow_factory,
-                get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
-                prompt_service=ai_container.prompt_service,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-                db_ro_session=db_ro_session,
-            ),
-            handle_reply_use_case=HandleReplyUseCase(
-                chat_message_uow=chat_message_uow_factory,
-                prompt_service=ai_container.prompt_service,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-                db_ro_session=db_ro_session,
-            ),
             handle_restore_stream_use_case=HandleRestoreStreamContextUseCase(
                 restore_stream_uow=platform_container.restore_stream_uow(
                     stream_repository_factory=stream_container.stream_repository_factory,
                 ),
                 minigame_repository=minigame_repository,
+                logger=self.container.logger,
+            ),
+            platform_chat_client=TwitchPlatformChatClient(
+                handle_chat_message_use_case=HandleChatMessageUseCase(
+                    chat_message_uow=chat_message_uow_factory,
+                    get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
+                    prompt_service=ai_container.prompt_service,
+                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                    db_ro_session=db_ro_session,
+                ),
+                handle_reply_use_case=HandleReplyUseCase(
+                    chat_message_uow=chat_message_uow_factory,
+                    prompt_service=ai_container.prompt_service,
+                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                    db_ro_session=db_ro_session,
+                ),
+                command_router=command_router,
+                command_prefix=self.container.config.bot.prefix,
+                help_command_handler=help_command_handler,
                 logger=self.container.logger,
             ),
         )

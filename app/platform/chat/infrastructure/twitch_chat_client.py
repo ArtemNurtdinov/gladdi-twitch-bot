@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
+from collections.abc import Awaitable, Callable
 
 from twitchio import Client, WebsocketWelcome
 from twitchio.eventsub import ChatMessageSubscription
@@ -9,47 +10,23 @@ from twitchio.models.eventsub_ import ChatMessage as EventSubChatMessage
 
 from app.core.logger.domain.logger import Logger
 from app.platform.auth.platform_auth import PlatformAuth
-from app.platform.chat.application.platform_chat_client import PlatformChatClient
-from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
-from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
-from app.platform.command.domain.command_handler import CommandHandler
-from app.platform.command.domain.command_router import CommandRouter
 
 
-class TwitchChatClient(Client, PlatformChatClient):
+class TwitchChatClient(Client):
     TWITCH_MESSAGE_LENGTH_MAX = 500
 
     def __init__(
-        self,
-        auth: PlatformAuth,
-        handle_chat_message_use_case: HandleChatMessageUseCase,
-        handle_reply_use_case: HandleReplyUseCase,
-        command_router: CommandRouter,
-        channel_name: str,
-        command_prefix: str,
-        bot_id: str,
-        bot_name: str,
-        help_command_handler: CommandHandler,
-        logger: Logger,
+        self, auth: PlatformAuth, bot_id: str, logger: Logger, handle_message: Callable[[str, str], Awaitable[None]], channel_name: str
     ):
         Client.__init__(self, client_id=auth.client_id, client_secret=auth.client_secret, bot_id=bot_id, fetch_client_user=False)
-        PlatformChatClient.__init__(
-            self,
-            handle_chat_message_use_case=handle_chat_message_use_case,
-            handle_reply_use_case=handle_reply_use_case,
-            command_router=command_router,
-            channel_name=channel_name,
-            bot_name=bot_name,
-            command_prefix=command_prefix,
-            help_command_handler=help_command_handler,
-            logger=logger,
-        )
         self._auth = auth
         self._token_user_id: str | None = None
         self._broadcaster_id: str | None = None
         self._subscribed_session_id: str | None = None
         self._has_active_subscription = False
         self._eventsub_lock = asyncio.Lock()
+        self._handle_message = handle_message
+        self._channel_name = channel_name
 
         self._startup_subscription_done = asyncio.Event()
         self._subscription_in_progress = False
@@ -69,7 +46,7 @@ class TwitchChatClient(Client, PlatformChatClient):
         self._logger.log_info(f"set _token_user_id = {self._token_user_id}")
 
     async def _ensure_broadcaster_id(self) -> None:
-        users = await self.fetch_users(logins=[self.channel_name])
+        users = await self.fetch_users(logins=[self._channel_name])
         if users:
             self._broadcaster_id = users[0].id
             self._logger.log_info(f"set _broadcaster_id = {self._broadcaster_id}")
@@ -125,7 +102,7 @@ class TwitchChatClient(Client, PlatformChatClient):
 
         self._recent_message_ids.append(message_id)
 
-        await super().handle_message(user_name, message)
+        await self._handle_message(user_name, message)
 
     async def event_websocket_welcome(self, payload: WebsocketWelcome) -> None:
         self._logger.log_info("event_websocket_welcome")
@@ -192,6 +169,3 @@ class TwitchChatClient(Client, PlatformChatClient):
                 await asyncio.sleep(0.3)
             except Exception:
                 pass
-
-    def is_reply_message(self, message: str) -> bool:
-        return message.lower().startswith(f"@{self.bot_name}")

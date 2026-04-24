@@ -17,8 +17,6 @@ class PlatformChatClient(ABC):
         handle_chat_message_use_case: HandleChatMessageUseCase,
         handle_reply_use_case: HandleReplyUseCase,
         command_router: CommandRouter,
-        channel_name: str,
-        bot_name: str,
         command_prefix: str,
         help_command_handler: CommandHandler,
         logger: Logger,
@@ -26,11 +24,16 @@ class PlatformChatClient(ABC):
         self._handle_chat_message_use_case = handle_chat_message_use_case
         self._handle_reply_use_case = handle_reply_use_case
         self._command_router = command_router
-        self.channel_name = channel_name
-        self.bot_name = bot_name
         self._command_prefix = command_prefix
         self._help_command_handler = help_command_handler
-        self._logger = logger.create_child(__name__)
+        self.channel_name: str | None = None
+        self.bot_name: str | None = None
+        self.logger = logger.create_child(__name__)
+
+    def init(self, channel_name: str, bot_name: str, battle_waiting_user: dict[str, str | None]):
+        self.channel_name = channel_name
+        self.bot_name = bot_name
+        self._command_router.apply_bot_name(bot_name, battle_waiting_user)
 
     async def handle_message(self, user_name: str, message: str):
         if message.startswith(self._command_prefix):
