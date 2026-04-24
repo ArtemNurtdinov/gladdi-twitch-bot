@@ -7,7 +7,7 @@ from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
-from app.battle.di.container import BattleContainer
+from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.betting.application.betting_service import BettingService
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
@@ -52,6 +52,7 @@ from app.platform.command.ask.di.container import AskContainer
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
 from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandlerImpl
+from app.platform.command.battle.application.battle_uow import BattleUnitOfWorkFactory
 from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
@@ -91,6 +92,8 @@ class BotManager:
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         notification_repository: NotificationRepository,
+        battle_uow_factory: BattleUnitOfWorkFactory,
+        battle_use_case: BattleUseCase,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -115,6 +118,8 @@ class BotManager:
         self._add_equipment_use_case = add_equipment_use_case
         self._equipment_exists_use_case = equipment_exists_use_case
         self._notification_repository = notification_repository
+        self._battle_uow_factory = battle_uow_factory
+        self._battle_use_case = battle_use_case
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -169,7 +174,7 @@ class BotManager:
 
             viewer_container = ViewerContainer()
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
+
             chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             platform_container = PlatformContainer(
                 session_factory_rw=db_rw_session,
@@ -228,12 +233,7 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_fight,
                 handle_battle_use_case=HandleBattleUseCase(
-                    battle_uow=battle_container.battle_uow_factory(
-                        economy_policy_factory=self._economy_policy_factory,
-                        chat_use_case=self._chat_use_case,
-                        conversation_service_factory=conversation_service_factory,
-                        get_user_equipment_use_case=self._get_user_equipment_use_case,
-                    ),
+                    battle_uow=self._battle_uow_factory,
                     generate_response_use_case_factory=generate_response_use_case_factory,
                     calculate_timeout_use_case=self._calculate_timeout_use_case,
                     db_ro_session=db_ro_session,
@@ -345,7 +345,7 @@ class BotManager:
                 command_name=self._config.command_stats,
                 economy_policy_factory=self._economy_policy_factory,
                 betting_service_factory=self._betting_service_factory,
-                battle_use_case=battle_container.battle_use_case(),
+                battle_use_case=self._battle_use_case,
                 chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
             )
@@ -485,7 +485,7 @@ class BotManager:
                 state=chat_summary_state,
                 stream_repository_factory=self._stream_repository_factory,
                 viewer_repository_factory=viewer_container.viewer_repository_factory,
-                battle_use_case=battle_container.battle_use_case(),
+                battle_use_case=self._battle_use_case,
                 economy_policy_factory=self._economy_policy_factory,
                 chat_use_case=self._chat_use_case,
                 conversation_service_factory=conversation_service_factory,

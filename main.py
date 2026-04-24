@@ -7,6 +7,7 @@ from app.ai.gen.llm.presentation import llm_routes
 from app.ai.gen.prompt.presentation import system_prompt_routes
 from app.auth.di.container import AuthContainer
 from app.auth.presentation import auth_routes
+from app.battle.di.container import BattleContainer
 from app.betting.di.container import BettingContainer
 from app.bot.bot_manager import BotManager
 from app.bot.presentation.api import bot_routes, bot_twitch_routes
@@ -65,13 +66,12 @@ class Application:
         self.fast_api.state.joke_container = JokeContainer(
             session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
         )
-        self.fast_api.state.ai_container = AIContainer(
+        ai_container = AIContainer(
             session_factory_ro=db_ro_session,
             session_factory_rw=db_rw_session,
             llmbox_host=self.container.config.llmbox.host,
             intent_detector_host=self.container.config.intent_detector.host,
         )
-
         shop_container = ShopContainer()
         stream_container = StreamContainer()
         chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self.container.logger)
@@ -79,6 +79,7 @@ class Application:
         follow_container = FollowContainer()
         betting_container = BettingContainer()
 
+        self.fast_api.state.ai_container = ai_container
         self.fast_api.state.stream_container = stream_container
         self.fast_api.state.economy_container = economy_container
         self.fast_api.state.follow_container = follow_container
@@ -88,6 +89,7 @@ class Application:
             session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
         )
         notification_container = NotificationContainer(self.container.config.telegram.bot_token)
+        battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
 
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
@@ -112,6 +114,13 @@ class Application:
             add_equipment_use_case=equipment_container.add_equipment_use_case(),
             equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
             notification_repository=notification_container.notification_repository(),
+            battle_uow_factory=battle_container.battle_uow_factory(
+                economy_policy_factory=economy_container.economy_policy_factory,
+                chat_use_case=chat_container.chat_use_case(),
+                conversation_service_factory=ai_container.conversation_service_factory,
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+            ),
+            battle_use_case=battle_container.battle_use_case(),
         )
 
     def _setup_routes(self):
