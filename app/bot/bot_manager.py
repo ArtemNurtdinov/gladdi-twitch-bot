@@ -53,6 +53,7 @@ from app.platform.command.bonus.application.bonus_command_handler import BonusCo
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandler
 from app.platform.command.roll.application.roll_command_handler import RollCommandHandler
+from app.platform.command.shop.application.buy_command_handler import BuyCommandHandler
 from app.platform.command.shop.application.shop_command_handler import ShopCommandHandler
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandler
 from app.platform.di.container import PlatformContainer
@@ -107,6 +108,7 @@ class BotManager:
         bonus_command_handler: BonusCommandHandler,
         transfer_command_handler: TransferCommandHandler,
         shop_command_handler: ShopCommandHandler,
+        buy_command_handler: BuyCommandHandler,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -145,6 +147,7 @@ class BotManager:
         self._bonus_command_handler = bonus_command_handler
         self._transfer_command_handler = transfer_command_handler
         self._shop_command_handler = shop_command_handler
+        self._buy_command_handler = buy_command_handler
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -218,17 +221,7 @@ class BotManager:
             self._bonus_command_handler.apply_bot_name(bot_name)
             self._transfer_command_handler.apply_bot_name(bot_name)
             self._shop_command_handler.apply_bot_name(bot_name)
-
-            buy_command_handler = self._platform_container.buy_command_handler(
-                command_prefix=self._config.prefix,
-                command_buy_name=self._config.command_buy,
-                economy_policy_factory=self._economy_policy_factory,
-                add_equipment_use_case=self._add_equipment_use_case,
-                equipment_exists_use_case=self._equipment_exists_use_case,
-                chat_use_case=self._chat_use_case,
-                shop_item_repository_factory=self._shop_item_repository_factory,
-                bot_name=bot_name,
-            )
+            self._buy_command_handler.apply_bot_name(bot_name)
 
             equipment_command_handler = self._platform_container.equipment_command_handler(
                 command_prefix=self._config.prefix,
@@ -329,7 +322,7 @@ class BotManager:
             command_router.register_command_handler(self._config.command_bonus, self._bonus_command_handler)
             command_router.register_command_handler(self._config.command_transfer, self._transfer_command_handler)
             command_router.register_command_handler(self._config.command_shop, self._shop_command_handler)
-            command_router.register_command_handler(self._config.command_buy, buy_command_handler)
+            command_router.register_command_handler(self._config.command_buy, self._buy_command_handler)
             command_router.register_command_handler(self._config.command_equipment, equipment_command_handler)
             command_router.register_command_handler(self._config.command_top, top_command_handler)
             command_router.register_command_handler(self._config.command_bottom, bottom_command_handler)

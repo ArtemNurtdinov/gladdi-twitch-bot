@@ -237,6 +237,15 @@ class Application:
                 chat_use_case=chat_container.chat_use_case(),
                 shop_item_repository_factory=shop_container.shop_item_repository_factory,
             ),
+            buy_command_handler=platform_container.buy_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                command_buy_name=self.container.config.bot.command_buy,
+                economy_policy_factory=economy_container.economy_policy_factory,
+                add_equipment_use_case=equipment_container.add_equipment_use_case(),
+                equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
+                shop_item_repository_factory=shop_container.shop_item_repository_factory,
+            ),
         )
 
     def _setup_routes(self):
