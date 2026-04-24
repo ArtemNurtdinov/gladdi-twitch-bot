@@ -66,6 +66,7 @@ class BotManager:
         platform_chat_client: TwitchPlatformChatClient,
         post_joke_job: PostJokeJob,
         stream_status_job: StreamStatusJob,
+        token_checker_job: TokenCheckerJob,
         minigame_job: MinigameTickJob,
         viewer_time_job: ViewerTimeJob,
         followers_sync_job: FollowersSyncJob,
@@ -97,6 +98,7 @@ class BotManager:
         self._platform_chat_client = platform_chat_client
         self._post_joke_job = post_joke_job
         self._stream_status_job = stream_status_job
+        self._token_checker_job = token_checker_job
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -135,7 +137,6 @@ class BotManager:
         self,
         channel_name: str,
         platform_auth: PlatformAuth,
-        token_checker_job: TokenCheckerJob,
         platform_repository: PlatformRepository,
         api_client: ApiClient,
     ) -> BotActionResultResponse:
@@ -169,12 +170,12 @@ class BotManager:
 
             jobs = [
                 self._post_joke_job,
-                token_checker_job,
+                self._token_checker_job,
                 self._stream_status_job,
                 self._chat_summarizer_job,
                 self._minigame_job,
                 self._viewer_time_job,
-                self.followers_sync_job,
+                self._followers_sync_job,
             ]
 
             tasks = [Task(job.name, job.run) for job in jobs]

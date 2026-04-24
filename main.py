@@ -440,6 +440,7 @@ class Application:
             followers_sync_job=platform_container.followers_sync_job(
                 platform_repository=platform_repository, followers_repository_factory=follow_container.followers_repository_factory
             ),
+            token_checker_job=platform_container.token_checker_job,
         )
 
     def _setup_routes(self):
