@@ -123,6 +123,8 @@ class Application:
         self.fast_api.state.viewer_container = viewer_container
         self.fast_api.state.platform_container = platform_container
 
+        minigame_repository = minigame_container.minigame_repository()
+
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,
@@ -130,7 +132,7 @@ class Application:
             intent_detector_config=self.container.config.intent_detector,
             logger=self.container.logger,
             shop_item_repository_factory=shop_container.shop_item_repository_factory,
-            minigame_repository=minigame_container.minigame_repository(),
+            minigame_repository=minigame_repository,
             get_used_word_use_case=minigame_container.get_used_words_use_case(),
             add_used_word_use_case=minigame_container.add_used_word_use_case(),
             stream_repository_factory=stream_container.stream_repository_factory,
@@ -283,7 +285,15 @@ class Application:
             guess_number_command_handler=platform_container.guess_number_command_handler(
                 command_prefix=self.container.config.bot.prefix,
                 command_name=self.container.config.bot.command_guess,
-                minigame_repository=minigame_container.minigame_repository(),
+                minigame_repository=minigame_repository,
+                economy_policy_factory=economy_container.economy_policy_factory,
+                chat_use_case=chat_container.chat_use_case(),
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+            ),
+            guess_letter_command_handler=platform_container.guess_letter_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                command_name=self.container.config.bot.command_guess_letter,
+                minigame_repository=minigame_repository,
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
