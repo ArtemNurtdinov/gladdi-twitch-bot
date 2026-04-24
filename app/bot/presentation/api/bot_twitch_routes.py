@@ -18,8 +18,12 @@ from app.follow.di.container import FollowContainer
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api.joke_routes import get_joke_container
 from app.minigame.di.container import MinigameContainer
+from app.moderation.application.moderation_service import ModerationService
 from app.platform.auth.di.container import PlatformAuthContainer
+from app.platform.infrastructure.api.client import TwitchHelixClient
+from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.shop.di.container import ShopContainer
+from app.viewer.di.container import ViewerContainer
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -58,6 +62,10 @@ def get_follow_container(request: Request) -> FollowContainer:
     return request.app.state.follow_container
 
 
+def get_viewer_container(request: Request) -> ViewerContainer:
+    return request.app.state.viewer_container
+
+
 @router.post("/start", summary="Начать авторизацию Twitch", response_model=AuthStartResponse)
 async def start_authorization(
     request: StartBotRequest,
@@ -89,6 +97,7 @@ async def oauth_callback(
     logger: Logger = Depends(get_logger),
     ai_container: AIContainer = Depends(get_ai_container),
     joke_container: JokeContainer = Depends(get_joke_container),
+    viewer_container: ViewerContainer = Depends(get_viewer_container),
 ) -> BotActionResultResponse:
     data = {
         "client_id": config.twitch.client_id,
@@ -116,6 +125,19 @@ async def oauth_callback(
         logger=logger,
     )
 
+    api_client = TwitchHelixClient(platform_auth_container.platform_auth)
+
+    platform_repository = PlatformRepositoryImpl(
+        client=api_client,
+        logger=logger,
+    )
+
+    moderation_service = ModerationService(
+        platform_repository=platform_repository,
+        user_cache=viewer_container.viewer_cache(platform_repository),
+        logger=logger,
+    )
+
     return await bot_manager.start_bot(
         channel_name=state,
         generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
@@ -127,6 +149,8 @@ async def oauth_callback(
         joke_container=joke_container,
         platform_auth=platform_auth_container.platform_auth,
         token_checker_job=platform_auth_container.token_checker_job,
+        platform_repository=platform_repository,
+        moderation_service=moderation_service,
     )
 
 

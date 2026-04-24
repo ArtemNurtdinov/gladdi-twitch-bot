@@ -57,6 +57,7 @@ from app.platform.command.battle.application.handle_battle_use_case import Handl
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.di.container import PlatformContainer
+from app.platform.domain.repository import PlatformRepository
 from app.shop.domain.repository import ShopItemRepository
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.domain.repo import StreamRepository
@@ -169,6 +170,9 @@ class BotManager:
         joke_container: JokeContainer,
         platform_auth: PlatformAuth,
         token_checker_job: TokenCheckerJob,
+        platform_repository: PlatformRepository,
+        api_client: ApiClient,
+        moderation_service: ModerationService,
     ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
@@ -179,25 +183,18 @@ class BotManager:
             platform_container = PlatformContainer(
                 session_factory_rw=db_rw_session,
                 session_factory_ro=db_ro_session,
-                platform_auth=platform_auth,
                 logger=self._logger,
             )
 
-            self._api_client = platform_container.api_client
+            self._api_client = api_client
 
-            bot_user = await platform_container.platform_repository().get_authenticated_user()
+            bot_user = await platform_repository.get_authenticated_user()
             if not bot_user:
                 raise ValueError("Не удалось получить профиль бота по токену (GET /users). Проверьте авторизацию.")
             bot_name = bot_user.display_name.lower()
             bot_user_id = bot_user.id
             battle_waiting_user = {"value": None}
             chat_summary_state = ChatSummaryState()
-
-            moderation_service = ModerationService(
-                platform_repository=platform_container.platform_repository(),
-                user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
-                logger=self._logger,
-            )
 
             followage_command_handler = platform_container.followage_command_handler(
                 command_prefix=self._config.prefix,
@@ -206,7 +203,7 @@ class BotManager:
                 chat_repository_factory=self._chat_repository_factory,
                 conversation_service_factory=conversation_service_factory,
                 system_prompt_repository_factory=system_prompt_repository_factory,
-                platform_repository=platform_container.platform_repository(),
+                platform_repository=platform_repository,
                 bot_name=bot_name,
             )
 
@@ -453,7 +450,7 @@ class BotManager:
             self._chat_client = chat_client
 
             try:
-                await viewer_container.viewer_cache(platform_container.platform_repository()).warmup(channel_name)
+                await viewer_container.viewer_cache(platform_repository).warmup(channel_name)
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
@@ -463,15 +460,15 @@ class BotManager:
                 bot_name=bot_name,
                 conversation_service_factory=conversation_service_factory,
                 chat_use_case=self._chat_use_case,
-                user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
-                platform_repository=platform_container.platform_repository(),
+                user_cache=viewer_container.viewer_cache(platform_repository),
+                platform_repository=platform_repository,
                 generate_response_use_case_factory=generate_response_use_case_factory,
             )
 
             stream_status_job = platform_container.stream_status_job(
                 channel_name=channel_name,
-                user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
-                platform_repository=platform_container.platform_repository(),
+                user_cache=viewer_container.viewer_cache(platform_repository),
+                platform_repository=platform_repository,
                 minigame_repository=self._minigame_repository,
                 notification_repository=self._notification_repository,
                 notification_group_id=self._telegram_config.group_id,
@@ -520,15 +517,15 @@ class BotManager:
                 stream_repository_factory=self._stream_repository_factory,
                 viewer_repository_factory=viewer_container.viewer_repository_factory,
                 economy_policy_factory=self._economy_policy_factory,
-                viewer_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
-                platform_repository=platform_container.platform_repository(),
+                viewer_cache=viewer_container.viewer_cache(platform_repository),
+                platform_repository=platform_repository,
                 channel_name=channel_name,
                 bot_name=bot_name,
             )
 
             followers_sync_job = platform_container.followers_sync_job(
                 channel_name=channel_name,
-                platform_repository=platform_container.platform_repository(),
+                platform_repository=platform_repository,
                 followers_repository_factory=self._followers_repository_factory,
             )
 

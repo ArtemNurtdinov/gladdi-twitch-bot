@@ -23,10 +23,12 @@ from app.joke.presentation.api import joke_routes
 from app.minigame.di.container import MinigameContainer
 from app.notification.di.container import NotificationContainer
 from app.platform.command.ask.di.container import AskContainer
+from app.platform.di.container import PlatformContainer
 from app.shop.di.container import ShopContainer
 from app.shop.presentation.api import shop_routes
 from app.stream.di.container import StreamContainer
 from app.stream.presentation import stream_routes
+from app.viewer.di.container import ViewerContainer
 from app.viewer.presentation.api import viewer_routes
 from core.db import db_ro_session, db_rw_session, init_db
 
@@ -92,6 +94,11 @@ class Application:
         )
         notification_container = NotificationContainer(self.container.config.telegram.bot_token)
         battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
+        platform_container = PlatformContainer(
+            session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
+        )
+        viewer_container = ViewerContainer()
+        self.fast_api.state.viewer_container = viewer_container
 
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,

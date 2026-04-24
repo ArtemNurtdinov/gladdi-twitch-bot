@@ -1,5 +1,4 @@
 from collections.abc import Awaitable, Callable
-from functools import cached_property
 
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
@@ -12,7 +11,6 @@ from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.logger.domain.logger import Logger
-from app.core.network.api.client import ApiClient
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
@@ -40,7 +38,6 @@ from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitO
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.notification.domain.repository import NotificationRepository
-from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
 from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
@@ -88,8 +85,6 @@ from app.platform.command.transfer.application.transfer_command_handler import T
 from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWorkFactory
 from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
-from app.platform.infrastructure.api.client import TwitchHelixClient
-from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.shop.domain.repository import ShopItemRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
@@ -108,24 +103,10 @@ from core.types import SessionFactory
 
 
 class PlatformContainer:
-    def __init__(
-        self,
-        session_factory_rw: SessionFactory,
-        session_factory_ro: SessionFactory,
-        platform_auth: PlatformAuth,
-        logger: Logger,
-    ):
+    def __init__(self, session_factory_rw: SessionFactory, session_factory_ro: SessionFactory, logger: Logger):
         self._session_factory_rw = session_factory_rw
         self._session_factory_ro = session_factory_ro
-        self._platform_auth = platform_auth
         self._logger = logger
-
-    @cached_property
-    def api_client(self) -> ApiClient:
-        return TwitchHelixClient(self._platform_auth)
-
-    def platform_repository(self) -> PlatformRepository:
-        return PlatformRepositoryImpl(self.api_client, self._logger)
 
     def bonus_uow_factory(
         self,
