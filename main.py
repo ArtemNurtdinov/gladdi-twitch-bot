@@ -7,6 +7,7 @@ from app.ai.gen.llm.presentation import llm_routes
 from app.ai.gen.prompt.presentation import system_prompt_routes
 from app.auth.di.container import AuthContainer
 from app.auth.presentation import auth_routes
+from app.betting.di.container import BettingContainer
 from app.bot.bot_manager import BotManager
 from app.bot.presentation.api import bot_routes, bot_twitch_routes
 from app.chat.di.container import ChatContainer
@@ -74,6 +75,7 @@ class Application:
         chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self.container.logger)
         economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
         follow_container = FollowContainer()
+        betting_container = BettingContainer()
 
         self.fast_api.state.stream_container = stream_container
         self.fast_api.state.economy_container = economy_container
@@ -99,6 +101,7 @@ class Application:
             chat_repository_factory=chat_container.chat_repository_factory,
             chat_use_case=chat_container.chat_use_case(),
             followers_repository_factory=follow_container.followers_repository_factory,
+            betting_service_factory=betting_container.betting_service_factory,
         )
 
     def _setup_routes(self):

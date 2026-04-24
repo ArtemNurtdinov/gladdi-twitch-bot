@@ -8,7 +8,7 @@ from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptReposi
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.battle.di.container import BattleContainer
-from app.betting.di.container import BettingContainer
+from app.betting.application.betting_service import BettingService
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.status import BotStatusResponse
@@ -80,6 +80,7 @@ class BotManager:
         chat_repository_factory: SessionScopedFactory[ChatRepository],
         chat_use_case: ChatUseCase,
         followers_repository_factory: SessionScopedFactory[FollowersRepository],
+        betting_service_factory: SessionScopedFactory[BettingService],
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -97,6 +98,7 @@ class BotManager:
         self._chat_repository_factory = chat_repository_factory
         self._chat_use_case = chat_use_case
         self._followers_repository_factory = followers_repository_factory
+        self._betting_service_factory = betting_service_factory
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -153,7 +155,6 @@ class BotManager:
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            betting_container = BettingContainer()
             chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             platform_container = PlatformContainer(
                 session_factory_rw=db_rw_session,
@@ -232,7 +233,7 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_roll,
                 economy_policy_factory=self._economy_policy_factory,
-                betting_service_factory=betting_container.betting_service_factory,
+                betting_service_factory=self._betting_service_factory,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 chat_use_case=self._chat_use_case,
                 roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
@@ -329,7 +330,7 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_stats,
                 economy_policy_factory=self._economy_policy_factory,
-                betting_service_factory=betting_container.betting_service_factory,
+                betting_service_factory=self._betting_service_factory,
                 battle_use_case=battle_container.battle_use_case(),
                 chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
