@@ -11,14 +11,12 @@ class FinishExpiredGamesUseCase:
         minigame_repository: MinigameRepository,
         send_channel_message: Callable[[str], Awaitable[None]],
         minigame_uow: MinigameUnitOfWorkFactory,
-        bot_name: str,
     ):
         self._minigame_repository = minigame_repository
         self._send_channel_message = send_channel_message
         self._minigame_uow = minigame_uow
-        self._bot_name = bot_name
 
-    async def finish(self, channel_name: str) -> None:
+    async def finish(self, channel_name: str, bot_name: str) -> None:
         timeout_message: str | None = None
 
         active_guess_game = self._minigame_repository.get_active_guess_game(channel_name)
@@ -39,5 +37,5 @@ class FinishExpiredGamesUseCase:
             await self._send_channel_message(timeout_message)
             with self._minigame_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
-                    channel_name=channel_name, user_name=self._bot_name, content=timeout_message, current_time=datetime.now(UTC)
+                    channel_name=channel_name, user_name=bot_name, content=timeout_message, current_time=datetime.now(UTC)
                 )

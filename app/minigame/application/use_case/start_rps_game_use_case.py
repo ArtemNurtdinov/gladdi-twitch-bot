@@ -18,16 +18,14 @@ class StartRpsGameUseCase:
         command_name: str,
         send_channel_message: Callable[[str], Awaitable[None]],
         minigame_uow: MinigameUnitOfWorkFactory,
-        bot_name: str,
     ):
         self._minigame_repository = minigame_repository
         self._prefix = prefix
         self._command_name = command_name
         self._send_channel_message = send_channel_message
         self._minigame_uow = minigame_uow
-        self._bot_name = bot_name
 
-    async def start(self, channel_name: str):
+    async def start(self, channel_name: str, bot_name: str):
         start_time = datetime.now(UTC)
         end_time = start_time + timedelta(minutes=self.RPS_GAME_DURATION_MINUTES)
         game = RPSGame(
@@ -52,5 +50,5 @@ class StartRpsGameUseCase:
         await self._send_channel_message(game_message)
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
-                channel_name=channel_name, user_name=self._bot_name, content=game_message, current_time=datetime.now(UTC)
+                channel_name=channel_name, user_name=bot_name, content=game_message, current_time=datetime.now(UTC)
             )

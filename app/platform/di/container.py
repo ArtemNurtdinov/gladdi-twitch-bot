@@ -537,7 +537,6 @@ class PlatformContainer:
         command_guess_word: str,
         command_guess_letter: str,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_name: str,
     ) -> StartWordGameUseCase:
         return StartWordGameUseCase(
             minigame_repository,
@@ -549,7 +548,6 @@ class PlatformContainer:
             command_guess_word,
             command_guess_letter,
             send_channel_message,
-            bot_name,
             self._logger,
         )
 
@@ -560,9 +558,8 @@ class PlatformContainer:
         minigame_uow_factory: MinigameUnitOfWorkFactory,
         command_name: str,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_name: str,
     ) -> StartNumberGuessGameUseCase:
-        return StartNumberGuessGameUseCase(minigame_repository, prefix, command_name, send_channel_message, minigame_uow_factory, bot_name)
+        return StartNumberGuessGameUseCase(minigame_repository, prefix, command_name, send_channel_message, minigame_uow_factory)
 
     def start_rps_game_use_case(
         self,
@@ -571,27 +568,24 @@ class PlatformContainer:
         minigame_uow_factory: MinigameUnitOfWorkFactory,
         command_name: str,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_name: str,
     ) -> StartRpsGameUseCase:
-        return StartRpsGameUseCase(minigame_repository, prefix, command_name, send_channel_message, minigame_uow_factory, bot_name)
+        return StartRpsGameUseCase(minigame_repository, prefix, command_name, send_channel_message, minigame_uow_factory)
 
     def finish_rps_game_use_case(
         self,
         minigame_repository: MinigameRepository,
         minigame_uow_factory: MinigameUnitOfWorkFactory,
-        bot_name: str,
         send_channel_message: Callable[[str], Awaitable[None]],
     ) -> FinishRpsUseCase:
-        return FinishRpsUseCase(minigame_repository, minigame_uow_factory, bot_name, send_channel_message)
+        return FinishRpsUseCase(minigame_repository, minigame_uow_factory, send_channel_message)
 
     def finish_expired_games_use_case(
         self,
         minigame_repository: MinigameRepository,
         minigame_uow_factory: MinigameUnitOfWorkFactory,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_name: str,
     ) -> FinishExpiredGamesUseCase:
-        return FinishExpiredGamesUseCase(minigame_repository, send_channel_message, minigame_uow_factory, bot_name)
+        return FinishExpiredGamesUseCase(minigame_repository, send_channel_message, minigame_uow_factory)
 
     def handle_minigame_tick_use_case(
         self,
@@ -611,7 +605,6 @@ class PlatformContainer:
         command_guess_letter: str,
         rps_command_name: str,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_name: str,
     ) -> HandleMinigameTickUseCase:
         minigame_uow_factory = self.minigame_uow_factory(
             economy_policy_factory,
@@ -623,7 +616,7 @@ class PlatformContainer:
             get_user_equipment_use_case,
         )
         start_number_guess_game_use_case = self.start_number_guess_game_use_case(
-            prefix, minigame_repository, minigame_uow_factory, number_guess_name, send_channel_message, bot_name
+            prefix, minigame_repository, minigame_uow_factory, number_guess_name, send_channel_message
         )
         start_word_game_use_case = self.start_word_game_use_case(
             prefix,
@@ -634,15 +627,12 @@ class PlatformContainer:
             command_guess_word,
             command_guess_letter,
             send_channel_message,
-            bot_name,
         )
         start_rps_game_use_case = self.start_rps_game_use_case(
-            prefix, minigame_repository, minigame_uow_factory, rps_command_name, send_channel_message, bot_name
+            prefix, minigame_repository, minigame_uow_factory, rps_command_name, send_channel_message
         )
-        finish_rps_game_use_case = self.finish_rps_game_use_case(minigame_repository, minigame_uow_factory, bot_name, send_channel_message)
-        finish_expired_games_use_case = self.finish_expired_games_use_case(
-            minigame_repository, minigame_uow_factory, send_channel_message, bot_name
-        )
+        finish_rps_game_use_case = self.finish_rps_game_use_case(minigame_repository, minigame_uow_factory, send_channel_message)
+        finish_expired_games_use_case = self.finish_expired_games_use_case(minigame_repository, minigame_uow_factory, send_channel_message)
         return HandleMinigameTickUseCase(
             minigame_repository,
             minigame_uow_factory,

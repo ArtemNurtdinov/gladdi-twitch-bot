@@ -21,6 +21,7 @@ from app.follow.di.container import FollowContainer
 from app.follow.presentation import followers_routes
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api import joke_routes
+from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.minigame.di.container import MinigameContainer
 from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.container import NotificationContainer
@@ -407,6 +408,27 @@ class Application:
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
                 conversation_service_factory=ai_container.conversation_service_factory,
+            ),
+            minigame_job=MinigameTickJob(
+                handle_minigame_tick_use_case=platform_container.handle_minigame_tick_use_case(
+                    minigame_repository=minigame_repository,
+                    economy_policy_factory=economy_container.economy_policy_factory,
+                    chat_use_case=chat_container.chat_use_case(),
+                    stream_repository_factory=stream_container.stream_repository_factory,
+                    get_used_words_use_case=minigame_container.get_used_words_use_case(),
+                    add_used_words_use_case=minigame_container.add_used_word_use_case(),
+                    conversation_service_factory=ai_container.conversation_service_factory,
+                    get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                    system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+                    llm_repository_factory=ai_container.llm_repository_factory,
+                    prefix=self.container.config.bot.prefix,
+                    number_guess_name=self.container.config.bot.command_guess,
+                    command_guess_word=self.container.config.bot.command_guess_word,
+                    command_guess_letter=self.container.config.bot.command_guess_letter,
+                    rps_command_name=self.container.config.bot.command_rps,
+                    send_channel_message=platform_chat_client.send_channel_message,
+                ),
+                logger=self.container.logger,
             ),
         )
 

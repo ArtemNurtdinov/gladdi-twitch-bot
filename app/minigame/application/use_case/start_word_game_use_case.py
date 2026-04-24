@@ -31,7 +31,6 @@ class StartWordGameUseCase:
         command_guess_word: str,
         command_guess_letter: str,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_name: str,
         logger: Logger,
     ):
         self._minigame_repository = minigame_repository
@@ -43,10 +42,9 @@ class StartWordGameUseCase:
         self._command_guess_word = command_guess_word
         self._command_guess_letter = command_guess_letter
         self._send_channel_message = send_channel_message
-        self._bot_name = bot_name
         self._logger = logger.create_child(__name__)
 
-    async def start(self, channel_name: str):
+    async def start(self, channel_name: str, bot_name: str):
         with self._minigame_uow.create(read_only=True) as uow:
             used_words = uow.get_used_words_use_case.get_used_words(channel_name, limit=self._USED_WORDS_LIMIT)
             last_messages = uow.chat_use_case.get_last_chat_messages(channel_name, limit=self._CHAT_MESSAGES_LIMIT)
@@ -114,5 +112,5 @@ class StartWordGameUseCase:
 
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
-                channel_name=channel_name, user_name=self._bot_name, content=game_message, current_time=datetime.now(UTC)
+                channel_name=channel_name, user_name=bot_name, content=game_message, current_time=datetime.now(UTC)
             )

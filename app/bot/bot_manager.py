@@ -69,6 +69,7 @@ class BotManager:
         platform_chat_client: TwitchPlatformChatClient,
         post_joke_job: PostJokeJob,
         stream_status_job: StreamStatusJob,
+        minigame_job: MinigameTickJob,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -89,6 +90,7 @@ class BotManager:
         self._platform_container = platform_container
         self._viewer_repository_factory = viewer_repository_factory
         self._chat_summarizer_job = chat_summarizer_job
+        self._minigame_job = minigame_job
         self._viewer_cache = viewer_cache
         self._handle_restore_stream_use_case = handle_restore_stream_use_case
         self._platform_chat_client = platform_chat_client
@@ -165,30 +167,7 @@ class BotManager:
             self._post_joke_job.apply_channel(channel_name, bot_name)
             self._stream_status_job.apply_channel(channel_name, bot_name)
             self._chat_summarizer_job.apply_channel(channel_name, bot_name)
-
-            minigame_job: MinigameTickJob = MinigameTickJob(
-                channel_name=channel_name,
-                handle_minigame_tick_use_case=self._platform_container.handle_minigame_tick_use_case(
-                    minigame_repository=self._minigame_repository,
-                    economy_policy_factory=self._economy_policy_factory,
-                    chat_use_case=self._chat_use_case,
-                    stream_repository_factory=self._stream_repository_factory,
-                    get_used_words_use_case=self._get_used_word_use_case,
-                    add_used_words_use_case=self._add_used_word_use_case,
-                    conversation_service_factory=conversation_service_factory,
-                    get_user_equipment_use_case=self._get_user_equipment_use_case,
-                    system_prompt_repository_factory=system_prompt_repository_factory,
-                    llm_repository_factory=llm_repository_factory,
-                    prefix=self._config.prefix,
-                    number_guess_name=self._config.command_guess,
-                    command_guess_word=self._config.command_guess_word,
-                    command_guess_letter=self._config.command_guess_letter,
-                    rps_command_name=self._config.command_rps,
-                    send_channel_message=self._platform_chat_client.send_channel_message,
-                    bot_name=bot_name,
-                ),
-                logger=self._logger,
-            )
+            self._minigame_job.apply_channel(channel_name, bot_name)
 
             viewer_time_job = self._platform_container.viewer_time_job(
                 stream_repository_factory=self._stream_repository_factory,
@@ -209,9 +188,9 @@ class BotManager:
             jobs = [
                 self._post_joke_job,
                 token_checker_job,
-                stream_status_job,
+                self._stream_status_job,
                 self._chat_summarizer_job,
-                minigame_job,
+                self._minigame_job,
                 viewer_time_job,
                 followers_sync_job,
             ]

@@ -14,15 +14,13 @@ class FinishRpsUseCase:
         self,
         minigame_repository: MinigameRepository,
         minigame_uow: MinigameUnitOfWorkFactory,
-        bot_name: str,
         send_channel_message: Callable[[str], Awaitable[None]],
     ):
         self._minigame_repository = minigame_repository
         self._minigame_uow = minigame_uow
-        self._bot_name = bot_name
         self._send_channel_message = send_channel_message
 
-    async def finish(self, channel_name: str):
+    async def finish(self, channel_name: str, bot_name: str):
         game = self._minigame_repository.get_active_rps_game(channel_name)
 
         if not game:
@@ -75,7 +73,7 @@ class FinishRpsUseCase:
 
         with self._minigame_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
-                channel_name=channel_name, user_name=self._bot_name, content=message, current_time=datetime.now(UTC)
+                channel_name=channel_name, user_name=bot_name, content=message, current_time=datetime.now(UTC)
             )
 
         await self._send_channel_message(message)
