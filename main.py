@@ -14,6 +14,7 @@ from app.core.di.application_container import ApplicationContainer
 from app.follow.presentation import followers_routes
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api import joke_routes
+from app.minigame.di.container import MinigameContainer
 from app.shop.di.container import ShopContainer
 from app.shop.presentation.api import shop_routes
 from app.stream.presentation import stream_routes
@@ -66,6 +67,10 @@ class Application:
 
         shop_container = ShopContainer()
 
+        minigame_container = MinigameContainer(
+            session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
+        )
+
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,
@@ -73,6 +78,9 @@ class Application:
             intent_detector_config=self.container.config.intent_detector,
             logger=self.container.logger,
             shop_item_repository_factory=shop_container.shop_item_repository_factory,
+            minigame_repository=minigame_container.minigame_repository(),
+            get_used_word_use_case=minigame_container.get_used_words_use_case(),
+            add_used_word_use_case=minigame_container.add_used_word_use_case(),
         )
 
     def _setup_routes(self):

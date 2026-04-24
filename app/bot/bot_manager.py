@@ -29,7 +29,9 @@ from app.follow.di.container import FollowContainer
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.di.container import JokeContainer
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
-from app.minigame.di.container import MinigameContainer
+from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
+from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
+from app.minigame.domain.minigame_repository import MinigameRepository
 from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.container import NotificationContainer
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
@@ -67,6 +69,9 @@ class BotManager:
         intent_detector_config: IntentDetectorConfig,
         logger: Logger,
         shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
+        minigame_repository: MinigameRepository,
+        get_used_word_use_case: GetUsedWordsUseCase,
+        add_used_word_use_case: AddUsedWordsUseCase,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -75,6 +80,9 @@ class BotManager:
         self._logger = logger.create_child(__name__)
 
         self._shop_item_repository_factory = shop_item_repository_factory
+        self._minigame_repository = minigame_repository
+        self._get_used_word_use_case = get_used_word_use_case
+        self._add_used_word_use_case = add_used_word_use_case
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -133,7 +141,6 @@ class BotManager:
             follow_container = FollowContainer()
             economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            minigame_container = MinigameContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             betting_container = BettingContainer()
             chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
@@ -145,7 +152,6 @@ class BotManager:
             )
             notification_container = NotificationContainer(self._telegram_config.bot_token)
 
-            minigame_repository = minigame_container.minigame_repository()
             self._api_client = platform_container.api_client
 
             bot_user = await platform_container.platform_repository().get_authenticated_user()
@@ -321,7 +327,7 @@ class BotManager:
             guess_number_command_handler = platform_container.guess_number_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_guess,
-                minigame_repository=minigame_repository,
+                minigame_repository=self._minigame_repository,
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
@@ -331,7 +337,7 @@ class BotManager:
             guess_letter_command_handler = platform_container.guess_letter_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_guess_letter,
-                minigame_repository=minigame_repository,
+                minigame_repository=self._minigame_repository,
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
@@ -341,7 +347,7 @@ class BotManager:
             guess_word_command_handler = platform_container.guess_word_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_guess_word,
-                minigame_repository=minigame_repository,
+                minigame_repository=self._minigame_repository,
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
@@ -351,7 +357,7 @@ class BotManager:
             rps_command_handler = platform_container.rps_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_rps,
-                minigame_repository=minigame_repository,
+                minigame_repository=self._minigame_repository,
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
                 bot_name=bot_name,
@@ -420,7 +426,7 @@ class BotManager:
 
             HandleRestoreStreamContextUseCase(
                 restore_stream_uow=platform_container.restore_stream_uow(stream_container.stream_repository_factory),
-                minigame_repository=minigame_repository,
+                minigame_repository=self._minigame_repository,
                 logger=self._logger,
             ).handle(channel_name)
 
@@ -446,7 +452,7 @@ class BotManager:
                 channel_name=channel_name,
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),
-                minigame_repository=minigame_repository,
+                minigame_repository=self._minigame_repository,
                 notification_repository=notification_container.notification_repository(),
                 notification_group_id=self._telegram_config.group_id,
                 generate_response_use_case_factory=generate_response_use_case_factory,
@@ -469,12 +475,12 @@ class BotManager:
             minigame_job: MinigameTickJob = MinigameTickJob(
                 channel_name=channel_name,
                 handle_minigame_tick_use_case=platform_container.handle_minigame_tick_use_case(
-                    minigame_repository=minigame_repository,
+                    minigame_repository=self._minigame_repository,
                     economy_policy_factory=economy_container.economy_policy_factory,
                     chat_use_case=chat_container.chat_use_case(),
                     stream_repository_factory=stream_container.stream_repository_factory,
-                    get_used_words_use_case=minigame_container.get_used_words_use_case(),
-                    add_used_words_use_case=minigame_container.add_used_word_use_case(),
+                    get_used_words_use_case=self._get_used_word_use_case,
+                    add_used_words_use_case=self._add_used_word_use_case,
                     conversation_service_factory=conversation_service_factory,
                     get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     system_prompt_repository_factory=system_prompt_repository_factory,
