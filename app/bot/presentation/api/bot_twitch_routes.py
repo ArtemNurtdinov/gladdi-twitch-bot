@@ -13,8 +13,6 @@ from app.core.config.domain.model.application import ApplicationConfig
 from app.core.config.domain.model.configuration import Config
 from app.economy.di.container import EconomyContainer
 from app.follow.di.container import FollowContainer
-from app.joke.di.container import JokeContainer
-from app.joke.presentation.api.joke_routes import get_joke_container
 from app.minigame.di.container import MinigameContainer
 from app.platform.di.container import PlatformContainer
 from app.shop.di.container import ShopContainer
@@ -93,8 +91,6 @@ async def oauth_callback(
     state: str | None = None,
     bot_manager: BotManager = Depends(get_bot_manager),
     config: Config = Depends(get_config),
-    ai_container: AIContainer = Depends(get_ai_container),
-    joke_container: JokeContainer = Depends(get_joke_container),
     platform_container: PlatformContainer = Depends(get_platform_container),
 ) -> BotActionResultResponse:
     data = {
@@ -119,11 +115,6 @@ async def oauth_callback(
 
     return await bot_manager.start_bot(
         channel_name=state,
-        generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-        conversation_service_factory=ai_container.conversation_service_factory,
-        system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
-        llm_repository_factory=ai_container.llm_repository_factory,
-        joke_container=joke_container,
         platform_auth=platform_container.platform_auth,
         token_checker_job=platform_container.token_checker_job,
         api_client=platform_container.api_client,

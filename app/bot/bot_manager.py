@@ -1,10 +1,6 @@
 import asyncio
 from datetime import UTC, datetime
 
-from app.ai.gen.conversation.domain.conversation_service import ConversationService
-from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
-from app.ai.gen.llm.domain.llm_repository import LLMRepository
-from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
@@ -22,7 +18,6 @@ from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.follow.domain.repo import FollowersRepository
 from app.joke.application.job.post_joke_job import PostJokeJob
-from app.joke.di.container import JokeContainer
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
@@ -133,11 +128,6 @@ class BotManager:
     async def start_bot(
         self,
         channel_name: str,
-        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
-        conversation_service_factory: SessionScopedFactory[ConversationService],
-        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
-        llm_repository_factory: SessionScopedFactory[LLMRepository],
-        joke_container: JokeContainer,
         platform_auth: PlatformAuth,
         token_checker_job: TokenCheckerJob,
         platform_repository: PlatformRepository,
