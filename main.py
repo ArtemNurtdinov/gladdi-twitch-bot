@@ -26,6 +26,7 @@ from app.notification.di.container import NotificationContainer
 from app.platform.command.ask.application.ask_command_handler import AskCommandHandler
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.platform.command.ask.di.container import AskContainer
+from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandler
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandler
 from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.platform.di.container import PlatformContainer
@@ -134,7 +135,6 @@ class Application:
             add_used_word_use_case=minigame_container.add_used_word_use_case(),
             stream_repository_factory=stream_container.stream_repository_factory,
             economy_policy_factory=economy_container.economy_policy_factory,
-            handle_balance_use_case=economy_container.handle_balance_use_case(chat_container.chat_use_case()),
             chat_repository_factory=chat_container.chat_repository_factory,
             chat_use_case=chat_container.chat_use_case(),
             followers_repository_factory=follow_container.followers_repository_factory,
@@ -200,6 +200,20 @@ class Application:
                     db_ro_session=db_ro_session,
                 ),
                 chat_moderation=moderation_service,
+            ),
+            roll_command_handler=platform_container.roll_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                command_name=self.container.config.bot.command_roll,
+                economy_policy_factory=economy_container.economy_policy_factory,
+                betting_service_factory=betting_container.betting_service_factory,
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
+                roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
+                calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
+                chat_moderation_port=moderation_service,
+            ),
+            balance_command_handler=BalanceCommandHandler(
+                handle_balance_use_case=economy_container.handle_balance_use_case(chat_container.chat_use_case())
             ),
         )
 

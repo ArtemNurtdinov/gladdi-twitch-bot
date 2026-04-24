@@ -6,7 +6,7 @@ from app.platform.command.roll.application.handle_roll_use_case import HandleRol
 from app.platform.command.roll.application.model import RollDTO
 
 
-class RollCommandHandlerImpl(CommandHandler):
+class RollCommandHandler(CommandHandler):
     DEFAULT_COOLDOWN_SECONDS = 60
     CLEANUP_THRESHOLD_SECONDS = 300
 
@@ -16,13 +16,15 @@ class RollCommandHandlerImpl(CommandHandler):
         command_name: str,
         handle_roll_use_case: HandleRollUseCase,
         chat_moderation: ChatModerationPort,
-        bot_name: str,
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
         self._handle_roll_use_case = handle_roll_use_case
         self.roll_cooldowns: dict[str, datetime] = {}
         self._chat_moderation = chat_moderation
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     def _cleanup_old_cooldowns(self):

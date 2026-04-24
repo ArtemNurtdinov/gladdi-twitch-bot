@@ -47,12 +47,11 @@ from app.platform.chat.application.usecase.handle_reply_use_case import HandleRe
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.ask.application.ask_command_handler import AskCommandHandler
-from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
-from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
+from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandler
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandler
-from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandler
+from app.platform.command.roll.application.roll_command_handler import RollCommandHandler
 from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
 from app.shop.domain.repository import ShopItemRepository
@@ -80,7 +79,6 @@ class BotManager:
         add_used_word_use_case: AddUsedWordsUseCase,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        handle_balance_use_case: HandleBalanceUseCase,
         chat_repository_factory: SessionScopedFactory[ChatRepository],
         chat_use_case: ChatUseCase,
         followers_repository_factory: SessionScopedFactory[FollowersRepository],
@@ -101,6 +99,8 @@ class BotManager:
         followage_command_handler: FollowageCommandHandler,
         ask_command_handler: AskCommandHandler,
         battle_command_handler: BattleCommandHandler,
+        roll_command_handler: RollCommandHandler,
+        balance_command_handler: BalanceCommandHandler,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -114,7 +114,6 @@ class BotManager:
         self._add_used_word_use_case = add_used_word_use_case
         self._stream_repository_factory = stream_repository_factory
         self._economy_policy_factory = economy_policy_factory
-        self._handle_balance_use_case = handle_balance_use_case
         self._chat_repository_factory = chat_repository_factory
         self._chat_use_case = chat_use_case
         self._followers_repository_factory = followers_repository_factory
@@ -135,6 +134,8 @@ class BotManager:
         self._followage_command_handler = followage_command_handler
         self._ask_command_handler = ask_command_handler
         self._battle_command_handler = battle_command_handler
+        self._roll_command_handler = roll_command_handler
+        self._balance_command_handler = balance_command_handler
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -203,24 +204,8 @@ class BotManager:
             self._ask_command_handler.apply_bot_name(bot_name)
             self._battle_command_handler.apply_bot_name(bot_name)
             self._battle_command_handler.apply_battle_waiting_user(battle_waiting_user)
-
-            roll_command_handler = self._platform_container.roll_command_handler(
-                command_prefix=self._config.prefix,
-                command_name=self._config.command_roll,
-                economy_policy_factory=self._economy_policy_factory,
-                betting_service_factory=self._betting_service_factory,
-                get_user_equipment_use_case=self._get_user_equipment_use_case,
-                chat_use_case=self._chat_use_case,
-                roll_cooldown_use_case=self._roll_cooldown_use_case,
-                calculate_timeout_use_case=self._calculate_timeout_use_case,
-                chat_moderation_port=self._moderation_service,
-                bot_name=bot_name,
-            )
-
-            balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(
-                handle_balance_use_case=self._handle_balance_use_case,
-                bot_name=bot_name,
-            )
+            self._roll_command_handler.apply_bot_name(bot_name)
+            self._balance_command_handler.apply_bot_name(bot_name)
 
             bonus_command_handler = self._platform_container.bonus_command_handler(
                 stream_repository_factory=self._stream_repository_factory,
@@ -355,8 +340,8 @@ class BotManager:
             command_router.register_command_handler(self._config.command_followage, self._followage_command_handler)
             command_router.register_command_handler(self._config.command_gladdi, self._ask_command_handler)
             command_router.register_command_handler(self._config.command_fight, self._battle_command_handler)
-            command_router.register_command_handler(self._config.command_roll, roll_command_handler)
-            command_router.register_command_handler(self._config.command_balance, balance_command_handler)
+            command_router.register_command_handler(self._config.command_roll, self._roll_command_handler)
+            command_router.register_command_handler(self._config.command_balance, self._balance_command_handler)
             command_router.register_command_handler(self._config.command_bonus, bonus_command_handler)
             command_router.register_command_handler(self._config.command_transfer, transfer_command_handler)
             command_router.register_command_handler(self._config.command_shop, shop_command_handler)

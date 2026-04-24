@@ -5,9 +5,12 @@ from app.platform.command.balance.application.model import BalanceDTO
 from app.platform.command.domain.command_handler import CommandHandler
 
 
-class BalanceCommandHandlerImpl(CommandHandler):
-    def __init__(self, handle_balance_use_case: HandleBalanceUseCase, bot_name: str):
+class BalanceCommandHandler(CommandHandler):
+    def __init__(self, handle_balance_use_case: HandleBalanceUseCase):
         self._handle_balance_use_case = handle_balance_use_case
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:

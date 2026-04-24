@@ -66,7 +66,7 @@ from app.platform.command.help.application.help_uow import HelpUnitOfWorkFactory
 from app.platform.command.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
 from app.platform.command.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
 from app.platform.command.roll.application.handle_roll_use_case import HandleRollUseCase
-from app.platform.command.roll.application.roll_command_handler import RollCommandHandlerImpl
+from app.platform.command.roll.application.roll_command_handler import RollCommandHandler
 from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
 from app.platform.command.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
 from app.platform.command.shop.application.buy_command_handler import BuyCommandHandlerImpl
@@ -335,8 +335,7 @@ class PlatformContainer:
         roll_cooldown_use_case: RollCooldownUseCase,
         calculate_timeout_use_case: CalculateTimeoutUseCase,
         chat_moderation_port: ChatModerationPort,
-        bot_name: str,
-    ) -> CommandHandler:
+    ) -> RollCommandHandler:
         handle_roll_use_case = self.handle_roll_use_case(
             economy_policy_factory,
             betting_service_factory,
@@ -345,12 +344,11 @@ class PlatformContainer:
             roll_cooldown_use_case,
             calculate_timeout_use_case,
         )
-        return RollCommandHandlerImpl(
+        return RollCommandHandler(
             command_prefix=command_prefix,
             command_name=command_name,
             handle_roll_use_case=handle_roll_use_case,
             chat_moderation=chat_moderation_port,
-            bot_name=bot_name,
         )
 
     def shop_uow_factory(
