@@ -15,7 +15,6 @@ from app.bot.presentation.api.model.response.status import BotStatusResponse
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.chat_use_case import ChatUseCase
-from app.chat.domain.repo import ChatRepository
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.config.domain.model.bot import BotConfig
 from app.core.config.domain.model.intent_detector import IntentDetectorConfig
@@ -24,10 +23,6 @@ from app.core.config.domain.model.telegram import TelegramConfig
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
-from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
-from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
-from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.follow.domain.repo import FollowersRepository
 from app.joke.application.job.post_joke_job import PostJokeJob
@@ -36,7 +31,6 @@ from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
-from app.moderation.application.moderation_service import ModerationService
 from app.notification.domain.repository import NotificationRepository
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
@@ -51,10 +45,12 @@ from app.platform.command.balance.application.balance_command_handler import Bal
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandler
 from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandler
 from app.platform.command.domain.command_router import CommandRouter
+from app.platform.command.equipment.application.equipment_command_handler import EquipmentCommandHandler
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandler
 from app.platform.command.roll.application.roll_command_handler import RollCommandHandler
 from app.platform.command.shop.application.buy_command_handler import BuyCommandHandler
 from app.platform.command.shop.application.shop_command_handler import ShopCommandHandler
+from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandler
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandler
 from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
@@ -83,15 +79,10 @@ class BotManager:
         add_used_word_use_case: AddUsedWordsUseCase,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        chat_repository_factory: SessionScopedFactory[ChatRepository],
         chat_use_case: ChatUseCase,
         followers_repository_factory: SessionScopedFactory[FollowersRepository],
         betting_service_factory: SessionScopedFactory[BettingService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
-        calculate_timeout_use_case: CalculateTimeoutUseCase,
-        roll_cooldown_use_case: RollCooldownUseCase,
-        add_equipment_use_case: AddEquipmentUseCase,
-        equipment_exists_use_case: EquipmentExistsUseCase,
         notification_repository: NotificationRepository,
         battle_use_case: BattleUseCase,
         platform_container: PlatformContainer,
@@ -99,7 +90,6 @@ class BotManager:
         chat_message_uow_factory: ChatMessageUnitOfWorkFactory,
         chat_summarizer_job: ChatSummarizerJob,
         viewer_cache: ViewerCachePort,
-        moderation_service: ModerationService,
         followage_command_handler: FollowageCommandHandler,
         ask_command_handler: AskCommandHandler,
         battle_command_handler: BattleCommandHandler,
@@ -109,6 +99,8 @@ class BotManager:
         transfer_command_handler: TransferCommandHandler,
         shop_command_handler: ShopCommandHandler,
         buy_command_handler: BuyCommandHandler,
+        equipment_command_handler: EquipmentCommandHandler,
+        top_command_handler: TopCommandHandler,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -122,15 +114,10 @@ class BotManager:
         self._add_used_word_use_case = add_used_word_use_case
         self._stream_repository_factory = stream_repository_factory
         self._economy_policy_factory = economy_policy_factory
-        self._chat_repository_factory = chat_repository_factory
         self._chat_use_case = chat_use_case
         self._followers_repository_factory = followers_repository_factory
         self._betting_service_factory = betting_service_factory
         self._get_user_equipment_use_case = get_user_equipment_use_case
-        self._calculate_timeout_use_case = calculate_timeout_use_case
-        self._roll_cooldown_use_case = roll_cooldown_use_case
-        self._add_equipment_use_case = add_equipment_use_case
-        self._equipment_exists_use_case = equipment_exists_use_case
         self._notification_repository = notification_repository
         self._battle_use_case = battle_use_case
         self._platform_container = platform_container
@@ -138,7 +125,6 @@ class BotManager:
         self._chat_message_uow_factory = chat_message_uow_factory
         self._chat_summarizer_job = chat_summarizer_job
         self._viewer_cache = viewer_cache
-        self._moderation_service = moderation_service
         self._followage_command_handler = followage_command_handler
         self._ask_command_handler = ask_command_handler
         self._battle_command_handler = battle_command_handler
@@ -148,6 +134,8 @@ class BotManager:
         self._transfer_command_handler = transfer_command_handler
         self._shop_command_handler = shop_command_handler
         self._buy_command_handler = buy_command_handler
+        self._equipment_command_handler = equipment_command_handler
+        self._top_command_handler = top_command_handler
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -222,20 +210,8 @@ class BotManager:
             self._transfer_command_handler.apply_bot_name(bot_name)
             self._shop_command_handler.apply_bot_name(bot_name)
             self._buy_command_handler.apply_bot_name(bot_name)
-
-            equipment_command_handler = self._platform_container.equipment_command_handler(
-                command_prefix=self._config.prefix,
-                command_shop=self._config.command_shop,
-                get_user_equipment_use_case=self._get_user_equipment_use_case,
-                chat_use_case=self._chat_use_case,
-                bot_name=bot_name,
-            )
-
-            top_command_handler = self._platform_container.top_command_handler(
-                economy_policy_factory=self._economy_policy_factory,
-                chat_use_case=self._chat_use_case,
-                bot_name=bot_name,
-            )
+            self._equipment_command_handler.apply_bot_name(bot_name)
+            self._top_command_handler.apply_bot_name(bot_name)
 
             bottom_command_handler = self._platform_container.bottom_command_handler(
                 economy_policy_factory=self._economy_policy_factory,
@@ -323,8 +299,8 @@ class BotManager:
             command_router.register_command_handler(self._config.command_transfer, self._transfer_command_handler)
             command_router.register_command_handler(self._config.command_shop, self._shop_command_handler)
             command_router.register_command_handler(self._config.command_buy, self._buy_command_handler)
-            command_router.register_command_handler(self._config.command_equipment, equipment_command_handler)
-            command_router.register_command_handler(self._config.command_top, top_command_handler)
+            command_router.register_command_handler(self._config.command_equipment, self._equipment_command_handler)
+            command_router.register_command_handler(self._config.command_top, self._top_command_handler)
             command_router.register_command_handler(self._config.command_bottom, bottom_command_handler)
             command_router.register_command_handler(self._config.command_help, help_command_handler)
             command_router.register_command_handler(self._config.command_stats, stats_command_handler)

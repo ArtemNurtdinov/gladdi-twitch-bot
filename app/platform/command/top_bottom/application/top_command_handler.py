@@ -5,9 +5,12 @@ from app.platform.command.top_bottom.application.handle_top_bottom_use_case impo
 from app.platform.command.top_bottom.application.model import TopDTO
 
 
-class TopCommandHandlerImpl(CommandHandler):
-    def __init__(self, handle_top_bottom_use_case: HandleTopBottomUseCase, bot_name: str):
+class TopCommandHandler(CommandHandler):
+    def __init__(self, handle_top_bottom_use_case: HandleTopBottomUseCase):
         self._handle_top_bottom_use_case = handle_top_bottom_use_case
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:

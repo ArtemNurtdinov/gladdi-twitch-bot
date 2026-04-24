@@ -5,17 +5,19 @@ from app.platform.command.equipment.application.handle_equipment_use_case import
 from app.platform.command.equipment.application.model import EquipmentDTO
 
 
-class EquipmentCommandHandlerImpl(CommandHandler):
+class EquipmentCommandHandler(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
         command_shop: str,
         handle_equipment_use_case: HandleEquipmentUseCase,
-        bot_name: str,
     ):
         self._handle_equipment_use_case = handle_equipment_use_case
         self.command_shop = command_shop
         self.command_prefix = command_prefix
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:

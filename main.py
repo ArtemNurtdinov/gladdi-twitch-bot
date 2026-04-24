@@ -135,15 +135,10 @@ class Application:
             add_used_word_use_case=minigame_container.add_used_word_use_case(),
             stream_repository_factory=stream_container.stream_repository_factory,
             economy_policy_factory=economy_container.economy_policy_factory,
-            chat_repository_factory=chat_container.chat_repository_factory,
             chat_use_case=chat_container.chat_use_case(),
             followers_repository_factory=follow_container.followers_repository_factory,
             betting_service_factory=betting_container.betting_service_factory,
             get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-            calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
-            roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
-            add_equipment_use_case=equipment_container.add_equipment_use_case(),
-            equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
             notification_repository=notification_container.notification_repository(),
             battle_use_case=battle_container.battle_use_case(),
             platform_container=platform_container,
@@ -160,7 +155,6 @@ class Application:
                 generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
             ),
             viewer_cache=viewer_cache,
-            moderation_service=moderation_service,
             followage_command_handler=platform_container.followage_command_handler(
                 command_prefix=self.container.config.bot.prefix,
                 command_name=self.container.config.bot.command_followage,
@@ -245,6 +239,16 @@ class Application:
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
                 chat_use_case=chat_container.chat_use_case(),
                 shop_item_repository_factory=shop_container.shop_item_repository_factory,
+            ),
+            equipment_command_handler=platform_container.equipment_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                command_shop=self.container.config.bot.command_shop,
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
+            ),
+            top_command_handler=platform_container.top_command_handler(
+                economy_policy_factory=economy_container.economy_policy_factory,
+                chat_use_case=chat_container.chat_use_case(),
             ),
         )
 

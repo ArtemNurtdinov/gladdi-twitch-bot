@@ -46,7 +46,7 @@ from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFact
 from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.platform.command.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
 from app.platform.command.domain.command_handler import CommandHandler
-from app.platform.command.equipment.application.equipment_command_handler import EquipmentCommandHandlerImpl
+from app.platform.command.equipment.application.equipment_command_handler import EquipmentCommandHandler
 from app.platform.command.equipment.application.equipment_uow import EquipmentUnitOfWorkFactory
 from app.platform.command.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.platform.command.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
@@ -81,7 +81,7 @@ from app.platform.command.stats.infrastructure.stats_uow import SqlAlchemyStatsU
 from app.platform.command.top_bottom.application.bottom_command_handler import BottomCommandHandlerImpl
 from app.platform.command.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.platform.command.top_bottom.application.top_bottom_uow import TopBottomUnitOfWorkFactory
-from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandlerImpl
+from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandler
 from app.platform.command.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
 from app.platform.command.transfer.application.handle_transfer_use_case import HandleTransferUseCase
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandler
@@ -193,14 +193,12 @@ class PlatformContainer:
         command_shop: str,
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         chat_use_case: ChatUseCase,
-        bot_name: str,
-    ) -> CommandHandler:
+    ) -> EquipmentCommandHandler:
         handle_equipment_use_case = self.handle_equipment_use_case(get_user_equipment_use_case, chat_use_case)
-        return EquipmentCommandHandlerImpl(
+        return EquipmentCommandHandler(
             command_prefix=command_prefix,
             command_shop=command_shop,
             handle_equipment_use_case=handle_equipment_use_case,
-            bot_name=bot_name,
         )
 
     def guess_uow_factory(
@@ -477,10 +475,10 @@ class PlatformContainer:
         return HandleTopBottomUseCase(top_bottom_uow_factory)
 
     def top_command_handler(
-        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase, bot_name: str
-    ) -> CommandHandler:
+        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase
+    ) -> TopCommandHandler:
         handle_top_bottom_use_case = self.handle_top_bottom_use_case(economy_policy_factory, chat_use_case)
-        return TopCommandHandlerImpl(handle_top_bottom_use_case, bot_name)
+        return TopCommandHandler(handle_top_bottom_use_case)
 
     def bottom_command_handler(
         self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase, bot_name: str
