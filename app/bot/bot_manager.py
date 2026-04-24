@@ -49,6 +49,7 @@ from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.ask.application.ask_command_handler import AskCommandHandler
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandler
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandler
+from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandler
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandler
 from app.platform.command.roll.application.roll_command_handler import RollCommandHandler
@@ -101,6 +102,7 @@ class BotManager:
         battle_command_handler: BattleCommandHandler,
         roll_command_handler: RollCommandHandler,
         balance_command_handler: BalanceCommandHandler,
+        bonus_command_handler: BonusCommandHandler,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -136,6 +138,7 @@ class BotManager:
         self._battle_command_handler = battle_command_handler
         self._roll_command_handler = roll_command_handler
         self._balance_command_handler = balance_command_handler
+        self._bonus_command_handler = bonus_command_handler
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -206,14 +209,7 @@ class BotManager:
             self._battle_command_handler.apply_battle_waiting_user(battle_waiting_user)
             self._roll_command_handler.apply_bot_name(bot_name)
             self._balance_command_handler.apply_bot_name(bot_name)
-
-            bonus_command_handler = self._platform_container.bonus_command_handler(
-                stream_repository_factory=self._stream_repository_factory,
-                get_user_equipment_use_case=self._get_user_equipment_use_case,
-                economy_policy_factory=self._economy_policy_factory,
-                chat_use_case=self._chat_use_case,
-                bot_name=bot_name,
-            )
+            self._bonus_command_handler.apply_bot_name(bot_name)
 
             transfer_command_handler = self._platform_container.transfer_command_handler(
                 command_prefix=self._config.prefix,

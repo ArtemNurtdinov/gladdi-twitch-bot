@@ -215,6 +215,12 @@ class Application:
             balance_command_handler=BalanceCommandHandler(
                 handle_balance_use_case=economy_container.handle_balance_use_case(chat_container.chat_use_case())
             ),
+            bonus_command_handler=platform_container.bonus_command_handler(
+                stream_repository_factory=stream_container.stream_repository_factory,
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                economy_policy_factory=economy_container.economy_policy_factory,
+                chat_use_case=chat_container.chat_use_case(),
+            ),
         )
 
     def _setup_routes(self):

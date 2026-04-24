@@ -41,7 +41,7 @@ from app.notification.domain.repository import NotificationRepository
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
-from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
+from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandler
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
 from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.platform.command.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
@@ -165,12 +165,11 @@ class PlatformContainer:
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        bot_name: str,
-    ) -> CommandHandler:
+    ) -> BonusCommandHandler:
         handle_bonus_use_case = self.handle_bonus_use_case(
             stream_repository_factory, get_user_equipment_use_case, economy_policy_factory, chat_use_case
         )
-        return BonusCommandHandlerImpl(handle_bonus_use_case, bot_name)
+        return BonusCommandHandler(handle_bonus_use_case)
 
     def equipment_uow_factory(
         self, get_user_equipment_use_case: GetUserEquipmentUseCase, chat_use_case: ChatUseCase

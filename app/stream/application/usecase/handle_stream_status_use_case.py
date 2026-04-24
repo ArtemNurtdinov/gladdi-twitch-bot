@@ -49,6 +49,8 @@ class HandleStreamStatusUseCase:
             return
 
         stream_status = await self._platform_repository.get_stream_status(broadcaster_id)
+
+        self._logger.log_info(f"Проверка статуса стрима: {stream_status}")
         if stream_status is None:
             self._logger.log_error(f"Не удалось получить статус стрима для канала {channel_name}")
             return
