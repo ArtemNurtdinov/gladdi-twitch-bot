@@ -75,7 +75,7 @@ from app.platform.command.shop.application.shop_command_handler import ShopComma
 from app.platform.command.shop.application.shop_uow import ShopUnitOfWorkFactory
 from app.platform.command.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
 from app.platform.command.stats.application.handle_stats_use_case import HandleStatsUseCase
-from app.platform.command.stats.application.stats_command_handler import StatsCommandHandlerImpl
+from app.platform.command.stats.application.stats_command_handler import StatsCommandHandler
 from app.platform.command.stats.application.stats_uow import StatsUnitOfWorkFactory
 from app.platform.command.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
 from app.platform.command.top_bottom.application.bottom_command_handler import BottomCommandHandler
@@ -449,12 +449,9 @@ class PlatformContainer:
         betting_service_factory: SessionScopedFactory[BettingService],
         battle_use_case: BattleUseCase,
         chat_use_case: ChatUseCase,
-        bot_name: str,
-    ) -> CommandHandler:
+    ) -> StatsCommandHandler:
         handle_stats_use_case = self.handle_stats_use_case(economy_policy_factory, betting_service_factory, battle_use_case, chat_use_case)
-        return StatsCommandHandlerImpl(
-            command_prefix=command_prefix, command_name=command_name, handle_stats_use_case=handle_stats_use_case, bot_name=bot_name
-        )
+        return StatsCommandHandler(command_prefix=command_prefix, command_name=command_name, handle_stats_use_case=handle_stats_use_case)
 
     def top_bottom_uow_factory(
         self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase

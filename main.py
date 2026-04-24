@@ -272,6 +272,14 @@ class Application:
                     self.container.config.bot.command_followage,
                 },
             ),
+            stats_command_handler=platform_container.stats_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                command_name=self.container.config.bot.command_stats,
+                economy_policy_factory=economy_container.economy_policy_factory,
+                betting_service_factory=betting_container.betting_service_factory,
+                battle_use_case=battle_container.battle_use_case(),
+                chat_use_case=chat_container.chat_use_case(),
+            ),
         )
 
     def _setup_routes(self):

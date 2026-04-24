@@ -5,17 +5,14 @@ from app.platform.command.stats.application.handle_stats_use_case import HandleS
 from app.platform.command.stats.application.model import CommandStatsDTO
 
 
-class StatsCommandHandlerImpl(CommandHandler):
-    def __init__(
-        self,
-        command_prefix: str,
-        command_name: str,
-        handle_stats_use_case: HandleStatsUseCase,
-        bot_name: str,
-    ):
+class StatsCommandHandler(CommandHandler):
+    def __init__(self, command_prefix: str, command_name: str, handle_stats_use_case: HandleStatsUseCase):
         self.command_prefix = command_prefix
         self.command_name = command_name
         self._handle_stats_use_case = handle_stats_use_case
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:
