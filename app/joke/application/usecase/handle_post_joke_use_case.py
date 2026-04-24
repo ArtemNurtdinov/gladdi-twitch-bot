@@ -52,12 +52,11 @@ class HandlePostJokeUseCase:
             return None
 
         chatters = await self._platform_repository.get_stream_chatters(broadcaster_id, moderator_id)
-        chatter = random.choice(chatters) if chatters else "один из зрителей"
+        prompt = f"Придумай анекдот, связанный с категорией трансляции: {stream_info.game_name}."
 
-        prompt = (
-            f"Придумай анекдот, связанный с категорией трансляции: {stream_info.game_name}. "
-            f"В нём должен принимать участие участник чата: {chatter}"
-        )
+        if chatters:
+            chatter = random.choice(chatters)
+            prompt += f" В нём должен принимать участие участник чата: {chatter}"
 
         with self._db_ro_session() as session:
             joke_text = await self._generate_response_use_case_factory.get(session).generate_response(prompt, post_joke.channel_name)
