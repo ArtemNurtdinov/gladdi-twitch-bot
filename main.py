@@ -100,6 +100,7 @@ class Application:
         ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
 
         self.fast_api.state.ai_container = ai_container
+        self.fast_api.state.shop_container = shop_container
         self.fast_api.state.stream_container = stream_container
         self.fast_api.state.economy_container = economy_container
         self.fast_api.state.follow_container = follow_container
