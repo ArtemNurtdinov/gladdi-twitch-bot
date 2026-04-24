@@ -1,3 +1,4 @@
+import random
 from datetime import UTC, datetime, timedelta
 from random import randint
 
@@ -40,6 +41,7 @@ class HandlePostJokeUseCase:
             return None
 
         broadcaster_id = await self._user_cache.get_viewer_id(post_joke.channel_name)
+        moderator_id = await self._user_cache.get_viewer_id(post_joke.bot_nick)
 
         if not broadcaster_id:
             return None
@@ -49,7 +51,14 @@ class HandlePostJokeUseCase:
         if stream_info is None or not stream_info.game_name:
             return None
 
-        prompt = f"Придумай анекдот, связанный с категорией трансляции: {stream_info.game_name}."
+        chatters = await self._platform_repository.get_stream_chatters(broadcaster_id, moderator_id)
+        chatter = random.choice(chatters) if chatters else "один из зрителей"
+
+        prompt = (
+            f"Придумай анекдот, связанный с категорией трансляции: {stream_info.game_name}. "
+            f"В нём должен принимать участие участник чата: {chatter}"
+        )
+
         with self._db_ro_session() as session:
             joke_text = await self._generate_response_use_case_factory.get(session).generate_response(prompt, post_joke.channel_name)
 
