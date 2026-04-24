@@ -38,7 +38,7 @@ from app.minigame.application.use_case.add_used_word_use_case import AddUsedWord
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.moderation.application.moderation_service import ModerationService
-from app.notification.di.container import NotificationContainer
+from app.notification.domain.repository import NotificationRepository
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
@@ -90,6 +90,7 @@ class BotManager:
         roll_cooldown_use_case: RollCooldownUseCase,
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
+        notification_repository: NotificationRepository,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -113,6 +114,7 @@ class BotManager:
         self._roll_cooldown_use_case = roll_cooldown_use_case
         self._add_equipment_use_case = add_equipment_use_case
         self._equipment_exists_use_case = equipment_exists_use_case
+        self._notification_repository = notification_repository
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -175,7 +177,6 @@ class BotManager:
                 platform_auth=platform_auth,
                 logger=self._logger,
             )
-            notification_container = NotificationContainer(self._telegram_config.bot_token)
 
             self._api_client = platform_container.api_client
 
@@ -478,7 +479,7 @@ class BotManager:
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),
                 minigame_repository=self._minigame_repository,
-                notification_repository=notification_container.notification_repository(),
+                notification_repository=self._notification_repository,
                 notification_group_id=self._telegram_config.group_id,
                 generate_response_use_case_factory=generate_response_use_case_factory,
                 state=chat_summary_state,
