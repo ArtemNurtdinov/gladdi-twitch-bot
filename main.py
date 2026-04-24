@@ -250,6 +250,9 @@ class Application:
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
             ),
+            bottom_command_handler=platform_container.bottom_command_handler(
+                economy_policy_factory=economy_container.economy_policy_factory, chat_use_case=chat_container.chat_use_case()
+            ),
         )
 
     def _setup_routes(self):

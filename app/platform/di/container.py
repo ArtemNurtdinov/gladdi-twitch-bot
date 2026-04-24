@@ -78,7 +78,7 @@ from app.platform.command.stats.application.handle_stats_use_case import HandleS
 from app.platform.command.stats.application.stats_command_handler import StatsCommandHandlerImpl
 from app.platform.command.stats.application.stats_uow import StatsUnitOfWorkFactory
 from app.platform.command.stats.infrastructure.stats_uow import SqlAlchemyStatsUnitOfWorkFactory
-from app.platform.command.top_bottom.application.bottom_command_handler import BottomCommandHandlerImpl
+from app.platform.command.top_bottom.application.bottom_command_handler import BottomCommandHandler
 from app.platform.command.top_bottom.application.handle_top_bottom_use_case import HandleTopBottomUseCase
 from app.platform.command.top_bottom.application.top_bottom_uow import TopBottomUnitOfWorkFactory
 from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandler
@@ -481,10 +481,10 @@ class PlatformContainer:
         return TopCommandHandler(handle_top_bottom_use_case)
 
     def bottom_command_handler(
-        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase, bot_name: str
-    ) -> CommandHandler:
+        self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase
+    ) -> BottomCommandHandler:
         handle_top_bottom_use_case = self.handle_top_bottom_use_case(economy_policy_factory, chat_use_case)
-        return BottomCommandHandlerImpl(handle_top_bottom_use_case, bot_name)
+        return BottomCommandHandler(handle_top_bottom_use_case)
 
     def transfer_uow_factory(
         self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase
