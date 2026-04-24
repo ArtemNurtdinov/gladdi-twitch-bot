@@ -35,7 +35,6 @@ from app.notification.domain.repository import NotificationRepository
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.application.platform_chat_client import PlatformChatClient
-from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOfWorkFactory
 from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
@@ -69,7 +68,6 @@ from app.task.domain.runner import TaskRunner
 from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
 from app.viewer.session.domain.repository import ViewerRepository
-from core.db import db_ro_session
 
 
 class BotManager:
@@ -94,7 +92,6 @@ class BotManager:
         battle_use_case: BattleUseCase,
         platform_container: PlatformContainer,
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        chat_message_uow_factory: ChatMessageUnitOfWorkFactory,
         chat_summarizer_job: ChatSummarizerJob,
         viewer_cache: ViewerCachePort,
         followage_command_handler: FollowageCommandHandler,
@@ -115,6 +112,8 @@ class BotManager:
         guess_letter_command_handler: GuessLetterCommandHandler,
         guess_word_command_handler: GuessWordCommandHandler,
         rps_command_handler: RpsCommandHandler,
+        handle_chat_message_use_case: HandleChatMessageUseCase,
+        handle_reply_use_case: HandleReplyUseCase,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -136,7 +135,6 @@ class BotManager:
         self._battle_use_case = battle_use_case
         self._platform_container = platform_container
         self._viewer_repository_factory = viewer_repository_factory
-        self._chat_message_uow_factory = chat_message_uow_factory
         self._chat_summarizer_job = chat_summarizer_job
         self._viewer_cache = viewer_cache
         self._followage_command_handler = followage_command_handler
@@ -157,6 +155,8 @@ class BotManager:
         self._guess_letter_command_handler = guess_letter_command_handler
         self._guess_word_command_handler = guess_word_command_handler
         self._rps_command_handler = rps_command_handler
+        self._handle_chat_message_use_case = handle_chat_message_use_case
+        self._handle_reply_use_case = handle_reply_use_case
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -262,25 +262,10 @@ class BotManager:
             command_router.register_command_handler(self._config.command_guess_word, self._guess_word_command_handler)
             command_router.register_command_handler(self._config.command_rps, self._rps_command_handler)
 
-            handle_chat_message_use_case = HandleChatMessageUseCase(
-                chat_message_uow=self._chat_message_uow_factory,
-                get_intent_from_text_use_case_factory=get_intent_from_text_use_case_factory,
-                prompt_service=prompt_service,
-                generate_response_use_case_factory=generate_response_use_case_factory,
-                db_ro_session=db_ro_session,
-            )
-
-            handle_reply_use_case = HandleReplyUseCase(
-                chat_message_uow=self._chat_message_uow_factory,
-                prompt_service=prompt_service,
-                generate_response_use_case_factory=generate_response_use_case_factory,
-                db_ro_session=db_ro_session,
-            )
-
             chat_client: PlatformChatClient = TwitchChatClient(
                 auth=platform_auth,
-                handle_chat_message_use_case=handle_chat_message_use_case,
-                handle_reply_use_case=handle_reply_use_case,
+                handle_chat_message_use_case=self._handle_chat_message_use_case,
+                handle_reply_use_case=self._handle_reply_use_case,
                 command_router=command_router,
                 channel_name=channel_name,
                 command_prefix=self._config.prefix,

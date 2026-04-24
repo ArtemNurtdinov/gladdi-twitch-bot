@@ -23,6 +23,8 @@ from app.joke.presentation.api import joke_routes
 from app.minigame.di.container import MinigameContainer
 from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.container import NotificationContainer
+from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
+from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
 from app.platform.command.ask.application.ask_command_handler import AskCommandHandler
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.platform.command.ask.di.container import AskContainer
@@ -125,6 +127,14 @@ class Application:
 
         minigame_repository = minigame_container.minigame_repository()
 
+        chat_message_uow_factory = chat_container.chat_message_uow_factory(
+            economy_policy_factory=economy_container.economy_policy_factory,
+            stream_repository_factory=stream_container.stream_repository_factory,
+            viewer_repository_factory=viewer_container.viewer_repository_factory,
+            conversation_service_factory=ai_container.conversation_service_factory,
+            system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+        )
+
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,
@@ -145,13 +155,6 @@ class Application:
             battle_use_case=battle_container.battle_use_case(),
             platform_container=platform_container,
             viewer_repository_factory=viewer_container.viewer_repository_factory,
-            chat_message_uow_factory=chat_container.chat_message_uow_factory(
-                economy_policy_factory=economy_container.economy_policy_factory,
-                stream_repository_factory=stream_container.stream_repository_factory,
-                viewer_repository_factory=viewer_container.viewer_repository_factory,
-                conversation_service_factory=ai_container.conversation_service_factory,
-                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
-            ),
             chat_summarizer_job=chat_container.chat_summarizer_job(
                 stream_repository_factory=stream_container.stream_repository_factory,
                 generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
@@ -312,6 +315,19 @@ class Application:
                 minigame_repository=minigame_repository,
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
+            ),
+            handle_chat_message_use_case=HandleChatMessageUseCase(
+                chat_message_uow=chat_message_uow_factory,
+                get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
+                prompt_service=ai_container.prompt_service,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                db_ro_session=db_ro_session,
+            ),
+            handle_reply_use_case=HandleReplyUseCase(
+                chat_message_uow=chat_message_uow_factory,
+                prompt_service=ai_container.prompt_service,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                db_ro_session=db_ro_session,
             ),
         )
 
