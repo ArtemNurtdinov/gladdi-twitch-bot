@@ -55,7 +55,7 @@ from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFa
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
 from app.platform.command.guess.application.guess_letter_command_handler import GuessLetterCommandHandlerImpl
-from app.platform.command.guess.application.guess_number_command_handler import GuessNumberCommandHandlerImpl
+from app.platform.command.guess.application.guess_number_command_handler import GuessNumberCommandHandler
 from app.platform.command.guess.application.guess_uow import GuessUnitOfWorkFactory
 from app.platform.command.guess.application.guess_word_command_handler import GuessWordCommandHandlerImpl
 from app.platform.command.guess.application.handle_guess_use_case import HandleGuessUseCase
@@ -233,13 +233,12 @@ class PlatformContainer:
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         get_user_equipment_use_case: GetUserEquipmentUseCase,
-        bot_name: str,
-    ) -> CommandHandler:
+    ) -> GuessNumberCommandHandler:
         handle_guess_use_case = self.handle_guess_use_case(
             minigame_repository, economy_policy_factory, chat_use_case, get_user_equipment_use_case
         )
-        return GuessNumberCommandHandlerImpl(
-            command_prefix=command_prefix, command_name=command_name, handle_guess_use_case=handle_guess_use_case, bot_name=bot_name
+        return GuessNumberCommandHandler(
+            command_prefix=command_prefix, command_name=command_name, handle_guess_use_case=handle_guess_use_case
         )
 
     def guess_letter_command_handler(

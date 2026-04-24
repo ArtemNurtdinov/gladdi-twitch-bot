@@ -280,6 +280,14 @@ class Application:
                 battle_use_case=battle_container.battle_use_case(),
                 chat_use_case=chat_container.chat_use_case(),
             ),
+            guess_number_command_handler=platform_container.guess_number_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                command_name=self.container.config.bot.command_guess,
+                minigame_repository=minigame_container.minigame_repository(),
+                economy_policy_factory=economy_container.economy_policy_factory,
+                chat_use_case=chat_container.chat_use_case(),
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+            ),
         )
 
     def _setup_routes(self):
