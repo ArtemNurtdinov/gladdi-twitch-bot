@@ -221,6 +221,12 @@ class Application:
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
             ),
+            transfer_command_handler=platform_container.transfer_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                command_name=self.container.config.bot.command_transfer,
+                economy_policy_factory=economy_container.economy_policy_factory,
+                chat_use_case=chat_container.chat_use_case(),
+            ),
         )
 
     def _setup_routes(self):

@@ -53,6 +53,7 @@ from app.platform.command.bonus.application.bonus_command_handler import BonusCo
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandler
 from app.platform.command.roll.application.roll_command_handler import RollCommandHandler
+from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandler
 from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
 from app.shop.domain.repository import ShopItemRepository
@@ -103,6 +104,7 @@ class BotManager:
         roll_command_handler: RollCommandHandler,
         balance_command_handler: BalanceCommandHandler,
         bonus_command_handler: BonusCommandHandler,
+        transfer_command_handler: TransferCommandHandler,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -139,6 +141,7 @@ class BotManager:
         self._roll_command_handler = roll_command_handler
         self._balance_command_handler = balance_command_handler
         self._bonus_command_handler = bonus_command_handler
+        self._transfer_command_handler = transfer_command_handler
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -210,6 +213,7 @@ class BotManager:
             self._roll_command_handler.apply_bot_name(bot_name)
             self._balance_command_handler.apply_bot_name(bot_name)
             self._bonus_command_handler.apply_bot_name(bot_name)
+            self._transfer_command_handler.apply_bot_name(bot_name)
 
             transfer_command_handler = self._platform_container.transfer_command_handler(
                 command_prefix=self._config.prefix,
@@ -338,7 +342,7 @@ class BotManager:
             command_router.register_command_handler(self._config.command_fight, self._battle_command_handler)
             command_router.register_command_handler(self._config.command_roll, self._roll_command_handler)
             command_router.register_command_handler(self._config.command_balance, self._balance_command_handler)
-            command_router.register_command_handler(self._config.command_bonus, bonus_command_handler)
+            command_router.register_command_handler(self._config.command_bonus, self._bonus_command_handler)
             command_router.register_command_handler(self._config.command_transfer, transfer_command_handler)
             command_router.register_command_handler(self._config.command_shop, shop_command_handler)
             command_router.register_command_handler(self._config.command_buy, buy_command_handler)

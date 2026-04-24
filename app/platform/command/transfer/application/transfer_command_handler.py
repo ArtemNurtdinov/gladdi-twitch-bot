@@ -5,17 +5,19 @@ from app.platform.command.transfer.application.handle_transfer_use_case import H
 from app.platform.command.transfer.application.model import TransferDTO
 
 
-class TransferCommandHandlerImpl(CommandHandler):
+class TransferCommandHandler(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
         command_name: str,
         handle_transfer_use_case: HandleTransferUseCase,
-        bot_name: str,
     ):
         self.command_prefix = command_prefix
         self._handle_transfer_use_case = handle_transfer_use_case
         self.command_name = command_name
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:

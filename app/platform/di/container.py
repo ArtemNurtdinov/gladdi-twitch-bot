@@ -84,7 +84,7 @@ from app.platform.command.top_bottom.application.top_bottom_uow import TopBottom
 from app.platform.command.top_bottom.application.top_command_handler import TopCommandHandlerImpl
 from app.platform.command.top_bottom.infrastructure.top_bottom_uow import SqlAlchemyTopBottomUnitOfWorkFactory
 from app.platform.command.transfer.application.handle_transfer_use_case import HandleTransferUseCase
-from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandlerImpl
+from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandler
 from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWorkFactory
 from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
@@ -513,11 +513,10 @@ class PlatformContainer:
         command_name: str,
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        bot_name: str,
-    ) -> CommandHandler:
+    ) -> TransferCommandHandler:
         handle_transfer_use_case = self.handle_transfer_use_case(economy_policy_factory, chat_use_case)
-        return TransferCommandHandlerImpl(
-            command_prefix=command_prefix, command_name=command_name, handle_transfer_use_case=handle_transfer_use_case, bot_name=bot_name
+        return TransferCommandHandler(
+            command_prefix=command_prefix, command_name=command_name, handle_transfer_use_case=handle_transfer_use_case
         )
 
     def minigame_uow_factory(
