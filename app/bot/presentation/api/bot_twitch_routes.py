@@ -3,7 +3,6 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.ai.gen.di.container import AIContainer
 from app.bot.bot_manager import BotManager
 from app.bot.presentation.api.bot_routes import get_bot_manager
 from app.bot.presentation.api.model.request.start_bot import StartBotRequest
@@ -13,7 +12,6 @@ from app.core.config.domain.model.application import ApplicationConfig
 from app.core.config.domain.model.configuration import Config
 from app.economy.di.container import EconomyContainer
 from app.follow.di.container import FollowContainer
-from app.minigame.di.container import MinigameContainer
 from app.platform.di.container import PlatformContainer
 from app.shop.di.container import ShopContainer
 from app.viewer.di.container import ViewerContainer
@@ -35,16 +33,8 @@ def get_config(request: Request) -> ApplicationConfig:
     return request.app.state.config
 
 
-def get_ai_container(request: Request) -> AIContainer:
-    return request.app.state.ai_container
-
-
 def get_shop_container(request: Request) -> ShopContainer:
     return request.app.state.shop_container
-
-
-def get_minigame_container(request: Request) -> MinigameContainer:
-    return request.app.state.minigame_container
 
 
 def get_economy_container(request: Request) -> EconomyContainer:

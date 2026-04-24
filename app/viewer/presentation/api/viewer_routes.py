@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.params import Depends
 
-from app.bot.presentation.api.bot_twitch_routes import get_economy_container, get_follow_container
+from app.bot.presentation.api.bot_twitch_routes import get_economy_container, get_follow_container, get_viewer_container
 from app.economy.di.container import EconomyContainer
 from app.follow.di.container import FollowContainer
 from app.viewer.application.model.viewer_detail_models import ViewerSessionDetail
@@ -22,8 +22,8 @@ async def get_viewer_detail(
     user_name: str,
     economy_container: EconomyContainer = Depends(get_economy_container),
     follow_container: FollowContainer = Depends(get_follow_container),
+    viewer_container: ViewerContainer = Depends(get_viewer_container),
 ):
-    viewer_container = ViewerContainer()
     with db_ro_session() as session:
         economy_policy = economy_container.economy_policy(session)
         followers_repo = follow_container.followers_repository(session)
