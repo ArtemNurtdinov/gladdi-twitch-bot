@@ -742,12 +742,11 @@ class PlatformContainer:
 
     def followers_sync_job(
         self,
-        channel_name: str,
         platform_repository: PlatformRepository,
         followers_repository_factory: SessionScopedFactory[FollowersRepository],
     ) -> FollowersSyncJob:
         handle_followers_sync_use_case = self.handle_followers_sync_use_case(platform_repository, followers_repository_factory)
-        return FollowersSyncJob(channel_name, handle_followers_sync_use_case, self._logger)
+        return FollowersSyncJob(handle_followers_sync_use_case, self._logger)
 
     def restore_stream_uow(
         self, stream_repository_factory: SessionScopedFactory[StreamRepository]

@@ -17,6 +17,7 @@ from app.core.network.api.client import ApiClient
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.follow.domain.repo import FollowersRepository
+from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
@@ -67,6 +68,7 @@ class BotManager:
         stream_status_job: StreamStatusJob,
         minigame_job: MinigameTickJob,
         viewer_time_job: ViewerTimeJob,
+        followers_sync_job: FollowersSyncJob,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -89,6 +91,7 @@ class BotManager:
         self._chat_summarizer_job = chat_summarizer_job
         self._minigame_job = minigame_job
         self._viewer_time_job = viewer_time_job
+        self._followers_sync_job = followers_sync_job
         self._viewer_cache = viewer_cache
         self._handle_restore_stream_use_case = handle_restore_stream_use_case
         self._platform_chat_client = platform_chat_client
@@ -162,12 +165,7 @@ class BotManager:
             self._chat_summarizer_job.apply_channel(channel_name, bot_name)
             self._minigame_job.apply_channel(channel_name, bot_name)
             self._viewer_time_job.apply_channel(channel_name, bot_name)
-
-            followers_sync_job = self._platform_container.followers_sync_job(
-                channel_name=channel_name,
-                platform_repository=platform_repository,
-                followers_repository_factory=self._followers_repository_factory,
-            )
+            self._followers_sync_job.apply_channel(channel_name, bot_name)
 
             jobs = [
                 self._post_joke_job,
@@ -176,7 +174,7 @@ class BotManager:
                 self._chat_summarizer_job,
                 self._minigame_job,
                 self._viewer_time_job,
-                followers_sync_job,
+                self.followers_sync_job,
             ]
 
             tasks = [Task(job.name, job.run) for job in jobs]

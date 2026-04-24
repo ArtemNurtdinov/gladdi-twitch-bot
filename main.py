@@ -437,6 +437,9 @@ class Application:
                 viewer_cache=viewer_cache,
                 platform_repository=platform_repository,
             ),
+            followers_sync_job=platform_container.followers_sync_job(
+                platform_repository=platform_repository, followers_repository_factory=follow_container.followers_repository_factory
+            ),
         )
 
     def _setup_routes(self):
