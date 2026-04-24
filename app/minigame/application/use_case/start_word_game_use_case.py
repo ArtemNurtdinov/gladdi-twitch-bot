@@ -16,7 +16,7 @@ from core.types import SessionFactory
 
 class StartWordGameUseCase:
     WORD_GAME_DURATION_MINUTES = 5
-    WORD_GAME_MAX_PRIZE = 4000
+    WORD_GAME_MAX_PRIZE = 3000
     _USED_WORDS_LIMIT = 10
     _CHAT_MESSAGES_LIMIT = 50
 

@@ -29,8 +29,8 @@ class TwitchPlatformChatClient(PlatformChatClient):
         )
         self._twitch_client: TwitchChatClient | None = None
 
-    def init_client(self, auth: PlatformAuth, channel_name: str, bot_name: str, bot_id: str, battle_waiting_user: dict[str, str | None]):
-        super().init(channel_name, bot_name, battle_waiting_user)
+    def init_client(self, auth: PlatformAuth, channel_name: str, bot_name: str, bot_id: str):
+        super().init(channel_name, bot_name)
         self._twitch_client = TwitchChatClient(auth, bot_id, self.logger, self.handle_message, channel_name)
 
     def is_reply_message(self, message: str) -> bool:

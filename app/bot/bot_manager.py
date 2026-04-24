@@ -75,7 +75,6 @@ class BotManager:
         self._llmbox_config = llmbox_config
         self._intent_detector_config = intent_detector_config
         self._logger = logger.create_child(__name__)
-
         self._minigame_repository = minigame_repository
         self._get_used_word_use_case = get_used_word_use_case
         self._add_used_word_use_case = add_used_word_use_case
@@ -149,9 +148,8 @@ class BotManager:
                 raise ValueError("Не удалось получить профиль бота по токену (GET /users). Проверьте авторизацию.")
             bot_name = bot_user.display_name.lower()
             bot_user_id = bot_user.id
-            battle_waiting_user = {"value": None}
 
-            self._platform_chat_client.init_client(platform_auth, channel_name, bot_name, bot_user_id, battle_waiting_user)
+            self._platform_chat_client.init_client(platform_auth, channel_name, bot_name, bot_user_id)
             self._handle_restore_stream_use_case.handle(channel_name)
 
             try:

@@ -30,10 +30,10 @@ class PlatformChatClient(ABC):
         self.bot_name: str | None = None
         self.logger = logger.create_child(__name__)
 
-    def init(self, channel_name: str, bot_name: str, battle_waiting_user: dict[str, str | None]):
+    def init(self, channel_name: str, bot_name: str):
         self.channel_name = channel_name
         self.bot_name = bot_name
-        self._command_router.apply_bot_name(bot_name, battle_waiting_user)
+        self._command_router.apply_bot_name(bot_name)
 
     async def handle_message(self, user_name: str, message: str):
         if message.startswith(self._command_prefix):
