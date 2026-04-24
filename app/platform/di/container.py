@@ -71,7 +71,7 @@ from app.platform.command.roll.application.roll_uow import RollUnitOfWorkFactory
 from app.platform.command.roll.infrastructure.roll_uow import SqlAlchemyRollUnitOfWorkFactory
 from app.platform.command.shop.application.buy_command_handler import BuyCommandHandlerImpl
 from app.platform.command.shop.application.handle_shop_use_case import HandleShopUseCase
-from app.platform.command.shop.application.shop_command_handler import ShopCommandHandlerImpl
+from app.platform.command.shop.application.shop_command_handler import ShopCommandHandler
 from app.platform.command.shop.application.shop_uow import ShopUnitOfWorkFactory
 from app.platform.command.shop.infrastructure.shop_uow import SqlAlchemyShopUnitOfWorkFactory
 from app.platform.command.stats.application.handle_stats_use_case import HandleStatsUseCase
@@ -391,17 +391,15 @@ class PlatformContainer:
         equipment_exists_use_case: EquipmentExistsUseCase,
         chat_use_case: ChatUseCase,
         shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
-        bot_name: str,
-    ) -> CommandHandler:
+    ) -> ShopCommandHandler:
         handle_shop_use_case = self.handle_shop_use_case(
             economy_policy_factory, add_equipment_use_case, equipment_exists_use_case, chat_use_case, shop_item_repository_factory
         )
-        return ShopCommandHandlerImpl(
+        return ShopCommandHandler(
             command_prefix=command_prefix,
             command_shop_name=command_shop_name,
             command_buy_name=command_buy_name,
             handle_shop_use_case=handle_shop_use_case,
-            bot_nick=bot_name,
         )
 
     def buy_command_handler(
