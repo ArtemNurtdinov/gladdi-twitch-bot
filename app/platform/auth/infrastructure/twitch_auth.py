@@ -8,8 +8,8 @@ class TwitchAuth(PlatformAuth):
     _TWITCH_OAUTH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
     _TWITCH_OAUTH_VALIDATE_URL = "https://id.twitch.tv/oauth2/validate"
 
-    def __init__(self, access_token: str, refresh_token: str, client_id: str, client_secret: str, logger: Logger):
-        super().__init__(access_token, refresh_token, client_id, client_secret)
+    def __init__(self, client_id: str, client_secret: str, logger: Logger):
+        super().__init__(client_id, client_secret)
         self.logger = logger.create_child(__name__)
 
     async def update_access_token(self):

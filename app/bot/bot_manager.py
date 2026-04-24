@@ -101,6 +101,9 @@ class BotManager:
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         chat_message_uow_factory: ChatMessageUnitOfWorkFactory,
         chat_summarizer_job: ChatSummarizerJob,
+        viewer_cache: ViewerCachePort,
+        moderation_service: ModerationService,
+        followage_command_handler: CommandHandler,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -132,6 +135,9 @@ class BotManager:
         self._viewer_repository_factory = viewer_repository_factory
         self._chat_message_uow_factory = chat_message_uow_factory
         self._chat_summarizer_job = chat_summarizer_job
+        self._viewer_cache = viewer_cache
+        self._moderation_service = moderation_service
+        self._followage_command_handler = followage_command_handler
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -181,8 +187,6 @@ class BotManager:
         token_checker_job: TokenCheckerJob,
         platform_repository: PlatformRepository,
         api_client: ApiClient,
-        moderation_service: ModerationService,
-        viewer_cache: ViewerCachePort,
     ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
@@ -198,16 +202,7 @@ class BotManager:
             battle_waiting_user = {"value": None}
             chat_summary_state = ChatSummaryState()
 
-            followage_command_handler = self._platform_container.followage_command_handler(
-                command_prefix=self._config.prefix,
-                command_name=self._config.command_followage,
-                generate_response_use_case_factory=generate_response_use_case_factory,
-                chat_repository_factory=self._chat_repository_factory,
-                conversation_service_factory=conversation_service_factory,
-                system_prompt_repository_factory=system_prompt_repository_factory,
-                platform_repository=platform_repository,
-                bot_name=bot_name,
-            )
+            self._followage_command_handler.apply_bot_name(bot_name)
 
             ask_command_handler: CommandHandler = AskCommandHandlerImpl(
                 command_prefix=self._config.prefix,
@@ -231,7 +226,7 @@ class BotManager:
                     calculate_timeout_use_case=self._calculate_timeout_use_case,
                     db_ro_session=db_ro_session,
                 ),
-                chat_moderation=moderation_service,
+                chat_moderation=self._moderation_service,
                 bot_name=bot_name,
                 battle_waiting_user=battle_waiting_user,
             )
@@ -245,7 +240,7 @@ class BotManager:
                 chat_use_case=self._chat_use_case,
                 roll_cooldown_use_case=self._roll_cooldown_use_case,
                 calculate_timeout_use_case=self._calculate_timeout_use_case,
-                chat_moderation_port=moderation_service,
+                chat_moderation_port=self._moderation_service,
                 bot_name=bot_name,
             )
 
@@ -384,7 +379,7 @@ class BotManager:
 
             command_router: CommandRouter = CommandRouterImpl(self._config.prefix)
 
-            command_router.register_command_handler(self._config.command_followage, followage_command_handler)
+            command_router.register_command_handler(self._config.command_followage, self._followage_command_handler)
             command_router.register_command_handler(self._config.command_gladdi, ask_command_handler)
             command_router.register_command_handler(self._config.command_fight, battle_command_handler)
             command_router.register_command_handler(self._config.command_roll, roll_command_handler)
@@ -440,7 +435,7 @@ class BotManager:
             self._chat_client = chat_client
 
             try:
-                await viewer_cache.warmup(channel_name)
+                await self._viewer_cache.warmup(channel_name)
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
@@ -450,14 +445,14 @@ class BotManager:
                 bot_name=bot_name,
                 conversation_service_factory=conversation_service_factory,
                 chat_use_case=self._chat_use_case,
-                user_cache=viewer_cache,
+                user_cache=self._viewer_cache,
                 platform_repository=platform_repository,
                 generate_response_use_case_factory=generate_response_use_case_factory,
             )
 
             stream_status_job = self._platform_container.stream_status_job(
                 channel_name=channel_name,
-                user_cache=viewer_cache,
+                user_cache=self._viewer_cache,
                 platform_repository=platform_repository,
                 minigame_repository=self._minigame_repository,
                 notification_repository=self._notification_repository,
@@ -503,7 +498,7 @@ class BotManager:
                 stream_repository_factory=self._stream_repository_factory,
                 viewer_repository_factory=self._viewer_repository_factory,
                 economy_policy_factory=self._economy_policy_factory,
-                viewer_cache=viewer_cache,
+                viewer_cache=self._viewer_cache,
                 platform_repository=platform_repository,
                 channel_name=channel_name,
                 bot_name=bot_name,

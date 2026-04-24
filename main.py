@@ -21,6 +21,7 @@ from app.follow.presentation import followers_routes
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api import joke_routes
 from app.minigame.di.container import MinigameContainer
+from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.container import NotificationContainer
 from app.platform.command.ask.di.container import AskContainer
 from app.platform.di.container import PlatformContainer
@@ -29,6 +30,7 @@ from app.shop.presentation.api import shop_routes
 from app.stream.di.container import StreamContainer
 from app.stream.presentation import stream_routes
 from app.viewer.di.container import ViewerContainer
+from app.viewer.infrastructure.cache.viewer_cache_service import ViewerCacheService
 from app.viewer.presentation.api import viewer_routes
 from core.db import db_ro_session, db_rw_session, init_db
 
@@ -94,10 +96,25 @@ class Application:
         )
         notification_container = NotificationContainer(self.container.config.telegram.bot_token)
         battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-        platform_container = PlatformContainer(
-            session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
-        )
         viewer_container = ViewerContainer()
+
+        platform_container = PlatformContainer(
+            client_id=self.container.config.twitch.client_id,
+            client_secret=self.container.config.twitch.client_secret,
+            session_factory_ro=db_ro_session,
+            session_factory_rw=db_rw_session,
+            logger=self.container.logger,
+        )
+        platform_repository = platform_container.platform_repository()
+
+        viewer_cache = ViewerCacheService(platform_repository)
+
+        moderation_service = ModerationService(
+            platform_repository=platform_repository,
+            user_cache=viewer_cache,
+            logger=self.container.logger,
+        )
+
         self.fast_api.state.viewer_container = viewer_container
 
         self.fast_api.state.bot_manager = BotManager(
@@ -147,6 +164,17 @@ class Application:
             chat_summarizer_job=chat_container.chat_summarizer_job(
                 stream_repository_factory=stream_container.stream_repository_factory,
                 generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+            ),
+            viewer_cache=viewer_cache,
+            moderation_service=moderation_service,
+            followage_command_handler=platform_container.followage_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                command_name=self.container.config.bot.command_followage,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                chat_repository_factory=chat_container.chat_repository_factory,
+                conversation_service_factory=ai_container.conversation_service_factory,
+                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+                platform_repository=platform_repository,
             ),
         )
 

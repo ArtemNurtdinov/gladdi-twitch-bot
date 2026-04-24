@@ -38,6 +38,9 @@ from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitO
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.moderation.application.chat_moderation_port import ChatModerationPort
 from app.notification.domain.repository import NotificationRepository
+from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
+from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
+from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
 from app.platform.command.bonus.application.bonus_command_handler import BonusCommandHandlerImpl
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
 from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
@@ -85,6 +88,8 @@ from app.platform.command.transfer.application.transfer_command_handler import T
 from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWorkFactory
 from app.platform.command.transfer.infrastructure.transfer_uow import SqlAlchemyTransferUnitOfWorkFactory
 from app.platform.domain.repository import PlatformRepository
+from app.platform.infrastructure.api.client import TwitchHelixClient
+from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.shop.domain.repository import ShopItemRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
@@ -103,10 +108,28 @@ from core.types import SessionFactory
 
 
 class PlatformContainer:
-    def __init__(self, session_factory_rw: SessionFactory, session_factory_ro: SessionFactory, logger: Logger):
+    def __init__(
+        self,
+        session_factory_rw: SessionFactory,
+        session_factory_ro: SessionFactory,
+        client_id: str,
+        client_secret: str,
+        logger: Logger,
+    ):
         self._session_factory_rw = session_factory_rw
         self._session_factory_ro = session_factory_ro
         self._logger = logger
+        self.platform_auth = TwitchAuth(
+            client_id=client_id,
+            client_secret=client_secret,
+            logger=logger,
+        )
+        self.api_client = TwitchHelixClient(self.platform_auth)
+        self._handle_token_checker_use_case = HandleTokenCheckerUseCase(self.platform_auth, logger)
+        self.token_checker_job = TokenCheckerJob(self._handle_token_checker_use_case, logger)
+
+    def platform_repository(self) -> PlatformRepository:
+        return PlatformRepositoryImpl(self.api_client, self._logger)
 
     def bonus_uow_factory(
         self,
@@ -717,7 +740,6 @@ class PlatformContainer:
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
-        bot_name: str,
     ) -> CommandHandler:
         handle_follow_age_use_case = self.handle_follow_age_use_case(
             generate_response_use_case_factory,
@@ -730,7 +752,6 @@ class PlatformContainer:
             command_prefix=command_prefix,
             command_name=command_name,
             handle_follow_age_use_case=handle_follow_age_use_case,
-            bot_name=bot_name,
         )
 
     def sync_followers_uow_factory(

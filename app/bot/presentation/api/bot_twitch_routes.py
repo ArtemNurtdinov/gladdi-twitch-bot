@@ -18,13 +18,9 @@ from app.follow.di.container import FollowContainer
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api.joke_routes import get_joke_container
 from app.minigame.di.container import MinigameContainer
-from app.moderation.application.moderation_service import ModerationService
-from app.platform.auth.di.container import PlatformAuthContainer
-from app.platform.infrastructure.api.client import TwitchHelixClient
-from app.platform.infrastructure.repository import PlatformRepositoryImpl
+from app.platform.di.container import PlatformContainer
 from app.shop.di.container import ShopContainer
 from app.viewer.di.container import ViewerContainer
-from app.viewer.infrastructure.cache.viewer_cache_service import ViewerCacheService
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -67,6 +63,10 @@ def get_viewer_container(request: Request) -> ViewerContainer:
     return request.app.state.viewer_container
 
 
+def get_platform_container(request: Request) -> PlatformContainer:
+    return request.app.state.platform_container
+
+
 @router.post("/start", summary="Начать авторизацию Twitch", response_model=AuthStartResponse)
 async def start_authorization(
     request: StartBotRequest,
@@ -98,7 +98,7 @@ async def oauth_callback(
     logger: Logger = Depends(get_logger),
     ai_container: AIContainer = Depends(get_ai_container),
     joke_container: JokeContainer = Depends(get_joke_container),
-    viewer_container: ViewerContainer = Depends(get_viewer_container),
+    platform_container: PlatformContainer = Depends(get_platform_container),
 ) -> BotActionResultResponse:
     data = {
         "client_id": config.twitch.client_id,
@@ -118,28 +118,7 @@ async def oauth_callback(
     if not access_token or not refresh_token:
         raise ValueError("Не удалось получить токены по переданному коду")
 
-    platform_auth_container = PlatformAuthContainer(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        client_id=config.twitch.client_id,
-        client_secret=config.twitch.client_secret,
-        logger=logger,
-    )
-
-    api_client = TwitchHelixClient(platform_auth_container.platform_auth)
-
-    platform_repository = PlatformRepositoryImpl(
-        client=api_client,
-        logger=logger,
-    )
-
-    viewer_cache = ViewerCacheService(platform_repository)
-
-    moderation_service = ModerationService(
-        platform_repository=platform_repository,
-        user_cache=viewer_cache,
-        logger=logger,
-    )
+    platform_container.api_client.update_tokens(access_token, refresh_token)
 
     return await bot_manager.start_bot(
         channel_name=state,
@@ -150,12 +129,10 @@ async def oauth_callback(
         prompt_service=ai_container.prompt_service,
         llm_repository_factory=ai_container.llm_repository_factory,
         joke_container=joke_container,
-        platform_auth=platform_auth_container.platform_auth,
-        token_checker_job=platform_auth_container.token_checker_job,
-        platform_repository=platform_repository,
-        moderation_service=moderation_service,
-        api_client=api_client,
-        viewer_cache=viewer_cache,
+        platform_auth=platform_container.platform_auth,
+        token_checker_job=platform_container.token_checker_job,
+        api_client=platform_container.api_client,
+        platform_repository=platform_container.platform_repository(),
     )
 
 
