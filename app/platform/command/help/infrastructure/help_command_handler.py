@@ -5,17 +5,19 @@ from app.platform.command.help.application.handle_help_use_case import HandleHel
 from app.platform.command.help.application.model import HelpDTO
 
 
-class HelpCommandHandlerImpl(CommandHandler):
+class HelpCommandHandler(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
         handle_help_use_case: HandleHelpUseCase,
         commands: set[str],
-        bot_name: str,
     ):
         self.command_prefix = command_prefix
         self._handle_help_use_case = handle_help_use_case
         self.commands = commands
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:

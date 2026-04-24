@@ -253,6 +253,25 @@ class Application:
             bottom_command_handler=platform_container.bottom_command_handler(
                 economy_policy_factory=economy_container.economy_policy_factory, chat_use_case=chat_container.chat_use_case()
             ),
+            help_command_handler=platform_container.help_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                chat_use_case=chat_container.chat_use_case(),
+                commands={
+                    self.container.config.bot.command_balance,
+                    self.container.config.bot.command_bonus,
+                    self.container.config.bot.command_roll,
+                    self.container.config.bot.command_transfer,
+                    self.container.config.bot.command_shop,
+                    self.container.config.bot.command_buy,
+                    self.container.config.bot.command_equipment,
+                    self.container.config.bot.command_top,
+                    self.container.config.bot.command_bottom,
+                    self.container.config.bot.command_stats,
+                    self.container.config.bot.command_fight,
+                    self.container.config.bot.command_gladdi,
+                    self.container.config.bot.command_followage,
+                },
+            ),
         )
 
     def _setup_routes(self):

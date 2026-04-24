@@ -63,7 +63,7 @@ from app.platform.command.guess.application.rps_command_handler import RpsComman
 from app.platform.command.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
 from app.platform.command.help.application.handle_help_use_case import HandleHelpUseCase
 from app.platform.command.help.application.help_uow import HelpUnitOfWorkFactory
-from app.platform.command.help.infrastructure.help_command_handler import HelpCommandHandlerImpl
+from app.platform.command.help.infrastructure.help_command_handler import HelpCommandHandler
 from app.platform.command.help.infrastructure.help_uow import SqlAlchemyHelpUnitOfWorkFactory
 from app.platform.command.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.platform.command.roll.application.roll_command_handler import RollCommandHandler
@@ -285,11 +285,9 @@ class PlatformContainer:
         help_uow_factory = self.help_uow_factory(chat_use_case)
         return HandleHelpUseCase(help_uow_factory)
 
-    def help_command_handler(self, command_prefix: str, chat_use_case: ChatUseCase, commands: set[str], bot_name: str) -> CommandHandler:
+    def help_command_handler(self, command_prefix: str, chat_use_case: ChatUseCase, commands: set[str]) -> HelpCommandHandler:
         handle_help_use_case = self.handle_help_use_case(chat_use_case)
-        return HelpCommandHandlerImpl(
-            command_prefix=command_prefix, handle_help_use_case=handle_help_use_case, commands=commands, bot_name=bot_name
-        )
+        return HelpCommandHandler(command_prefix=command_prefix, handle_help_use_case=handle_help_use_case, commands=commands)
 
     def roll_uow_factory(
         self,

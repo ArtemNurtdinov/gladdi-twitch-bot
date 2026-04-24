@@ -47,6 +47,7 @@ from app.platform.command.bonus.application.bonus_command_handler import BonusCo
 from app.platform.command.domain.command_router import CommandRouter
 from app.platform.command.equipment.application.equipment_command_handler import EquipmentCommandHandler
 from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandler
+from app.platform.command.help.infrastructure.help_command_handler import HelpCommandHandler
 from app.platform.command.roll.application.roll_command_handler import RollCommandHandler
 from app.platform.command.shop.application.buy_command_handler import BuyCommandHandler
 from app.platform.command.shop.application.shop_command_handler import ShopCommandHandler
@@ -103,6 +104,7 @@ class BotManager:
         equipment_command_handler: EquipmentCommandHandler,
         top_command_handler: TopCommandHandler,
         bottom_command_handler: BottomCommandHandler,
+        help_command_handler: HelpCommandHandler,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -139,6 +141,7 @@ class BotManager:
         self._equipment_command_handler = equipment_command_handler
         self._top_command_handler = top_command_handler
         self._bottom_command_handler = bottom_command_handler
+        self._help_command_handler = help_command_handler
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -216,26 +219,7 @@ class BotManager:
             self._equipment_command_handler.apply_bot_name(bot_name)
             self._top_command_handler.apply_bot_name(bot_name)
             self._bottom_command_handler.apply_bot_name(bot_name)
-
-            commands = {
-                self._config.command_balance,
-                self._config.command_bonus,
-                self._config.command_roll,
-                self._config.command_transfer,
-                self._config.command_shop,
-                self._config.command_buy,
-                self._config.command_equipment,
-                self._config.command_top,
-                self._config.command_bottom,
-                self._config.command_stats,
-                self._config.command_fight,
-                self._config.command_gladdi,
-                self._config.command_followage,
-            }
-
-            help_command_handler = self._platform_container.help_command_handler(
-                command_prefix=self._config.prefix, chat_use_case=self._chat_use_case, commands=commands, bot_name=bot_name
-            )
+            self._help_command_handler.apply_bot_name(bot_name)
 
             stats_command_handler = self._platform_container.stats_command_handler(
                 command_prefix=self._config.prefix,
@@ -300,7 +284,7 @@ class BotManager:
             command_router.register_command_handler(self._config.command_equipment, self._equipment_command_handler)
             command_router.register_command_handler(self._config.command_top, self._top_command_handler)
             command_router.register_command_handler(self._config.command_bottom, self._bottom_command_handler)
-            command_router.register_command_handler(self._config.command_help, help_command_handler)
+            command_router.register_command_handler(self._config.command_help, self._help_command_handler)
             command_router.register_command_handler(self._config.command_stats, stats_command_handler)
             command_router.register_command_handler(self._config.command_guess, guess_number_command_handler)
             command_router.register_command_handler(self._config.command_guess_letter, guess_letter_command_handler)
@@ -331,7 +315,7 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 bot_id=bot_user_id,
                 bot_name=bot_name,
-                help_command_handler=help_command_handler,
+                help_command_handler=self._help_command_handler,
                 logger=self._logger,
             )
 
