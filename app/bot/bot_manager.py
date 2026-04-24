@@ -8,7 +8,6 @@ from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptReposi
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.battle.application.usecase.battle_use_case import BattleUseCase
-from app.betting.application.betting_service import BettingService
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.status import BotStatusResponse
@@ -60,7 +59,6 @@ from app.platform.command.top_bottom.application.top_command_handler import TopC
 from app.platform.command.transfer.application.transfer_command_handler import TransferCommandHandler
 from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
-from app.shop.domain.repository import ShopItemRepository
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.domain.repo import StreamRepository
 from app.task.domain.model.task import Task
@@ -78,7 +76,6 @@ class BotManager:
         llmbox_config: LLMBoxConfig,
         intent_detector_config: IntentDetectorConfig,
         logger: Logger,
-        shop_item_repository_factory: SessionScopedFactory[ShopItemRepository],
         minigame_repository: MinigameRepository,
         get_used_word_use_case: GetUsedWordsUseCase,
         add_used_word_use_case: AddUsedWordsUseCase,
@@ -86,7 +83,6 @@ class BotManager:
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
         followers_repository_factory: SessionScopedFactory[FollowersRepository],
-        betting_service_factory: SessionScopedFactory[BettingService],
         get_user_equipment_use_case: GetUserEquipmentUseCase,
         notification_repository: NotificationRepository,
         battle_use_case: BattleUseCase,
@@ -121,7 +117,6 @@ class BotManager:
         self._intent_detector_config = intent_detector_config
         self._logger = logger.create_child(__name__)
 
-        self._shop_item_repository_factory = shop_item_repository_factory
         self._minigame_repository = minigame_repository
         self._get_used_word_use_case = get_used_word_use_case
         self._add_used_word_use_case = add_used_word_use_case
@@ -129,7 +124,6 @@ class BotManager:
         self._economy_policy_factory = economy_policy_factory
         self._chat_use_case = chat_use_case
         self._followers_repository_factory = followers_repository_factory
-        self._betting_service_factory = betting_service_factory
         self._get_user_equipment_use_case = get_user_equipment_use_case
         self._notification_repository = notification_repository
         self._battle_use_case = battle_use_case
