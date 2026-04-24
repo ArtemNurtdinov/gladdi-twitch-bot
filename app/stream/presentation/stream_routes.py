@@ -1,6 +1,7 @@
 from dataclasses import asdict
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.params import Depends
 
 from app.stream.di.container import StreamContainer
 from app.stream.presentation.stream_schemas import StreamDetailResponse, StreamListResponse, StreamResponse
@@ -9,13 +10,17 @@ from core.db import db_ro_session
 router = APIRouter()
 
 
+def get_stream_container(request: Request) -> StreamContainer:
+    return request.app.state.stream_container
+
+
 @router.get("", summary="Список стримов", response_model=StreamListResponse)
 async def get_streams(
     skip: int = Query(0, ge=0, description="Количество пропускаемых записей"),
     limit: int = Query(20, ge=1, le=100, description="Количество записей в ответе"),
+    stream_container: StreamContainer = Depends(get_stream_container),
 ) -> StreamListResponse:
     try:
-        stream_container = StreamContainer()
         with db_ro_session() as session:
             items, total = stream_container.stream_use_case_factory.get(session).get_streams(skip, limit)
         return StreamListResponse(
@@ -31,8 +36,8 @@ async def get_streams(
 @router.get("/{stream_id}", summary="Детали стрима", response_model=StreamDetailResponse)
 async def get_stream_detail(
     stream_id: int,
+    stream_container: StreamContainer = Depends(get_stream_container),
 ) -> StreamDetailResponse:
-    stream_container = StreamContainer()
     with db_ro_session() as session:
         stream_details = stream_container.stream_use_case_factory.get(session).get_stream_detail(stream_id)
     if not stream_details:

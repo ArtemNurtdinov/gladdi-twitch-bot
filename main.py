@@ -17,6 +17,7 @@ from app.joke.presentation.api import joke_routes
 from app.minigame.di.container import MinigameContainer
 from app.shop.di.container import ShopContainer
 from app.shop.presentation.api import shop_routes
+from app.stream.di.container import StreamContainer
 from app.stream.presentation import stream_routes
 from app.viewer.presentation.api import viewer_routes
 from core.db import db_ro_session, db_rw_session, init_db
@@ -66,6 +67,9 @@ class Application:
         )
 
         shop_container = ShopContainer()
+        stream_container = StreamContainer()
+
+        self.fast_api.state.stream_container = stream_container
 
         minigame_container = MinigameContainer(
             session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
@@ -81,6 +85,7 @@ class Application:
             minigame_repository=minigame_container.minigame_repository(),
             get_used_word_use_case=minigame_container.get_used_words_use_case(),
             add_used_word_use_case=minigame_container.add_used_word_use_case(),
+            stream_repository_factory=stream_container.stream_repository_factory,
         )
 
     def _setup_routes(self):

@@ -52,7 +52,7 @@ from app.platform.command.domain.command_router import CommandRouter
 from app.platform.di.container import PlatformContainer
 from app.shop.domain.repository import ShopItemRepository
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
-from app.stream.di.container import StreamContainer
+from app.stream.domain.repo import StreamRepository
 from app.task.domain.model.task import Task
 from app.task.domain.runner import TaskRunner
 from app.task.infrastructure.runner import BackgroundTaskRunner
@@ -72,6 +72,7 @@ class BotManager:
         minigame_repository: MinigameRepository,
         get_used_word_use_case: GetUsedWordsUseCase,
         add_used_word_use_case: AddUsedWordsUseCase,
+        stream_repository_factory: SessionScopedFactory[StreamRepository],
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -83,6 +84,7 @@ class BotManager:
         self._minigame_repository = minigame_repository
         self._get_used_word_use_case = get_used_word_use_case
         self._add_used_word_use_case = add_used_word_use_case
+        self._stream_repository_factory = stream_repository_factory
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -137,7 +139,6 @@ class BotManager:
 
             viewer_container = ViewerContainer()
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            stream_container = StreamContainer()
             follow_container = FollowContainer()
             economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
@@ -236,7 +237,7 @@ class BotManager:
             )
 
             bonus_command_handler = platform_container.bonus_command_handler(
-                stream_repository_factory=stream_container.stream_repository_factory,
+                stream_repository_factory=self._stream_repository_factory,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 economy_policy_factory=economy_container.economy_policy_factory,
                 chat_use_case=chat_container.chat_use_case(),
@@ -387,7 +388,7 @@ class BotManager:
             handle_chat_message_use_case = HandleChatMessageUseCase(
                 chat_message_uow=chat_container.chat_message_uow_factory(
                     economy_policy_factory=economy_container.economy_policy_factory,
-                    stream_repository_factory=stream_container.stream_repository_factory,
+                    stream_repository_factory=self._stream_repository_factory,
                     viewer_repository_factory=viewer_container.viewer_repository_factory,
                     conversation_service_factory=conversation_service_factory,
                     system_prompt_repository_factory=system_prompt_repository_factory,
@@ -401,7 +402,7 @@ class BotManager:
             handle_reply_use_case = HandleReplyUseCase(
                 chat_message_uow=chat_container.chat_message_uow_factory(
                     economy_policy_factory=economy_container.economy_policy_factory,
-                    stream_repository_factory=stream_container.stream_repository_factory,
+                    stream_repository_factory=self._stream_repository_factory,
                     viewer_repository_factory=viewer_container.viewer_repository_factory,
                     conversation_service_factory=conversation_service_factory,
                     system_prompt_repository_factory=system_prompt_repository_factory,
@@ -425,7 +426,7 @@ class BotManager:
             )
 
             HandleRestoreStreamContextUseCase(
-                restore_stream_uow=platform_container.restore_stream_uow(stream_container.stream_repository_factory),
+                restore_stream_uow=platform_container.restore_stream_uow(self._stream_repository_factory),
                 minigame_repository=self._minigame_repository,
                 logger=self._logger,
             ).handle(channel_name)
@@ -457,7 +458,7 @@ class BotManager:
                 notification_group_id=self._telegram_config.group_id,
                 generate_response_use_case_factory=generate_response_use_case_factory,
                 state=chat_summary_state,
-                stream_repository_factory=stream_container.stream_repository_factory,
+                stream_repository_factory=self._stream_repository_factory,
                 viewer_repository_factory=viewer_container.viewer_repository_factory,
                 battle_use_case=battle_container.battle_use_case(),
                 economy_policy_factory=economy_container.economy_policy_factory,
@@ -467,7 +468,7 @@ class BotManager:
 
             chat_summarizer_job: ChatSummarizerJob = chat_container.chat_summarizer_job(
                 channel_name=channel_name,
-                stream_repository_factory=stream_container.stream_repository_factory,
+                stream_repository_factory=self._stream_repository_factory,
                 generate_response_use_case_factory=generate_response_use_case_factory,
                 chat_summary_state=chat_summary_state,
             )
@@ -478,7 +479,7 @@ class BotManager:
                     minigame_repository=self._minigame_repository,
                     economy_policy_factory=economy_container.economy_policy_factory,
                     chat_use_case=chat_container.chat_use_case(),
-                    stream_repository_factory=stream_container.stream_repository_factory,
+                    stream_repository_factory=self._stream_repository_factory,
                     get_used_words_use_case=self._get_used_word_use_case,
                     add_used_words_use_case=self._add_used_word_use_case,
                     conversation_service_factory=conversation_service_factory,
@@ -497,7 +498,7 @@ class BotManager:
             )
 
             viewer_time_job = platform_container.viewer_time_job(
-                stream_repository_factory=stream_container.stream_repository_factory,
+                stream_repository_factory=self._stream_repository_factory,
                 viewer_repository_factory=viewer_container.viewer_repository_factory,
                 economy_policy_factory=economy_container.economy_policy_factory,
                 viewer_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
