@@ -4,6 +4,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
+from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
 from app.chat.application.uow.chat_use_case_uow import ChatUseCaseUnitOfWorkFactory
 from app.chat.application.usecase.chat_use_case import ChatUseCase
@@ -66,11 +67,12 @@ class ChatContainer:
         self,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
+        chat_summary_state: ChatSummaryState,
     ) -> ChatSummarizerJob:
         handle_chat_summarizer_use_case = self.handle_chat_summarizer_use_case(
             stream_repository_factory, generate_response_use_case_factory
         )
-        return ChatSummarizerJob(handle_chat_summarizer_use_case, self._logger)
+        return ChatSummarizerJob(handle_chat_summarizer_use_case, chat_summary_state, self._logger)
 
     def chat_message_uow_factory(
         self,

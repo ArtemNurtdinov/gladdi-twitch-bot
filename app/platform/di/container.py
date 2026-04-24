@@ -827,7 +827,6 @@ class PlatformContainer:
 
     def stream_status_job(
         self,
-        channel_name: str,
         user_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
         minigame_repository: MinigameRepository,
@@ -857,7 +856,7 @@ class PlatformContainer:
             chat_use_case=chat_use_case,
             conversation_service_factory=conversation_service_factory,
         )
-        return StreamStatusJob(channel_name, handle_stream_status_use_case, self._logger)
+        return StreamStatusJob(handle_stream_status_use_case, self._logger)
 
     def reward_viewer_time_uow_factory(
         self,

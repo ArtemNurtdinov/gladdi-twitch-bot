@@ -10,7 +10,6 @@ from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.status import BotStatusResponse
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
-from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.config.domain.model.bot import BotConfig
@@ -34,6 +33,7 @@ from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.infrastructure.twitch_platform_client import TwitchPlatformChatClient
 from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
+from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.domain.repo import StreamRepository
 from app.task.domain.model.task import Task
@@ -68,6 +68,7 @@ class BotManager:
         handle_restore_stream_use_case: HandleRestoreStreamContextUseCase,
         platform_chat_client: TwitchPlatformChatClient,
         post_joke_job: PostJokeJob,
+        stream_status_job: StreamStatusJob,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -92,6 +93,7 @@ class BotManager:
         self._handle_restore_stream_use_case = handle_restore_stream_use_case
         self._platform_chat_client = platform_chat_client
         self._post_joke_job = post_joke_job
+        self._stream_status_job = stream_status_job
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -151,7 +153,6 @@ class BotManager:
             bot_name = bot_user.display_name.lower()
             bot_user_id = bot_user.id
             battle_waiting_user = {"value": None}
-            chat_summary_state = ChatSummaryState()
 
             self._platform_chat_client.init_client(platform_auth, channel_name, bot_name, bot_user_id, battle_waiting_user)
             self._handle_restore_stream_use_case.handle(channel_name)
@@ -162,26 +163,8 @@ class BotManager:
                 self._logger.log_error("Не удалось прогреть cache")
 
             self._post_joke_job.apply_channel(channel_name, bot_name)
-
-            stream_status_job = self._platform_container.stream_status_job(
-                channel_name=channel_name,
-                user_cache=self._viewer_cache,
-                platform_repository=platform_repository,
-                minigame_repository=self._minigame_repository,
-                notification_repository=self._notification_repository,
-                notification_group_id=self._telegram_config.group_id,
-                generate_response_use_case_factory=generate_response_use_case_factory,
-                state=chat_summary_state,
-                stream_repository_factory=self._stream_repository_factory,
-                viewer_repository_factory=self._viewer_repository_factory,
-                battle_use_case=self._battle_use_case,
-                economy_policy_factory=self._economy_policy_factory,
-                chat_use_case=self._chat_use_case,
-                conversation_service_factory=conversation_service_factory,
-            )
-
-            self._chat_summarizer_job.apply_channel(channel_name)
-            self._chat_summarizer_job.apply_summary_state(chat_summary_state)
+            self._stream_status_job.apply_channel(channel_name, bot_name)
+            self._chat_summarizer_job.apply_channel(channel_name, bot_name)
 
             minigame_job: MinigameTickJob = MinigameTickJob(
                 channel_name=channel_name,

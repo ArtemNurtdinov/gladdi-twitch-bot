@@ -11,6 +11,7 @@ from app.battle.di.container import BattleContainer
 from app.betting.di.container import BettingContainer
 from app.bot.bot_manager import BotManager
 from app.bot.presentation.api import bot_routes, bot_twitch_routes
+from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.di.container import ChatContainer
 from app.chat.presentation import chat_routes
 from app.core.di.application_container import ApplicationContainer
@@ -123,6 +124,7 @@ class Application:
             user_cache=viewer_cache,
             logger=self.container.logger,
         )
+        chat_summary_state = ChatSummaryState()
 
         self.fast_api.state.viewer_container = viewer_container
         self.fast_api.state.platform_container = platform_container
@@ -372,6 +374,7 @@ class Application:
             chat_summarizer_job=chat_container.chat_summarizer_job(
                 stream_repository_factory=stream_container.stream_repository_factory,
                 generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                chat_summary_state=chat_summary_state,
             ),
             viewer_cache=viewer_cache,
             handle_restore_stream_use_case=HandleRestoreStreamContextUseCase(
@@ -389,6 +392,21 @@ class Application:
                 user_cache=viewer_cache,
                 platform_repository=platform_repository,
                 generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+            ),
+            stream_status_job=platform_container.stream_status_job(
+                user_cache=viewer_cache,
+                platform_repository=platform_repository,
+                minigame_repository=minigame_repository,
+                notification_repository=notification_container.notification_repository(),
+                notification_group_id=self.container.config.telegram.group_id,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                state=chat_summary_state,
+                stream_repository_factory=stream_container.stream_repository_factory,
+                viewer_repository_factory=viewer_container.viewer_repository_factory,
+                battle_use_case=battle_container.battle_use_case(),
+                economy_policy_factory=economy_container.economy_policy_factory,
+                chat_use_case=chat_container.chat_use_case(),
+                conversation_service_factory=ai_container.conversation_service_factory,
             ),
         )
 

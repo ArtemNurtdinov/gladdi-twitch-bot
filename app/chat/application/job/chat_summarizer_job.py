@@ -12,17 +12,16 @@ class ChatSummarizerJob(BackgroundJob):
     name = "summarize_chat"
     _INTERVAL_DEFAULT = 120
 
-    def __init__(self, handle_chat_summarizer_use_case: HandleChatSummarizerUseCase, logger: Logger):
+    def __init__(self, handle_chat_summarizer_use_case: HandleChatSummarizerUseCase, chat_summary_state: ChatSummaryState, logger: Logger):
         self._handle_chat_summarizer_use_case = handle_chat_summarizer_use_case
         self._logger = logger.create_child(__name__)
         self._channel_name: str | None = None
-        self._chat_summary_state: ChatSummaryState | None = None
-
-    def apply_channel(self, channel_name: str):
-        self._channel_name = channel_name
-
-    def apply_summary_state(self, chat_summary_state: ChatSummaryState):
+        self._bot_name: str | None = None
         self._chat_summary_state = chat_summary_state
+
+    def apply_channel(self, channel_name: str, bot_name: str):
+        self._channel_name = channel_name
+        self._bot_name = bot_name
 
     async def run(self):
         while True:
