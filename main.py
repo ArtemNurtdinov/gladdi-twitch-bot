@@ -9,8 +9,11 @@ from app.auth.di.container import AuthContainer
 from app.auth.presentation import auth_routes
 from app.bot.bot_manager import BotManager
 from app.bot.presentation.api import bot_routes, bot_twitch_routes
+from app.chat.di.container import ChatContainer
 from app.chat.presentation import chat_routes
 from app.core.di.application_container import ApplicationContainer
+from app.economy.di.container import EconomyContainer
+from app.follow.di.container import FollowContainer
 from app.follow.presentation import followers_routes
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api import joke_routes
@@ -68,8 +71,13 @@ class Application:
 
         shop_container = ShopContainer()
         stream_container = StreamContainer()
+        chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self.container.logger)
+        economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
+        follow_container = FollowContainer()
 
         self.fast_api.state.stream_container = stream_container
+        self.fast_api.state.economy_container = economy_container
+        self.fast_api.state.follow_container = follow_container
 
         minigame_container = MinigameContainer(
             session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
@@ -86,6 +94,11 @@ class Application:
             get_used_word_use_case=minigame_container.get_used_words_use_case(),
             add_used_word_use_case=minigame_container.add_used_word_use_case(),
             stream_repository_factory=stream_container.stream_repository_factory,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            handle_balance_use_case=economy_container.handle_balance_use_case(chat_container.chat_use_case()),
+            chat_repository_factory=chat_container.chat_repository_factory,
+            chat_use_case=chat_container.chat_use_case(),
+            followers_repository_factory=follow_container.followers_repository_factory,
         )
 
     def _setup_routes(self):

@@ -14,8 +14,9 @@ from app.bot.presentation.api.model.response.action import BotActionResultRespon
 from app.bot.presentation.api.model.response.status import BotStatusResponse
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.chat.application.model.chat_summary_state import ChatSummaryState
+from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.di.container import ChatContainer
-from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
+from app.chat.domain.repo import ChatRepository
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.config.domain.model.bot import BotConfig
 from app.core.config.domain.model.intent_detector import IntentDetectorConfig
@@ -23,9 +24,9 @@ from app.core.config.domain.model.llmbox import LLMBoxConfig
 from app.core.config.domain.model.telegram import TelegramConfig
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
-from app.economy.di.container import EconomyContainer
+from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.di.container import EquipmentContainer
-from app.follow.di.container import FollowContainer
+from app.follow.domain.repo import FollowersRepository
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.di.container import JokeContainer
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
@@ -45,6 +46,7 @@ from app.platform.command.ask.application.ask_command_handler import AskCommandH
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.platform.command.ask.di.container import AskContainer
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
+from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandlerImpl
 from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.platform.command.domain.command_handler import CommandHandler
@@ -73,6 +75,11 @@ class BotManager:
         get_used_word_use_case: GetUsedWordsUseCase,
         add_used_word_use_case: AddUsedWordsUseCase,
         stream_repository_factory: SessionScopedFactory[StreamRepository],
+        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
+        handle_balance_use_case: HandleBalanceUseCase,
+        chat_repository_factory: SessionScopedFactory[ChatRepository],
+        chat_use_case: ChatUseCase,
+        followers_repository_factory: SessionScopedFactory[FollowersRepository],
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -85,6 +92,11 @@ class BotManager:
         self._get_used_word_use_case = get_used_word_use_case
         self._add_used_word_use_case = add_used_word_use_case
         self._stream_repository_factory = stream_repository_factory
+        self._economy_policy_factory = economy_policy_factory
+        self._handle_balance_use_case = handle_balance_use_case
+        self._chat_repository_factory = chat_repository_factory
+        self._chat_use_case = chat_use_case
+        self._followers_repository_factory = followers_repository_factory
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -139,8 +151,6 @@ class BotManager:
 
             viewer_container = ViewerContainer()
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            follow_container = FollowContainer()
-            economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             betting_container = BettingContainer()
@@ -173,7 +183,7 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_followage,
                 generate_response_use_case_factory=generate_response_use_case_factory,
-                chat_repository_factory=chat_container.chat_repository_factory,
+                chat_repository_factory=self._chat_repository_factory,
                 conversation_service_factory=conversation_service_factory,
                 system_prompt_repository_factory=system_prompt_repository_factory,
                 platform_repository=platform_container.platform_repository(),
@@ -181,7 +191,7 @@ class BotManager:
             )
 
             ask_ouw_factory = ask_container.ask_uow_factory(
-                chat_repository_factory=SessionScopedFactory(lambda session: ChatRepositoryImpl(session)),
+                chat_repository_factory=self._chat_repository_factory,
                 conversation_service_factory=conversation_service_factory,
                 system_prompt_repository_factory=system_prompt_repository_factory,
             )
@@ -204,8 +214,8 @@ class BotManager:
                 command_name=self._config.command_fight,
                 handle_battle_use_case=HandleBattleUseCase(
                     battle_uow=battle_container.battle_uow_factory(
-                        economy_policy_factory=economy_container.economy_policy_factory,
-                        chat_use_case=chat_container.chat_use_case(),
+                        economy_policy_factory=self._economy_policy_factory,
+                        chat_use_case=self._chat_use_case,
                         conversation_service_factory=conversation_service_factory,
                         get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                     ),
@@ -221,10 +231,10 @@ class BotManager:
             roll_command_handler = platform_container.roll_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_roll,
-                economy_policy_factory=economy_container.economy_policy_factory,
+                economy_policy_factory=self._economy_policy_factory,
                 betting_service_factory=betting_container.betting_service_factory,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
+                chat_use_case=self._chat_use_case,
                 roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
                 calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
                 chat_moderation_port=moderation_service,
@@ -232,23 +242,23 @@ class BotManager:
             )
 
             balance_command_handler: CommandHandler = BalanceCommandHandlerImpl(
-                handle_balance_use_case=economy_container.handle_balance_use_case(chat_use_case=chat_container.chat_use_case()),
+                handle_balance_use_case=self._handle_balance_use_case,
                 bot_name=bot_name,
             )
 
             bonus_command_handler = platform_container.bonus_command_handler(
                 stream_repository_factory=self._stream_repository_factory,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                economy_policy_factory=self._economy_policy_factory,
+                chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
             )
 
             transfer_command_handler = platform_container.transfer_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_transfer,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                economy_policy_factory=self._economy_policy_factory,
+                chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
             )
 
@@ -256,10 +266,10 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_shop_name=self._config.command_shop,
                 command_buy_name=self._config.command_buy,
-                economy_policy_factory=economy_container.economy_policy_factory,
+                economy_policy_factory=self._economy_policy_factory,
                 add_equipment_use_case=equipment_container.add_equipment_use_case(),
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
+                chat_use_case=self._chat_use_case,
                 shop_item_repository_factory=self._shop_item_repository_factory,
                 bot_name=bot_name,
             )
@@ -267,10 +277,10 @@ class BotManager:
             buy_command_handler = platform_container.buy_command_handler(
                 command_prefix=self._config.prefix,
                 command_buy_name=self._config.command_buy,
-                economy_policy_factory=economy_container.economy_policy_factory,
+                economy_policy_factory=self._economy_policy_factory,
                 add_equipment_use_case=equipment_container.add_equipment_use_case(),
                 equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
+                chat_use_case=self._chat_use_case,
                 shop_item_repository_factory=self._shop_item_repository_factory,
                 bot_name=bot_name,
             )
@@ -279,19 +289,19 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_shop=self._config.command_shop,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
+                chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
             )
 
             top_command_handler = platform_container.top_command_handler(
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                economy_policy_factory=self._economy_policy_factory,
+                chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
             )
 
             bottom_command_handler = platform_container.bottom_command_handler(
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                economy_policy_factory=self._economy_policy_factory,
+                chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
             )
 
@@ -312,16 +322,16 @@ class BotManager:
             }
 
             help_command_handler = platform_container.help_command_handler(
-                command_prefix=self._config.prefix, chat_use_case=chat_container.chat_use_case(), commands=commands, bot_name=bot_name
+                command_prefix=self._config.prefix, chat_use_case=self._chat_use_case, commands=commands, bot_name=bot_name
             )
 
             stats_command_handler = platform_container.stats_command_handler(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_stats,
-                economy_policy_factory=economy_container.economy_policy_factory,
+                economy_policy_factory=self._economy_policy_factory,
                 betting_service_factory=betting_container.betting_service_factory,
                 battle_use_case=battle_container.battle_use_case(),
-                chat_use_case=chat_container.chat_use_case(),
+                chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
             )
 
@@ -329,8 +339,8 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_guess,
                 minigame_repository=self._minigame_repository,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                economy_policy_factory=self._economy_policy_factory,
+                chat_use_case=self._chat_use_case,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 bot_name=bot_name,
             )
@@ -339,8 +349,8 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_guess_letter,
                 minigame_repository=self._minigame_repository,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                economy_policy_factory=self._economy_policy_factory,
+                chat_use_case=self._chat_use_case,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 bot_name=bot_name,
             )
@@ -349,8 +359,8 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_guess_word,
                 minigame_repository=self._minigame_repository,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                economy_policy_factory=self._economy_policy_factory,
+                chat_use_case=self._chat_use_case,
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
                 bot_name=bot_name,
             )
@@ -359,8 +369,8 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_rps,
                 minigame_repository=self._minigame_repository,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                economy_policy_factory=self._economy_policy_factory,
+                chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
             )
 
@@ -387,7 +397,7 @@ class BotManager:
 
             handle_chat_message_use_case = HandleChatMessageUseCase(
                 chat_message_uow=chat_container.chat_message_uow_factory(
-                    economy_policy_factory=economy_container.economy_policy_factory,
+                    economy_policy_factory=self._economy_policy_factory,
                     stream_repository_factory=self._stream_repository_factory,
                     viewer_repository_factory=viewer_container.viewer_repository_factory,
                     conversation_service_factory=conversation_service_factory,
@@ -401,7 +411,7 @@ class BotManager:
 
             handle_reply_use_case = HandleReplyUseCase(
                 chat_message_uow=chat_container.chat_message_uow_factory(
-                    economy_policy_factory=economy_container.economy_policy_factory,
+                    economy_policy_factory=self._economy_policy_factory,
                     stream_repository_factory=self._stream_repository_factory,
                     viewer_repository_factory=viewer_container.viewer_repository_factory,
                     conversation_service_factory=conversation_service_factory,
@@ -443,7 +453,7 @@ class BotManager:
                 send_channel_message=chat_client.send_channel_message,
                 bot_name=bot_name,
                 conversation_service_factory=conversation_service_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                chat_use_case=self._chat_use_case,
                 user_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),
                 generate_response_use_case_factory=generate_response_use_case_factory,
@@ -461,8 +471,8 @@ class BotManager:
                 stream_repository_factory=self._stream_repository_factory,
                 viewer_repository_factory=viewer_container.viewer_repository_factory,
                 battle_use_case=battle_container.battle_use_case(),
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
+                economy_policy_factory=self._economy_policy_factory,
+                chat_use_case=self._chat_use_case,
                 conversation_service_factory=conversation_service_factory,
             )
 
@@ -477,8 +487,8 @@ class BotManager:
                 channel_name=channel_name,
                 handle_minigame_tick_use_case=platform_container.handle_minigame_tick_use_case(
                     minigame_repository=self._minigame_repository,
-                    economy_policy_factory=economy_container.economy_policy_factory,
-                    chat_use_case=chat_container.chat_use_case(),
+                    economy_policy_factory=self._economy_policy_factory,
+                    chat_use_case=self._chat_use_case,
                     stream_repository_factory=self._stream_repository_factory,
                     get_used_words_use_case=self._get_used_word_use_case,
                     add_used_words_use_case=self._add_used_word_use_case,
@@ -500,7 +510,7 @@ class BotManager:
             viewer_time_job = platform_container.viewer_time_job(
                 stream_repository_factory=self._stream_repository_factory,
                 viewer_repository_factory=viewer_container.viewer_repository_factory,
-                economy_policy_factory=economy_container.economy_policy_factory,
+                economy_policy_factory=self._economy_policy_factory,
                 viewer_cache=viewer_container.viewer_cache(platform_container.platform_repository()),
                 platform_repository=platform_container.platform_repository(),
                 channel_name=channel_name,
@@ -510,7 +520,7 @@ class BotManager:
             followers_sync_job = platform_container.followers_sync_job(
                 channel_name=channel_name,
                 platform_repository=platform_container.platform_repository(),
-                followers_repository_factory=follow_container.followers_repository_factory,
+                followers_repository_factory=self._followers_repository_factory,
             )
 
             jobs = [

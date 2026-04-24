@@ -13,6 +13,8 @@ from app.chat.presentation.chat_routes import get_logger
 from app.core.config.domain.model.application import ApplicationConfig
 from app.core.config.domain.model.configuration import Config
 from app.core.logger.domain.logger import Logger
+from app.economy.di.container import EconomyContainer
+from app.follow.di.container import FollowContainer
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api.joke_routes import get_joke_container
 from app.minigame.di.container import MinigameContainer
@@ -46,6 +48,14 @@ def get_shop_container(request: Request) -> ShopContainer:
 
 def get_minigame_container(request: Request) -> MinigameContainer:
     return request.app.state.minigame_container
+
+
+def get_economy_container(request: Request) -> EconomyContainer:
+    return request.app.state.economy_container
+
+
+def get_follow_container(request: Request) -> FollowContainer:
+    return request.app.state.follow_container
 
 
 @router.post("/start", summary="Начать авторизацию Twitch", response_model=AuthStartResponse)

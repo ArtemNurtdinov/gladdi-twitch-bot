@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.bot.presentation.api.bot_twitch_routes import get_follow_container
 from app.follow.di.container import FollowContainer
 from app.follow.presentation.followers_schemas import (
     FollowerResponse,
@@ -11,8 +12,7 @@ router = APIRouter()
 
 
 @router.get("", response_model=FollowersListResponse, summary="Текущие подписчики (активные)")
-async def get_active_followers(channel_name: str):
-    follow_container = FollowContainer()
+async def get_active_followers(channel_name: str, follow_container: FollowContainer = Depends(get_follow_container)):
     with db_ro_session() as session:
         active_followers_use_case = follow_container.get_active_followers_use_case(session)
         followers = active_followers_use_case.handle(channel_name)
@@ -23,8 +23,8 @@ async def get_active_followers(channel_name: str):
 @router.get("/unfollowed", response_model=FollowersListResponse, summary="Отписавшиеся с даты")
 async def get_unfollowed_followers(
     channel_name: str,
+    follow_container: FollowContainer = Depends(get_follow_container),
 ):
-    follow_container = FollowContainer()
     with db_ro_session() as session:
         unfollowed_use_case = follow_container.get_unfollowed_use_case(session)
         followers = unfollowed_use_case.handle(channel_name)
