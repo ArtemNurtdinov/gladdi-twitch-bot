@@ -5,17 +5,19 @@ from app.platform.command.guess.application.handle_guess_use_case import HandleG
 from app.platform.command.guess.application.model import GuessWordDTO
 
 
-class GuessWordCommandHandlerImpl(CommandHandler):
+class GuessWordCommandHandler(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
         command_name: str,
         handle_guess_use_case: HandleGuessUseCase,
-        bot_name: str,
     ):
         self._command_prefix = command_prefix
         self._command_name = command_name
         self._handle_guess_use_case = handle_guess_use_case
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:
