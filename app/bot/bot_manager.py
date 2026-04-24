@@ -67,6 +67,7 @@ class BotManager:
         viewer_cache: ViewerCachePort,
         handle_restore_stream_use_case: HandleRestoreStreamContextUseCase,
         platform_chat_client: TwitchPlatformChatClient,
+        post_joke_job: PostJokeJob,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -90,6 +91,7 @@ class BotManager:
         self._viewer_cache = viewer_cache
         self._handle_restore_stream_use_case = handle_restore_stream_use_case
         self._platform_chat_client = platform_chat_client
+        self._post_joke_job = post_joke_job
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -159,16 +161,7 @@ class BotManager:
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
-            post_joke_job: PostJokeJob = joke_container.post_joke_job(
-                channel_name=channel_name,
-                send_channel_message=self._platform_chat_client.send_channel_message,
-                bot_name=bot_name,
-                conversation_service_factory=conversation_service_factory,
-                chat_use_case=self._chat_use_case,
-                user_cache=self._viewer_cache,
-                platform_repository=platform_repository,
-                generate_response_use_case_factory=generate_response_use_case_factory,
-            )
+            self._post_joke_job.apply_channel(channel_name, bot_name)
 
             stream_status_job = self._platform_container.stream_status_job(
                 channel_name=channel_name,
@@ -231,7 +224,7 @@ class BotManager:
             )
 
             jobs = [
-                post_joke_job,
+                self._post_joke_job,
                 token_checker_job,
                 stream_status_job,
                 self._chat_summarizer_job,

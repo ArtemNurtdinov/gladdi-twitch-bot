@@ -79,9 +79,8 @@ class Application:
         self.fast_api.state.logger = self.container.logger
         self.fast_api.state.config = self.container.config
         self.fast_api.state.auth_container = AuthContainer(self.container.config.application)
-        self.fast_api.state.joke_container = JokeContainer(
-            session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
-        )
+        joke_container = JokeContainer(session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger)
+        self.fast_api.state.joke_container = joke_container
         ai_container = AIContainer(
             session_factory_ro=db_ro_session,
             session_factory_rw=db_rw_session,
@@ -117,7 +116,6 @@ class Application:
             logger=self.container.logger,
         )
         platform_repository = platform_container.platform_repository()
-
         viewer_cache = ViewerCacheService(platform_repository)
 
         moderation_service = ModerationService(
@@ -333,6 +331,26 @@ class Application:
         command_router.register_command_handler(self.container.config.bot.command_guess_word, guess_word_command_handler)
         command_router.register_command_handler(self.container.config.bot.command_rps, rps_command_handler)
 
+        platform_chat_client = TwitchPlatformChatClient(
+            handle_chat_message_use_case=HandleChatMessageUseCase(
+                chat_message_uow=chat_message_uow_factory,
+                get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
+                prompt_service=ai_container.prompt_service,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                db_ro_session=db_ro_session,
+            ),
+            handle_reply_use_case=HandleReplyUseCase(
+                chat_message_uow=chat_message_uow_factory,
+                prompt_service=ai_container.prompt_service,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                db_ro_session=db_ro_session,
+            ),
+            command_router=command_router,
+            command_prefix=self.container.config.bot.prefix,
+            help_command_handler=help_command_handler,
+            logger=self.container.logger,
+        )
+
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,
@@ -363,24 +381,14 @@ class Application:
                 minigame_repository=minigame_repository,
                 logger=self.container.logger,
             ),
-            platform_chat_client=TwitchPlatformChatClient(
-                handle_chat_message_use_case=HandleChatMessageUseCase(
-                    chat_message_uow=chat_message_uow_factory,
-                    get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
-                    prompt_service=ai_container.prompt_service,
-                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-                    db_ro_session=db_ro_session,
-                ),
-                handle_reply_use_case=HandleReplyUseCase(
-                    chat_message_uow=chat_message_uow_factory,
-                    prompt_service=ai_container.prompt_service,
-                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-                    db_ro_session=db_ro_session,
-                ),
-                command_router=command_router,
-                command_prefix=self.container.config.bot.prefix,
-                help_command_handler=help_command_handler,
-                logger=self.container.logger,
+            platform_chat_client=platform_chat_client,
+            post_joke_job=joke_container.post_joke_job(
+                send_channel_message=platform_chat_client.send_channel_message,
+                conversation_service_factory=ai_container.conversation_service_factory,
+                chat_use_case=chat_container.chat_use_case(),
+                user_cache=viewer_cache,
+                platform_repository=platform_repository,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
             ),
         )
 

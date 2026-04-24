@@ -79,9 +79,7 @@ class JokeContainer:
 
     def post_joke_job(
         self,
-        channel_name: str,
         send_channel_message: Callable[[str], Awaitable[None]],
-        bot_name: str,
         conversation_service_factory: SessionScopedFactory[ConversationService],
         chat_use_case: ChatUseCase,
         user_cache: ViewerCachePort,
@@ -98,9 +96,7 @@ class JokeContainer:
             generate_response_use_case_factory,
         )
         return PostJokeJob(
-            channel_name=channel_name,
             handle_post_joke_use_case=handle_post_joke_use_case,
             send_channel_message=send_channel_message,
-            bot_name=bot_name,
             logger=self.logger,
         )
