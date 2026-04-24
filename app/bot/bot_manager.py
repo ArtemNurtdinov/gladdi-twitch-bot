@@ -32,9 +32,7 @@ from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.domain.repo import StreamRepository
-from app.task.domain.model.task import Task
 from app.task.domain.runner import TaskRunner
-from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
 from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
 from app.viewer.session.domain.repository import ViewerRepository
@@ -168,18 +166,6 @@ class BotManager:
             self._viewer_time_job.apply_channel(channel_name, bot_name)
             self._followers_sync_job.apply_channel(channel_name, bot_name)
 
-            jobs = [
-                self._post_joke_job,
-                self._token_checker_job,
-                self._stream_status_job,
-                self._chat_summarizer_job,
-                self._minigame_job,
-                self._viewer_time_job,
-                self._followers_sync_job,
-            ]
-
-            tasks = [Task(job.name, job.run) for job in jobs]
-            self._task_runner: TaskRunner = BackgroundTaskRunner(tasks)
             self._task_runner.start_all()
 
             self._status = BotStatus.RUNNING
