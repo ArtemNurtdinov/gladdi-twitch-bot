@@ -46,16 +46,13 @@ from app.platform.chat.application.usecase.handle_chat_message_use_case import H
 from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
-from app.platform.command.ask.application.ask_command_handler import AskCommandHandlerImpl
-from app.platform.command.ask.application.ask_uow import AskUnitOfWorkFactory
-from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
+from app.platform.command.ask.application.ask_command_handler import AskCommandHandler
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
 from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
-from app.platform.command.battle.application.battle_command_handler import BattleCommandHandlerImpl
-from app.platform.command.battle.application.battle_uow import BattleUnitOfWorkFactory
-from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
+from app.platform.command.battle.application.battle_command_handler import BattleCommandHandler
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.domain.command_router import CommandRouter
+from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandler
 from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
 from app.shop.domain.repository import ShopItemRepository
@@ -94,16 +91,16 @@ class BotManager:
         add_equipment_use_case: AddEquipmentUseCase,
         equipment_exists_use_case: EquipmentExistsUseCase,
         notification_repository: NotificationRepository,
-        battle_uow_factory: BattleUnitOfWorkFactory,
         battle_use_case: BattleUseCase,
-        ask_uow_factory: AskUnitOfWorkFactory,
         platform_container: PlatformContainer,
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         chat_message_uow_factory: ChatMessageUnitOfWorkFactory,
         chat_summarizer_job: ChatSummarizerJob,
         viewer_cache: ViewerCachePort,
         moderation_service: ModerationService,
-        followage_command_handler: CommandHandler,
+        followage_command_handler: FollowageCommandHandler,
+        ask_command_handler: AskCommandHandler,
+        battle_command_handler: BattleCommandHandler,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -128,9 +125,7 @@ class BotManager:
         self._add_equipment_use_case = add_equipment_use_case
         self._equipment_exists_use_case = equipment_exists_use_case
         self._notification_repository = notification_repository
-        self._battle_uow_factory = battle_uow_factory
         self._battle_use_case = battle_use_case
-        self._ask_uow_factory = ask_uow_factory
         self._platform_container = platform_container
         self._viewer_repository_factory = viewer_repository_factory
         self._chat_message_uow_factory = chat_message_uow_factory
@@ -138,6 +133,8 @@ class BotManager:
         self._viewer_cache = viewer_cache
         self._moderation_service = moderation_service
         self._followage_command_handler = followage_command_handler
+        self._ask_command_handler = ask_command_handler
+        self._battle_command_handler = battle_command_handler
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -203,33 +200,9 @@ class BotManager:
             chat_summary_state = ChatSummaryState()
 
             self._followage_command_handler.apply_bot_name(bot_name)
-
-            ask_command_handler: CommandHandler = AskCommandHandlerImpl(
-                command_prefix=self._config.prefix,
-                command_name=self._config.command_gladdi,
-                handle_ask_use_case=HandleAskUseCase(
-                    get_intent_from_text_use_case_factory=get_intent_from_text_use_case_factory,
-                    prompt_service=prompt_service,
-                    unit_of_work_factory=self._ask_uow_factory,
-                    generate_response_use_case_factory=generate_response_use_case_factory,
-                    session_factory_ro=db_ro_session,
-                ),
-                bot_nick=bot_name,
-            )
-
-            battle_command_handler: CommandHandler = BattleCommandHandlerImpl(
-                command_prefix=self._config.prefix,
-                command_name=self._config.command_fight,
-                handle_battle_use_case=HandleBattleUseCase(
-                    battle_uow=self._battle_uow_factory,
-                    generate_response_use_case_factory=generate_response_use_case_factory,
-                    calculate_timeout_use_case=self._calculate_timeout_use_case,
-                    db_ro_session=db_ro_session,
-                ),
-                chat_moderation=self._moderation_service,
-                bot_name=bot_name,
-                battle_waiting_user=battle_waiting_user,
-            )
+            self._ask_command_handler.apply_bot_name(bot_name)
+            self._battle_command_handler.apply_bot_name(bot_name)
+            self._battle_command_handler.apply_battle_waiting_user(battle_waiting_user)
 
             roll_command_handler = self._platform_container.roll_command_handler(
                 command_prefix=self._config.prefix,
@@ -380,8 +353,8 @@ class BotManager:
             command_router: CommandRouter = CommandRouterImpl(self._config.prefix)
 
             command_router.register_command_handler(self._config.command_followage, self._followage_command_handler)
-            command_router.register_command_handler(self._config.command_gladdi, ask_command_handler)
-            command_router.register_command_handler(self._config.command_fight, battle_command_handler)
+            command_router.register_command_handler(self._config.command_gladdi, self._ask_command_handler)
+            command_router.register_command_handler(self._config.command_fight, self._battle_command_handler)
             command_router.register_command_handler(self._config.command_roll, roll_command_handler)
             command_router.register_command_handler(self._config.command_balance, balance_command_handler)
             command_router.register_command_handler(self._config.command_bonus, bonus_command_handler)

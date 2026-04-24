@@ -50,7 +50,7 @@ from app.platform.command.equipment.application.equipment_command_handler import
 from app.platform.command.equipment.application.equipment_uow import EquipmentUnitOfWorkFactory
 from app.platform.command.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
 from app.platform.command.equipment.infrastructure.equipment_uow import SqlAlchemyEquipmentUnitOfWorkFactory
-from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandlerImpl
+from app.platform.command.followage.application.followage_command_handler import FollowageCommandHandler
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 from app.platform.command.followage.infrastructure.follow_age_uow import SqlAlchemyFollowAgeUnitOfWorkFactory
@@ -740,7 +740,7 @@ class PlatformContainer:
         conversation_service_factory: SessionScopedFactory[ConversationService],
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
         platform_repository: PlatformRepository,
-    ) -> CommandHandler:
+    ) -> FollowageCommandHandler:
         handle_follow_age_use_case = self.handle_follow_age_use_case(
             generate_response_use_case_factory,
             chat_repository_factory,
@@ -748,7 +748,7 @@ class PlatformContainer:
             system_prompt_repository_factory,
             platform_repository,
         )
-        return FollowageCommandHandlerImpl(
+        return FollowageCommandHandler(
             command_prefix=command_prefix,
             command_name=command_name,
             handle_follow_age_use_case=handle_follow_age_use_case,

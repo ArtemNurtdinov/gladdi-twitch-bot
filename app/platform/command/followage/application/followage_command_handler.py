@@ -5,7 +5,7 @@ from app.platform.command.followage.application.model import FollowageDTO
 from app.platform.command.followage.application.usecase.handle_followage_use_case import HandleFollowAgeUseCase
 
 
-class FollowageCommandHandlerImpl(CommandHandler):
+class FollowageCommandHandler(CommandHandler):
     def __init__(self, command_prefix: str, command_name: str, handle_follow_age_use_case: HandleFollowAgeUseCase):
         self._command_prefix = command_prefix
         self._command_name = command_name

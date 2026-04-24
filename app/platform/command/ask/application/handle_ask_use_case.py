@@ -14,13 +14,13 @@ class HandleAskUseCase:
         self,
         get_intent_from_text_use_case_factory: SessionScopedFactory[GetIntentFromTextUseCase],
         prompt_service: PromptService,
-        unit_of_work_factory: AskUnitOfWorkFactory,
+        ask_uow_factory: AskUnitOfWorkFactory,
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         session_factory_ro: SessionFactory,
     ):
         self._get_intent_from_text_use_case_factory = get_intent_from_text_use_case_factory
         self._prompt_service = prompt_service
-        self._unit_of_work_factory = unit_of_work_factory
+        self._ask_uow_factory = ask_uow_factory
         self._generate_response_use_case_factory = generate_response_use_case_factory
         self._db_ro_session = session_factory_ro
 
@@ -46,7 +46,7 @@ class HandleAskUseCase:
                 prompt=prompt, channel_name=command_ask.channel_name
             )
 
-        with self._unit_of_work_factory.create() as uow:
+        with self._ask_uow_factory.create() as uow:
             uow.conversation_service.save_conversation_to_db(
                 channel_name=command_ask.channel_name,
                 user_message=prompt,

@@ -23,7 +23,11 @@ from app.joke.presentation.api import joke_routes
 from app.minigame.di.container import MinigameContainer
 from app.moderation.application.moderation_service import ModerationService
 from app.notification.di.container import NotificationContainer
+from app.platform.command.ask.application.ask_command_handler import AskCommandHandler
+from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
 from app.platform.command.ask.di.container import AskContainer
+from app.platform.command.battle.application.battle_command_handler import BattleCommandHandler
+from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.platform.di.container import PlatformContainer
 from app.shop.di.container import ShopContainer
 from app.shop.presentation.api import shop_routes
@@ -116,6 +120,7 @@ class Application:
         )
 
         self.fast_api.state.viewer_container = viewer_container
+        self.fast_api.state.platform_container = platform_container
 
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
@@ -140,18 +145,7 @@ class Application:
             add_equipment_use_case=equipment_container.add_equipment_use_case(),
             equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
             notification_repository=notification_container.notification_repository(),
-            battle_uow_factory=battle_container.battle_uow_factory(
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
-                conversation_service_factory=ai_container.conversation_service_factory,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-            ),
             battle_use_case=battle_container.battle_use_case(),
-            ask_uow_factory=ask_container.ask_uow_factory(
-                chat_repository_factory=chat_container.chat_repository_factory,
-                conversation_service_factory=ai_container.conversation_service_factory,
-                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
-            ),
             platform_container=platform_container,
             viewer_repository_factory=viewer_container.viewer_repository_factory,
             chat_message_uow_factory=chat_container.chat_message_uow_factory(
@@ -175,6 +169,37 @@ class Application:
                 conversation_service_factory=ai_container.conversation_service_factory,
                 system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
                 platform_repository=platform_repository,
+            ),
+            ask_command_handler=AskCommandHandler(
+                command_prefix=self.container.config.bot.prefix,
+                command_name=self.container.config.bot.command_gladdi,
+                handle_ask_use_case=HandleAskUseCase(
+                    get_intent_from_text_use_case_factory=ai_container.get_intent_from_text_use_case_factory,
+                    prompt_service=ai_container.prompt_service,
+                    ask_uow_factory=ask_container.ask_uow_factory(
+                        chat_repository_factory=chat_container.chat_repository_factory,
+                        conversation_service_factory=ai_container.conversation_service_factory,
+                        system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+                    ),
+                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                    session_factory_ro=db_ro_session,
+                ),
+            ),
+            battle_command_handler=BattleCommandHandler(
+                command_prefix=self.container.config.bot.prefix,
+                command_name=self.container.config.bot.command_fight,
+                handle_battle_use_case=HandleBattleUseCase(
+                    battle_uow=battle_container.battle_uow_factory(
+                        economy_policy_factory=economy_container.economy_policy_factory,
+                        chat_use_case=chat_container.chat_use_case(),
+                        conversation_service_factory=ai_container.conversation_service_factory,
+                        get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                    ),
+                    generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+                    calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
+                    db_ro_session=db_ro_session,
+                ),
+                chat_moderation=moderation_service,
             ),
         )
 

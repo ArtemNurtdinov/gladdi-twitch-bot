@@ -118,7 +118,7 @@ async def oauth_callback(
     if not access_token or not refresh_token:
         raise ValueError("Не удалось получить токены по переданному коду")
 
-    platform_container.api_client.update_tokens(access_token, refresh_token)
+    platform_container.platform_auth.update_tokens(access_token, refresh_token)
 
     return await bot_manager.start_bot(
         channel_name=state,

@@ -6,21 +6,25 @@ from app.platform.command.battle.application.model import BattleDTO
 from app.platform.command.domain.command_handler import CommandHandler
 
 
-class BattleCommandHandlerImpl(CommandHandler):
+class BattleCommandHandler(CommandHandler):
     def __init__(
         self,
         command_prefix: str,
         command_name: str,
         handle_battle_use_case: HandleBattleUseCase,
         chat_moderation: ChatModerationPort,
-        bot_name: str,
-        battle_waiting_user: dict[str, str | None],
     ):
         self.command_prefix = command_prefix
         self.command_name = command_name
         self._handle_battle_use_case = handle_battle_use_case
         self._chat_moderation = chat_moderation
+        self._bot_name: str | None = None
+        self._battle_waiting_user: dict[str, str | None] | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
+
+    def apply_battle_waiting_user(self, battle_waiting_user: dict[str, str | None]):
         self._battle_waiting_user = battle_waiting_user
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:
