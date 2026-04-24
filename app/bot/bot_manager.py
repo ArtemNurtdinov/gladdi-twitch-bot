@@ -25,7 +25,11 @@ from app.core.config.domain.model.telegram import TelegramConfig
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
 from app.economy.domain.economy_policy import EconomyPolicy
-from app.equipment.di.container import EquipmentContainer
+from app.equipment.application.add_equipment_use_case import AddEquipmentUseCase
+from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
+from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
+from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
+from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.follow.domain.repo import FollowersRepository
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.joke.di.container import JokeContainer
@@ -81,6 +85,11 @@ class BotManager:
         chat_use_case: ChatUseCase,
         followers_repository_factory: SessionScopedFactory[FollowersRepository],
         betting_service_factory: SessionScopedFactory[BettingService],
+        get_user_equipment_use_case: GetUserEquipmentUseCase,
+        calculate_timeout_use_case: CalculateTimeoutUseCase,
+        roll_cooldown_use_case: RollCooldownUseCase,
+        add_equipment_use_case: AddEquipmentUseCase,
+        equipment_exists_use_case: EquipmentExistsUseCase,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -99,6 +108,11 @@ class BotManager:
         self._chat_use_case = chat_use_case
         self._followers_repository_factory = followers_repository_factory
         self._betting_service_factory = betting_service_factory
+        self._get_user_equipment_use_case = get_user_equipment_use_case
+        self._calculate_timeout_use_case = calculate_timeout_use_case
+        self._roll_cooldown_use_case = roll_cooldown_use_case
+        self._add_equipment_use_case = add_equipment_use_case
+        self._equipment_exists_use_case = equipment_exists_use_case
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -153,7 +167,6 @@ class BotManager:
 
             viewer_container = ViewerContainer()
             ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-            equipment_container = EquipmentContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
             chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             platform_container = PlatformContainer(
@@ -218,10 +231,10 @@ class BotManager:
                         economy_policy_factory=self._economy_policy_factory,
                         chat_use_case=self._chat_use_case,
                         conversation_service_factory=conversation_service_factory,
-                        get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                        get_user_equipment_use_case=self._get_user_equipment_use_case,
                     ),
                     generate_response_use_case_factory=generate_response_use_case_factory,
-                    calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
+                    calculate_timeout_use_case=self._calculate_timeout_use_case,
                     db_ro_session=db_ro_session,
                 ),
                 chat_moderation=moderation_service,
@@ -234,10 +247,10 @@ class BotManager:
                 command_name=self._config.command_roll,
                 economy_policy_factory=self._economy_policy_factory,
                 betting_service_factory=self._betting_service_factory,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                get_user_equipment_use_case=self._get_user_equipment_use_case,
                 chat_use_case=self._chat_use_case,
-                roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
-                calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
+                roll_cooldown_use_case=self._roll_cooldown_use_case,
+                calculate_timeout_use_case=self._calculate_timeout_use_case,
                 chat_moderation_port=moderation_service,
                 bot_name=bot_name,
             )
@@ -249,7 +262,7 @@ class BotManager:
 
             bonus_command_handler = platform_container.bonus_command_handler(
                 stream_repository_factory=self._stream_repository_factory,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                get_user_equipment_use_case=self._get_user_equipment_use_case,
                 economy_policy_factory=self._economy_policy_factory,
                 chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
@@ -268,8 +281,8 @@ class BotManager:
                 command_shop_name=self._config.command_shop,
                 command_buy_name=self._config.command_buy,
                 economy_policy_factory=self._economy_policy_factory,
-                add_equipment_use_case=equipment_container.add_equipment_use_case(),
-                equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
+                add_equipment_use_case=self._add_equipment_use_case,
+                equipment_exists_use_case=self._equipment_exists_use_case,
                 chat_use_case=self._chat_use_case,
                 shop_item_repository_factory=self._shop_item_repository_factory,
                 bot_name=bot_name,
@@ -279,8 +292,8 @@ class BotManager:
                 command_prefix=self._config.prefix,
                 command_buy_name=self._config.command_buy,
                 economy_policy_factory=self._economy_policy_factory,
-                add_equipment_use_case=equipment_container.add_equipment_use_case(),
-                equipment_exists_use_case=equipment_container.equipment_exists_use_case(),
+                add_equipment_use_case=self._add_equipment_use_case,
+                equipment_exists_use_case=self._equipment_exists_use_case,
                 chat_use_case=self._chat_use_case,
                 shop_item_repository_factory=self._shop_item_repository_factory,
                 bot_name=bot_name,
@@ -289,7 +302,7 @@ class BotManager:
             equipment_command_handler = platform_container.equipment_command_handler(
                 command_prefix=self._config.prefix,
                 command_shop=self._config.command_shop,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                get_user_equipment_use_case=self._get_user_equipment_use_case,
                 chat_use_case=self._chat_use_case,
                 bot_name=bot_name,
             )
@@ -342,7 +355,7 @@ class BotManager:
                 minigame_repository=self._minigame_repository,
                 economy_policy_factory=self._economy_policy_factory,
                 chat_use_case=self._chat_use_case,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                get_user_equipment_use_case=self._get_user_equipment_use_case,
                 bot_name=bot_name,
             )
 
@@ -352,7 +365,7 @@ class BotManager:
                 minigame_repository=self._minigame_repository,
                 economy_policy_factory=self._economy_policy_factory,
                 chat_use_case=self._chat_use_case,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                get_user_equipment_use_case=self._get_user_equipment_use_case,
                 bot_name=bot_name,
             )
 
@@ -362,7 +375,7 @@ class BotManager:
                 minigame_repository=self._minigame_repository,
                 economy_policy_factory=self._economy_policy_factory,
                 chat_use_case=self._chat_use_case,
-                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                get_user_equipment_use_case=self._get_user_equipment_use_case,
                 bot_name=bot_name,
             )
 
@@ -494,7 +507,7 @@ class BotManager:
                     get_used_words_use_case=self._get_used_word_use_case,
                     add_used_words_use_case=self._add_used_word_use_case,
                     conversation_service_factory=conversation_service_factory,
-                    get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                    get_user_equipment_use_case=self._get_user_equipment_use_case,
                     system_prompt_repository_factory=system_prompt_repository_factory,
                     llm_repository_factory=llm_repository_factory,
                     prefix=self._config.prefix,
