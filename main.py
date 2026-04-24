@@ -430,6 +430,13 @@ class Application:
                 ),
                 logger=self.container.logger,
             ),
+            viewer_time_job=platform_container.viewer_time_job(
+                stream_repository_factory=stream_container.stream_repository_factory,
+                viewer_repository_factory=viewer_container.viewer_repository_factory,
+                economy_policy_factory=economy_container.economy_policy_factory,
+                viewer_cache=viewer_cache,
+                platform_repository=platform_repository,
+            ),
         )
 
     def _setup_routes(self):

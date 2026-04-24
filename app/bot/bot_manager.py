@@ -35,6 +35,7 @@ from app.task.domain.model.task import Task
 from app.task.domain.runner import TaskRunner
 from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
+from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
 from app.viewer.session.domain.repository import ViewerRepository
 
 
@@ -65,6 +66,7 @@ class BotManager:
         post_joke_job: PostJokeJob,
         stream_status_job: StreamStatusJob,
         minigame_job: MinigameTickJob,
+        viewer_time_job: ViewerTimeJob,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -86,6 +88,7 @@ class BotManager:
         self._viewer_repository_factory = viewer_repository_factory
         self._chat_summarizer_job = chat_summarizer_job
         self._minigame_job = minigame_job
+        self._viewer_time_job = viewer_time_job
         self._viewer_cache = viewer_cache
         self._handle_restore_stream_use_case = handle_restore_stream_use_case
         self._platform_chat_client = platform_chat_client
@@ -158,16 +161,7 @@ class BotManager:
             self._stream_status_job.apply_channel(channel_name, bot_name)
             self._chat_summarizer_job.apply_channel(channel_name, bot_name)
             self._minigame_job.apply_channel(channel_name, bot_name)
-
-            viewer_time_job = self._platform_container.viewer_time_job(
-                stream_repository_factory=self._stream_repository_factory,
-                viewer_repository_factory=self._viewer_repository_factory,
-                economy_policy_factory=self._economy_policy_factory,
-                viewer_cache=self._viewer_cache,
-                platform_repository=platform_repository,
-                channel_name=channel_name,
-                bot_name=bot_name,
-            )
+            self._viewer_time_job.apply_channel(channel_name, bot_name)
 
             followers_sync_job = self._platform_container.followers_sync_job(
                 channel_name=channel_name,
@@ -181,7 +175,7 @@ class BotManager:
                 self._stream_status_job,
                 self._chat_summarizer_job,
                 self._minigame_job,
-                viewer_time_job,
+                self._viewer_time_job,
                 followers_sync_job,
             ]
 

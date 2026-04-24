@@ -882,10 +882,8 @@ class PlatformContainer:
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         viewer_cache: ViewerCachePort,
         platform_repository: PlatformRepository,
-        channel_name: str,
-        bot_name: str,
     ) -> ViewerTimeJob:
         handle_viewer_time_use_case = self.handle_viewer_time_use_case(
             stream_repository_factory, viewer_repository_factory, economy_policy_factory, viewer_cache, platform_repository
         )
-        return ViewerTimeJob(channel_name, handle_viewer_time_use_case, bot_name, self._logger)
+        return ViewerTimeJob(handle_viewer_time_use_case, self._logger)
