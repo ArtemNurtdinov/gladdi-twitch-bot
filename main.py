@@ -42,6 +42,8 @@ from app.shop.presentation.api import shop_routes
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.di.container import StreamContainer
 from app.stream.presentation import stream_routes
+from app.task.domain.model.task import Task
+from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.di.container import ViewerContainer
 from app.viewer.infrastructure.cache.viewer_cache_service import ViewerCacheService
 from app.viewer.presentation.api import viewer_routes
@@ -354,6 +356,84 @@ class Application:
             logger=self.container.logger,
         )
 
+        post_joke_job = joke_container.post_joke_job(
+            send_channel_message=platform_chat_client.send_channel_message,
+            conversation_service_factory=ai_container.conversation_service_factory,
+            chat_use_case=chat_container.chat_use_case(),
+            user_cache=viewer_cache,
+            platform_repository=platform_repository,
+            generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+        )
+
+        stream_status_job = platform_container.stream_status_job(
+            user_cache=viewer_cache,
+            platform_repository=platform_repository,
+            minigame_repository=minigame_repository,
+            notification_repository=notification_container.notification_repository(),
+            notification_group_id=self.container.config.telegram.group_id,
+            generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+            state=chat_summary_state,
+            stream_repository_factory=stream_container.stream_repository_factory,
+            viewer_repository_factory=viewer_container.viewer_repository_factory,
+            battle_use_case=battle_container.battle_use_case(),
+            economy_policy_factory=economy_container.economy_policy_factory,
+            chat_use_case=chat_container.chat_use_case(),
+            conversation_service_factory=ai_container.conversation_service_factory,
+        )
+
+        chat_summarizer_job = chat_container.chat_summarizer_job(
+            stream_repository_factory=stream_container.stream_repository_factory,
+            generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+            chat_summary_state=chat_summary_state,
+        )
+
+        minigame_job = MinigameTickJob(
+            handle_minigame_tick_use_case=platform_container.handle_minigame_tick_use_case(
+                minigame_repository=minigame_repository,
+                economy_policy_factory=economy_container.economy_policy_factory,
+                chat_use_case=chat_container.chat_use_case(),
+                stream_repository_factory=stream_container.stream_repository_factory,
+                get_used_words_use_case=minigame_container.get_used_words_use_case(),
+                add_used_words_use_case=minigame_container.add_used_word_use_case(),
+                conversation_service_factory=ai_container.conversation_service_factory,
+                get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
+                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+                llm_repository_factory=ai_container.llm_repository_factory,
+                prefix=self.container.config.bot.prefix,
+                number_guess_name=self.container.config.bot.command_guess,
+                command_guess_word=self.container.config.bot.command_guess_word,
+                command_guess_letter=self.container.config.bot.command_guess_letter,
+                rps_command_name=self.container.config.bot.command_rps,
+                send_channel_message=platform_chat_client.send_channel_message,
+            ),
+            logger=self.container.logger,
+        )
+
+        viewer_time_job = platform_container.viewer_time_job(
+            stream_repository_factory=stream_container.stream_repository_factory,
+            viewer_repository_factory=viewer_container.viewer_repository_factory,
+            economy_policy_factory=economy_container.economy_policy_factory,
+            viewer_cache=viewer_cache,
+            platform_repository=platform_repository,
+        )
+
+        followers_sync_job = platform_container.followers_sync_job(
+            platform_repository=platform_repository, followers_repository_factory=follow_container.followers_repository_factory
+        )
+
+        jobs = [
+            post_joke_job,
+            platform_container.token_checker_job,
+            stream_status_job,
+            chat_summarizer_job,
+            minigame_job,
+            viewer_time_job,
+            followers_sync_job,
+        ]
+
+        tasks = [Task(job.name, job.run) for job in jobs]
+        task_runner = BackgroundTaskRunner(tasks)
+
         self.fast_api.state.bot_manager = BotManager(
             config=self.container.config.bot,
             telegram_config=self.container.config.telegram,
@@ -372,11 +452,6 @@ class Application:
             battle_use_case=battle_container.battle_use_case(),
             platform_container=platform_container,
             viewer_repository_factory=viewer_container.viewer_repository_factory,
-            chat_summarizer_job=chat_container.chat_summarizer_job(
-                stream_repository_factory=stream_container.stream_repository_factory,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-                chat_summary_state=chat_summary_state,
-            ),
             viewer_cache=viewer_cache,
             handle_restore_stream_use_case=HandleRestoreStreamContextUseCase(
                 restore_stream_uow=platform_container.restore_stream_uow(
@@ -386,61 +461,14 @@ class Application:
                 logger=self.container.logger,
             ),
             platform_chat_client=platform_chat_client,
-            post_joke_job=joke_container.post_joke_job(
-                send_channel_message=platform_chat_client.send_channel_message,
-                conversation_service_factory=ai_container.conversation_service_factory,
-                chat_use_case=chat_container.chat_use_case(),
-                user_cache=viewer_cache,
-                platform_repository=platform_repository,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-            ),
-            stream_status_job=platform_container.stream_status_job(
-                user_cache=viewer_cache,
-                platform_repository=platform_repository,
-                minigame_repository=minigame_repository,
-                notification_repository=notification_container.notification_repository(),
-                notification_group_id=self.container.config.telegram.group_id,
-                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
-                state=chat_summary_state,
-                stream_repository_factory=stream_container.stream_repository_factory,
-                viewer_repository_factory=viewer_container.viewer_repository_factory,
-                battle_use_case=battle_container.battle_use_case(),
-                economy_policy_factory=economy_container.economy_policy_factory,
-                chat_use_case=chat_container.chat_use_case(),
-                conversation_service_factory=ai_container.conversation_service_factory,
-            ),
-            minigame_job=MinigameTickJob(
-                handle_minigame_tick_use_case=platform_container.handle_minigame_tick_use_case(
-                    minigame_repository=minigame_repository,
-                    economy_policy_factory=economy_container.economy_policy_factory,
-                    chat_use_case=chat_container.chat_use_case(),
-                    stream_repository_factory=stream_container.stream_repository_factory,
-                    get_used_words_use_case=minigame_container.get_used_words_use_case(),
-                    add_used_words_use_case=minigame_container.add_used_word_use_case(),
-                    conversation_service_factory=ai_container.conversation_service_factory,
-                    get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-                    system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
-                    llm_repository_factory=ai_container.llm_repository_factory,
-                    prefix=self.container.config.bot.prefix,
-                    number_guess_name=self.container.config.bot.command_guess,
-                    command_guess_word=self.container.config.bot.command_guess_word,
-                    command_guess_letter=self.container.config.bot.command_guess_letter,
-                    rps_command_name=self.container.config.bot.command_rps,
-                    send_channel_message=platform_chat_client.send_channel_message,
-                ),
-                logger=self.container.logger,
-            ),
-            viewer_time_job=platform_container.viewer_time_job(
-                stream_repository_factory=stream_container.stream_repository_factory,
-                viewer_repository_factory=viewer_container.viewer_repository_factory,
-                economy_policy_factory=economy_container.economy_policy_factory,
-                viewer_cache=viewer_cache,
-                platform_repository=platform_repository,
-            ),
-            followers_sync_job=platform_container.followers_sync_job(
-                platform_repository=platform_repository, followers_repository_factory=follow_container.followers_repository_factory
-            ),
+            chat_summarizer_job=chat_summarizer_job,
+            post_joke_job=post_joke_job,
+            stream_status_job=stream_status_job,
             token_checker_job=platform_container.token_checker_job,
+            minigame_job=minigame_job,
+            viewer_time_job=viewer_time_job,
+            followers_sync_job=followers_sync_job,
+            task_runner=task_runner,
         )
 
     def _setup_routes(self):

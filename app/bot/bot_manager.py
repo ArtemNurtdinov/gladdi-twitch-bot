@@ -60,16 +60,17 @@ class BotManager:
         battle_use_case: BattleUseCase,
         platform_container: PlatformContainer,
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        chat_summarizer_job: ChatSummarizerJob,
         viewer_cache: ViewerCachePort,
         handle_restore_stream_use_case: HandleRestoreStreamContextUseCase,
         platform_chat_client: TwitchPlatformChatClient,
+        chat_summarizer_job: ChatSummarizerJob,
         post_joke_job: PostJokeJob,
         stream_status_job: StreamStatusJob,
         token_checker_job: TokenCheckerJob,
         minigame_job: MinigameTickJob,
         viewer_time_job: ViewerTimeJob,
         followers_sync_job: FollowersSyncJob,
+        task_runner: TaskRunner,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -99,6 +100,7 @@ class BotManager:
         self._post_joke_job = post_joke_job
         self._stream_status_job = stream_status_job
         self._token_checker_job = token_checker_job
+        self._task_runner = task_runner
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -106,12 +108,10 @@ class BotManager:
         self._lock = asyncio.Lock()
 
         self._api_client: ApiClient | None = None
-        self._task_runner: TaskRunner | None = None
 
         self._task: asyncio.Task | None = None
 
     def _reset_state(self):
-        self._task_runner = None
         self._platform_chat_client = None
         self._task = None
         self._started_at = None
