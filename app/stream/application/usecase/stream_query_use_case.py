@@ -7,7 +7,7 @@ from app.stream.domain.repo import StreamRepository
 
 
 class StreamQueryUseCase:
-    def __init__(self, repo: StreamRepository, chat_repository_factory: ChatRepository):
+    def __init__(self, repo: StreamRepository, chat_repository: ChatRepository):
         self._repo = repo
         self._chat_repository = chat_repository
 
