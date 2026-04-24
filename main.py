@@ -306,6 +306,13 @@ class Application:
                 chat_use_case=chat_container.chat_use_case(),
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
             ),
+            rps_command_handler=platform_container.rps_command_handler(
+                command_prefix=self.container.config.bot.prefix,
+                command_name=self.container.config.bot.command_rps,
+                minigame_repository=minigame_repository,
+                economy_policy_factory=economy_container.economy_policy_factory,
+                chat_use_case=chat_container.chat_use_case(),
+            ),
         )
 
     def _setup_routes(self):

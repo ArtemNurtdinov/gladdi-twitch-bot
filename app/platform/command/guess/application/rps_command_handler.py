@@ -5,17 +5,14 @@ from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCa
 from app.platform.command.domain.command_handler import CommandHandler
 
 
-class RpsCommandHandlerImpl(CommandHandler):
-    def __init__(
-        self,
-        command_prefix: str,
-        command_name: str,
-        handle_rps_use_case: HandleRpsUseCase,
-        bot_name: str,
-    ):
+class RpsCommandHandler(CommandHandler):
+    def __init__(self, command_prefix: str, command_name: str, handle_rps_use_case: HandleRpsUseCase):
         self._command_prefix = command_prefix
         self._command_name = command_name
         self._handle_rps_use_case = handle_rps_use_case
+        self._bot_name: str | None = None
+
+    def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
 
     async def handle(self, channel_name: str, user_name: str, message: str) -> str:

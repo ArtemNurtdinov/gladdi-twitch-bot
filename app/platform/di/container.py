@@ -45,7 +45,6 @@ from app.platform.command.bonus.application.bonus_command_handler import BonusCo
 from app.platform.command.bonus.application.bonus_uow import BonusUnitOfWorkFactory
 from app.platform.command.bonus.application.handle_bonus_use_case import HandleBonusUseCase
 from app.platform.command.bonus.infrastructure.bonus_uow import SqlAlchemyBonusUnitOfWorkFactory
-from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.equipment.application.equipment_command_handler import EquipmentCommandHandler
 from app.platform.command.equipment.application.equipment_uow import EquipmentUnitOfWorkFactory
 from app.platform.command.equipment.application.handle_equipment_use_case import HandleEquipmentUseCase
@@ -59,7 +58,7 @@ from app.platform.command.guess.application.guess_number_command_handler import 
 from app.platform.command.guess.application.guess_uow import GuessUnitOfWorkFactory
 from app.platform.command.guess.application.guess_word_command_handler import GuessWordCommandHandler
 from app.platform.command.guess.application.handle_guess_use_case import HandleGuessUseCase
-from app.platform.command.guess.application.rps_command_handler import RpsCommandHandlerImpl
+from app.platform.command.guess.application.rps_command_handler import RpsCommandHandler
 from app.platform.command.guess.infrastructure.guess_uow import SqlAlchemyGuessUnitOfWorkFactory
 from app.platform.command.help.application.handle_help_use_case import HandleHelpUseCase
 from app.platform.command.help.application.help_uow import HelpUnitOfWorkFactory
@@ -680,10 +679,9 @@ class PlatformContainer:
         minigame_repository: MinigameRepository,
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         chat_use_case: ChatUseCase,
-        bot_name: str,
-    ) -> CommandHandler:
+    ) -> RpsCommandHandler:
         handle_rps_use_case = self.handle_rps_use_case(minigame_repository, economy_policy_factory, chat_use_case)
-        return RpsCommandHandlerImpl(command_prefix, command_name, handle_rps_use_case, bot_name)
+        return RpsCommandHandler(command_prefix, command_name, handle_rps_use_case)
 
     def follow_age_uow_factory(
         self,

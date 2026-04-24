@@ -50,6 +50,7 @@ from app.platform.command.followage.application.followage_command_handler import
 from app.platform.command.guess.application.guess_letter_command_handler import GuessLetterCommandHandler
 from app.platform.command.guess.application.guess_number_command_handler import GuessNumberCommandHandler
 from app.platform.command.guess.application.guess_word_command_handler import GuessWordCommandHandler
+from app.platform.command.guess.application.rps_command_handler import RpsCommandHandler
 from app.platform.command.help.infrastructure.help_command_handler import HelpCommandHandler
 from app.platform.command.roll.application.roll_command_handler import RollCommandHandler
 from app.platform.command.shop.application.buy_command_handler import BuyCommandHandler
@@ -113,6 +114,7 @@ class BotManager:
         guess_number_command_handler: GuessNumberCommandHandler,
         guess_letter_command_handler: GuessLetterCommandHandler,
         guess_word_command_handler: GuessWordCommandHandler,
+        rps_command_handler: RpsCommandHandler,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -154,6 +156,7 @@ class BotManager:
         self._guess_number_command_handler = guess_number_command_handler
         self._guess_letter_command_handler = guess_letter_command_handler
         self._guess_word_command_handler = guess_word_command_handler
+        self._rps_command_handler = rps_command_handler
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -236,15 +239,7 @@ class BotManager:
             self._guess_number_command_handler.apply_bot_name(bot_name)
             self._guess_letter_command_handler.apply_bot_name(bot_name)
             self._guess_word_command_handler.apply_bot_name(bot_name)
-
-            rps_command_handler = self._platform_container.rps_command_handler(
-                command_prefix=self._config.prefix,
-                command_name=self._config.command_rps,
-                minigame_repository=self._minigame_repository,
-                economy_policy_factory=self._economy_policy_factory,
-                chat_use_case=self._chat_use_case,
-                bot_name=bot_name,
-            )
+            self._rps_command_handler.apply_bot_name(bot_name)
 
             command_router: CommandRouter = CommandRouterImpl(self._config.prefix)
 
@@ -265,7 +260,7 @@ class BotManager:
             command_router.register_command_handler(self._config.command_guess, self._guess_number_command_handler)
             command_router.register_command_handler(self._config.command_guess_letter, self._guess_letter_command_handler)
             command_router.register_command_handler(self._config.command_guess_word, self._guess_word_command_handler)
-            command_router.register_command_handler(self._config.command_rps, rps_command_handler)
+            command_router.register_command_handler(self._config.command_rps, self._rps_command_handler)
 
             handle_chat_message_use_case = HandleChatMessageUseCase(
                 chat_message_uow=self._chat_message_uow_factory,
