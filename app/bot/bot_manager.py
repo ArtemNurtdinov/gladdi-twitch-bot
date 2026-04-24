@@ -110,6 +110,7 @@ class BotManager:
         rps_command_handler: RpsCommandHandler,
         handle_chat_message_use_case: HandleChatMessageUseCase,
         handle_reply_use_case: HandleReplyUseCase,
+        handle_restore_stream_use_case: HandleRestoreStreamContextUseCase,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -151,6 +152,7 @@ class BotManager:
         self._rps_command_handler = rps_command_handler
         self._handle_chat_message_use_case = handle_chat_message_use_case
         self._handle_reply_use_case = handle_reply_use_case
+        self._handle_restore_stream_use_case = handle_restore_stream_use_case
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -269,12 +271,7 @@ class BotManager:
                 logger=self._logger,
             )
 
-            HandleRestoreStreamContextUseCase(
-                restore_stream_uow=self._platform_container.restore_stream_uow(self._stream_repository_factory),
-                minigame_repository=self._minigame_repository,
-                logger=self._logger,
-            ).handle(channel_name)
-
+            self._handle_restore_stream_use_case.handle(channel_name)
             self._chat_client = chat_client
 
             try:

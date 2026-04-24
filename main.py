@@ -34,6 +34,7 @@ from app.platform.command.battle.application.handle_battle_use_case import Handl
 from app.platform.di.container import PlatformContainer
 from app.shop.di.container import ShopContainer
 from app.shop.presentation.api import shop_routes
+from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.stream.di.container import StreamContainer
 from app.stream.presentation import stream_routes
 from app.viewer.di.container import ViewerContainer
@@ -326,6 +327,13 @@ class Application:
                 prompt_service=ai_container.prompt_service,
                 generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
                 db_ro_session=db_ro_session,
+            ),
+            handle_restore_stream_use_case=HandleRestoreStreamContextUseCase(
+                restore_stream_uow=platform_container.restore_stream_uow(
+                    stream_repository_factory=stream_container.stream_repository_factory,
+                ),
+                minigame_repository=minigame_repository,
+                logger=self.container.logger,
             ),
         )
 
