@@ -22,6 +22,7 @@ from app.joke.di.container import JokeContainer
 from app.joke.presentation.api import joke_routes
 from app.minigame.di.container import MinigameContainer
 from app.notification.di.container import NotificationContainer
+from app.platform.command.ask.di.container import AskContainer
 from app.shop.di.container import ShopContainer
 from app.shop.presentation.api import shop_routes
 from app.stream.di.container import StreamContainer
@@ -78,6 +79,7 @@ class Application:
         economy_container = EconomyContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
         follow_container = FollowContainer()
         betting_container = BettingContainer()
+        ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
 
         self.fast_api.state.ai_container = ai_container
         self.fast_api.state.stream_container = stream_container
@@ -121,6 +123,11 @@ class Application:
                 get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
             ),
             battle_use_case=battle_container.battle_use_case(),
+            ask_uow_factory=ask_container.ask_uow_factory(
+                chat_repository_factory=chat_container.chat_repository_factory,
+                conversation_service_factory=ai_container.conversation_service_factory,
+                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+            ),
         )
 
     def _setup_routes(self):

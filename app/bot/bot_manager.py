@@ -47,8 +47,8 @@ from app.platform.chat.application.usecase.handle_reply_use_case import HandleRe
 from app.platform.chat.infrastructure.twitch_chat_client import TwitchChatClient
 from app.platform.command.application.command_router import CommandRouterImpl
 from app.platform.command.ask.application.ask_command_handler import AskCommandHandlerImpl
+from app.platform.command.ask.application.ask_uow import AskUnitOfWorkFactory
 from app.platform.command.ask.application.handle_ask_use_case import HandleAskUseCase
-from app.platform.command.ask.di.container import AskContainer
 from app.platform.command.balance.application.balance_command_handler import BalanceCommandHandlerImpl
 from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.platform.command.battle.application.battle_command_handler import BattleCommandHandlerImpl
@@ -94,6 +94,7 @@ class BotManager:
         notification_repository: NotificationRepository,
         battle_uow_factory: BattleUnitOfWorkFactory,
         battle_use_case: BattleUseCase,
+        ask_uow_factory: AskUnitOfWorkFactory,
     ):
         self._config = config
         self._telegram_config = telegram_config
@@ -120,6 +121,7 @@ class BotManager:
         self._notification_repository = notification_repository
         self._battle_uow_factory = battle_uow_factory
         self._battle_use_case = battle_use_case
+        self._ask_uow_factory = ask_uow_factory
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -173,8 +175,6 @@ class BotManager:
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже запущен")
 
             viewer_container = ViewerContainer()
-            ask_container = AskContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
-
             chat_container = ChatContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session, logger=self._logger)
             platform_container = PlatformContainer(
                 session_factory_rw=db_rw_session,
@@ -210,19 +210,13 @@ class BotManager:
                 bot_name=bot_name,
             )
 
-            ask_ouw_factory = ask_container.ask_uow_factory(
-                chat_repository_factory=self._chat_repository_factory,
-                conversation_service_factory=conversation_service_factory,
-                system_prompt_repository_factory=system_prompt_repository_factory,
-            )
-
             ask_command_handler: CommandHandler = AskCommandHandlerImpl(
                 command_prefix=self._config.prefix,
                 command_name=self._config.command_gladdi,
                 handle_ask_use_case=HandleAskUseCase(
                     get_intent_from_text_use_case_factory=get_intent_from_text_use_case_factory,
                     prompt_service=prompt_service,
-                    unit_of_work_factory=ask_ouw_factory,
+                    unit_of_work_factory=self._ask_uow_factory,
                     generate_response_use_case_factory=generate_response_use_case_factory,
                     session_factory_ro=db_ro_session,
                 ),
