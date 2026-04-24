@@ -135,6 +135,19 @@ class Application:
                 conversation_service_factory=ai_container.conversation_service_factory,
                 system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
             ),
+            platform_container=platform_container,
+            viewer_repository_factory=viewer_container.viewer_repository_factory,
+            chat_message_uow_factory=chat_container.chat_message_uow_factory(
+                economy_policy_factory=economy_container.economy_policy_factory,
+                stream_repository_factory=stream_container.stream_repository_factory,
+                viewer_repository_factory=viewer_container.viewer_repository_factory,
+                conversation_service_factory=ai_container.conversation_service_factory,
+                system_prompt_repository_factory=ai_container.system_prompt_repository_factory,
+            ),
+            chat_summarizer_job=chat_container.chat_summarizer_job(
+                stream_repository_factory=stream_container.stream_repository_factory,
+                generate_response_use_case_factory=ai_container.generate_response_use_case_factory,
+            ),
         )
 
     def _setup_routes(self):

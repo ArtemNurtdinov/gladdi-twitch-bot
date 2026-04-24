@@ -24,6 +24,7 @@ from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.shop.di.container import ShopContainer
 from app.viewer.di.container import ViewerContainer
+from app.viewer.infrastructure.cache.viewer_cache_service import ViewerCacheService
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -132,9 +133,11 @@ async def oauth_callback(
         logger=logger,
     )
 
+    viewer_cache = ViewerCacheService(platform_repository)
+
     moderation_service = ModerationService(
         platform_repository=platform_repository,
-        user_cache=viewer_container.viewer_cache(platform_repository),
+        user_cache=viewer_cache,
         logger=logger,
     )
 
@@ -151,6 +154,8 @@ async def oauth_callback(
         token_checker_job=platform_auth_container.token_checker_job,
         platform_repository=platform_repository,
         moderation_service=moderation_service,
+        api_client=api_client,
+        viewer_cache=viewer_cache,
     )
 
 
