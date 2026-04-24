@@ -116,7 +116,6 @@ async def oauth_callback(
     return await bot_manager.start_bot(
         channel_name=state,
         platform_auth=platform_container.platform_auth,
-        api_client=platform_container.api_client,
         platform_repository=platform_container.platform_repository(),
     )
 

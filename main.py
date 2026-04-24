@@ -436,23 +436,7 @@ class Application:
         task_runner = BackgroundTaskRunner(tasks)
 
         self.fast_api.state.bot_manager = BotManager(
-            config=self.container.config.bot,
-            telegram_config=self.container.config.telegram,
-            llmbox_config=self.container.config.llmbox,
-            intent_detector_config=self.container.config.intent_detector,
             logger=self.container.logger,
-            minigame_repository=minigame_repository,
-            get_used_word_use_case=minigame_container.get_used_words_use_case(),
-            add_used_word_use_case=minigame_container.add_used_word_use_case(),
-            stream_repository_factory=stream_container.stream_repository_factory,
-            economy_policy_factory=economy_container.economy_policy_factory,
-            chat_use_case=chat_container.chat_use_case(),
-            followers_repository_factory=follow_container.followers_repository_factory,
-            get_user_equipment_use_case=equipment_container.get_user_equipment_use_case(),
-            notification_repository=notification_container.notification_repository(),
-            battle_use_case=battle_container.battle_use_case(),
-            platform_container=platform_container,
-            viewer_repository_factory=viewer_container.viewer_repository_factory,
             viewer_cache=viewer_cache,
             handle_restore_stream_use_case=HandleRestoreStreamContextUseCase(
                 restore_stream_uow=platform_container.restore_stream_uow(
@@ -465,11 +449,11 @@ class Application:
             chat_summarizer_job=chat_summarizer_job,
             post_joke_job=post_joke_job,
             stream_status_job=stream_status_job,
-            token_checker_job=platform_container.token_checker_job,
             minigame_job=minigame_job,
             viewer_time_job=viewer_time_job,
             followers_sync_job=followers_sync_job,
             task_runner=task_runner,
+            api_client=platform_container.api_client,
         )
 
     def _setup_routes(self):

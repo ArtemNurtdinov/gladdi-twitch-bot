@@ -1,92 +1,42 @@
 import asyncio
 from datetime import UTC, datetime
 
-from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.status import BotStatusResponse
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
-from app.chat.application.usecase.chat_use_case import ChatUseCase
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
-from app.core.config.domain.model.bot import BotConfig
-from app.core.config.domain.model.intent_detector import IntentDetectorConfig
-from app.core.config.domain.model.llmbox import LLMBoxConfig
-from app.core.config.domain.model.telegram import TelegramConfig
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
-from app.economy.domain.economy_policy import EconomyPolicy
-from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
-from app.follow.domain.repo import FollowersRepository
 from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
 from app.joke.application.job.post_joke_job import PostJokeJob
 from app.minigame.application.job.minigame_tick_job import MinigameTickJob
-from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
-from app.minigame.domain.minigame_repository import MinigameRepository
-from app.notification.domain.repository import NotificationRepository
-from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.infrastructure.twitch_platform_client import TwitchPlatformChatClient
-from app.platform.di.container import PlatformContainer
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
-from app.stream.domain.repo import StreamRepository
 from app.task.domain.runner import TaskRunner
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
 from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
-from app.viewer.session.domain.repository import ViewerRepository
 
 
 class BotManager:
     def __init__(
         self,
-        config: BotConfig,
-        telegram_config: TelegramConfig,
-        llmbox_config: LLMBoxConfig,
-        intent_detector_config: IntentDetectorConfig,
         logger: Logger,
-        minigame_repository: MinigameRepository,
-        get_used_word_use_case: GetUsedWordsUseCase,
-        add_used_word_use_case: AddUsedWordsUseCase,
-        stream_repository_factory: SessionScopedFactory[StreamRepository],
-        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        chat_use_case: ChatUseCase,
-        followers_repository_factory: SessionScopedFactory[FollowersRepository],
-        get_user_equipment_use_case: GetUserEquipmentUseCase,
-        notification_repository: NotificationRepository,
-        battle_use_case: BattleUseCase,
-        platform_container: PlatformContainer,
-        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         viewer_cache: ViewerCachePort,
         handle_restore_stream_use_case: HandleRestoreStreamContextUseCase,
         platform_chat_client: TwitchPlatformChatClient,
         chat_summarizer_job: ChatSummarizerJob,
         post_joke_job: PostJokeJob,
         stream_status_job: StreamStatusJob,
-        token_checker_job: TokenCheckerJob,
         minigame_job: MinigameTickJob,
         viewer_time_job: ViewerTimeJob,
         followers_sync_job: FollowersSyncJob,
         task_runner: TaskRunner,
+        api_client: ApiClient,
     ):
-        self._config = config
-        self._telegram_config = telegram_config
-        self._llmbox_config = llmbox_config
-        self._intent_detector_config = intent_detector_config
         self._logger = logger.create_child(__name__)
-        self._minigame_repository = minigame_repository
-        self._get_used_word_use_case = get_used_word_use_case
-        self._add_used_word_use_case = add_used_word_use_case
-        self._stream_repository_factory = stream_repository_factory
-        self._economy_policy_factory = economy_policy_factory
-        self._chat_use_case = chat_use_case
-        self._followers_repository_factory = followers_repository_factory
-        self._get_user_equipment_use_case = get_user_equipment_use_case
-        self._notification_repository = notification_repository
-        self._battle_use_case = battle_use_case
-        self._platform_container = platform_container
-        self._viewer_repository_factory = viewer_repository_factory
         self._chat_summarizer_job = chat_summarizer_job
         self._minigame_job = minigame_job
         self._viewer_time_job = viewer_time_job
@@ -96,22 +46,14 @@ class BotManager:
         self._platform_chat_client = platform_chat_client
         self._post_joke_job = post_joke_job
         self._stream_status_job = stream_status_job
-        self._token_checker_job = token_checker_job
         self._task_runner = task_runner
+        self._api_client = api_client
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
         self._last_error: str | None = None
         self._lock = asyncio.Lock()
-
-        self._api_client: ApiClient | None = None
-
         self._task: asyncio.Task | None = None
-
-    def _reset_state(self):
-        self._platform_chat_client = None
-        self._task = None
-        self._started_at = None
 
     def _on_bot_done(self, task: asyncio.Task) -> None:
         try:
@@ -123,25 +65,17 @@ class BotManager:
                 self._logger.log_info("Twitch бот остановлен")
         except asyncio.CancelledError:
             self._logger.log_info("Задача Twitch бота отменена")
-        finally:
-            self._reset_state()
 
     def get_status(self) -> BotStatusResponse:
         started_at = self._started_at.isoformat() if self._started_at else None
         return BotStatusResponse(status=self._status, started_at=started_at, last_error=self._last_error)
 
     async def start_bot(
-        self,
-        channel_name: str,
-        platform_auth: PlatformAuth,
-        platform_repository: PlatformRepository,
-        api_client: ApiClient,
+        self, channel_name: str, platform_auth: PlatformAuth, platform_repository: PlatformRepository
     ) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже запущен")
-
-            self._api_client = api_client
 
             bot_user = await platform_repository.get_authenticated_user()
             if not bot_user:
