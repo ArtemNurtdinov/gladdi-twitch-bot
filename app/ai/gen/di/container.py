@@ -59,14 +59,13 @@ class AIContainer:
             session_factory_rw=db_rw_session,
             session_factory_ro=db_ro_session,
             conversation_service_factory=self.conversation_service_factory,
+            system_prompt_repository_factory=self.system_prompt_repository_factory,
         )
 
     def _generate_response_use_case(self, session: Session) -> GenerateResponseUseCase:
         llm_repository = self._llm_repository(session)
         chat_response_uow_factory = self.chat_response_uow_factory()
-        return GenerateResponseUseCase(
-            chat_response_uow_factory, llm_repository, self.system_prompt_repository_factory, self._session_factory_ro
-        )
+        return GenerateResponseUseCase(chat_response_uow_factory, llm_repository)
 
     def _get_assistant_use_case(self, session: Session) -> GetAssistantUseCase:
         llm_repository = self._llm_repository(session)
