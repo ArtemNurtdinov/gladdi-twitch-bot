@@ -7,6 +7,7 @@ from app.platform.auth.platform_auth import PlatformAuth
 class TwitchAuth(PlatformAuth):
     _TWITCH_OAUTH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
     _TWITCH_OAUTH_VALIDATE_URL = "https://id.twitch.tv/oauth2/validate"
+    _API_CLIENT_TIMEOUT_SECONDS = 10
 
     def __init__(self, client_id: str, client_secret: str, logger: Logger):
         super().__init__(client_id, client_secret)
@@ -22,7 +23,7 @@ class TwitchAuth(PlatformAuth):
             "refresh_token": self.refresh_token,
         }
 
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=self._API_CLIENT_TIMEOUT_SECONDS) as client:
             response = await client.post(self._TWITCH_OAUTH_TOKEN_URL, data=data)
         token_data = response.json()
 
