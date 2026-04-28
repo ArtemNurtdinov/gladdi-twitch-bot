@@ -1,12 +1,8 @@
-from collections.abc import Awaitable, Callable
-
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
-from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.betting.application.betting_service import BettingService
-from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
@@ -17,27 +13,11 @@ from app.equipment.application.defense.calculate_timeout_use_case import Calcula
 from app.equipment.application.defense.roll_cooldown_use_case import RollCooldownUseCase
 from app.equipment.application.equipment_exists_use_case import EquipmentExistsUseCase
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
-from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWorkFactory
-from app.follow.application.usecases.handle_followers_sync_use_case import HandleFollowersSyncUseCase
-from app.follow.domain.repo import FollowersRepository
-from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
-from app.follow.infrastructure.uow.followers_sync_uow import SqlAlchemyFollowersSyncUnitOfWorkFactory
-from app.minigame.application.uow.minigame_uow import MinigameUnitOfWorkFactory
 from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
-from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
-from app.minigame.application.use_case.finish_expired_games_use_case import FinishExpiredGamesUseCase
-from app.minigame.application.use_case.finish_rps_use_case import FinishRpsUseCase
-from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
-from app.minigame.application.use_case.handle_minigame_tick_use_case import HandleMinigameTickUseCase
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
-from app.minigame.application.use_case.start_number_guess_game_use_case import StartNumberGuessGameUseCase
-from app.minigame.application.use_case.start_rps_game_use_case import StartRpsGameUseCase
-from app.minigame.application.use_case.start_word_game_use_case import StartWordGameUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
-from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
 from app.moderation.application.chat_moderation_port import ChatModerationPort
-from app.notification.domain.repository import NotificationRepository
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
@@ -90,19 +70,7 @@ from app.platform.domain.repository import PlatformRepository
 from app.platform.infrastructure.api.client import TwitchHelixClient
 from app.platform.infrastructure.repository import PlatformRepositoryImpl
 from app.shop.domain.repository import ShopItemRepository
-from app.stream.application.job.stream_status_job import StreamStatusJob
-from app.stream.application.uow.restore_stream_context_uow import RestoreStreamContextUnitOfWorkFactory
-from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkFactory
-from app.stream.application.usecase.handle_stream_status_use_case import HandleStreamStatusUseCase
 from app.stream.domain.repo import StreamRepository
-from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
-from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
-from app.viewer.application.port.viewer_cache_port import ViewerCachePort
-from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
-from app.viewer.session.application.uow.viewer_time_uow import ViewerTimeUnitOfWorkFactory
-from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
-from app.viewer.session.domain.repository import ViewerRepository
-from app.viewer.session.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
 from core.types import SessionFactory
 
 
@@ -505,144 +473,6 @@ class PlatformContainer:
             command_prefix=command_prefix, command_name=command_name, handle_transfer_use_case=handle_transfer_use_case
         )
 
-    def minigame_uow_factory(
-        self,
-        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        chat_use_case: ChatUseCase,
-        stream_repository_factory: SessionScopedFactory[StreamRepository],
-        get_used_words_use_case: GetUsedWordsUseCase,
-        add_used_words_use_case: AddUsedWordsUseCase,
-        conversation_service_factory: SessionScopedFactory[ConversationService],
-        get_user_equipment_use_case: GetUserEquipmentUseCase,
-    ) -> MinigameUnitOfWorkFactory:
-        return SqlAlchemyMinigameUnitOfWorkFactory(
-            session_factory_rw=self._session_factory_rw,
-            session_factory_ro=self._session_factory_ro,
-            economy_policy_factory=economy_policy_factory,
-            chat_use_case=chat_use_case,
-            stream_repository_factory=stream_repository_factory,
-            get_used_words_use_case=get_used_words_use_case,
-            add_used_words_use_case=add_used_words_use_case,
-            conversation_service_factory=conversation_service_factory,
-            get_user_equipment_use_case=get_user_equipment_use_case,
-        )
-
-    def start_word_game_use_case(
-        self,
-        prefix: str,
-        minigame_repository: MinigameRepository,
-        minigame_uow_factory: MinigameUnitOfWorkFactory,
-        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
-        llm_repository_factory: SessionScopedFactory[LLMRepository],
-        command_guess_word: str,
-        command_guess_letter: str,
-        send_channel_message: Callable[[str], Awaitable[None]],
-    ) -> StartWordGameUseCase:
-        return StartWordGameUseCase(
-            minigame_repository,
-            prefix,
-            minigame_uow_factory,
-            self._session_factory_ro,
-            system_prompt_repository_factory,
-            llm_repository_factory,
-            command_guess_word,
-            command_guess_letter,
-            send_channel_message,
-            self._logger,
-        )
-
-    def start_number_guess_game_use_case(
-        self,
-        prefix: str,
-        minigame_repository: MinigameRepository,
-        minigame_uow_factory: MinigameUnitOfWorkFactory,
-        command_name: str,
-        send_channel_message: Callable[[str], Awaitable[None]],
-    ) -> StartNumberGuessGameUseCase:
-        return StartNumberGuessGameUseCase(minigame_repository, prefix, command_name, send_channel_message, minigame_uow_factory)
-
-    def start_rps_game_use_case(
-        self,
-        prefix: str,
-        minigame_repository: MinigameRepository,
-        minigame_uow_factory: MinigameUnitOfWorkFactory,
-        command_name: str,
-        send_channel_message: Callable[[str], Awaitable[None]],
-    ) -> StartRpsGameUseCase:
-        return StartRpsGameUseCase(minigame_repository, prefix, command_name, send_channel_message, minigame_uow_factory)
-
-    def finish_rps_game_use_case(
-        self,
-        minigame_repository: MinigameRepository,
-        minigame_uow_factory: MinigameUnitOfWorkFactory,
-        send_channel_message: Callable[[str], Awaitable[None]],
-    ) -> FinishRpsUseCase:
-        return FinishRpsUseCase(minigame_repository, minigame_uow_factory, send_channel_message)
-
-    def finish_expired_games_use_case(
-        self,
-        minigame_repository: MinigameRepository,
-        minigame_uow_factory: MinigameUnitOfWorkFactory,
-        send_channel_message: Callable[[str], Awaitable[None]],
-    ) -> FinishExpiredGamesUseCase:
-        return FinishExpiredGamesUseCase(minigame_repository, send_channel_message, minigame_uow_factory)
-
-    def handle_minigame_tick_use_case(
-        self,
-        minigame_repository: MinigameRepository,
-        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        chat_use_case: ChatUseCase,
-        stream_repository_factory: SessionScopedFactory[StreamRepository],
-        get_used_words_use_case: GetUsedWordsUseCase,
-        add_used_words_use_case: AddUsedWordsUseCase,
-        conversation_service_factory: SessionScopedFactory[ConversationService],
-        get_user_equipment_use_case: GetUserEquipmentUseCase,
-        system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
-        llm_repository_factory: SessionScopedFactory[LLMRepository],
-        prefix: str,
-        number_guess_name: str,
-        command_guess_word: str,
-        command_guess_letter: str,
-        rps_command_name: str,
-        send_channel_message: Callable[[str], Awaitable[None]],
-    ) -> HandleMinigameTickUseCase:
-        minigame_uow_factory = self.minigame_uow_factory(
-            economy_policy_factory,
-            chat_use_case,
-            stream_repository_factory,
-            get_used_words_use_case,
-            add_used_words_use_case,
-            conversation_service_factory,
-            get_user_equipment_use_case,
-        )
-        start_number_guess_game_use_case = self.start_number_guess_game_use_case(
-            prefix, minigame_repository, minigame_uow_factory, number_guess_name, send_channel_message
-        )
-        start_word_game_use_case = self.start_word_game_use_case(
-            prefix,
-            minigame_repository,
-            minigame_uow_factory,
-            system_prompt_repository_factory,
-            llm_repository_factory,
-            command_guess_word,
-            command_guess_letter,
-            send_channel_message,
-        )
-        start_rps_game_use_case = self.start_rps_game_use_case(
-            prefix, minigame_repository, minigame_uow_factory, rps_command_name, send_channel_message
-        )
-        finish_rps_game_use_case = self.finish_rps_game_use_case(minigame_repository, minigame_uow_factory, send_channel_message)
-        finish_expired_games_use_case = self.finish_expired_games_use_case(minigame_repository, minigame_uow_factory, send_channel_message)
-        return HandleMinigameTickUseCase(
-            minigame_repository,
-            minigame_uow_factory,
-            start_number_guess_game_use_case,
-            start_word_game_use_case,
-            start_rps_game_use_case,
-            finish_rps_game_use_case,
-            finish_expired_games_use_case,
-        )
-
     def rps_uow_factory(
         self, economy_policy_factory: SessionScopedFactory[EconomyPolicy], chat_use_case: ChatUseCase
     ) -> RpsUnitOfWorkFactory:
@@ -724,165 +554,3 @@ class PlatformContainer:
             command_name=command_name,
             handle_follow_age_use_case=handle_follow_age_use_case,
         )
-
-    def sync_followers_uow_factory(
-        self, followers_repository_factory: SessionScopedFactory[FollowersRepository]
-    ) -> FollowersSyncUnitOfWorkFactory:
-        return SqlAlchemyFollowersSyncUnitOfWorkFactory(
-            session_factory_ro=self._session_factory_ro,
-            session_factory_rw=self._session_factory_rw,
-            followers_repository_factory=followers_repository_factory,
-        )
-
-    def handle_followers_sync_use_case(
-        self, platform_repository: PlatformRepository, followers_repository_factory: SessionScopedFactory[FollowersRepository]
-    ) -> HandleFollowersSyncUseCase:
-        sync_followers_uow_factory = self.sync_followers_uow_factory(followers_repository_factory)
-        return HandleFollowersSyncUseCase(platform_repository, sync_followers_uow_factory)
-
-    def followers_sync_job(
-        self,
-        platform_repository: PlatformRepository,
-        followers_repository_factory: SessionScopedFactory[FollowersRepository],
-    ) -> FollowersSyncJob:
-        handle_followers_sync_use_case = self.handle_followers_sync_use_case(platform_repository, followers_repository_factory)
-        return FollowersSyncJob(handle_followers_sync_use_case, self._logger)
-
-    def restore_stream_uow(
-        self, stream_repository_factory: SessionScopedFactory[StreamRepository]
-    ) -> RestoreStreamContextUnitOfWorkFactory:
-        return SqlAlchemyRestoreStreamContextUnitOfWorkFactory(
-            session_factory_ro=self._session_factory_ro,
-            session_factory_rw=self._session_factory_rw,
-            stream_repository_factory=stream_repository_factory,
-        )
-
-    def stream_status_uow_factory(
-        self,
-        stream_repository_factory: SessionScopedFactory[StreamRepository],
-        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        battle_use_case: BattleUseCase,
-        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        chat_use_case: ChatUseCase,
-        conversation_service_factory: SessionScopedFactory[ConversationService],
-    ) -> StreamStatusUnitOfWorkFactory:
-        return SqlAlchemyStreamStatusUnitOfWorkFactory(
-            session_factory_rw=self._session_factory_rw,
-            session_factory_ro=self._session_factory_ro,
-            stream_repository_factory=stream_repository_factory,
-            viewer_repository_factory=viewer_repository_factory,
-            battle_use_case=battle_use_case,
-            economy_policy_factory=economy_policy_factory,
-            chat_use_case=chat_use_case,
-            conversation_service_factory=conversation_service_factory,
-        )
-
-    def handle_stream_status_use_case(
-        self,
-        user_cache: ViewerCachePort,
-        platform_repository: PlatformRepository,
-        minigame_repository: MinigameRepository,
-        notification_repository: NotificationRepository,
-        notification_group_id: int,
-        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
-        state: ChatSummaryState,
-        stream_repository_factory: SessionScopedFactory[StreamRepository],
-        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        battle_use_case: BattleUseCase,
-        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        chat_use_case: ChatUseCase,
-        conversation_service_factory: SessionScopedFactory[ConversationService],
-    ) -> HandleStreamStatusUseCase:
-        stream_status_uow_factory = self.stream_status_uow_factory(
-            stream_repository_factory,
-            viewer_repository_factory,
-            battle_use_case,
-            economy_policy_factory,
-            chat_use_case,
-            conversation_service_factory,
-        )
-        return HandleStreamStatusUseCase(
-            user_cache,
-            platform_repository,
-            stream_status_uow_factory,
-            minigame_repository,
-            notification_repository,
-            notification_group_id,
-            generate_response_use_case_factory,
-            state,
-            self._session_factory_ro,
-            self._logger,
-        )
-
-    def stream_status_job(
-        self,
-        user_cache: ViewerCachePort,
-        platform_repository: PlatformRepository,
-        minigame_repository: MinigameRepository,
-        notification_repository: NotificationRepository,
-        notification_group_id: int,
-        generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
-        state: ChatSummaryState,
-        stream_repository_factory: SessionScopedFactory[StreamRepository],
-        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        battle_use_case: BattleUseCase,
-        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        chat_use_case: ChatUseCase,
-        conversation_service_factory: SessionScopedFactory[ConversationService],
-    ) -> StreamStatusJob:
-        handle_stream_status_use_case = self.handle_stream_status_use_case(
-            user_cache=user_cache,
-            platform_repository=platform_repository,
-            minigame_repository=minigame_repository,
-            notification_repository=notification_repository,
-            notification_group_id=notification_group_id,
-            generate_response_use_case_factory=generate_response_use_case_factory,
-            state=state,
-            stream_repository_factory=stream_repository_factory,
-            viewer_repository_factory=viewer_repository_factory,
-            battle_use_case=battle_use_case,
-            economy_policy_factory=economy_policy_factory,
-            chat_use_case=chat_use_case,
-            conversation_service_factory=conversation_service_factory,
-        )
-        return StreamStatusJob(handle_stream_status_use_case, self._logger)
-
-    def reward_viewer_time_uow_factory(
-        self,
-        stream_repository_factory: SessionScopedFactory[StreamRepository],
-        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-    ) -> ViewerTimeUnitOfWorkFactory:
-        return SqlAlchemyViewerTimeUnitOfWorkFactory(
-            session_factory_ro=self._session_factory_ro,
-            session_factory_rw=self._session_factory_rw,
-            stream_repository_factory=stream_repository_factory,
-            viewer_repository_factory=viewer_repository_factory,
-            economy_policy_factory=economy_policy_factory,
-        )
-
-    def handle_viewer_time_use_case(
-        self,
-        stream_repository_factory: SessionScopedFactory[StreamRepository],
-        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        viewer_cache: ViewerCachePort,
-        platform_repository: PlatformRepository,
-    ) -> RewardViewerTimeUseCase:
-        reward_viewer_time_uow_factory = self.reward_viewer_time_uow_factory(
-            stream_repository_factory, viewer_repository_factory, economy_policy_factory
-        )
-        return RewardViewerTimeUseCase(reward_viewer_time_uow_factory, viewer_cache, platform_repository)
-
-    def viewer_time_job(
-        self,
-        stream_repository_factory: SessionScopedFactory[StreamRepository],
-        viewer_repository_factory: SessionScopedFactory[ViewerRepository],
-        economy_policy_factory: SessionScopedFactory[EconomyPolicy],
-        viewer_cache: ViewerCachePort,
-        platform_repository: PlatformRepository,
-    ) -> ViewerTimeJob:
-        handle_viewer_time_use_case = self.handle_viewer_time_use_case(
-            stream_repository_factory, viewer_repository_factory, economy_policy_factory, viewer_cache, platform_repository
-        )
-        return ViewerTimeJob(handle_viewer_time_use_case, self._logger)
