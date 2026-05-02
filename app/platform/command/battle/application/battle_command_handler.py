@@ -15,8 +15,8 @@ class BattleCommandHandler(CommandHandler):
         timeout_use_case: TimeoutUseCase,
         battle_waiting_user: dict[str, str | None],
     ):
-        self.command_prefix = command_prefix
-        self.command_name = command_name
+        self._command_prefix = command_prefix
+        self._command_name = command_name
         self._handle_battle_use_case = handle_battle_use_case
         self._timeout_use_case = timeout_use_case
         self._bot_name: str | None = None
@@ -33,7 +33,7 @@ class BattleCommandHandler(CommandHandler):
             bot_name=self._bot_name.lower(),
             occurred_at=datetime.now(UTC),
             message=message,
-            command_call=f"{self.command_prefix}{self.command_name}",
+            command_call=f"{self._command_prefix}{self._command_name}",
             waiting_user=self._battle_waiting_user["value"],
         )
 
