@@ -17,7 +17,7 @@ from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
-from app.moderation.application.timeout_use_case import TimeoutUseCase
+from app.platform.application.timeout_use_case import TimeoutUseCase
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth

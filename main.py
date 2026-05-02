@@ -23,8 +23,8 @@ from app.follow.presentation import followers_routes
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api import joke_routes
 from app.minigame.di.container import MinigameContainer
-from app.moderation.application.timeout_use_case import TimeoutUseCase
 from app.notification.di.container import NotificationContainer
+from app.platform.application.timeout_use_case import TimeoutUseCase
 from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
 from app.platform.chat.infrastructure.twitch_platform_client import TwitchPlatformChatClient

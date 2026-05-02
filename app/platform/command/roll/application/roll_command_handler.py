@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from app.moderation.application.timeout_use_case import TimeoutUseCase
+from app.platform.application.timeout_use_case import TimeoutUseCase
 from app.platform.command.domain.command_handler import CommandHandler
 from app.platform.command.roll.application.handle_roll_use_case import HandleRollUseCase
 from app.platform.command.roll.application.model import RollDTO

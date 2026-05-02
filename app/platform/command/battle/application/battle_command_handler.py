@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from app.moderation.application.timeout_use_case import TimeoutUseCase
+from app.platform.application.timeout_use_case import TimeoutUseCase
 from app.platform.command.battle.application.handle_battle_use_case import HandleBattleUseCase
 from app.platform.command.battle.application.model import BattleDTO
 from app.platform.command.domain.command_handler import CommandHandler
