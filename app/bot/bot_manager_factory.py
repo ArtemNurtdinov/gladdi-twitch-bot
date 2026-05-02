@@ -162,7 +162,7 @@ class BotManagerFactory:
             jokes_configuration_repository_factory=self._jokes_configuration_repository_factory,
         )
         handle_post_joke_use_case = HandlePostJokeUseCase(
-            user_cache=viewer_cache,
+            user_cache=self._viewer_cache,
             platform_repository=self._platform_repository,
             generate_response_use_case_factory=self._generate_response_use_case_factory,
             joke_uow=joke_uow_factory,
@@ -193,7 +193,7 @@ class BotManagerFactory:
         )
 
         handle_stream_status_use_case = HandleStreamStatusUseCase(
-            user_cache=viewer_cache,
+            user_cache=self._viewer_cache,
             platform_repository=self._platform_repository,
             stream_status_uow=stream_status_uow_factory,
             minigame_repository=self._minigame_repository,
@@ -281,7 +281,7 @@ class BotManagerFactory:
         )
         handle_viewer_time_use_case = RewardViewerTimeUseCase(
             reward_viewer_time_uow=reward_viewer_time_uow_factory,
-            user_cache=viewer_cache,
+            user_cache=self._viewer_cache,
             platform_repository=self._platform_repository,
         )
         viewer_time_job = ViewerTimeJob(handle_viewer_time_use_case=handle_viewer_time_use_case, logger=self._logger)
@@ -314,7 +314,7 @@ class BotManagerFactory:
 
         return BotManager(
             logger=self._logger,
-            viewer_cache=viewer_cache,
+            viewer_cache=self._viewer_cache,
             handle_restore_stream_use_case=handle_restore_stream_use_case,
             platform_chat_client=self._platform_chat_client,
             chat_summarizer_job=chat_summarizer_job,
