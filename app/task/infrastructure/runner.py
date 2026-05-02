@@ -1,18 +1,18 @@
 import asyncio
 
-from app.task.domain.model.task import Task
-from app.task.domain.runner import TaskRunner
+from app.task.domain.job import BackgroundJob
 
 
-class BackgroundTaskRunner(TaskRunner):
-    def __init__(self, tasks: list[Task]):
-        super().__init__(tasks)
+class BackgroundTaskRunner:
+    def __init__(self, jobs: list[BackgroundJob]):
+        self.registry = jobs
         self._async_tasks: dict[str, asyncio.Task] = {}
 
-    def start_all(self):
-        for task in self.registry:
-            async_task = asyncio.create_task(task.factory())
-            self._async_tasks[task.name] = async_task
+    def start_all(self, channel_name: str, bot_name: str):
+        for job in self.registry:
+            job.apply_channel(channel_name, bot_name)
+            async_task = asyncio.create_task(job.run())
+            self._async_tasks[job.name] = async_task
 
     async def cancel_all(self):
         tasks = list(self._async_tasks.values())

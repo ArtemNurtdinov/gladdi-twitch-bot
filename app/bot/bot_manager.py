@@ -15,7 +15,7 @@ from app.platform.chat.infrastructure.twitch_platform_client import TwitchPlatfo
 from app.platform.domain.repository import PlatformRepository
 from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
-from app.task.domain.runner import TaskRunner
+from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
 from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
 
@@ -33,7 +33,7 @@ class BotManager:
         minigame_job: MinigameTickJob,
         viewer_time_job: ViewerTimeJob,
         followers_sync_job: FollowersSyncJob,
-        task_runner: TaskRunner,
+        task_runner: BackgroundTaskRunner,
         api_client: ApiClient,
     ):
         self._logger = logger.create_child(__name__)
@@ -91,14 +91,10 @@ class BotManager:
             except Exception:
                 self._logger.log_error("Не удалось прогреть cache")
 
-            self._post_joke_job.apply_channel(channel_name, bot_name)
-            self._stream_status_job.apply_channel(channel_name, bot_name)
-            self._chat_summarizer_job.apply_channel(channel_name, bot_name)
-            self._minigame_job.apply_channel(channel_name, bot_name)
-            self._viewer_time_job.apply_channel(channel_name, bot_name)
-            self._followers_sync_job.apply_channel(channel_name, bot_name)
-
-            self._task_runner.start_all()
+            self._task_runner.start_all(
+                channel_name=channel_name,
+                bot_name=bot_name,
+            )
 
             self._status = BotStatus.RUNNING
             self._started_at = datetime.now(UTC)

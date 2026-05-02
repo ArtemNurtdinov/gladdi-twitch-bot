@@ -13,6 +13,9 @@ class TokenCheckerJob(BackgroundJob):
         self._handle_token_checker_use_case = handle_token_checker_use_case
         self._logger = logger.create_child(__name__)
 
+    def apply_channel(self, channel_name: str, bot_name: str):
+        pass
+
     async def run(self):
         while True:
             try:

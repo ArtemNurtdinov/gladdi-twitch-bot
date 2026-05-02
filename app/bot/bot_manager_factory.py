@@ -47,7 +47,6 @@ from app.stream.application.usecase.handle_stream_status_use_case import HandleS
 from app.stream.domain.repo import StreamRepository
 from app.stream.infrastructure.uow.restore_stream_context_uow import SqlAlchemyRestoreStreamContextUnitOfWorkFactory
 from app.stream.infrastructure.uow.stream_status_uow import SqlAlchemyStreamStatusUnitOfWorkFactory
-from app.task.domain.model.task import Task
 from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.infrastructure.cache.viewer_cache_service import ViewerCacheService
 from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
@@ -308,9 +307,7 @@ class BotManagerFactory:
             followers_sync_job,
         ]
 
-        tasks = [Task(job.name, job.run) for job in jobs]
-
-        task_runner = BackgroundTaskRunner(tasks)
+        task_runner = BackgroundTaskRunner(jobs)
 
         return BotManager(
             logger=self._logger,
