@@ -17,7 +17,7 @@ from app.minigame.application.uow.rps_uow import RpsUnitOfWorkFactory
 from app.minigame.application.use_case.handle_rps_use_case import HandleRpsUseCase
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.infrastructure.uow.rps_uow import SqlAlchemyRpsUnitOfWorkFactory
-from app.moderation.application.chat_moderation_port import ChatModerationPort
+from app.moderation.application.timeout_use_case import TimeoutUseCase
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.auth.infrastructure.twitch_auth import TwitchAuth
@@ -293,7 +293,7 @@ class PlatformContainer:
         chat_use_case: ChatUseCase,
         roll_cooldown_use_case: RollCooldownUseCase,
         calculate_timeout_use_case: CalculateTimeoutUseCase,
-        chat_moderation_port: ChatModerationPort,
+        timeout_use_case: TimeoutUseCase,
     ) -> RollCommandHandler:
         handle_roll_use_case = self.handle_roll_use_case(
             economy_policy_factory,
@@ -307,7 +307,7 @@ class PlatformContainer:
             command_prefix=command_prefix,
             command_name=command_name,
             handle_roll_use_case=handle_roll_use_case,
-            chat_moderation=chat_moderation_port,
+            timeout_use_case=timeout_use_case,
         )
 
     def shop_uow_factory(

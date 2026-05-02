@@ -23,7 +23,7 @@ from app.follow.presentation import followers_routes
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api import joke_routes
 from app.minigame.di.container import MinigameContainer
-from app.moderation.application.moderation_service import ModerationService
+from app.moderation.application.timeout_use_case import TimeoutUseCase
 from app.notification.di.container import NotificationContainer
 from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
@@ -120,9 +120,9 @@ class Application:
         platform_repository = platform_container.platform_repository()
         viewer_cache = ViewerCacheService(platform_repository)
 
-        moderation_service = ModerationService(
+        moderation_service = TimeoutUseCase(
             platform_repository=platform_repository,
-            user_cache=viewer_cache,
+            viewer_cache=viewer_cache,
             logger=self.container.logger,
         )
         chat_summary_state = ChatSummaryState()
@@ -172,7 +172,7 @@ class Application:
                 calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
                 db_ro_session=db_ro_session,
             ),
-            chat_moderation=moderation_service,
+            timeout_use_case=moderation_service,
             battle_waiting_user={"value": None},
         )
 
@@ -185,7 +185,7 @@ class Application:
             chat_use_case=chat_container.chat_use_case(),
             roll_cooldown_use_case=equipment_container.roll_cooldown_use_case(),
             calculate_timeout_use_case=equipment_container.calculate_timeout_use_case(),
-            chat_moderation_port=moderation_service,
+            timeout_use_case=moderation_service,
         )
 
         balance_command_handler = BalanceCommandHandler(
