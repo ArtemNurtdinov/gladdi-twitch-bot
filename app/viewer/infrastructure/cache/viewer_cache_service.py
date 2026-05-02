@@ -5,9 +5,11 @@ from app.viewer.application.port.viewer_cache_port import ViewerCachePort
 
 
 class ViewerCacheService(ViewerCachePort):
-    def __init__(self, platform_repository: PlatformRepository, ttl_minutes: int = 30):
+    _CACHE_TTL_MINUTES = 60
+
+    def __init__(self, platform_repository: PlatformRepository):
         self._platform_repository = platform_repository
-        self._ttl = timedelta(minutes=ttl_minutes)
+        self._ttl = timedelta(minutes=self._CACHE_TTL_MINUTES)
         self._cache: dict[str, tuple[str, datetime]] = {}
 
     async def get_viewer_id(self, login: str) -> str | None:

@@ -89,6 +89,7 @@ class BotManagerFactory:
         followers_repository_factory: SessionScopedFactory[FollowersRepository],
         platform_auth: PlatformAuth,
         api_client: ApiClient,
+        viewer_cache: ViewerCacheService,
         logger: Logger,
     ):
         self._session_factory_rw = session_factory_rw
@@ -120,10 +121,10 @@ class BotManagerFactory:
         self._followers_repository_factory = followers_repository_factory
         self._platform_auth = platform_auth
         self._api_client = api_client
+        self._viewer_cache = viewer_cache
         self._logger = logger
 
     def create(self) -> BotManager:
-        viewer_cache = ViewerCacheService(self._platform_repository)
         handle_restore_stream_use_case = HandleRestoreStreamContextUseCase(
             restore_stream_uow=SqlAlchemyRestoreStreamContextUnitOfWorkFactory(
                 session_factory_ro=self._session_factory_ro,

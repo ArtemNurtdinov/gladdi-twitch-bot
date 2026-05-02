@@ -385,6 +385,7 @@ class Application:
             followers_repository_factory=follow_container.followers_repository_factory,
             platform_auth=platform_container.platform_auth,
             api_client=platform_container.api_client,
+            viewer_cache=viewer_cache,
             logger=self.container.logger,
         )
         bot_manager = bot_manager_factory.create()
