@@ -316,4 +316,6 @@ class BotManagerFactory:
             platform_chat_client=self._platform_chat_client,
             task_runner=task_runner,
             api_client=self._api_client,
+            platform_repository=self._platform_repository,
+            platform_auth=self._platform_auth,
         )

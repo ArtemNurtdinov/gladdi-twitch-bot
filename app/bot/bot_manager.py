@@ -23,6 +23,8 @@ class BotManager:
         platform_chat_client: TwitchPlatformChatClient,
         task_runner: BackgroundTaskRunner,
         api_client: ApiClient,
+        platform_repository: PlatformRepository,
+        platform_auth: PlatformAuth,
     ):
         self._logger = logger.create_child(__name__)
         self._viewer_cache = viewer_cache
@@ -30,6 +32,8 @@ class BotManager:
         self._platform_chat_client = platform_chat_client
         self._task_runner = task_runner
         self._api_client = api_client
+        self._platform_repository = platform_repository
+        self._platform_auth = platform_auth
 
         self._status: BotStatus = BotStatus.STOPPED
         self._started_at: datetime | None = None
@@ -52,29 +56,23 @@ class BotManager:
         started_at = self._started_at.isoformat() if self._started_at else None
         return BotStatusResponse(status=self._status, started_at=started_at, last_error=self._last_error)
 
-    async def start_bot(
-        self, channel_name: str, platform_auth: PlatformAuth, platform_repository: PlatformRepository
-    ) -> BotActionResultResponse:
+    async def start_bot(self, channel_name: str) -> BotActionResultResponse:
         async with self._lock:
             if self._task and not self._task.done():
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже запущен")
 
-            bot_user = await platform_repository.get_authenticated_user()
+            bot_user = await self._platform_repository.get_authenticated_user()
             if not bot_user:
                 raise ValueError("Не удалось получить профиль бота по токену (GET /users). Проверьте авторизацию.")
             bot_name = bot_user.display_name.lower()
             bot_user_id = bot_user.id
 
-            self._platform_chat_client.init_client(platform_auth, channel_name, bot_name, bot_user_id)
+            self._platform_chat_client.init_client(self._platform_auth, channel_name, bot_name, bot_user_id)
             self._handle_restore_stream_use_case.handle(channel_name)
 
             await self._viewer_cache.warmup(channel_name)
 
-            self._task_runner.start_all(
-                channel_name=channel_name,
-                bot_name=bot_name,
-            )
-
+            self._task_runner.start_all(channel_name=channel_name, bot_name=bot_name)
             self._status = BotStatus.RUNNING
             self._started_at = datetime.now(UTC)
             self._last_error = None
@@ -88,7 +86,6 @@ class BotManager:
             task = self._task
 
             if not isinstance(task, asyncio.Task):
-                self._logger.log_info("Попытка остановки, но бот не запущен")
                 return BotActionResultResponse(**self.get_status().model_dump(), message="Бот уже остановлен")
             try:
                 self._status: BotStatus = BotStatus.STOPPED

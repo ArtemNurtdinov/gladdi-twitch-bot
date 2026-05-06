@@ -103,11 +103,7 @@ async def oauth_callback(
 
     platform_container.platform_auth.update_tokens(access_token, refresh_token)
 
-    return await bot_manager.start_bot(
-        channel_name=state,
-        platform_auth=platform_container.platform_auth,
-        platform_repository=platform_container.platform_repository(),
-    )
+    return await bot_manager.start_bot(channel_name=state)
 
 
 @router.post("/stop", summary="Остановить Twitch бота", response_model=BotActionResultResponse)
