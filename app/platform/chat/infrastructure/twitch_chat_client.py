@@ -35,7 +35,7 @@ class TwitchChatClient(Client):
         self._logger = logger.create_child(__name__)
 
     async def setup_hook(self) -> None:
-        self._logger.log_info("setup_hook called")
+        self._logger.log_debug("setup_hook called")
         await self._register_token()
         await self._ensure_broadcaster_id()
         await self._subscribe_chat(reason="startup")
@@ -43,27 +43,27 @@ class TwitchChatClient(Client):
     async def _register_token(self) -> None:
         payload = await self.add_token(self._auth.access_token, self._auth.refresh_token)
         self._token_user_id = payload.user_id
-        self._logger.log_info(f"set _token_user_id = {self._token_user_id}")
+        self._logger.log_debug(f"set _token_user_id = {self._token_user_id}")
 
     async def _ensure_broadcaster_id(self) -> None:
         users = await self.fetch_users(logins=[self._channel_name])
         if users:
             self._broadcaster_id = users[0].id
-            self._logger.log_info(f"set _broadcaster_id = {self._broadcaster_id}")
+            self._logger.log_debug(f"set _broadcaster_id = {self._broadcaster_id}")
 
     async def _subscribe_chat_message(self) -> None:
         payload = ChatMessageSubscription(
             broadcaster_user_id=self._broadcaster_id,
             user_id=self._token_user_id,
         )
-        self._logger.log_info(f"calling subscribe_websocket, broadcaster_user_id = {self._broadcaster_id}, user_id={self._token_user_id}")
+        self._logger.log_debug(f"calling subscribe_websocket, broadcaster_user_id = {self._broadcaster_id}, user_id={self._token_user_id}")
         await self.subscribe_websocket(payload, token_for=self._token_user_id)
 
     async def _subscribe_chat(self, reason: str, session_id: str | None = None):
-        self._logger.log_info(f"_subscribe_chat called, reason = {reason}")
+        self._logger.log_debug(f"_subscribe_chat called, reason = {reason}")
         async with self._eventsub_lock:
             if self._subscription_in_progress:
-                self._logger.log_info("subscription already in progress, don't need new one")
+                self._logger.log_debug("subscription already in progress, don't need new one")
                 return
 
             self._subscription_in_progress = True
@@ -86,7 +86,7 @@ class TwitchChatClient(Client):
         await super().close()
 
     async def event_ready(self) -> None:
-        self._logger.log_info("event_ready")
+        self._logger.log_debug("event_ready")
         pass
 
     async def event_message(self, payload: EventSubChatMessage) -> None:
@@ -105,36 +105,36 @@ class TwitchChatClient(Client):
         await self._handle_message(user_name, message)
 
     async def event_websocket_welcome(self, payload: WebsocketWelcome) -> None:
-        self._logger.log_info("event_websocket_welcome")
+        self._logger.log_debug("event_websocket_welcome")
         session_id = payload.id
         old_session = self._subscribed_session_id
 
         if not self._has_active_subscription and self._subscribed_session_id is None:
             try:
-                self._logger.log_info("has active subscription, but subscribed_session_id is None, wait 5 seconds")
+                self._logger.log_debug("has active subscription, but subscribed_session_id is None, wait 5 seconds")
                 await asyncio.wait_for(self._startup_subscription_done.wait(), timeout=5.0)
             except TimeoutError:
-                self._logger.log_info("timeout on waiting startup subscription...")
+                self._logger.log_debug("timeout on waiting startup subscription...")
                 pass
 
         async with self._eventsub_lock:
             if self._has_active_subscription and self._subscribed_session_id is None:
-                self._logger.log_info(f"subscribed to session: {session_id}")
+                self._logger.log_debug(f"subscribed to session: {session_id}")
                 self._subscribed_session_id = session_id
                 return
 
             if self._has_active_subscription and old_session != session_id:
-                self._logger.log_info("has active subscription, but session_id is different, resubscribing..")
+                self._logger.log_debug("has active subscription, but session_id is different, resubscribing..")
                 self._has_active_subscription = False
                 asyncio.create_task(self._subscribe_chat(session_id=session_id, reason="reconnect"))
                 return
 
             if session_id == self._subscribed_session_id:
-                self._logger.log_info(f"has active subscription, session_id {session_id}")
+                self._logger.log_debug(f"has active subscription, session_id {session_id}")
                 return
 
             if not self._has_active_subscription:
-                self._logger.log_info("no active subscription, subscribing..")
+                self._logger.log_debug("no active subscription, subscribing..")
                 asyncio.create_task(self._subscribe_chat(session_id=session_id, reason="welcome"))
 
     def _split_text(self, text: str) -> list[str]:
