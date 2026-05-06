@@ -4,20 +4,14 @@ from datetime import UTC, datetime
 from app.bot.domain.model.status import BotStatus
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.status import BotStatusResponse
-from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
-from app.follow.infrastructure.jobs.followers_sync_job import FollowersSyncJob
-from app.joke.application.job.post_joke_job import PostJokeJob
-from app.minigame.application.job.minigame_tick_job import MinigameTickJob
 from app.platform.auth.platform_auth import PlatformAuth
 from app.platform.chat.infrastructure.twitch_platform_client import TwitchPlatformChatClient
 from app.platform.domain.repository import PlatformRepository
-from app.stream.application.job.stream_status_job import StreamStatusJob
 from app.stream.application.usecase.handle_restore_stream_context_use_case import HandleRestoreStreamContextUseCase
 from app.task.infrastructure.runner import BackgroundTaskRunner
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
-from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
 
 
 class BotManager:
@@ -27,25 +21,13 @@ class BotManager:
         viewer_cache: ViewerCachePort,
         handle_restore_stream_use_case: HandleRestoreStreamContextUseCase,
         platform_chat_client: TwitchPlatformChatClient,
-        chat_summarizer_job: ChatSummarizerJob,
-        post_joke_job: PostJokeJob,
-        stream_status_job: StreamStatusJob,
-        minigame_job: MinigameTickJob,
-        viewer_time_job: ViewerTimeJob,
-        followers_sync_job: FollowersSyncJob,
         task_runner: BackgroundTaskRunner,
         api_client: ApiClient,
     ):
         self._logger = logger.create_child(__name__)
-        self._chat_summarizer_job = chat_summarizer_job
-        self._minigame_job = minigame_job
-        self._viewer_time_job = viewer_time_job
-        self._followers_sync_job = followers_sync_job
         self._viewer_cache = viewer_cache
         self._handle_restore_stream_use_case = handle_restore_stream_use_case
         self._platform_chat_client = platform_chat_client
-        self._post_joke_job = post_joke_job
-        self._stream_status_job = stream_status_job
         self._task_runner = task_runner
         self._api_client = api_client
 
@@ -86,10 +68,7 @@ class BotManager:
             self._platform_chat_client.init_client(platform_auth, channel_name, bot_name, bot_user_id)
             self._handle_restore_stream_use_case.handle(channel_name)
 
-            try:
-                await self._viewer_cache.warmup(channel_name)
-            except Exception:
-                self._logger.log_error("Не удалось прогреть cache")
+            await self._viewer_cache.warmup(channel_name)
 
             self._task_runner.start_all(
                 channel_name=channel_name,

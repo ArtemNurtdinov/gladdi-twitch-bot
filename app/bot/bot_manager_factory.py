@@ -314,12 +314,6 @@ class BotManagerFactory:
             viewer_cache=self._viewer_cache,
             handle_restore_stream_use_case=handle_restore_stream_use_case,
             platform_chat_client=self._platform_chat_client,
-            chat_summarizer_job=chat_summarizer_job,
-            post_joke_job=post_joke_job,
-            stream_status_job=stream_status_job,
-            minigame_job=minigame_job,
-            viewer_time_job=viewer_time_job,
-            followers_sync_job=followers_sync_job,
             task_runner=task_runner,
             api_client=self._api_client,
         )
