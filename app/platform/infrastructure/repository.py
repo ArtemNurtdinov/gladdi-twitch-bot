@@ -195,7 +195,7 @@ class PlatformRepositoryImpl(PlatformRepository):
         followers: list[FollowerData] = parsed.data
         if followers:
             follow_data = followers[0]
-            follow_dt = follow_data.followed_at.replace(tzinfo=None)
+            follow_dt = follow_data.followed_at
             return FollowageInfo(
                 user_id=follow_data.user_id,
                 user_name=follow_data.user_name,
