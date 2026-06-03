@@ -6,3 +6,10 @@ from datetime import datetime
 class SummarizerJobDTO:
     channel_name: str
     occurred_at: datetime
+    since: datetime | None = None
+
+
+@dataclass(frozen=True)
+class SummarizerResult:
+    summary: str | None
+    advance_cursor: bool

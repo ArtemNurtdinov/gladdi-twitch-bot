@@ -106,7 +106,11 @@ class Application:
         minigame_container = MinigameContainer(
             session_factory_ro=db_ro_session, session_factory_rw=db_rw_session, logger=self.container.logger
         )
-        notification_container = NotificationContainer(self.container.config.telegram.bot_token)
+        notification_container = NotificationContainer(
+            tg_bot_token=self.container.config.telegram.bot_token,
+            logger=self.container.logger,
+            proxy_url=self.container.config.telegram.proxy_url,
+        )
         battle_container = BattleContainer(session_factory_rw=db_rw_session, session_factory_ro=db_ro_session)
         viewer_container = ViewerContainer()
 
@@ -386,6 +390,7 @@ class Application:
             platform_auth=platform_container.platform_auth,
             api_client=platform_container.api_client,
             viewer_cache=viewer_cache,
+            prompt_service=ai_container.prompt_service,
             logger=self.container.logger,
         )
         bot_manager = bot_manager_factory.create()

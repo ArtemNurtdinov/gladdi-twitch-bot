@@ -54,7 +54,9 @@ class ConfigRepositoryImpl(ConfigRepository):
                 format=self._config_source.get_str("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
             ),
             telegram=TelegramConfig(
-                bot_token=self._config_source.get_str("TELEGRAM_BOT_TOKEN"), group_id=self._config_source.get_int("TELEGRAM_GROUP_ID")
+                bot_token=self._config_source.get_str("TELEGRAM_BOT_TOKEN"),
+                group_id=self._config_source.get_int("TELEGRAM_GROUP_ID"),
+                proxy_url=self._config_source.get_str("TELEGRAM_PROXY_URL"),
             ),
             twitch=TwitchConfig(
                 client_id=self._config_source.get_str("TWITCH_CLIENT_ID"),

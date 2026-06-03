@@ -50,7 +50,7 @@ class LoggerImpl(Logger):
         self._logger.error(message)
 
     def log_exception(self, message: str, exception: Exception):
-        self._logger.error(message, exception, exc_info=True)
+        self._logger.error("%s: %s", message, exception, exc_info=True)
 
     def create_child(self, child_tag: str) -> Logger:
         return LoggerImpl(tag=child_tag, config=self._config)

@@ -2,6 +2,7 @@ from collections import Counter
 from datetime import UTC, datetime
 
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
+from app.ai.gen.prompt.prompt_service import PromptService
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.core.logger.domain.logger import Logger
@@ -28,6 +29,7 @@ class HandleStreamStatusUseCase:
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         state: ChatSummaryState,
         session_ro_factory: SessionFactory,
+        prompt_service: PromptService,
         logger: Logger,
     ):
         self._user_cache = user_cache
@@ -39,6 +41,7 @@ class HandleStreamStatusUseCase:
         self._generate_response_use_case_factory = generate_response_use_case_factory
         self._state = state
         self._session_ro = session_ro_factory
+        self._prompt_service = prompt_service
         self._logger = logger.create_child(__name__)
 
     async def handle(self, channel_name: str):
@@ -82,6 +85,7 @@ class HandleStreamStatusUseCase:
             self._logger.log_info(f"handle stream start for {channel_name}: {started_at}")
             await self._stream_announcement(channel_name, game_name, title)
             self._state.current_stream_summaries = []
+            self._state.last_chat_summary_time = started_at
         except Exception as e:
             self._logger.log_exception("Ошибка при создании стрима:", e)
 
@@ -142,8 +146,11 @@ class HandleStreamStatusUseCase:
 
     async def _stream_announcement(self, channel_name: str, game_name: str | None, title: str | None):
         prompt = (
-            f"Начался стрим. Категория: {game_name}, название: {title}. "
-            f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
+            f"Объяви начало стрима!"
+            f"\nНазвание: {title}"
+            f"\nКатегория: {game_name}"
+            f"\nАнонс должен быть кратким и забавным."
+            f"\nУкажи ссылку на канал: https://twitch.tv/{channel_name}"
         )
         with self._session_ro() as session:
             result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
@@ -152,13 +159,7 @@ class HandleStreamStatusUseCase:
         except Exception as e:
             self._logger.log_exception("Ошибка отправки анонса в Telegram:", e)
 
-    async def _stream_summarize(
-        self,
-        stream_stat: StreamStatistics,
-        channel_name: str,
-        stream_start_dt,
-        stream_end_dt,
-    ):
+    async def _stream_summarize(self, stream_stat: StreamStatistics, channel_name: str, stream_start_dt, stream_end_dt):
         self._logger.log_info("Создание итогового отчёта о стриме")
 
         if self._state.last_chat_summary_time is None:
@@ -173,10 +174,7 @@ class HandleStreamStatusUseCase:
 
         if last_messages:
             chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
-            prompt = (
-                f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-                f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
-            )
+            prompt = self._prompt_service.get_stream_chat_summarize(chat_text)
             with self._session_ro() as session:
                 result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
             self._state.current_stream_summaries.append(result)
@@ -187,38 +185,37 @@ class HandleStreamStatusUseCase:
         duration_str = f"{hours:02}:{minutes:02}:{seconds:02}"
         top_user = stream_stat.top_user if stream_stat.top_user else "нет"
 
-        stream_stat_message = (
-            f"Длительность: {duration_str}. Сообщений: {stream_stat.total_messages}. Самый активный пользователь: {top_user}."
-        )
+        stream_stat_message = f"Длительность: {duration_str}. Сообщений: {stream_stat.total_messages}. Самый активный: {top_user}."
 
         if stream_stat.total_battles > 0:
-            stream_stat_message += f" Битв за стрим: {stream_stat.total_battles}. Главный победитель: {stream_stat.top_winner}"
+            stream_stat_message += f" Битв за стрим: {stream_stat.total_battles}. Главный победитель: {stream_stat.top_winner}."
 
         if stream_stat.top_user and stream_stat.top_user != "нет":
             reward_amount = 200
             with self._stream_status_uow.create() as uow:
-                user_balance = uow.economy_policy.add_balance(
+                uow.economy_policy.add_balance(
                     channel_name=channel_name,
                     user_name=stream_stat.top_user,
                     amount=reward_amount,
                     transaction_type=TransactionType.SPECIAL_EVENT,
                     description="Награда за самую высокую активность в стриме",
                 )
-                stream_stat_message += (
-                    f"{stream_stat.top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
-                )
+                stream_stat_message += f" {stream_stat.top_user} получает награду {reward_amount} монет за активность!"
 
         self._logger.log_info(f"Статистика стрима: {stream_stat_message}")
 
-        prompt = f"Трансляция была завершена. Статистика:\n{stream_stat_message}"
+        prompt = f"Трансляция завершена.\n{stream_stat_message}"
 
         if self._state.current_stream_summaries:
             summary_text = "\n".join(self._state.current_stream_summaries)
-            prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
+            self._logger.log_info(f"Суммаризация чата: {summary_text}")
+            prompt += f"\n\nВыжимка из того, что происходило на стриме: {summary_text}"
 
-        prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции"
+        prompt += "\n\nНа основе предоставленной информации подведи небольшой итог трансляции (с юмором)."
         with self._session_ro() as session:
             result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
+
+        self._logger.log_info(f"Итоговый промпт для подведения итогов стрима: {prompt}")
 
         with self._stream_status_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(channel_name, prompt, result)
@@ -226,4 +223,7 @@ class HandleStreamStatusUseCase:
         self._state.current_stream_summaries = []
         self._state.last_chat_summary_time = None
 
-        await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
+        try:
+            await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
+        except Exception as e:
+            self._logger.log_exception("Ошибка отправки итога стрима в Telegram:", e)

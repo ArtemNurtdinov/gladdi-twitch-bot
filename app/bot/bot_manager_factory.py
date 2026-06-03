@@ -2,6 +2,7 @@ from app.ai.gen.conversation.domain.conversation_service import ConversationServ
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
+from app.ai.gen.prompt.prompt_service import PromptService
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.bot.bot_manager import BotManager
 from app.chat.application.job.chat_summarizer_job import ChatSummarizerJob
@@ -89,6 +90,7 @@ class BotManagerFactory:
         platform_auth: PlatformAuth,
         api_client: ApiClient,
         viewer_cache: ViewerCacheService,
+        prompt_service: PromptService,
         logger: Logger,
     ):
         self._session_factory_rw = session_factory_rw
@@ -121,6 +123,7 @@ class BotManagerFactory:
         self._platform_auth = platform_auth
         self._api_client = api_client
         self._viewer_cache = viewer_cache
+        self._prompt_service = prompt_service
         self._logger = logger
 
     def create(self) -> BotManager:
@@ -149,7 +152,9 @@ class BotManagerFactory:
         handle_chat_summarizer_use_case = HandleChatSummarizerUseCase(
             chat_summarizer_uow=chat_summarizer_uow_factory,
             generate_response_use_case_factory=self._generate_response_use_case_factory,
+            prompt_service=self._prompt_service,
             session_ro_factory=self._session_factory_ro,
+            logger=self._logger,
         )
         chat_summarizer_job = ChatSummarizerJob(handle_chat_summarizer_use_case, self._chat_summary_state, self._logger)
 
@@ -201,6 +206,7 @@ class BotManagerFactory:
             generate_response_use_case_factory=self._generate_response_use_case_factory,
             state=self._chat_summary_state,
             session_ro_factory=self._session_factory_ro,
+            prompt_service=self._prompt_service,
             logger=self._logger,
         )
 

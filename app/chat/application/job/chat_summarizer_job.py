@@ -10,7 +10,7 @@ from app.task.domain.job import BackgroundJob
 
 class ChatSummarizerJob(BackgroundJob):
     name = "summarize_chat"
-    _INTERVAL_DEFAULT = 120
+    _INTERVAL_DEFAULT = 20 * 60
 
     def __init__(self, handle_chat_summarizer_use_case: HandleChatSummarizerUseCase, chat_summary_state: ChatSummaryState, logger: Logger):
         self._handle_chat_summarizer_use_case = handle_chat_summarizer_use_case
@@ -28,14 +28,17 @@ class ChatSummarizerJob(BackgroundJob):
             try:
                 await asyncio.sleep(self._INTERVAL_DEFAULT)
 
-                summarizer_job_dto = SummarizerJobDTO(channel_name=self._channel_name, occurred_at=datetime.now(UTC))
+                occurred_at = datetime.now(UTC)
+                since = self._chat_summary_state.last_chat_summary_time
+                summarizer_job_dto = SummarizerJobDTO(channel_name=self._channel_name, occurred_at=occurred_at, since=since)
 
                 result = await self._handle_chat_summarizer_use_case.handle(summarizer_job=summarizer_job_dto)
-                if result is None:
-                    continue
 
-                self._chat_summary_state.current_stream_summaries.append(result)
-                self._chat_summary_state.last_chat_summary_time = datetime.now(UTC)
+                if result.advance_cursor:
+                    self._chat_summary_state.last_chat_summary_time = occurred_at
+
+                if result.summary is not None:
+                    self._chat_summary_state.current_stream_summaries.append(result.summary)
             except asyncio.CancelledError:
                 break
             except Exception as e:

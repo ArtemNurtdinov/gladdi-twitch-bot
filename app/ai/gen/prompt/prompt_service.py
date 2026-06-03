@@ -39,3 +39,11 @@ class PromptService:
 
     def get_reply_prompt(self, user_display_name: str, message: str) -> str:
         return f"Пользователь {user_display_name} пишет: {message}"
+
+    def get_stream_chat_summarize(self, chat: str) -> str:
+        return (
+            f"Основываясь на сообщениях в чате, подведи краткий итог общения."
+            f"\nЗафиксируй самые важные и смешные моменты, происходящие в чате. Без нумерации. С юмором. "
+            f"\nНе нужно фиксировать действия бонусов и предметов (маэль, амулет лудомана, стак бонусов и тд). "
+            f"\nСообщения в чате: {chat}"
+        )

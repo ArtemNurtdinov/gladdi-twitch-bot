@@ -5,3 +5,4 @@ from dataclasses import dataclass
 class TelegramConfig:
     bot_token: str
     group_id: int
+    proxy_url: str | None = None
