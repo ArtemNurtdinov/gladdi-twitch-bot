@@ -34,8 +34,9 @@ class HandleChatSummarizerUseCase:
 
         chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in messages)
         prompt = (
-            f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-            f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
+            f"Основываясь на сообщения в чате, подведи краткий итог общения в виде тезисов, без нумерации. Для отчёта. "
+            f"Зафиксируй наиболее смешные и наиболее важные моменты, которые обсуждались в чате. Желательно с никнеймами."
+            f"Вот сообщения: {chat_text}"
         )
         with self._session_ro() as session:
             result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, summarizer_job.channel_name)

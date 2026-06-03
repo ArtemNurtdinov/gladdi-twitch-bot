@@ -143,7 +143,8 @@ class HandleStreamStatusUseCase:
     async def _stream_announcement(self, channel_name: str, game_name: str | None, title: str | None):
         prompt = (
             f"Начался стрим. Категория: {game_name}, название: {title}. "
-            f"Сгенерируй краткий анонс для телеграм канала. Ссылка на трансляцию: https://twitch.tv/{channel_name}"
+            f"Сгенерируй краткий анонс для телеграм канала. "
+            f"Ссылка на трансляцию: https://twitch.tv/{channel_name}"
         )
         with self._session_ro() as session:
             result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
@@ -152,13 +153,7 @@ class HandleStreamStatusUseCase:
         except Exception as e:
             self._logger.log_exception("Ошибка отправки анонса в Telegram:", e)
 
-    async def _stream_summarize(
-        self,
-        stream_stat: StreamStatistics,
-        channel_name: str,
-        stream_start_dt,
-        stream_end_dt,
-    ):
+    async def _stream_summarize(self, stream_stat: StreamStatistics, channel_name: str, stream_start_dt, stream_end_dt):
         self._logger.log_info("Создание итогового отчёта о стриме")
 
         if self._state.last_chat_summary_time is None:
@@ -174,8 +169,9 @@ class HandleStreamStatusUseCase:
         if last_messages:
             chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
             prompt = (
-                f"Основываясь на сообщения в чате, подведи краткий итог общения. 1-5 тезисов. "
-                f"Напиши только сами тезисы, больше ничего. Без нумерации. Вот сообщения: {chat_text}"
+                f"Основываясь на сообщения в чате, подведи краткий итог общения в виде тезисов, без нумерации. Для отчёта. "
+                f"Зафиксируй наиболее смешные и наиболее важные моменты, которые обсуждались в чате. Желательно с никнеймами."
+                f"Вот сообщения: {chat_text}"
             )
             with self._session_ro() as session:
                 result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
@@ -214,9 +210,9 @@ class HandleStreamStatusUseCase:
 
         if self._state.current_stream_summaries:
             summary_text = "\n".join(self._state.current_stream_summaries)
-            prompt += f"\n\nВыжимки из того, что происходило в чате: {summary_text}"
+            prompt += f"\n\nВыжимки из того, что происходило: {summary_text}"
 
-        prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции"
+        prompt += "\n\nНа основе предоставленной информации подведи краткий итог трансляции. По возможности с никнеймами."
         with self._session_ro() as session:
             result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
 
