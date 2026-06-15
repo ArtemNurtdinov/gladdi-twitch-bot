@@ -26,7 +26,9 @@ class HandleFollowersSyncUseCase:
                     seen_at=seen_at,
                 )
 
-            unfollowed_ids = [f.user_id for f in existing_map.values() if f.is_active]
+            current_ids = {f.user_id for f in followers}
+            unfollowed_ids = [f.user_id for f in existing_map.values() if f.is_active and f.user_id not in current_ids]
+
             if unfollowed_ids:
                 uow.followers_repo.mark_unfollowed(
                     channel_name=channel_name,

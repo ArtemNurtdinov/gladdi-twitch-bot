@@ -214,7 +214,7 @@ class PlatformRepositoryImpl(PlatformRepository):
         return await self._get_user_followage(broadcaster_id=broadcaster_id, user_id=user_id)
 
     async def _get_channel_followers(self, broadcaster_id: str) -> list[ChannelFollowerDTO]:
-        params = {"broadcaster_id": broadcaster_id, "first": 100}
+        params = {"broadcaster_id": broadcaster_id, "first": 50}
         followers: list[ChannelFollowerDTO] = []
         cursor = None
 

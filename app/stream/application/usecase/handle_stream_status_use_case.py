@@ -193,16 +193,14 @@ class HandleStreamStatusUseCase:
         if stream_stat.top_user and stream_stat.top_user != "нет":
             reward_amount = 200
             with self._stream_status_uow.create() as uow:
-                user_balance = uow.economy_policy.add_balance(
+                uow.economy_policy.add_balance(
                     channel_name=channel_name,
                     user_name=stream_stat.top_user,
                     amount=reward_amount,
                     transaction_type=TransactionType.SPECIAL_EVENT,
                     description="Награда за самую высокую активность в стриме",
                 )
-                stream_stat_message += (
-                    f"{stream_stat.top_user} получает награду {reward_amount} монет за активность! Баланс: {user_balance.balance} монет."
-                )
+                stream_stat_message += f"{stream_stat.top_user} получает награду {reward_amount} монет за активность!"
 
         self._logger.log_info(f"Статистика стрима: {stream_stat_message}")
 
