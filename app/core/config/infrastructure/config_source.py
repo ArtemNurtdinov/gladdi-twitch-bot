@@ -8,4 +8,7 @@ class EnvConfigSource(ConfigSource):
         return os.getenv(key, default)
 
     def get_int(self, key: str, default: int | None = None) -> int | None:
-        return int(os.getenv(key, default))
+        value = os.getenv(key)
+        if value is None:
+            return default
+        return int(value)
