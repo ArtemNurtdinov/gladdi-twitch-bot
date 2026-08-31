@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.battle.application.usecase.battle_use_case import BattleUseCase
 from app.chat.application.usecase.chat_use_case import ChatUseCase
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWork, StreamStatusUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
 from app.viewer.session.domain.repository import ViewerRepository
-from core.types import SessionFactory
 
 
 class SqlAlchemyStreamStatusUnitOfWork(SqlAlchemyUnitOfWorkBase, StreamStatusUnitOfWork):

@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.llm.application.uow.chat_response_uow import ChatResponseUnitOfWork, ChatResponseUnitOfWorkFactory
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
-from core.types import SessionFactory
 
 
 class SqlAlchemyChatResponseUnitOfWork(SqlAlchemyUnitOfWorkBase, ChatResponseUnitOfWork):

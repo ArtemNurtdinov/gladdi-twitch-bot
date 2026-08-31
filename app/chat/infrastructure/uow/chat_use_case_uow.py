@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.uow.chat_use_case_uow import ChatUseCaseUnitOfWork, ChatUseCaseUnitOfWorkFactory
 from app.chat.domain.repo import ChatRepository
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
-from core.types import SessionFactory
 
 
 class SqlAlchemyChatUseCaseUnitOfWork(SqlAlchemyUnitOfWorkBase, ChatUseCaseUnitOfWork):

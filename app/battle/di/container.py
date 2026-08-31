@@ -7,12 +7,12 @@ from app.battle.domain.repo import BattleRepository
 from app.battle.infrastructure.battle_repository import BattleRepositoryImpl
 from app.battle.infrastructure.battle_use_case_uow import SqlAlchemyBattleUseCaseUnitOfWorkFactory
 from app.chat.application.usecase.chat_use_case import ChatUseCase
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.platform.command.battle.application.battle_uow import BattleUnitOfWorkFactory
 from app.platform.command.battle.infrastructure.battle_uow import SqlAlchemyBattleUnitOfWorkFactory
-from core.types import SessionFactory
 
 
 class BattleContainer:

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.equipment.application.equipment_use_case_uow import EquipmentUseCaseUnitOfWork, EquipmentUseCaseUnitOfWorkFactory
 from app.equipment.domain.repo import EquipmentRepository
-from core.types import SessionFactory
 
 
 class SqlAlchemyEquipmentUseCaseUnitOfWork(SqlAlchemyUnitOfWorkBase, EquipmentUseCaseUnitOfWork):

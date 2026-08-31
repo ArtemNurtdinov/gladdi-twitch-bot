@@ -3,13 +3,13 @@ import random
 
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.battle.application.model.join_battle_result import JoinBattleResult
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
 from app.equipment.application.defense.calculate_timeout_use_case import CalculateTimeoutUseCase
 from app.platform.command.battle.application.battle_uow import BattleUnitOfWorkFactory
 from app.platform.command.battle.application.model import BattleDTO, BattleTimeoutAction, BattleUseCaseResult
-from core.types import SessionFactory
 
 
 class HandleBattleUseCase:

@@ -1,10 +1,10 @@
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.domain.repo import ChatRepository
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.platform.command.ask.application.ask_uow import AskUnitOfWorkFactory
 from app.platform.command.ask.infrastructure.ask_uow import SqlAlchemyAskUnitOfWorkFactory
-from core.types import SessionFactory
 
 
 class AskContainer:

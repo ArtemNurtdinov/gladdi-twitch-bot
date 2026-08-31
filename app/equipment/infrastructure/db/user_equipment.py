@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.common.infrastructure.db.db import Base
 from app.shop.infrastructure.db.model.shop_item import ShopItem
-from core.db import Base
 
 
 class UserEquipment(Base):

@@ -3,9 +3,9 @@ from dataclasses import asdict
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.params import Depends
 
+from app.common.infrastructure.db.db import db_ro_session
 from app.stream.di.container import StreamContainer
 from app.stream.presentation.stream_schemas import StreamDetailResponse, StreamListResponse, StreamResponse
-from core.db import db_ro_session
 
 router = APIRouter()
 

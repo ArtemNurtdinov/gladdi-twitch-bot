@@ -6,7 +6,7 @@ from app.auth.application.model.login_result import InvalidPassword, LoginSucces
 from app.auth.application.model.user import UserDTO
 from app.auth.di.container import AuthContainer
 from app.auth.domain.model.role import UserRole
-from core.db import db_rw_session
+from app.common.infrastructure.db.db import db_rw_session
 
 router = APIRouter()
 admin_router = APIRouter()

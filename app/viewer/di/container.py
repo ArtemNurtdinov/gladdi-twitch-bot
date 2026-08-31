@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.follow.domain.repo import FollowersRepository
 from app.viewer.application.usecase.get_viewer_detail_use_case import GetViewerDetailUseCase

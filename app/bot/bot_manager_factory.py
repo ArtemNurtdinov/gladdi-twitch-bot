@@ -12,7 +12,8 @@ from app.chat.application.usecase.handle_chat_summarizer_use_case import HandleC
 from app.chat.domain.repo import ChatRepository
 from app.chat.infrastructure.uow.chat_summarizer_uow import SqlAlchemyChatSummarizerUnitOfWorkFactory
 from app.chat.infrastructure.uow.chat_use_case_uow import SqlAlchemyChatUseCaseUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.core.logger.domain.logger import Logger
 from app.core.network.api.client import ApiClient
 from app.economy.domain.economy_policy import EconomyPolicy
@@ -54,7 +55,6 @@ from app.viewer.session.application.job.viewer_time_job import ViewerTimeJob
 from app.viewer.session.application.usecase.reward_viewer_time_use_case import RewardViewerTimeUseCase
 from app.viewer.session.domain.repository import ViewerRepository
 from app.viewer.session.infrastructure.uow.viewer_time_uow import SqlAlchemyViewerTimeUnitOfWorkFactory
-from core.types import SessionFactory
 
 
 class BotManagerFactory:

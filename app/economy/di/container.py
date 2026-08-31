@@ -1,14 +1,14 @@
 from sqlalchemy.orm import Session
 
 from app.chat.application.usecase.chat_use_case import ChatUseCase
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.repo import EconomyRepository
 from app.economy.infrastructure.economy_repository import EconomyRepositoryImpl
 from app.platform.command.balance.application.balance_uow import BalanceUnitOfWorkFactory
 from app.platform.command.balance.application.handle_balance_use_case import HandleBalanceUseCase
 from app.platform.command.balance.infrastructure.balance_uow import SqlAlchemyBalanceUnitOfWorkFactory
-from core.types import SessionFactory
 
 
 class EconomyContainer:

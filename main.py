@@ -14,7 +14,8 @@ from app.bot.presentation.api import bot_routes, bot_twitch_routes
 from app.chat.application.model.chat_summary_state import ChatSummaryState
 from app.chat.di.container import ChatContainer
 from app.chat.presentation import chat_routes
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.db import db_ro_session, db_rw_session, init_db
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
 from app.core.di.application_container import ApplicationContainer
 from app.economy.di.container import EconomyContainer
 from app.equipment.di.container import EquipmentContainer
@@ -44,7 +45,6 @@ from app.stream.presentation import stream_routes
 from app.viewer.di.container import ViewerContainer
 from app.viewer.infrastructure.cache.viewer_cache_service import ViewerCacheService
 from app.viewer.presentation.api import viewer_routes
-from core.db import db_ro_session, db_rw_session, init_db
 
 
 class Application:

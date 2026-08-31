@@ -3,10 +3,10 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.chat.application.usecase.chat_use_case import ChatUseCase
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.platform.command.equipment.application.equipment_uow import EquipmentUnitOfWork, EquipmentUnitOfWorkFactory
-from core.types import SessionFactory
 
 
 class SqlAlchemyEquipmentUnitOfWork(SqlAlchemyUnitOfWorkBase, EquipmentUnitOfWork):

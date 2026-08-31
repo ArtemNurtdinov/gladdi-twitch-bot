@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
 from app.follow.application.usecase.get_active_followers_use_case import GetActiveFollowersUseCase
 from app.follow.application.usecase.get_unfollowed_use_case import GetUnfollowedUseCase
 from app.follow.domain.repo import FollowersRepository

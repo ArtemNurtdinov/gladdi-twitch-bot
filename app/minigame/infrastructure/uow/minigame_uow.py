@@ -4,15 +4,15 @@ from sqlalchemy.orm import Session
 
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.chat.application.usecase.chat_use_case import ChatUseCase
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.equipment.application.get_user_equipment_use_case import GetUserEquipmentUseCase
 from app.minigame.application.uow.minigame_uow import MinigameUnitOfWork, MinigameUnitOfWorkFactory
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
 from app.minigame.application.use_case.get_used_words_use_case import GetUsedWordsUseCase
 from app.stream.domain.repo import StreamRepository
-from core.types import SessionFactory
 
 
 class SqlAlchemyMinigameUnitOfWork(SqlAlchemyUnitOfWorkBase, MinigameUnitOfWork):

@@ -4,7 +4,7 @@ from sqlalchemy import DateTime, Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.ai.gen.conversation.domain.models import Role
-from core.db import Base
+from app.common.infrastructure.db.db import Base
 
 
 class AIMessage(Base):

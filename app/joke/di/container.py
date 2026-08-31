@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.common.infrastructure.db.types import SessionFactory
 from app.core.logger.domain.logger import Logger
 from app.joke.application.mapper.jokes_configuration_mapper import JokesConfigurationMapper as JokesConfigurationDTOMapper
 from app.joke.application.usecase.get_jokes_configuration_use_case import GetJokesConfigurationUseCase
@@ -8,7 +9,6 @@ from app.joke.domain.repository import JokesConfigurationRepository
 from app.joke.infrastructure.mapper.jokes_configuration_mapper import JokesConfigurationMapper as JokesConfigurationDbMapper
 from app.joke.infrastructure.repository import JokesConfigurationRepositoryImpl
 from app.joke.presentation.api.mapper.jokes_configuration_mapper import JokesConfigurationMapper as JokesConfigurationSchemaMapper
-from core.types import SessionFactory
 
 
 class JokeContainer:

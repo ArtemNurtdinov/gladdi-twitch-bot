@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.core.logger.domain.logger import Logger
 from app.minigame.application.uow.word_history_uow import WordHistoryUnitOfWorkFactory
 from app.minigame.application.use_case.add_used_word_use_case import AddUsedWordsUseCase
@@ -10,7 +11,6 @@ from app.minigame.domain.word_history_repository import WordHistoryRepository
 from app.minigame.infrastructure.minigame_repository import MinigameRepositoryImpl
 from app.minigame.infrastructure.uow.word_history_uow import SqlAlchemyWordHistoryUnitOfWorkFactory
 from app.minigame.infrastructure.word_history_repository import WordHistoryRepositoryImpl
-from core.types import SessionFactory
 
 
 class MinigameContainer:

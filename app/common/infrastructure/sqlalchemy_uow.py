@@ -7,7 +7,7 @@ from typing import Generic, TypeVar
 from sqlalchemy.orm import Session
 
 from app.common.application.unit_of_work import UnitOfWork, UnitOfWorkFactory
-from core.types import SessionFactory
+from app.common.infrastructure.db.types import SessionFactory
 
 TUnitOfWork = TypeVar("TUnitOfWork", bound=UnitOfWork)
 

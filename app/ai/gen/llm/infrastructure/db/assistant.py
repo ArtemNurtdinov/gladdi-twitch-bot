@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.db import Base
+from app.common.infrastructure.db.db import Base
 
 
 class AssistantRow(Base):

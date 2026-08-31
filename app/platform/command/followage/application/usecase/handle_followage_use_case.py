@@ -1,9 +1,9 @@
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.chat.domain.model.chat_message import ChatMessage
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.platform.command.followage.application.model import FollowageDTO
 from app.platform.command.followage.application.uow import FollowAgeUnitOfWorkFactory
-from core.types import SessionFactory
 
 
 class HandleFollowAgeUseCase:

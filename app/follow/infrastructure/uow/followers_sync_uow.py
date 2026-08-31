@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.follow.application.uow.followers_sync_uow import FollowersSyncUnitOfWork, FollowersSyncUnitOfWorkFactory
 from app.follow.domain.repo import FollowersRepository
-from core.types import SessionFactory
 
 
 class SqlAlchemyFollowersSyncUnitOfWork(SqlAlchemyUnitOfWorkBase, FollowersSyncUnitOfWork):

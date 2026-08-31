@@ -2,9 +2,9 @@ from app.ai.gen.llm.application.usecase.generate_response_use_case import Genera
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.chat.application.model.summarizer_job import SummarizerJobDTO, SummarizerResult
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.core.logger.domain.logger import Logger
-from core.types import SessionFactory
 
 
 class HandleChatSummarizerUseCase:

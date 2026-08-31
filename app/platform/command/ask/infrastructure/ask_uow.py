@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 from app.ai.gen.conversation.domain.conversation_service import ConversationService
 from app.ai.gen.prompt.domain.system_prompt_repository import SystemPromptRepository
 from app.chat.domain.repo import ChatRepository
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.platform.command.ask.application.ask_uow import AskUnitOfWork, AskUnitOfWorkFactory
-from core.types import SessionFactory
 
 
 class SqlAlchemyAskUnitOfWork(SqlAlchemyUnitOfWorkBase, AskUnitOfWork):

@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Query, Request
 
+from app.common.infrastructure.db.db import db_ro_session, db_rw_session
 from app.core.network.api.model.base_response import BaseResponse
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api.model.configuration import JokesConfigurationSchema
 from app.joke.presentation.api.model.response.configuration import JokesConfigurationResponse
-from core.db import db_ro_session, db_rw_session
 
 router = APIRouter()
 

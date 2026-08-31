@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.stream.application.uow.start_new_stream_uow import StartNewStreamUnitOfWork, StartNewStreamUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
-from core.types import SessionFactory
 
 
 class SqlAlchemyStartNewStreamUnitOfWork(SqlAlchemyUnitOfWorkBase, StartNewStreamUnitOfWork):

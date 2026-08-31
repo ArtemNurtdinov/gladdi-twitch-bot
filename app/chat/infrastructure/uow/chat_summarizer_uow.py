@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.uow.chat_summarizer_uow import ChatSummarizerUnitOfWork, ChatSummarizerUnitOfWorkFactory
 from app.chat.application.usecase.chat_use_case import ChatUseCase
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.stream.domain.repo import StreamRepository
-from core.types import SessionFactory
 
 
 class SqlAlchemyChatSummarizerUnitOfWork(SqlAlchemyUnitOfWorkBase, ChatSummarizerUnitOfWork):

@@ -4,7 +4,7 @@ from sqlalchemy import DateTime, Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.betting.domain.model.rarity import RarityLevel
-from core.db import Base
+from app.common.infrastructure.db.db import Base
 
 
 class BetHistory(Base):

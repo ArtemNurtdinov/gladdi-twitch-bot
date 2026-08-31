@@ -3,11 +3,11 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.chat.application.usecase.chat_use_case import ChatUseCase
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.platform.command.transfer.application.transfer_uow import TransferUnitOfWork, TransferUnitOfWorkFactory
-from core.types import SessionFactory
 
 
 class SqlAlchemyTransferUnitOfWork(SqlAlchemyUnitOfWorkBase, TransferUnitOfWork):

@@ -4,7 +4,8 @@ from datetime import UTC, datetime
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
 from app.ai.gen.prompt.prompt_service import PromptService
 from app.chat.application.model.chat_summary_state import ChatSummaryState
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.core.logger.domain.logger import Logger
 from app.economy.domain.models import TransactionType
 from app.minigame.domain.minigame_repository import MinigameRepository
@@ -14,7 +15,6 @@ from app.stream.application.uow.stream_status_uow import StreamStatusUnitOfWorkF
 from app.stream.domain.model.info import StreamInfo
 from app.stream.domain.model.stat import StreamStatistics
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
-from core.types import SessionFactory
 
 
 class HandleStreamStatusUseCase:

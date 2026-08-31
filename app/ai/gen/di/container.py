@@ -16,9 +16,9 @@ from app.ai.gen.prompt.prompt_service import PromptService
 from app.ai.intent.application.usecases.get_intent_use_case import GetIntentFromTextUseCase
 from app.ai.intent.data.intent_detector_client import IntentDetectorClientImpl
 from app.ai.intent.infrastructure.intent_uow import SimpleIntentUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
-from core.db import db_ro_session, db_rw_session
-from core.types import SessionFactory
+from app.common.infrastructure.db.db import db_ro_session, db_rw_session
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 
 
 class AIContainer:

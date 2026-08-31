@@ -4,7 +4,7 @@ from app.betting.application.betting_service import BettingService
 from app.betting.application.rarity_identifier import RarityIdentifier
 from app.betting.domain.repo import BettingRepository
 from app.betting.infrastructure.betting_repository import BettingRepositoryImpl
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
 
 
 class BettingContainer:

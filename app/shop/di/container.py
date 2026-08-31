@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
 from app.shop.application.mapper.effect_mapper import EffectMapper as EffectAppMapper
 from app.shop.application.mapper.shop_item_mapper import ShopItemMapper as ShopItemAppMapper
 from app.shop.application.usecase.create_shop_item_use_case import CreateShopItemUseCase

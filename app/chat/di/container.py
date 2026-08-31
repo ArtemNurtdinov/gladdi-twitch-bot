@@ -7,14 +7,14 @@ from app.chat.application.usecase.chat_use_case import ChatUseCase
 from app.chat.domain.repo import ChatRepository
 from app.chat.infrastructure.chat_repository import ChatRepositoryImpl
 from app.chat.infrastructure.uow.chat_use_case_uow import SqlAlchemyChatUseCaseUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.core.logger.domain.logger import Logger
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.platform.chat.application.uow.chat_message_uow import ChatMessageUnitOfWorkFactory
 from app.platform.chat.infrastructure.chat_message_uow import SqlAlchemyChatMessageUnitOfWorkFactory
 from app.stream.domain.repo import StreamRepository
 from app.viewer.session.domain.repository import ViewerRepository
-from core.types import SessionFactory
 
 
 class ChatContainer:

@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.db import Base
+from app.common.infrastructure.db.db import Base
 
 
 class JokesConfigurationRow(Base):

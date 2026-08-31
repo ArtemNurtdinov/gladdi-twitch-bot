@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.bot.presentation.api.bot_twitch_routes import get_shop_container
+from app.common.infrastructure.db.db import db_ro_session, db_rw_session
 from app.core.network.api.model.base_response import BaseResponse
 from app.shop.di.container import ShopContainer
 from app.shop.presentation.api.model.request.create_shop_item_request import CreateShopItemRequest
@@ -8,7 +9,6 @@ from app.shop.presentation.api.model.request.patch_shop_item_request import Patc
 from app.shop.presentation.api.model.response.all_shop_items_response import AllItemsResponse
 from app.shop.presentation.api.model.response.create_shop_item_response import CreateShopItemResponse
 from app.shop.presentation.api.model.shop_item_schema import ShopItemSchema
-from core.db import db_ro_session, db_rw_session
 
 router = APIRouter()
 

@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.common.infrastructure.db.db import Base
 from app.stream.infrastructure.db.stream import Stream
-from core.db import Base
 
 
 class StreamViewerSession(Base):

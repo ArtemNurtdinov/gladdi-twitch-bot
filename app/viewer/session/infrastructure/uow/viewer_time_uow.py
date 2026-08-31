@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.common.infrastructure.sqlalchemy_uow import SqlAlchemyUnitOfWorkBase, SqlAlchemyUnitOfWorkFactory
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.stream.domain.repo import StreamRepository
 from app.viewer.session.application.uow.viewer_time_uow import ViewerTimeUnitOfWork, ViewerTimeUnitOfWorkFactory
 from app.viewer.session.domain.repository import ViewerRepository
-from core.types import SessionFactory
 
 
 class SqlAlchemyViewerTimeUnitOfWork(SqlAlchemyUnitOfWorkBase, ViewerTimeUnitOfWork):

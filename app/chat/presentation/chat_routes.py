@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.chat.di.container import ChatContainer
 from app.chat.presentation.schemas.chat_user import TopChatUser, TopChatUsersResponse
+from app.common.infrastructure.db.db import db_ro_session, db_rw_session
 from app.core.logger.domain.logger import Logger
-from core.db import db_ro_session, db_rw_session
 
 router = APIRouter()
 

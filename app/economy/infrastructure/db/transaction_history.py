@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import BigInteger, DateTime, Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.common.infrastructure.db.db import Base
 from app.economy.domain.models import TransactionType
-from core.db import Base
 
 
 class TransactionHistory(Base):

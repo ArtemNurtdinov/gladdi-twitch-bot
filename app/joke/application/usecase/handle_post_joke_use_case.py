@@ -3,13 +3,13 @@ from datetime import UTC, datetime, timedelta
 from random import randint
 
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
-from app.core.common.session.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.session_scoped_factory import SessionScopedFactory
+from app.common.infrastructure.db.types import SessionFactory
 from app.joke.application.model.post_joke import PostJokeDTO
 from app.joke.application.uow.joke_uow import JokeUnitOfWorkFactory
 from app.joke.domain.model.configuration import JokesConfiguration
 from app.platform.domain.repository import PlatformRepository
 from app.viewer.application.port.viewer_cache_port import ViewerCachePort
-from core.types import SessionFactory
 
 
 class HandlePostJokeUseCase:

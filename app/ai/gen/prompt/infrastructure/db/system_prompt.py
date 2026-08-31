@@ -4,7 +4,7 @@ from sqlalchemy import DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.ai.gen.prompt.domain.models.system_prompt import SystemPrompt
-from core.db import Base
+from app.common.infrastructure.db.db import Base
 
 
 class SystemPromptRow(Base):

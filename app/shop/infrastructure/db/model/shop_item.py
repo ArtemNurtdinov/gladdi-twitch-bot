@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import JSON, DateTime, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.db import Base
+from app.common.infrastructure.db.db import Base
 
 
 class ShopItem(Base):

@@ -14,6 +14,7 @@ from app.auth.infrastructure.password_hasher import BcryptPasswordHasher
 from app.battle.infrastructure.db.battle_history import BattleHistory
 from app.betting.infrastructure.db.bet_history import BetHistory
 from app.chat.infrastructure.db.chat_message import ChatMessage
+from app.common.infrastructure.db.db import db_ro_session, db_rw_session, get_engine, init_db
 from app.core.di.application_container import ApplicationContainer
 from app.economy.infrastructure.db.transaction_history import TransactionHistory
 from app.economy.infrastructure.db.user_balance import UserBalance
@@ -24,7 +25,6 @@ from app.minigame.infrastructure.db.word_history import WordHistory
 from app.shop.infrastructure.db.model.shop_item import ShopItem
 from app.stream.infrastructure.db.stream import Stream
 from app.viewer.session.infrastructure.db.model.viewer_session import StreamViewerSession
-from core.db import db_ro_session, db_rw_session, get_engine, init_db
 
 
 def test_connection():
