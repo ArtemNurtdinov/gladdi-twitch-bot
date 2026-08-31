@@ -177,7 +177,6 @@ class Application:
                 db_ro_session=db_ro_session,
             ),
             timeout_use_case=moderation_service,
-            battle_waiting_user={"value": None},
         )
 
         roll_command_handler = platform_container.roll_command_handler(

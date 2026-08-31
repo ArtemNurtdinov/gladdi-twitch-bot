@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
 
@@ -11,7 +11,6 @@ class BattleDTO:
     bot_name: str
     occurred_at: datetime
     message: str
-    waiting_user: str | None = field(default=None)
 
 
 @dataclass(frozen=True)
@@ -24,5 +23,4 @@ class BattleTimeoutAction:
 @dataclass(frozen=True)
 class BattleUseCaseResult:
     messages: list[str]
-    new_waiting_user: str | None
     timeout_action: BattleTimeoutAction | None

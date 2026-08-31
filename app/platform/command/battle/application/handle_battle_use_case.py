@@ -1,6 +1,8 @@
+import asyncio
 import random
 
 from app.ai.gen.llm.application.usecase.generate_response_use_case import GenerateResponseUseCase
+from app.battle.application.model.join_battle_result import JoinBattleResult
 from app.core.common.session.session_scoped_factory import SessionScopedFactory
 from app.economy.domain.economy_policy import EconomyPolicy
 from app.economy.domain.models import TransactionType
@@ -22,12 +24,21 @@ class HandleBattleUseCase:
         self._generate_response_use_case_factory = generate_response_use_case_factory
         self._calculate_timeout_use_case = calculate_timeout_use_case
         self._db_ro_session = db_ro_session
+        self._match_lock = asyncio.Lock()
+        self._waiting_user: str | None = None
 
     async def handle(self, command_battle: BattleDTO) -> BattleUseCaseResult:
+        async with self._match_lock:
+            join_result = self._join_queue(command_battle)
+            opponent = join_result.matched_opponent
+            if opponent is None:
+                return BattleUseCaseResult(messages=join_result.messages, timeout_action=None)
+
+        return await self._resolve_fight(command_battle, opponent)
+
+    def _join_queue(self, command_battle: BattleDTO) -> JoinBattleResult:
         challenger_display = command_battle.display_name
         challenger_user = command_battle.user_name
-        bot_nick = command_battle.bot_name
-
         fee = EconomyPolicy.BATTLE_ENTRY_FEE
 
         with self._battle_uow.create(read_only=True) as uow:
@@ -35,114 +46,24 @@ class HandleBattleUseCase:
 
         if user_balance.balance < fee:
             result = f"@{challenger_display}, недостаточно монет для участия в битве! Необходимо: {EconomyPolicy.BATTLE_ENTRY_FEE} монет."
-            with self._battle_uow.create() as uow:
-                uow.chat_use_case.save_chat_message(
-                    channel_name=command_battle.channel_name,
-                    user_name=command_battle.user_name,
-                    content=command_battle.message,
-                    current_time=command_battle.occurred_at,
-                )
-                uow.chat_use_case.save_chat_message(
-                    channel_name=command_battle.channel_name,
-                    user_name=bot_nick,
-                    content=result,
-                    current_time=command_battle.occurred_at,
-                )
-            return BattleUseCaseResult(
-                messages=[result],
-                new_waiting_user=command_battle.waiting_user,
-                timeout_action=None,
-            )
+            self._save_command_and_reply(command_battle, result)
+            return JoinBattleResult(messages=[result], matched_opponent=None)
 
-        if not command_battle.waiting_user:
-            error_result = None
-            with self._battle_uow.create() as uow:
-                user_balance = uow.economy_policy.subtract_balance(
-                    channel_name=command_battle.channel_name,
-                    user_name=challenger_user,
-                    amount=fee,
-                    transaction_type=TransactionType.BATTLE_PARTICIPATION,
-                    description="Участие в битве",
-                )
-                if not user_balance:
-                    error_result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
-                    uow.chat_use_case.save_chat_message(
-                        channel_name=command_battle.channel_name,
-                        user_name=command_battle.user_name,
-                        content=command_battle.message,
-                        current_time=command_battle.occurred_at,
-                    )
-                    uow.chat_use_case.save_chat_message(
-                        channel_name=command_battle.channel_name,
-                        user_name=bot_nick,
-                        content=error_result,
-                        current_time=command_battle.occurred_at,
-                    )
-
-            if error_result:
-                return BattleUseCaseResult(
-                    messages=[error_result],
-                    new_waiting_user=command_battle.waiting_user,
-                    timeout_action=None,
-                )
-
-            result = (
-                f"@{challenger_display} ищет себе оппонента для эпичной битвы! "
-                f"Взнос: {EconomyPolicy.BATTLE_ENTRY_FEE} монет. "
-                f"Используй {command_battle.command_call}, чтобы принять вызов."
-            )
-            with self._battle_uow.create() as uow:
-                uow.chat_use_case.save_chat_message(
-                    channel_name=command_battle.channel_name,
-                    user_name=command_battle.user_name,
-                    content=command_battle.message,
-                    current_time=command_battle.occurred_at,
-                )
-                uow.chat_use_case.save_chat_message(
-                    channel_name=command_battle.channel_name,
-                    user_name=bot_nick,
-                    content=result,
-                    current_time=command_battle.occurred_at,
-                )
-
-            return BattleUseCaseResult(
-                messages=[result],
-                new_waiting_user=challenger_display,
-                timeout_action=None,
-            )
-
-        if command_battle.waiting_user == challenger_display:
+        if self._waiting_user == challenger_display:
             result = f"@{challenger_display}, ты не можешь сражаться сам с собой. Подожди достойного противника."
-            with self._battle_uow.create() as uow:
-                uow.chat_use_case.save_chat_message(
-                    channel_name=command_battle.channel_name,
-                    user_name=command_battle.user_name,
-                    content=command_battle.message,
-                    current_time=command_battle.occurred_at,
-                )
-                uow.chat_use_case.save_chat_message(
-                    channel_name=command_battle.channel_name,
-                    user_name=bot_nick,
-                    content=result,
-                    current_time=command_battle.occurred_at,
-                )
-            return BattleUseCaseResult(
-                messages=[result],
-                new_waiting_user=command_battle.waiting_user,
-                timeout_action=None,
-            )
+            self._save_command_and_reply(command_battle, result)
+            return JoinBattleResult(messages=[result], matched_opponent=None)
 
         with self._battle_uow.create() as uow:
-            challenger_balance = uow.economy_policy.subtract_balance(
+            user_balance = uow.economy_policy.subtract_balance(
                 channel_name=command_battle.channel_name,
                 user_name=challenger_user,
                 amount=fee,
                 transaction_type=TransactionType.BATTLE_PARTICIPATION,
                 description="Участие в битве",
             )
-        if not challenger_balance:
-            result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
-            with self._battle_uow.create() as uow:
+            if not user_balance:
+                error_result = f"@{challenger_display}, произошла ошибка при списании взноса за битву."
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
                     user_name=command_battle.user_name,
@@ -151,14 +72,43 @@ class HandleBattleUseCase:
                 )
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
-                    user_name=bot_nick,
-                    content=result,
+                    user_name=command_battle.bot_name,
+                    content=error_result,
                     current_time=command_battle.occurred_at,
                 )
-            return BattleUseCaseResult(messages=[result], new_waiting_user=command_battle.waiting_user, timeout_action=None)
+                return JoinBattleResult(messages=[error_result], matched_opponent=None)
 
-        opponent_display = command_battle.waiting_user
-        new_waiting_user = None
+        if self._waiting_user is None:
+            result = (
+                f"@{challenger_display} ищет себе оппонента для эпичной битвы! "
+                f"Взнос: {EconomyPolicy.BATTLE_ENTRY_FEE} монет. "
+                f"Используй {command_battle.command_call}, чтобы принять вызов."
+            )
+            self._save_command_and_reply(command_battle, result)
+            self._waiting_user = challenger_display
+            return JoinBattleResult(messages=[result], matched_opponent=None)
+
+        opponent = self._waiting_user
+        self._waiting_user = None
+        return JoinBattleResult(messages=[], matched_opponent=opponent)
+
+    def _save_command_and_reply(self, command_battle: BattleDTO, reply: str) -> None:
+        with self._battle_uow.create() as uow:
+            uow.chat_use_case.save_chat_message(
+                channel_name=command_battle.channel_name,
+                user_name=command_battle.user_name,
+                content=command_battle.message,
+                current_time=command_battle.occurred_at,
+            )
+            uow.chat_use_case.save_chat_message(
+                channel_name=command_battle.channel_name,
+                user_name=command_battle.bot_name,
+                content=reply,
+                current_time=command_battle.occurred_at,
+            )
+
+    async def _resolve_fight(self, command_battle: BattleDTO, opponent_display: str) -> BattleUseCaseResult:
+        challenger_display = command_battle.display_name
 
         winner = random.choice([opponent_display, challenger_display])
         loser = challenger_display if winner == opponent_display else opponent_display
@@ -171,7 +121,7 @@ class HandleBattleUseCase:
 
         with self._db_ro_session() as session:
             result_story = await self._generate_response_use_case_factory.get(session).generate_response(
-                prompt, command_battle.channel_name
+                prompt=prompt, channel_name=command_battle.channel_name
             )
 
         winner_amount = EconomyPolicy.BATTLE_WINNER_PRIZE
@@ -194,7 +144,7 @@ class HandleBattleUseCase:
             )
             uow.chat_use_case.save_chat_message(
                 channel_name=command_battle.channel_name,
-                user_name=bot_nick,
+                user_name=command_battle.bot_name,
                 content=result_story,
                 current_time=command_battle.occurred_at,
             )
@@ -208,13 +158,13 @@ class HandleBattleUseCase:
 
         messages = [result_story]
 
-        winner_message = f"{winner} получает {EconomyPolicy.BATTLE_WINNER_PRIZE} монет!"
+        winner_message = f"{winner} получает {winner_amount} монет!"
         messages.append(winner_message)
 
         with self._battle_uow.create() as uow:
             uow.chat_use_case.save_chat_message(
                 channel_name=command_battle.channel_name,
-                user_name=bot_nick,
+                user_name=command_battle.bot_name,
                 content=winner_message,
                 current_time=command_battle.occurred_at,
             )
@@ -237,7 +187,7 @@ class HandleBattleUseCase:
             with self._battle_uow.create() as uow:
                 uow.chat_use_case.save_chat_message(
                     channel_name=command_battle.channel_name,
-                    user_name=bot_nick,
+                    user_name=command_battle.bot_name,
                     content=no_timeout_message,
                     current_time=command_battle.occurred_at,
                 )
@@ -260,6 +210,5 @@ class HandleBattleUseCase:
 
         return BattleUseCaseResult(
             messages=messages,
-            new_waiting_user=new_waiting_user,
             timeout_action=timeout_action,
         )

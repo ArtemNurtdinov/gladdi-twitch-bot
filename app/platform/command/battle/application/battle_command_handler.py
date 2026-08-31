@@ -13,14 +13,12 @@ class BattleCommandHandler(CommandHandler):
         command_name: str,
         handle_battle_use_case: HandleBattleUseCase,
         timeout_use_case: TimeoutUseCase,
-        battle_waiting_user: dict[str, str | None],
     ):
         self._command_prefix = command_prefix
         self._command_name = command_name
         self._handle_battle_use_case = handle_battle_use_case
         self._timeout_use_case = timeout_use_case
         self._bot_name: str | None = None
-        self._battle_waiting_user = battle_waiting_user
 
     def apply_bot_name(self, bot_name) -> None:
         self._bot_name = bot_name
@@ -34,12 +32,9 @@ class BattleCommandHandler(CommandHandler):
             occurred_at=datetime.now(UTC),
             message=message,
             command_call=f"{self._command_prefix}{self._command_name}",
-            waiting_user=self._battle_waiting_user["value"],
         )
 
         result = await self._handle_battle_use_case.handle(command_battle=battle)
-
-        self._battle_waiting_user["value"] = result.new_waiting_user
 
         response_message = "\n".join(result.messages) if result.messages else None
 
