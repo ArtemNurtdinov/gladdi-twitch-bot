@@ -1,10 +1,11 @@
 from fastapi import APIRouter
 from fastapi.params import Depends
 
-from app.bot.presentation.api.bot_twitch_routes import get_economy_container, get_follow_container, get_viewer_container
 from app.common.infrastructure.db.db import db_ro_session
 from app.economy.di.container import EconomyContainer
+from app.economy.presentation.deps import get_economy_container
 from app.follow.di.container import FollowContainer
+from app.follow.presentation.deps import get_follow_container
 from app.viewer.application.model.viewer_detail_models import ViewerSessionDetail
 from app.viewer.di.container import ViewerContainer
 from app.viewer.presentation.api.model.viewer_schemas import (
@@ -12,6 +13,7 @@ from app.viewer.presentation.api.model.viewer_schemas import (
     ViewerSessionItem,
     ViewerSessionStreamInfo,
 )
+from app.viewer.presentation.deps import get_viewer_container
 
 router = APIRouter(prefix="/viewers", tags=["Viewers"])
 

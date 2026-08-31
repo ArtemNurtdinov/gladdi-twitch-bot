@@ -1,13 +1,10 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 
 from app.bot.bot_manager import BotManager
 from app.bot.presentation.api.model.response.status import BotStatusResponse
+from app.bot.presentation.deps import get_bot_manager
 
 router = APIRouter()
-
-
-def get_bot_manager(request: Request) -> BotManager:
-    return request.app.state.bot_manager
 
 
 @router.get("/status", response_model=BotStatusResponse)

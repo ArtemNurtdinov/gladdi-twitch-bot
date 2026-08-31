@@ -1,18 +1,15 @@
 from dataclasses import asdict
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.chat.di.container import ChatContainer
 from app.chat.presentation.schemas.chat_user import TopChatUser, TopChatUsersResponse
 from app.common.infrastructure.db.db import db_ro_session, db_rw_session
 from app.core.logger.domain.logger import Logger
+from app.presentation.deps import get_logger
 
 router = APIRouter()
-
-
-def get_logger(request: Request) -> Logger:
-    return request.app.state.logger
 
 
 @router.get(

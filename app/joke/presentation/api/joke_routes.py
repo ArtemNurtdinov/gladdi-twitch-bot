@@ -1,16 +1,13 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 
 from app.common.infrastructure.db.db import db_ro_session, db_rw_session
 from app.core.network.api.model.base_response import BaseResponse
 from app.joke.di.container import JokeContainer
 from app.joke.presentation.api.model.configuration import JokesConfigurationSchema
 from app.joke.presentation.api.model.response.configuration import JokesConfigurationResponse
+from app.joke.presentation.deps import get_joke_container
 
 router = APIRouter()
-
-
-def get_joke_container(request: Request) -> JokeContainer:
-    return request.app.state.joke_container
 
 
 @router.get("/configuration", summary="Конфигурация анекдотов", response_model=JokesConfigurationResponse)

@@ -1,20 +1,17 @@
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.bot.bot_manager import BotManager
-from app.bot.presentation.api.bot_routes import get_bot_manager
 from app.bot.presentation.api.model.request.start_bot import StartBotRequest
 from app.bot.presentation.api.model.response.action import BotActionResultResponse
 from app.bot.presentation.api.model.response.start_bot import AuthStartResponse
-from app.core.config.domain.model.application import ApplicationConfig
+from app.bot.presentation.deps import get_bot_manager
 from app.core.config.domain.model.configuration import Config
-from app.economy.di.container import EconomyContainer
-from app.follow.di.container import FollowContainer
 from app.platform.di.container import PlatformContainer
-from app.shop.di.container import ShopContainer
-from app.viewer.di.container import ViewerContainer
+from app.platform.presentation.deps import get_platform_container
+from app.presentation.deps import get_config
 
 AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -27,30 +24,6 @@ PERMISSIONS_SCOPE = (
 )
 
 router = APIRouter()
-
-
-def get_config(request: Request) -> ApplicationConfig:
-    return request.app.state.config
-
-
-def get_shop_container(request: Request) -> ShopContainer:
-    return request.app.state.shop_container
-
-
-def get_economy_container(request: Request) -> EconomyContainer:
-    return request.app.state.economy_container
-
-
-def get_follow_container(request: Request) -> FollowContainer:
-    return request.app.state.follow_container
-
-
-def get_viewer_container(request: Request) -> ViewerContainer:
-    return request.app.state.viewer_container
-
-
-def get_platform_container(request: Request) -> PlatformContainer:
-    return request.app.state.platform_container
 
 
 @router.post("/start", summary="Начать авторизацию Twitch", response_model=AuthStartResponse)

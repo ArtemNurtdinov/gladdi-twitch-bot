@@ -1,17 +1,14 @@
 from dataclasses import asdict
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.params import Depends
 
 from app.common.infrastructure.db.db import db_ro_session
 from app.stream.di.container import StreamContainer
+from app.stream.presentation.deps import get_stream_container
 from app.stream.presentation.stream_schemas import StreamDetailResponse, StreamListResponse, StreamResponse
 
 router = APIRouter()
-
-
-def get_stream_container(request: Request) -> StreamContainer:
-    return request.app.state.stream_container
 
 
 @router.get("", summary="Список стримов", response_model=StreamListResponse)

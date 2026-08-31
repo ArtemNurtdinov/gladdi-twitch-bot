@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 
-from app.bot.presentation.api.bot_twitch_routes import get_follow_container
 from app.common.infrastructure.db.db import db_ro_session
 from app.follow.di.container import FollowContainer
+from app.follow.presentation.deps import get_follow_container
 from app.follow.presentation.followers_schemas import (
     FollowerResponse,
     FollowersListResponse,

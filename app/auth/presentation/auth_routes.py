@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.auth.application.contracts import LoginResponse, UserLogin, UserResponse
@@ -6,16 +6,13 @@ from app.auth.application.model.login_result import InvalidPassword, LoginSucces
 from app.auth.application.model.user import UserDTO
 from app.auth.di.container import AuthContainer
 from app.auth.domain.model.role import UserRole
+from app.auth.presentation.deps import get_auth_container
 from app.common.infrastructure.db.db import db_rw_session
 
 router = APIRouter()
 admin_router = APIRouter()
 security = HTTPBearer()
 security_optional = HTTPBearer(auto_error=False)
-
-
-def get_auth_container(request: Request) -> AuthContainer:
-    return request.app.state.auth_container
 
 
 def get_current_user(

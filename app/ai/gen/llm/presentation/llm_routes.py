@@ -1,16 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.ai.gen.di.container import AIContainer
 from app.ai.gen.llm.domain.model.assistant import AIAssistant
 from app.ai.gen.llm.presentation.model.assistant_response import AssistantResponse, AssistantUpdate
+from app.ai.gen.presentation.deps import get_ai_container
 from app.common.infrastructure.db.db import db_ro_session, db_rw_session
 from app.core.network.api.model.base_response import BaseResponse
 
 router = APIRouter()
-
-
-def get_ai_container(request: Request) -> AIContainer:
-    return request.app.state.ai_container
 
 
 @router.get("/assistant/{channel_name}", response_model=AssistantResponse)
