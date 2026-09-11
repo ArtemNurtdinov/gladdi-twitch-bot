@@ -22,6 +22,7 @@ from app.equipment.infrastructure.db.user_equipment import UserEquipment
 from app.follow.infrastructure.db.follower import ChannelFollowerRow
 from app.joke.infrastructure.db.configuration import JokesConfigurationRow
 from app.minigame.infrastructure.db.word_history import WordHistory
+from app.periodic_message.infrastructure.db.periodic_message import PeriodicMessageRow
 from app.shop.infrastructure.db.model.shop_item import ShopItem
 from app.stream.infrastructure.db.stream import Stream
 from app.viewer.session.infrastructure.db.model.viewer_session import StreamViewerSession
@@ -65,6 +66,7 @@ def create_tables():
             SystemPromptRow.__table__.create(bind=connection, checkfirst=True)
             ShopItem.__table__.create(bind=connection, checkfirst=True)
             JokesConfigurationRow.__table__.create(bind=connection, checkfirst=True)
+            PeriodicMessageRow.__table__.create(bind=connection, checkfirst=True)
             AssistantRow.__table__.create(bind=connection, checkfirst=True)
         print("Таблицы успешно созданы!")
 

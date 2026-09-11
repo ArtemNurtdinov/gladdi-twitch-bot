@@ -11,6 +11,7 @@ from app.chat.presentation import chat_routes
 from app.common.infrastructure.db.db import init_db
 from app.follow.presentation import followers_routes
 from app.joke.presentation.api import joke_routes
+from app.periodic_message.presentation.api import periodic_message_routes
 from app.shop.presentation.api import shop_routes
 from app.stream.presentation import stream_routes
 from app.viewer.presentation.api import viewer_routes
@@ -53,6 +54,7 @@ class Application:
         self.fast_api.include_router(bot_routes.router, prefix="/api/v1/bot", tags=["Bot Manager"])
         self.fast_api.include_router(bot_twitch_routes.router, prefix="/api/v1/bot", tags=["Twitch Bot"])
         self.fast_api.include_router(joke_routes.router, prefix="/api/v1/jokes", tags=["Jokes"])
+        self.fast_api.include_router(periodic_message_routes.router, prefix="/api/v1/periodic-messages", tags=["Periodic Messages"])
         self.fast_api.include_router(stream_routes.router, prefix="/api/v1/streams", tags=["Streams"])
         self.fast_api.include_router(followers_routes.router, prefix="/api/v1/followers", tags=["Followers"])
         self.fast_api.include_router(viewer_routes.router, prefix="/api/v1", tags=["Users"])

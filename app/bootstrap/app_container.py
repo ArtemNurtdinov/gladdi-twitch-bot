@@ -19,6 +19,7 @@ from app.follow.di.container import FollowContainer
 from app.joke.di.container import JokeContainer
 from app.minigame.di.container import MinigameContainer
 from app.notification.di.container import NotificationContainer
+from app.periodic_message.di.container import PeriodicMessageContainer
 from app.platform.application.timeout_use_case import TimeoutUseCase
 from app.platform.chat.application.usecase.handle_chat_message_use_case import HandleChatMessageUseCase
 from app.platform.chat.application.usecase.handle_reply_use_case import HandleReplyUseCase
@@ -52,6 +53,7 @@ class AppContainer:
             intent_detector_host=self.config.intent_detector.host,
         )
         self.shop = ShopContainer()
+        self.periodic_message = PeriodicMessageContainer()
         self.stream = StreamContainer()
         self.chat = ChatContainer(
             session_factory_rw=db_rw_session,
@@ -180,6 +182,7 @@ class AppContainer:
             chat_summary_state=chat_summary_state,
             conversation_service_factory=self.ai.conversation_service_factory,
             jokes_configuration_repository_factory=SessionScopedFactory(self.joke.jokes_configuration_repository),
+            periodic_message_repository_factory=self.periodic_message.periodic_message_repository_factory,
             viewer_repository_factory=self.viewer.viewer_repository_factory,
             battle_use_case=self.battle.battle_use_case(),
             economy_policy_factory=self.economy.economy_policy_factory,

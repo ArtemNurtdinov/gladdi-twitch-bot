@@ -38,6 +38,10 @@ from app.minigame.application.use_case.start_word_game_use_case import StartWord
 from app.minigame.domain.minigame_repository import MinigameRepository
 from app.minigame.infrastructure.uow.minigame_uow import SqlAlchemyMinigameUnitOfWorkFactory
 from app.notification.domain.repository import NotificationRepository
+from app.periodic_message.application.job.post_periodic_messages_job import PostPeriodicMessagesJob
+from app.periodic_message.application.usecase.handle_post_periodic_messages_use_case import HandlePostPeriodicMessagesUseCase
+from app.periodic_message.domain.repository import PeriodicMessageRepository
+from app.periodic_message.infrastructure.uow.periodic_message_uow import SqlAlchemyPeriodicMessageUnitOfWorkFactory
 from app.platform.auth.application.job.token_checker_job import TokenCheckerJob
 from app.platform.auth.application.usecase.handle_token_checker_use_case import HandleTokenCheckerUseCase
 from app.platform.auth.platform_auth import PlatformAuth
@@ -71,6 +75,7 @@ class BotManagerFactory:
         chat_summary_state: ChatSummaryState,
         conversation_service_factory: SessionScopedFactory[ConversationService],
         jokes_configuration_repository_factory: SessionScopedFactory[JokesConfigurationRepository],
+        periodic_message_repository_factory: SessionScopedFactory[PeriodicMessageRepository],
         viewer_repository_factory: SessionScopedFactory[ViewerRepository],
         battle_use_case: BattleUseCase,
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
@@ -104,6 +109,7 @@ class BotManagerFactory:
         self._chat_summary_state = chat_summary_state
         self._conversation_service_factory = conversation_service_factory
         self._jokes_configuration_repository_factory = jokes_configuration_repository_factory
+        self._periodic_message_repository_factory = periodic_message_repository_factory
         self._viewer_repository_factory = viewer_repository_factory
         self._battle_use_case = battle_use_case
         self._economy_policy_factory = economy_policy_factory
@@ -174,6 +180,25 @@ class BotManagerFactory:
         )
         post_joke_job = PostJokeJob(
             handle_post_joke_use_case=handle_post_joke_use_case,
+            send_channel_message=self._platform_chat_client.send_channel_message,
+            logger=self._logger,
+        )
+
+        periodic_message_uow_factory = SqlAlchemyPeriodicMessageUnitOfWorkFactory(
+            session_factory_rw=self._session_factory_rw,
+            session_factory_ro=self._session_factory_ro,
+            conversation_service_factory=self._conversation_service_factory,
+            chat_use_case=chat_use_case,
+            periodic_message_repository_factory=self._periodic_message_repository_factory,
+            stream_repository_factory=self._stream_repository_factory,
+        )
+        handle_post_periodic_messages_use_case = HandlePostPeriodicMessagesUseCase(
+            generate_response_use_case_factory=self._generate_response_use_case_factory,
+            periodic_message_uow=periodic_message_uow_factory,
+            db_ro_session=self._session_factory_ro,
+        )
+        post_periodic_messages_job = PostPeriodicMessagesJob(
+            handle_post_periodic_messages_use_case=handle_post_periodic_messages_use_case,
             send_channel_message=self._platform_chat_client.send_channel_message,
             logger=self._logger,
         )
@@ -305,6 +330,7 @@ class BotManagerFactory:
 
         jobs = [
             post_joke_job,
+            post_periodic_messages_job,
             token_checker_job,
             stream_status_job,
             chat_summarizer_job,
