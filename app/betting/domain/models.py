@@ -3,12 +3,12 @@ from app.betting.domain.model.rarity import RarityLevel
 
 class EmojiConfig:
     EMOJI_SYSTEM = {
-        "artemn3CHAIR": {"weight": 40, "rarity": RarityLevel.COMMON},
+        "LUL": {"weight": 40, "rarity": RarityLevel.COMMON},
         "artemn3BOSS": {"weight": 30, "rarity": RarityLevel.UNCOMMON},
         "artemn3BAGET": {"weight": 15, "rarity": RarityLevel.RARE},
         "artemn3BALON": {"weight": 10, "rarity": RarityLevel.RARE},
-        "artemn3SCARED": {"weight": 7, "rarity": RarityLevel.EPIC},
-        "artemn3GG": {"weight": 3, "rarity": RarityLevel.LEGENDARY},
+        "artemn3JUDGE": {"weight": 7, "rarity": RarityLevel.EPIC},
+        "artemn3CHAIR": {"weight": 3, "rarity": RarityLevel.LEGENDARY},
         "DinoDance": {"weight": 0.001, "rarity": RarityLevel.MYTHICAL},
     }
 
