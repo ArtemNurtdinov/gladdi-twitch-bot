@@ -24,11 +24,14 @@ class HandleChatMessageUseCase:
         self._generate_response_use_case_factory = generate_response_use_case_factory
         self._db_ro_session = db_ro_session
 
-    async def handle(self, chat_message: ChatMessageDTO) -> str | None:
-        with self._db_ro_session() as session:
-            intent = await self._get_intent_from_text_use_case_factory.get(session).get_intent_from_text(
-                chat_message.channel_name, chat_message.message
-            )
+    async def handle(self, chat_message: ChatMessageDTO, respond: bool) -> str | None:
+        intent = None
+        if respond:
+            with self._db_ro_session() as session:
+                intent = await self._get_intent_from_text_use_case_factory.get(session).get_intent_from_text(
+                    channel_name=chat_message.channel_name,
+                    text=chat_message.message
+                )
 
         with self._chat_message_uow.create() as uow:
             uow.chat_repo.save(
@@ -66,6 +69,8 @@ class HandleChatMessageUseCase:
                     )
 
         prompt = None
+        if not respond:
+            return None
         if intent == Intent.JACKBOX:
             prompt = self._prompt_service.get_jackbox_prompt(chat_message.display_name, chat_message.message)
         elif intent == Intent.DANKAR_CUT:

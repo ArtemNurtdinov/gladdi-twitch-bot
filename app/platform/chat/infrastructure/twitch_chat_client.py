@@ -16,7 +16,12 @@ class TwitchChatClient(Client):
     TWITCH_MESSAGE_LENGTH_MAX = 500
 
     def __init__(
-        self, auth: PlatformAuth, bot_id: str, logger: Logger, handle_message: Callable[[str, str], Awaitable[None]], channel_name: str
+        self,
+        auth: PlatformAuth,
+        bot_id: str,
+        logger: Logger,
+        handle_message: Callable[..., Awaitable[None]],
+        channel_name: str,
     ):
         Client.__init__(self, client_id=auth.client_id, client_secret=auth.client_secret, bot_id=bot_id, fetch_client_user=False)
         self._auth = auth
@@ -102,7 +107,15 @@ class TwitchChatClient(Client):
 
         self._recent_message_ids.append(message_id)
 
-        await self._handle_message(user_name, message)
+        reply_parent_user_name = None
+        if payload.reply is not None:
+            reply_parent_user_name = payload.reply.parent_user.display_name or payload.reply.parent_user.name
+
+        await self._handle_message(
+            user_name=user_name,
+            message=message,
+            reply_parent_user_name=reply_parent_user_name,
+        )
 
     async def event_websocket_welcome(self, payload: WebsocketWelcome) -> None:
         self._logger.log_debug("event_websocket_welcome")

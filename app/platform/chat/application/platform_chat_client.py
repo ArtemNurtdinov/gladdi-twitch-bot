@@ -35,7 +35,12 @@ class PlatformChatClient(ABC):
         self.bot_name = bot_name
         self._command_router.apply_bot_name(bot_name)
 
-    async def handle_message(self, user_name: str, message: str):
+    async def handle_message(
+        self,
+        user_name: str,
+        message: str,
+        reply_parent_user_name: str | None,
+    ):
         if message.startswith(self._command_prefix):
             command_handler = self._command_router.get_command_handler(message)
             if command_handler:
@@ -58,14 +63,21 @@ class PlatformChatClient(ABC):
             occurred_at=datetime.now(UTC),
         )
 
-        if self.is_reply_message(message):
+        if self._is_reply_to_other(reply_parent_user_name):
+            self.logger.log_info(f"reply to other. reply_parent_user_name={reply_parent_user_name}, message: {chat_message}")
+            await self._handle_chat_message_use_case.handle(chat_message, respond=False)
+            return
+
+        if self._is_reply_to_bot(message, reply_parent_user_name):
+            self.logger.log_info(f"reply to bot. reply_parent_user_name={reply_parent_user_name}, message: {chat_message}")
             result = await self._handle_reply_use_case.handle(chat_message)
             await self.send_channel_message(result)
             return
 
-        result = await self._handle_chat_message_use_case.handle(chat_message)
+        result = await self._handle_chat_message_use_case.handle(chat_message, respond=True)
 
         if result:
+            self.logger.log_info(f"reply. reply_parent_user_name={reply_parent_user_name}, message: {chat_message}")
             await self.send_channel_message(result)
 
     def _is_self_message(self, user_name: str) -> bool:
@@ -73,6 +85,21 @@ class PlatformChatClient(ABC):
             return True
         else:
             return False
+
+    def _is_bot_name(self, user_name: str | None) -> bool:
+        if not user_name or not self.bot_name:
+            return False
+        return user_name.lower() == self.bot_name.lower()
+
+    def _is_reply_to_other(self, reply_parent_user_name: str | None) -> bool:
+        if reply_parent_user_name is None:
+            return False
+        return not self._is_bot_name(reply_parent_user_name)
+
+    def _is_reply_to_bot(self, message: str, reply_parent_user_name: str | None) -> bool:
+        if self._is_bot_name(reply_parent_user_name):
+            return True
+        return self.is_reply_message(message)
 
     @abstractmethod
     async def send_channel_message(self, message: str): ...
