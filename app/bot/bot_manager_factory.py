@@ -172,7 +172,6 @@ class BotManagerFactory:
             jokes_configuration_repository_factory=self._jokes_configuration_repository_factory,
         )
         handle_post_joke_use_case = HandlePostJokeUseCase(
-            user_cache=self._viewer_cache,
             platform_repository=self._platform_repository,
             generate_response_use_case_factory=self._generate_response_use_case_factory,
             joke_uow=joke_uow_factory,
