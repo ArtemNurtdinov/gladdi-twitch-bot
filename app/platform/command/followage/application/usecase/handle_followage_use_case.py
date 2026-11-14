@@ -60,7 +60,7 @@ class HandleFollowAgeUseCase:
 
         with self._db_ro_session() as session:
             assistant_message = await self._generate_response_use_case_factory.get(session).generate_response(
-                prompt=prompt, channel_name=channel_name
+                prompt=prompt, channel_name=channel_name, include_history=False
             )
 
         with self._follow_age_uow_factory.create() as uow:
