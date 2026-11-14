@@ -176,7 +176,9 @@ class HandleStreamStatusUseCase:
             chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
             prompt = self._prompt_service.get_stream_chat_summarize(chat_text)
             with self._session_ro() as session:
-                result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
+                result = await self._generate_response_use_case_factory.get(session).generate_response(
+                    prompt, channel_name, include_history=False
+                )
             self._state.current_stream_summaries.append(result)
 
         duration = stream_end_dt - stream_start_dt
@@ -213,7 +215,9 @@ class HandleStreamStatusUseCase:
 
         prompt += "\n\nНа основе предоставленной информации подведи небольшой итог трансляции (с юмором)."
         with self._session_ro() as session:
-            result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
+            result = await self._generate_response_use_case_factory.get(session).generate_response(
+                prompt, channel_name, include_history=False
+            )
 
         self._logger.log_info(f"Итоговый промпт для подведения итогов стрима: {prompt}")
 

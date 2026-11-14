@@ -41,5 +41,7 @@ class HandleChatSummarizerUseCase:
         self._logger.log_info(f"Суммаризация чата: {prompt}")
 
         with self._session_ro() as session:
-            result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, summarizer_job.channel_name)
+            result = await self._generate_response_use_case_factory.get(session).generate_response(
+                prompt, summarizer_job.channel_name, include_history=False
+            )
         return SummarizerResult(result, advance_cursor=True)

@@ -9,13 +9,16 @@ class GenerateResponseUseCase:
         self._chat_response_uow_factory = chat_response_uow_factory
         self._llm_repository = llm_repository
 
-    async def generate_response(self, prompt: str, channel_name: str) -> str:
+    async def generate_response(self, prompt: str, channel_name: str, *, include_history: bool = True) -> str:
         with self._chat_response_uow_factory.create(read_only=True) as uow:
             system_prompt = uow.system_prompt_repository.get_system_prompt(channel_name)
-            history = uow.conversation_service.get_last_messages(channel_name=channel_name, system_prompt=system_prompt.prompt)
-        history.append(AIMessage(role=Role.USER, content=prompt))
+            if include_history:
+                messages = uow.conversation_service.get_last_messages(channel_name=channel_name, system_prompt=system_prompt.prompt)
+            else:
+                messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt)]
+        messages.append(AIMessage(role=Role.USER, content=prompt))
         assistant = await self._llm_repository.get_assistant(channel_name)
         if assistant is None:
             assistant = AIAssistant.GPT_OSS_120B
-        assistant_response = await self._llm_repository.generate_ai_response(assistant, history)
+        assistant_response = await self._llm_repository.generate_ai_response(assistant, messages)
         return assistant_response.message
