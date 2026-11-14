@@ -13,6 +13,8 @@ from app.platform.command.battle.application.model import BattleDTO, BattleTimeo
 
 
 class HandleBattleUseCase:
+    _CHAT_CONTEXT_LIMIT = 20
+
     def __init__(
         self,
         battle_uow: BattleUnitOfWorkFactory,
@@ -113,15 +115,22 @@ class HandleBattleUseCase:
         winner = random.choice([opponent_display, challenger_display])
         loser = challenger_display if winner == opponent_display else opponent_display
 
-        prompt = (
+        with self._battle_uow.create(read_only=True) as uow:
+            chat_messages = uow.chat_use_case.get_last_chat_messages(command_battle.channel_name, self._CHAT_CONTEXT_LIMIT)
+
+        battle_brief = (
             f"На арене сражаются два героя: {opponent_display} и {challenger_display}."
             "\nСимулируй абсурдную и эпическую битву между ними в одно предложение."
             f"\nПобедить в битве должен {winner}, проигравший: {loser}"
         )
+        prompt = battle_brief
+        if chat_messages:
+            chat_text = "\n".join(f"{message.user_name}: {message.content}" for message in chat_messages)
+            prompt += "\nМожно использовать отсылки к происходящему в чате.\nСообщения чата:\n" + chat_text
 
         with self._db_ro_session() as session:
             result_story = await self._generate_response_use_case_factory.get(session).generate_response(
-                prompt=prompt, channel_name=command_battle.channel_name
+                prompt=prompt, channel_name=command_battle.channel_name, include_history=False
             )
 
         winner_amount = EconomyPolicy.BATTLE_WINNER_PRIZE
@@ -134,7 +143,7 @@ class HandleBattleUseCase:
                 description=f"Победа в битве против {loser}",
             )
             uow.conversation_service.save_conversation_to_db(
-                channel_name=command_battle.channel_name, user_message=prompt, ai_message=result_story
+                channel_name=command_battle.channel_name, user_message=battle_brief, ai_message=result_story
             )
             uow.chat_use_case.save_chat_message(
                 channel_name=command_battle.channel_name,
