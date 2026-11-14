@@ -52,14 +52,15 @@ class StartWordGameUseCase:
         chat_text = "\n".join(f"{m.user_name}: {m.content}" for m in last_messages)
         avoid_clause = "\n\nНе используй ранее загаданные слова: " + ", ".join(used_words) if used_words else ""
 
-        prompt = (
+        task = (
             "Проанализируй последние сообщения из чата и выбери (или придумай) существительное (ОДНО слово),"
             " связанное по смыслу с обсуждаемыми темами. Придумай короткую подсказку-описание к нему."
-            + avoid_clause
-            + '\nОтвет верни строго в JSON без дополнительного текста: {"word": "слово", "hint": "краткая подсказка"}.'
+            '\nОтвет верни строго в JSON без дополнительного текста: {"word": "слово", "hint": "краткая подсказка"}.'
             "\nТребования: слово только из букв, без пробелов и дефисов; подсказка до 100 символов."
-            "\n\nВот сообщения чата (ник: текст):\n" + chat_text
         )
+        prompt = task + avoid_clause
+        if chat_text:
+            prompt += "\n\nВот сообщения чата (ник: текст):\n" + chat_text
 
         with self._db_ro_session() as session:
             system_prompt = self._system_prompt_repository_factory.get(session).get_system_prompt(channel_name)
@@ -72,7 +73,7 @@ class StartWordGameUseCase:
         assistant_message = assistant_response.message
 
         with self._minigame_uow.create() as uow:
-            uow.conversation_service.save_conversation_to_db(channel_name, prompt, assistant_message)
+            uow.conversation_service.save_conversation_to_db(channel_name, task, assistant_message)
 
         data = json.loads(assistant_message)
         word = str(data.get("word", "")).strip()
