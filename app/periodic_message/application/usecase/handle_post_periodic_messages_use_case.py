@@ -37,7 +37,7 @@ class HandlePostPeriodicMessagesUseCase:
             if message.use_llm:
                 with self._db_ro_session() as session:
                     text = await self._generate_response_use_case_factory.get(session).generate_response(
-                        prompt=message.content, channel_name=payload.channel_name
+                        prompt=message.content, channel_name=payload.channel_name, include_history=False
                     )
             else:
                 text = message.content
