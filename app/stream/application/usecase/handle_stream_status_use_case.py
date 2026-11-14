@@ -153,7 +153,9 @@ class HandleStreamStatusUseCase:
             f"\nУкажи ссылку на канал: https://twitch.tv/{channel_name}"
         )
         with self._session_ro() as session:
-            result = await self._generate_response_use_case_factory.get(session).generate_response(prompt, channel_name)
+            result = await self._generate_response_use_case_factory.get(session).generate_response(
+                prompt, channel_name, include_history=False
+            )
         try:
             await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
         except Exception as e:
