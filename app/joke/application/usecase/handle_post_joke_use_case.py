@@ -59,7 +59,9 @@ class HandlePostJokeUseCase:
             prompt += f" В нём должен принимать участие участник чата: {chatter}"
 
         with self._db_ro_session() as session:
-            joke_text = await self._generate_response_use_case_factory.get(session).generate_response(prompt, post_joke.channel_name)
+            joke_text = await self._generate_response_use_case_factory.get(session).generate_response(
+                prompt, post_joke.channel_name, include_history=False
+            )
 
         with self._joke_uow.create() as uow:
             uow.conversation_service.save_conversation_to_db(channel_name=post_joke.channel_name, user_message=prompt, ai_message=joke_text)
