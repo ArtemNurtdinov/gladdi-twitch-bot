@@ -15,8 +15,8 @@ GLaDDi — бот для Twitch со встроенной админкой.
 
 ## Переменные окружения
 
-- `TELEGRAM_BOT_TOKEN` — токен телеграм бота
-- `TELEGRAM_GROUP_ID` — тг-группа (анонс стрима, подведение итогов
+- `TELEGRAM_BOT_TOKEN` — токен телеграм-бота (не обязателен)
+- `TELEGRAM_GROUP_ID` — тг-группа для анонса стрима и итогов. Оба значения нужны вместе, иначе уведомления не отправляются
 - `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` — получите
   на [twitch developers](https://dev.twitch.tv/docs/authentication/register-app)
 - `TWITCH_REDIRECT_URL` — callback Twitch OAuth

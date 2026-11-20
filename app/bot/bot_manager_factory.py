@@ -80,7 +80,7 @@ class BotManagerFactory:
         battle_use_case: BattleUseCase,
         economy_policy_factory: SessionScopedFactory[EconomyPolicy],
         notification_repository: NotificationRepository,
-        notification_group_id: int,
+        notification_group_id: int | None,
         get_used_words_use_case: GetUsedWordsUseCase,
         add_used_words_use_case: AddUsedWordsUseCase,
         get_user_equipment_use_case: GetUserEquipmentUseCase,

@@ -11,6 +11,11 @@ _RETRYABLE_ERRORS = (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.WriteTimeout
 _MAX_ATTEMPTS = 3
 
 
+class NullNotificationRepository(NotificationRepository):
+    async def send_notification(self, chat_id: int, text: str) -> None:
+        return
+
+
 class NotificationRepositoryImpl(NotificationRepository):
     def __init__(self, bot: telegram.Bot, logger: Logger):
         self._bot = bot

@@ -73,6 +73,7 @@ class AppContainer:
         )
         self.notification = NotificationContainer(
             tg_bot_token=self.config.telegram.bot_token,
+            group_id=self.config.telegram.group_id,
             logger=self.logger,
             proxy_url=self.config.telegram.proxy_url,
         )

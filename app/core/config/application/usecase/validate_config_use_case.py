@@ -18,11 +18,6 @@ class ValidateConfigUseCase:
         if not config.db.url:
             missing.append("DATABASE_URL")
 
-        if not config.telegram.bot_token:
-            missing.append("TELEGRAM_BOT_TOKEN")
-        if not config.telegram.group_id:
-            missing.append("TELEGRAM_GROUP_ID")
-
         if not config.twitch.client_id:
             missing.append("TWITCH_CLIENT_ID")
         if not config.twitch.client_secret:

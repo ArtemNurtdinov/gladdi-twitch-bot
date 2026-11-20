@@ -25,7 +25,7 @@ class HandleStreamStatusUseCase:
         stream_status_uow: StreamStatusUnitOfWorkFactory,
         minigame_repository: MinigameRepository,
         notification_repository: NotificationRepository,
-        notification_group_id: int,
+        notification_group_id: int | None,
         generate_response_use_case_factory: SessionScopedFactory[GenerateResponseUseCase],
         state: ChatSummaryState,
         session_ro_factory: SessionFactory,
@@ -145,6 +145,8 @@ class HandleStreamStatusUseCase:
         return StreamStatistics(total_messages, unique_users, top_user, total_battles, top_winner)
 
     async def _stream_announcement(self, channel_name: str, game_name: str | None, title: str | None):
+        if self._notification_group_id is None:
+            return
         prompt = (
             f"Объяви начало стрима!"
             f"\nНазвание: {title}"
@@ -157,7 +159,7 @@ class HandleStreamStatusUseCase:
                 prompt, channel_name, include_history=False
             )
         try:
-            await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
+            await self._notify(result)
         except Exception as e:
             self._logger.log_exception("Ошибка отправки анонса в Telegram:", e)
 
@@ -230,6 +232,11 @@ class HandleStreamStatusUseCase:
         self._state.last_chat_summary_time = None
 
         try:
-            await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=result)
+            await self._notify(result)
         except Exception as e:
             self._logger.log_exception("Ошибка отправки итога стрима в Telegram:", e)
+
+    async def _notify(self, text: str) -> None:
+        if self._notification_group_id is None:
+            return
+        await self._notification_repository.send_notification(chat_id=self._notification_group_id, text=text)
