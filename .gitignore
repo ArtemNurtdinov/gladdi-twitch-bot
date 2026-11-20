@@ -10,3 +10,4 @@ __pycache__/
 /config
 .tio.tokens.json
 ruff-report.txt
+/intent_model

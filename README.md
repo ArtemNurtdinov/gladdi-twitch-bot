@@ -7,7 +7,7 @@ GLaDDi — бот для Twitch со встроенной админкой.
 ## Возможности
 
 - Twitch‑бот с авторизацией и обработкой сообщений и команд в чате
-- Определение намерения пользователя при помощи ML-модели (анализ текста)
+- Определение намерения пользователя ML-моделью
 - Генерация ответов, анекдотов и мини-игр через OpenAI ChatGPT API
 - Автоматическое определение статуса стрима и анонс в телеграмм
 - Суммаризация чата через ChatGPT, подведение итогов стрима
@@ -25,7 +25,6 @@ GLaDDi — бот для Twitch со встроенной админкой.
 - `OPENAI_API_KEY` — ключ OpenAI API
 - `OPENAI_MODEL` — имя модели ChatGPT
 - `OPENAI_PROXY_URL` — необязательный прокси для ChatGPT, например `socks5://host.docker.internal:10808`
-- `INTENT_DETECTOR_DOMAIN` — домен GLaDDi Intent detector (см. https://github.com/ArtemNurtdinov/gladdi-intent-detector)
 - `COMMAND_PREFIX` - префикс для команд
 - `COMMAND_ROLL` - команда для ставки (слот-машина)
 - `COMMAND_FOLLOWAGE` - просмотр времени отслеживания канала
@@ -66,7 +65,6 @@ DATABASE_URL=postgresql://user:pass@host:5432/dbname
 OPENAI_API_KEY=sk-proj-...
 OPENAI_MODEL=gpt-6-luna
 OPENAI_PROXY_URL=socks5://host.docker.internal:10808
-INTENT_DETECTOR_DOMAIN=http://127.0.0.1:8000
 
 COMMAND_PREFIX=!
 COMMAND_ROLL=ставка

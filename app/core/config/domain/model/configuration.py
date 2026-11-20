@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from app.core.config.domain.model.application import ApplicationConfig
 from app.core.config.domain.model.bot import BotConfig
 from app.core.config.domain.model.db import DatabaseConfig
-from app.core.config.domain.model.intent_detector import IntentDetectorConfig
 from app.core.config.domain.model.logging import LoggingConfig
 from app.core.config.domain.model.open_ai import OpenAIConfig
 from app.core.config.domain.model.telegram import TelegramConfig
@@ -18,5 +17,4 @@ class Config:
     telegram: TelegramConfig
     twitch: TwitchConfig
     openai: OpenAIConfig
-    intent_detector: IntentDetectorConfig
     bot: BotConfig

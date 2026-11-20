@@ -27,12 +27,11 @@ class AIContainer:
         openai_api_key: str,
         openai_model: str,
         openai_proxy_url: str | None,
-        intent_detector_host: str,
     ):
         self._session_factory_rw = session_factory_rw
         self._session_factory_ro = session_factory_ro
         self._chat_client = OpenAIChatClient(api_key=openai_api_key, model=openai_model, proxy_url=openai_proxy_url)
-        self.intent_detector = IntentDetectorClientImpl(intent_detector_host)
+        self.intent_detector = IntentDetectorClientImpl()
         self.prompt_service = PromptService()
         self.llm_repository = LLMRepositoryImpl(self._chat_client)
         self.system_prompt_repository_factory = SessionScopedFactory(self._system_prompt_repository)

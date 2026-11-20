@@ -52,7 +52,6 @@ class AppContainer:
             openai_api_key=self.config.openai.api_key,
             openai_model=self.config.openai.model,
             openai_proxy_url=self.config.openai.proxy_url,
-            intent_detector_host=self.config.intent_detector.host,
         )
         self.shop = ShopContainer()
         self.periodic_message = PeriodicMessageContainer()

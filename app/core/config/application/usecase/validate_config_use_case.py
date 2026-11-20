@@ -35,9 +35,6 @@ class ValidateConfigUseCase:
         if not config.openai.model:
             missing.append("OPENAI_MODEL")
 
-        if not config.intent_detector.host:
-            missing.append("INTENT_DETECTOR_DOMAIN")
-
         if missing:
             missing_list = ", ".join(sorted(missing))
             raise ConfigurationException(f"Missing required configuration keys: {missing_list}")
