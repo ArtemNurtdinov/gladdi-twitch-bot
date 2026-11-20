@@ -7,7 +7,7 @@ from app.core.config.domain.model.bot import BotConfig
 from app.core.config.domain.model.configuration import Config
 from app.core.config.domain.model.db import DatabaseConfig
 from app.core.config.domain.model.intent_detector import IntentDetectorConfig
-from app.core.config.domain.model.llmbox import LLMBoxConfig
+from app.core.config.domain.model.open_ai import OpenAIConfig
 from app.core.config.domain.model.logging import LoggingConfig
 from app.core.config.domain.model.telegram import TelegramConfig
 from app.core.config.domain.model.twitch import TwitchConfig
@@ -63,7 +63,11 @@ class ConfigRepositoryImpl(ConfigRepository):
                 client_secret=self._config_source.get_str("TWITCH_CLIENT_SECRET"),
                 redirect_url=self._config_source.get_str("TWITCH_REDIRECT_URL"),
             ),
-            llmbox=LLMBoxConfig(host=self._config_source.get_str("LLMBOX_DOMAIN")),
+            openai=OpenAIConfig(
+                api_key=self._config_source.get_str("OPENAI_API_KEY"),
+                model=self._config_source.get_str("OPENAI_MODEL"),
+                proxy_url=self._config_source.get_str("OPENAI_PROXY_URL"),
+            ),
             intent_detector=IntentDetectorConfig(host=self._config_source.get_str("INTENT_DETECTOR_DOMAIN")),
             bot=BotConfig(
                 prefix=self._config_source.get_str(self._COMMAND_PREFIX),

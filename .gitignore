@@ -9,5 +9,4 @@ __pycache__/
 *.log
 /config
 .tio.tokens.json
-/emoji
 ruff-report.txt

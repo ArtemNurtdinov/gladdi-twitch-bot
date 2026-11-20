@@ -1,7 +1,6 @@
 from app.ai.gen.conversation.domain.models import AIMessage, Role
 from app.ai.gen.llm.application.uow.chat_response_uow import ChatResponseUnitOfWorkFactory
 from app.ai.gen.llm.domain.llm_repository import LLMRepository
-from app.ai.gen.llm.domain.model.assistant import AIAssistant
 
 
 class GenerateResponseUseCase:
@@ -17,8 +16,5 @@ class GenerateResponseUseCase:
             else:
                 messages = [AIMessage(role=Role.SYSTEM, content=system_prompt.prompt)]
         messages.append(AIMessage(role=Role.USER, content=prompt))
-        assistant = await self._llm_repository.get_assistant(channel_name)
-        if assistant is None:
-            assistant = AIAssistant.GPT_OSS_120B
-        assistant_response = await self._llm_repository.generate_ai_response(assistant, messages)
+        assistant_response = await self._llm_repository.generate_ai_response(messages)
         return assistant_response.message

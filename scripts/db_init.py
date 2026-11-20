@@ -1,7 +1,6 @@
 from sqlalchemy import text
 
 from app.ai.gen.conversation.infrastructure.db.ai_message import AIMessage
-from app.ai.gen.llm.infrastructure.db.assistant import AssistantRow
 from app.ai.gen.prompt.infrastructure.db.system_prompt import SystemPromptRow
 from app.auth.application.dto import UserCreateDto, UserRole
 from app.auth.application.mapper.user_mapper import UserMapper
@@ -67,7 +66,6 @@ def create_tables():
             ShopItem.__table__.create(bind=connection, checkfirst=True)
             JokesConfigurationRow.__table__.create(bind=connection, checkfirst=True)
             PeriodicMessageRow.__table__.create(bind=connection, checkfirst=True)
-            AssistantRow.__table__.create(bind=connection, checkfirst=True)
         print("Таблицы успешно созданы!")
 
         with get_engine().connect() as connection:

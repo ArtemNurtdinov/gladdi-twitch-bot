@@ -26,9 +26,7 @@ class HandleAskUseCase:
 
     async def handle(self, command_ask: AskCommandDTO) -> str:
         with self._db_ro_session() as session:
-            intent = await self._get_intent_from_text_use_case_factory.get(session).get_intent_from_text(
-                command_ask.channel_name, command_ask.message
-            )
+            intent = await self._get_intent_from_text_use_case_factory.get(session).get_intent_from_text(command_ask.message)
 
         if intent == Intent.JACKBOX:
             prompt = self._prompt_service.get_jackbox_prompt(command_ask.display_name, command_ask.message)

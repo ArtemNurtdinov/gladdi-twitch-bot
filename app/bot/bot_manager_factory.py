@@ -87,7 +87,7 @@ class BotManagerFactory:
         prefix: str,
         guess_number_command_name: str,
         system_prompt_repository_factory: SessionScopedFactory[SystemPromptRepository],
-        llm_repository_factory: SessionScopedFactory[LLMRepository],
+        llm_repository: LLMRepository,
         command_guess_word: str,
         command_guess_letter: str,
         rps_command_name: str,
@@ -121,7 +121,7 @@ class BotManagerFactory:
         self._prefix = prefix
         self._guess_number_command_name = guess_number_command_name
         self._system_prompt_repository_factory = system_prompt_repository_factory
-        self._llm_repository_factory = llm_repository_factory
+        self._llm_repository = llm_repository
         self._command_guess_word = command_guess_word
         self._command_guess_letter = command_guess_letter
         self._rps_command_name = rps_command_name
@@ -262,7 +262,7 @@ class BotManagerFactory:
             minigame_uow=minigame_uow_factory,
             db_ro_session=self._session_factory_ro,
             system_prompt_repository_factory=self._system_prompt_repository_factory,
-            llm_repository_factory=self._llm_repository_factory,
+            llm_repository=self._llm_repository,
             command_guess_word=self._command_guess_word,
             command_guess_letter=self._command_guess_letter,
             send_channel_message=self._platform_chat_client.send_channel_message,

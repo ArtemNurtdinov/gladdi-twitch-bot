@@ -8,9 +8,9 @@ GLaDDi — бот для Twitch со встроенной админкой.
 
 - Twitch‑бот с авторизацией и обработкой сообщений и команд в чате
 - Определение намерения пользователя при помощи ML-модели (анализ текста)
-- Генерация ответов, анекдотов и мини-игр при помощи LLM
+- Генерация ответов, анекдотов и мини-игр через OpenAI ChatGPT API
 - Автоматическое определение статуса стрима и анонс в телеграмм
-- Суммаризация чата при помощи LLM, подведение итогов стрима
+- Суммаризация чата через ChatGPT, подведение итогов стрима
 - Экономика, мини-игры, ставки, битвы и многое другое
 
 ## Переменные окружения
@@ -22,7 +22,9 @@ GLaDDi — бот для Twitch со встроенной админкой.
 - `TWITCH_REDIRECT_URL` — callback Twitch OAuth
 - `DASHBOARD_PORT` — порт API (по умолчанию 8003)
 - `DATABASE_URL` — урл базы данных (PostgreSQL)
-- `LLMBOX_DOMAIN` — домен LLMBox (см. https://github.com/ArtemNurtdinov/llmbox)
+- `OPENAI_API_KEY` — ключ OpenAI API
+- `OPENAI_MODEL` — имя модели ChatGPT
+- `OPENAI_PROXY_URL` — необязательный прокси для ChatGPT, например `socks5://host.docker.internal:10808`
 - `INTENT_DETECTOR_DOMAIN` — домен GLaDDi Intent detector (см. https://github.com/ArtemNurtdinov/gladdi-intent-detector)
 - `COMMAND_PREFIX` - префикс для команд
 - `COMMAND_ROLL` - команда для ставки (слот-машина)
@@ -61,7 +63,9 @@ PORT=8003
 
 DATABASE_URL=postgresql://user:pass@host:5432/dbname
 
-LLMBOX_DOMAIN=http://127.0.0.1:8001
+OPENAI_API_KEY=sk-proj-...
+OPENAI_MODEL=gpt-6-luna
+OPENAI_PROXY_URL=socks5://host.docker.internal:10808
 INTENT_DETECTOR_DOMAIN=http://127.0.0.1:8000
 
 COMMAND_PREFIX=!

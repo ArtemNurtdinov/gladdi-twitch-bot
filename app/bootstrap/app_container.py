@@ -49,7 +49,9 @@ class AppContainer:
         self.ai = AIContainer(
             session_factory_ro=db_ro_session,
             session_factory_rw=db_rw_session,
-            llmbox_host=self.config.llmbox.host,
+            openai_api_key=self.config.openai.api_key,
+            openai_model=self.config.openai.model,
+            openai_proxy_url=self.config.openai.proxy_url,
             intent_detector_host=self.config.intent_detector.host,
         )
         self.shop = ShopContainer()
@@ -194,7 +196,7 @@ class AppContainer:
             prefix=self.config.bot.prefix,
             guess_number_command_name=self.config.bot.command_guess,
             system_prompt_repository_factory=self.ai.system_prompt_repository_factory,
-            llm_repository_factory=self.ai.llm_repository_factory,
+            llm_repository=self.ai.llm_repository,
             command_guess_word=self.config.bot.command_guess_word,
             command_guess_letter=self.config.bot.command_guess_letter,
             rps_command_name=self.config.bot.command_rps,

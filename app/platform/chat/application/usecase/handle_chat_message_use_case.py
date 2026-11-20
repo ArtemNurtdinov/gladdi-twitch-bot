@@ -28,10 +28,7 @@ class HandleChatMessageUseCase:
         intent = None
         if respond:
             with self._db_ro_session() as session:
-                intent = await self._get_intent_from_text_use_case_factory.get(session).get_intent_from_text(
-                    channel_name=chat_message.channel_name,
-                    text=chat_message.message
-                )
+                intent = await self._get_intent_from_text_use_case_factory.get(session).get_intent_from_text(chat_message.message)
 
         with self._chat_message_uow.create() as uow:
             uow.chat_repo.save(

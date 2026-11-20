@@ -30,8 +30,10 @@ class ValidateConfigUseCase:
         if not config.twitch.redirect_url:
             missing.append("TWITCH_REDIRECT_URL")
 
-        if not config.llmbox.host:
-            missing.append("LLMBOX_DOMAIN")
+        if not config.openai.api_key:
+            missing.append("OPENAI_API_KEY")
+        if not config.openai.model:
+            missing.append("OPENAI_MODEL")
 
         if not config.intent_detector.host:
             missing.append("INTENT_DETECTOR_DOMAIN")

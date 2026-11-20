@@ -4,8 +4,8 @@ from app.core.config.domain.model.application import ApplicationConfig
 from app.core.config.domain.model.bot import BotConfig
 from app.core.config.domain.model.db import DatabaseConfig
 from app.core.config.domain.model.intent_detector import IntentDetectorConfig
-from app.core.config.domain.model.llmbox import LLMBoxConfig
 from app.core.config.domain.model.logging import LoggingConfig
+from app.core.config.domain.model.open_ai import OpenAIConfig
 from app.core.config.domain.model.telegram import TelegramConfig
 from app.core.config.domain.model.twitch import TwitchConfig
 
@@ -17,6 +17,6 @@ class Config:
     logging: LoggingConfig
     telegram: TelegramConfig
     twitch: TwitchConfig
-    llmbox: LLMBoxConfig
+    openai: OpenAIConfig
     intent_detector: IntentDetectorConfig
     bot: BotConfig
